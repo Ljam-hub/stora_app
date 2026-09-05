@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../data/services/notification_service.dart';
 import '../../data/stores/account_status_store.dart';
 import '../../stora_login/stora_login.dart';
 import '../screens/alerts_screen.dart';
@@ -40,11 +41,48 @@ class _StoraShellState extends State<StoraShell> {
     CategoryStore.instance.loadCategories();
     SalesStore.instance.loadSales();
     OrdersStore.instance.fetchOrders();
+
+    OwnerNotificationService.instance.onForegroundMessageReceived = (message) {
+      if (!mounted) return;
+      final title = message.notification?.title ?? 'New Order';
+      final body = message.notification?.body ?? 'A new customer order just arrived!';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: const Color(0xFF2C2250),
+          content: Row(
+            children: [
+              const Icon(Icons.notifications_active_rounded, color: AppColors.purpleLight),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                    Text(body, style: const TextStyle(fontSize: 12, color: Colors.white70), maxLines: 2, overflow: TextOverflow.ellipsis),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          action: SnackBarAction(
+            label: 'View',
+            textColor: AppColors.purpleLight,
+            onPressed: () {
+              setState(() => _index = 3); // Switch to Alerts / Orders tab
+            },
+          ),
+          duration: const Duration(seconds: 5),
+        ),
+      );
+    };
   }
 
   @override
   void dispose() {
     AccountStatusStore.instance.removeListener(_checkPriceChange);
+    OwnerNotificationService.instance.onForegroundMessageReceived = null;
     super.dispose();
   }
 

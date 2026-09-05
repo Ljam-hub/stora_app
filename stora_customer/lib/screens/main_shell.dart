@@ -7,6 +7,9 @@ import 'orders/orders_screen.dart';
 import 'profile/profile_screen.dart';
 import 'shop/shop_screen.dart';
 
+import '../providers/order_provider.dart';
+import '../services/notification_service.dart';
+
 class MainShell extends StatefulWidget {
   final int initialTab;
 
@@ -23,6 +26,53 @@ class _MainShellState extends State<MainShell> {
   void initState() {
     super.initState();
     _currentIndex = widget.initialTab;
+
+    NotificationService.instance.onForegroundMessageReceived = (message) {
+      if (!mounted) return;
+
+      // Auto refresh customer orders when an update is pushed
+      context.read<OrderProvider>().refresh();
+
+      final title = message.notification?.title ?? 'Order Update';
+      final body = message.notification?.body ?? 'Your order status has changed.';
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: AppColors.cardBackground,
+          content: Row(
+            children: [
+              const Icon(Icons.notifications_active_rounded, color: AppColors.primary),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                    Text(body, style: const TextStyle(fontSize: 12, color: Colors.white70), maxLines: 2, overflow: TextOverflow.ellipsis),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          action: SnackBarAction(
+            label: 'View',
+            textColor: AppColors.primary,
+            onPressed: () {
+              setState(() => _currentIndex = 2); // Switch to Orders tab
+            },
+          ),
+          duration: const Duration(seconds: 5),
+        ),
+      );
+    };
+  }
+
+  @override
+  void dispose() {
+    NotificationService.instance.onForegroundMessageReceived = null;
+    super.dispose();
   }
 
   void _onTabTapped(int index) {

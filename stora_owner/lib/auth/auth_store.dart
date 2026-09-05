@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../data/api/api_client.dart';
 import '../data/db/stora_database.dart';
+import '../data/services/notification_service.dart';
 
 class AuthStore extends ChangeNotifier {
   AuthStore._();
@@ -26,6 +27,7 @@ class AuthStore extends ChangeNotifier {
     if (session == null || session.accessToken.isEmpty) return false;
     email = session.email;
     businessName = session.businessName;
+    OwnerNotificationService.instance.init();
     notifyListeners();
     return true;
   }
@@ -99,6 +101,7 @@ class AuthStore extends ChangeNotifier {
     );
     email = result.email;
     businessName = result.businessName;
+    OwnerNotificationService.instance.init();
     notifyListeners();
   }
 }

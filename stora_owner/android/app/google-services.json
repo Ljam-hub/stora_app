@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "202280678746",
+    "project_id": "stora-app-14d02",
+    "storage_bucket": "stora-app-14d02.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:202280678746:android:c21ad4fe45833d8eb8af63",
+        "android_client_info": {
+          "package_name": "com.example.stora"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAOSGorNKlybhdbC_5l0QZ72uY2r4httzQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

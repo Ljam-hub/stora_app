@@ -1,16 +1,17 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
-import 'api_service.dart';
+import '../api/api_client.dart';
+import '../../home/stores/orders_store.dart';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  debugPrint('Handling background message: ${message.messageId}');
+  debugPrint('Handling background message for owner: ${message.messageId}');
 }
 
-class NotificationService {
-  NotificationService._();
-  static final NotificationService instance = NotificationService._();
+class OwnerNotificationService {
+  OwnerNotificationService._();
+  static final OwnerNotificationService instance = OwnerNotificationService._();
 
   bool _initialized = false;
   Function(RemoteMessage message)? onForegroundMessageReceived;
@@ -36,16 +37,23 @@ class NotificationService {
           settings.authorizationStatus == AuthorizationStatus.provisional) {
         final token = await messaging.getToken();
         if (token != null) {
-          debugPrint('FCM Token: $token');
-          await CustomerApiService.instance.updateFcmToken(token);
+          debugPrint('Owner FCM Token: $token');
+          await ApiClient.instance.updateFcmToken(token);
         }
 
         messaging.onTokenRefresh.listen((newToken) {
-          CustomerApiService.instance.updateFcmToken(newToken);
+          ApiClient.instance.updateFcmToken(newToken);
         });
 
         FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-          debugPrint('Foreground notification received: ${message.notification?.title}');
+          debugPrint('Foreground owner notification received: ${message.notification?.title}');
+          
+          final action = message.data['action'];
+          if (action == 'created') {
+            // Automatically refresh owner orders list when a new order arrives
+            OrdersStore.instance.fetchOrders();
+          }
+
           if (onForegroundMessageReceived != null) {
             onForegroundMessageReceived!(message);
           }
@@ -54,7 +62,7 @@ class NotificationService {
 
       _initialized = true;
     } catch (e) {
-      debugPrint('NotificationService init error (safe to ignore if Firebase is not yet configured): $e');
+      debugPrint('OwnerNotificationService init error (safe to ignore if Firebase is not yet configured): $e');
     }
   }
 }
