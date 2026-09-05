@@ -32,6 +32,8 @@ env/
 !**/.env.example
 *.pem
 *.key
+*firebase-adminsdk*.json
+firebase-service-account.json
 
 # Django & SQLite
 db.sqlite3
