@@ -1,0 +1,69 @@
+{% extends "admin/index.html" %}
+{% load i18n %}
+
+{% block content %}
+{% if stora_stats.pending_orders_count > 0 %}
+<div class="stora-alert-banner" style="background: linear-gradient(135deg, #241D38, #181326); border: 1px solid #9B87F5; border-radius: 12px; padding: 16px 20px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between;">
+  <div style="display: flex; align-items: center; gap: 12px;">
+    <span style="font-size: 24px;">🛒</span>
+    <div>
+      <h3 style="margin: 0; color: #FFFFFF; font-size: 15px; font-weight: 700;">Incoming Customer Orders Pending Review</h3>
+      <p style="margin: 3px 0 0 0; color: #B9A9FF; font-size: 13px;">You have <strong>{{ stora_stats.pending_orders_count }}</strong> pending customer cart order{{ stora_stats.pending_orders_count|pluralize }} waiting for acceptance.</p>
+    </div>
+  </div>
+  <a href="/admin/orders/order/?status__exact=pending" style="background-color: #9B87F5; color: #141018; font-weight: 700; font-size: 13px; padding: 8px 16px; border-radius: 8px; text-decoration: none; display: inline-block;">Review Orders →</a>
+</div>
+{% endif %}
+
+{% if stora_stats.pending_requests > 0 %}
+<div class="stora-alert-banner" style="background: linear-gradient(135deg, #3A1620, #2E121B); border: 1px solid #FF6B6B; border-radius: 12px; padding: 16px 20px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between;">
+  <div style="display: flex; align-items: center; gap: 12px;">
+    <span style="font-size: 24px;">🔔</span>
+    <div>
+      <h3 style="margin: 0; color: #FFFFFF; font-size: 15px; font-weight: 700;">Account Subscription Requests Pending Review</h3>
+      <p style="margin: 3px 0 0 0; color: #FF6B6B; font-size: 13px;">You have <strong>{{ stora_stats.pending_requests }}</strong> user subscription payment proof request{{ stora_stats.pending_requests|pluralize }} awaiting approval.</p>
+    </div>
+  </div>
+  <a href="/admin/accounts/paymentproof/?status__exact=pending" style="background-color: #9B87F5; color: #141018; font-weight: 700; font-size: 13px; padding: 8px 16px; border-radius: 8px; text-decoration: none; display: inline-block;">Review Payments →</a>
+</div>
+{% endif %}
+
+{% if stora_stats.active_reset_requests > 0 %}
+<div class="stora-alert-banner" style="background: linear-gradient(135deg, #241D38, #1A1528); border: 1px solid #9B87F5; border-radius: 12px; padding: 16px 20px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between;">
+  <div style="display: flex; align-items: center; gap: 12px;">
+    <span style="font-size: 24px;">🔑</span>
+    <div>
+      <h3 style="margin: 0; color: #FFFFFF; font-size: 15px; font-weight: 700;">Active Password Reset Requests</h3>
+      <p style="margin: 3px 0 0 0; color: #B9A9FF; font-size: 13px;">There {{ stora_stats.active_reset_requests|pluralize:"is,are" }} <strong>{{ stora_stats.active_reset_requests }}</strong> active password reset token request{{ stora_stats.active_reset_requests|pluralize }} generated in the last hour.</p>
+    </div>
+  </div>
+  <a href="/admin/accounts/passwordresettoken/?used__exact=0" style="background-color: #B9A9FF; color: #141018; font-weight: 700; font-size: 13px; padding: 8px 16px; border-radius: 8px; text-decoration: none; display: inline-block;">View Reset Codes →</a>
+</div>
+{% endif %}
+
+<div class="stora-dashboard">
+  <div class="stora-card stora-card--earnings">
+    <p class="stora-card__label">Today's Total Earnings</p>
+    <p class="stora-card__value">₱{{ stora_stats.todays_total|floatformat:2 }}</p>
+    <p class="stora-card__sub">{{ stora_stats.todays_count }} sale{{ stora_stats.todays_count|pluralize }}</p>
+  </div>
+  <div class="stora-card">
+    <p class="stora-card__label">Pending Orders</p>
+    <p class="stora-card__value">{{ stora_stats.pending_orders_count }}</p>
+    <p class="stora-card__sub"><a href="/admin/orders/order/?status__exact=pending" style="color: #9B87F5; text-decoration: none;">View carts →</a></p>
+  </div>
+  <div class="stora-card">
+    <p class="stora-card__label">In stock</p>
+    <p class="stora-card__value">{{ stora_stats.total_stock }}</p>
+  </div>
+  <div class="stora-card stora-card--danger">
+    <p class="stora-card__label">Low stock</p>
+    <p class="stora-card__value">{{ stora_stats.low_stock_count }}</p>
+  </div>
+  <div class="stora-card">
+    <p class="stora-card__label">Products</p>
+    <p class="stora-card__value">{{ stora_stats.product_count }}</p>
+  </div>
+</div>
+{{ block.super }}
+{% endblock %}

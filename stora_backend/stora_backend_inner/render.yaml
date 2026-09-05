@@ -1,0 +1,32 @@
+# Render Blueprint — deploy from the repo in one click.
+# https://render.com/docs/blueprint-spec
+
+databases:
+  - name: stora-db
+    plan: free
+    databaseName: stora
+    user: stora
+
+services:
+  - type: web
+    name: stora-backend
+    runtime: python
+    plan: free
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn stora_backend.wsgi:application"
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "False"
+      - key: ALLOWED_HOSTS
+        value: ".onrender.com"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: stora-db
+          property: connectionString
+      - key: PYTHON_VERSION
+        value: "3.12.5"
+      # Set these manually in the Render dashboard:
+      # - CLOUDINARY_URL        (from your Cloudinary account)
+      # - CORS_ALLOWED_ORIGINS  (if Flutter web is used)

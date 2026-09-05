@@ -1,0 +1,148 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <link rel="stylesheet" href="{% static 'admin/css/login.css' %}">
+  <style>
+    body.login {
+      background: var(--stora-bg) !important;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+    }
+    #container {
+      background: transparent;
+      border: none;
+      width: 100%;
+      max-width: 420px;
+      padding: 20px;
+    }
+    #header {
+      background: transparent !important;
+      border-bottom: none !important;
+      text-align: center;
+      padding: 0 0 20px 0;
+    }
+    #header h1 {
+      font-size: 28px;
+      font-weight: 800;
+      color: #fff;
+    }
+    #content {
+      background: var(--stora-field-bg) !important;
+      border: 1px solid var(--stora-field-border) !important;
+      border-radius: 16px;
+      padding: 30px 28px !important;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+    .form-row {
+      border: none !important;
+      padding: 10px 0 !important;
+    }
+    .form-row label {
+      color: var(--stora-label) !important;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      display: block;
+    }
+    .form-row input[type="text"],
+    .form-row input[type="password"] {
+      width: 100% !important;
+      box-sizing: border-box;
+      background: var(--stora-bg) !important;
+      border: 1px solid var(--stora-field-border) !important;
+      border-radius: 10px !important;
+      color: #fff !important;
+      padding: 12px 14px !important;
+      font-size: 14px;
+    }
+    .form-row input[type="text"]:focus,
+    .form-row input[type="password"]:focus {
+      border-color: var(--stora-purple) !important;
+      outline: none;
+    }
+    .submit-row {
+      background: transparent !important;
+      border: none !important;
+      padding: 20px 0 0 0 !important;
+      margin: 0 !important;
+    }
+    .submit-row input[type="submit"] {
+      width: 100%;
+      padding: 12px;
+      font-size: 15px;
+      font-weight: 700;
+      background: var(--stora-purple);
+      color: #000 !important;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+    .submit-row input[type="submit"]:hover {
+      background: var(--stora-purple-light);
+    }
+    .password-reset-link {
+      text-align: center;
+      margin-top: 18px;
+    }
+    .password-reset-link a {
+      color: var(--stora-purple-light);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .password-reset-link a:hover {
+      text-decoration: underline;
+    }
+    .errornote {
+      background: var(--stora-error) !important;
+      color: #fff !important;
+      border-radius: 10px;
+      border: none;
+      padding: 10px 14px;
+      margin-bottom: 16px;
+      font-size: 13px;
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+{% if form.errors and not form.non_field_errors %}
+<p class="errornote">
+{% if form.errors.items|length == 1 %}{% translate "Please correct the error below." %}{% else %}{% translate "Please correct the errors below." %}{% endif %}
+</p>
+{% endif %}
+
+{% if form.non_field_errors %}
+{% for error in form.non_field_errors %}
+<p class="errornote">
+    {{ error }}
+</p>
+{% endfor %}
+{% endif %}
+
+<div id="content-main">
+<form action="{{ app_path }}" method="post" id="login-form">{% csrf_token %}
+  <div class="form-row">
+    {{ form.username.errors }}
+    {{ form.username.label_tag }} {{ form.username }}
+  </div>
+  <div class="form-row">
+    {{ form.password.errors }}
+    {{ form.password.label_tag }} {{ form.password }}
+    <input type="hidden" name="next" value="{{ next }}">
+  </div>
+  <div class="submit-row">
+    <input type="submit" value="{% translate 'Log in to Stora Admin' %}">
+  </div>
+  <div class="password-reset-link">
+    <a href="{% url 'admin_password_reset' %}">{% translate 'Forgot your password?' %}</a>
+  </div>
+</form>
+
+</div>
+{% endblock %}

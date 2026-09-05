@@ -1,0 +1,105 @@
+/* Approximates AppColors from lib/stora_login/theme/app_colors.dart so the
+   admin feels like the same product as the app, rather than stock Django
+   admin green. */
+:root {
+  --stora-bg: #141018;
+  --stora-bg-top: #1E1826;
+  --stora-field-bg: #1F1A28;
+  --stora-field-border: #3A3245;
+  --stora-purple: #9B87F5;
+  --stora-purple-light: #B9A9FF;
+  --stora-label: #8E8798;
+  --stora-error: #FF6B6B;
+}
+
+body {
+  background: var(--stora-bg) !important;
+  color: #fff;
+}
+
+#header {
+  background: var(--stora-bg-top);
+  border-bottom: 1px solid var(--stora-field-border);
+  color: #fff;
+}
+#header a:link, #header a:visited { color: var(--stora-purple-light); }
+.stora-dot { color: var(--stora-purple-light); }
+
+div.breadcrumbs {
+  background: var(--stora-field-bg);
+  color: var(--stora-label);
+  border: none;
+}
+div.breadcrumbs a { color: var(--stora-purple-light); }
+
+#content, .module, .dashboard #content, .card { background: transparent; }
+
+.module h2, .module caption, .inline-group h2 {
+  background: var(--stora-field-bg);
+  color: #fff;
+}
+
+a:link, a:visited { color: var(--stora-purple-light); }
+
+.button, input[type="submit"], input[type="button"], .submit-row input, a.button {
+  background: var(--stora-purple);
+  color: #000 !important;
+  border: none;
+  border-radius: 8px;
+}
+.button:hover, input[type="submit"]:hover, input[type="button"]:hover {
+  background: var(--stora-purple-light);
+}
+.button.default, input[type="submit"].default {
+  background: var(--stora-purple-light);
+}
+
+.object-tools a { background: var(--stora-purple); border-radius: 8px; }
+
+#changelist-filter, .module { border: 1px solid var(--stora-field-border); }
+
+table thead th, .results { background: var(--stora-field-bg); }
+.row1 { background: var(--stora-bg); }
+.row2 { background: var(--stora-field-bg); }
+
+/* Dashboard summary cards injected by templates/admin/index.html */
+.stora-dashboard {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+.stora-card {
+  background: var(--stora-field-bg);
+  border: 1px solid var(--stora-field-border);
+  border-radius: 16px;
+  padding: 16px 20px;
+  min-width: 160px;
+}
+.stora-card__label {
+  color: var(--stora-label);
+  font-size: 12px;
+  margin: 0 0 6px;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
+.stora-card__value {
+  color: #fff;
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0;
+}
+.stora-card__sub {
+  color: var(--stora-label);
+  font-size: 12px;
+  margin: 4px 0 0;
+}
+.stora-card--earnings {
+  background: linear-gradient(135deg, var(--stora-purple), var(--stora-bg-top));
+}
+.stora-card--earnings .stora-card__label,
+.stora-card--earnings .stora-card__value,
+.stora-card--earnings .stora-card__sub {
+  color: #fff;
+}
+.stora-card--danger .stora-card__value { color: var(--stora-error); }
