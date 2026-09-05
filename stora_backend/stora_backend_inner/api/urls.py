@@ -12,6 +12,9 @@ router.register("sales", views.SaleViewSet, basename="sale")
 router.register("orders", views.OrderViewSet, basename="order")
 
 urlpatterns = [
+    # Health Check
+    path("health/", views.health_check, name="health_check"),
+
     # Auth & Tokens
     path("auth/register/", views.register, name="register"),
     path("auth/login/", views.login, name="login"),
