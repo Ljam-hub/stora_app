@@ -12,3 +12,4 @@ whitenoise>=6.5
 django-cloudinary-storage>=0.3
 cloudinary>=1.36
 python-dotenv==1.2.3
+firebase-admin>=6.5.0

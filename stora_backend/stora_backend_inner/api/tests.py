@@ -377,3 +377,62 @@ class OrderAndRoleIntegrityTests(APITestCase):
         self.assertEqual(self.product.stock, 6)
         self.assertIsNotNone(response.data["sale_id"])
 
+
+class FCMNotificationTests(APITestCase):
+    def setUp(self):
+        self.owner = User.objects.create_user(
+            username="fcm_owner@example.com",
+            email="fcm_owner@example.com",
+            password="password123",
+            business_name="FCM Store",
+            role="owner",
+            fcm_token="fake_owner_fcm_token_12345",
+        )
+        self.customer = User.objects.create_user(
+            username="fcm_cust@example.com",
+            email="fcm_cust@example.com",
+            password="password123",
+            role="customer",
+            fcm_token="fake_cust_fcm_token_67890",
+        )
+
+    def test_send_push_notification_empty_token(self):
+        from api.fcm import send_push_notification
+        result = send_push_notification("", "Title", "Body")
+        self.assertFalse(result)
+
+    def test_send_push_notification_dev_fallback(self):
+        from api.fcm import send_push_notification
+        # When no firebase credentials are configured, it should log simulated push and return True
+        result = send_push_notification(self.owner.fcm_token, "Test Title", "Test Body", {"order_id": 123})
+        self.assertTrue(result)
+
+    def test_notify_order_status_change(self):
+        from api.fcm import notify_order_status_change
+        from orders.models import Order
+
+        order = Order.objects.create(
+            owner=self.owner,
+            customer=self.customer,
+            customer_name="Customer Jane",
+            customer_phone="09123456789",
+            customer_address="123 Main St",
+        )
+
+        # Notify creation -> Targets owner
+        notify_order_status_change(order, "created")
+
+        # Notify acceptance -> Targets customer
+        notify_order_status_change(order, "accepted")
+
+        # Notify decline -> Targets customer
+        order.decline_reason = "Out of stock"
+        order.save()
+        notify_order_status_change(order, "declined")
+
+        # Notify counter -> Targets customer
+        order.counter_price = 50.0
+        order.counter_notes = "Discount applied"
+        order.save()
+        notify_order_status_change(order, "counter")
+

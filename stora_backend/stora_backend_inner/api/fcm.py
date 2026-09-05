@@ -1,60 +1,104 @@
 """
 Firebase Cloud Messaging (FCM) push notification utility for Stora.
-Handles sending order status updates and notifications to mobile devices.
+Handles sending order status updates and notifications to mobile devices using
+the modern Firebase Admin SDK (FCM HTTP v1 API).
 """
+import json
 import logging
+import os
 from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
+_firebase_initialized = False
+
+
+def _get_firebase_app():
+    """
+    Initializes and returns the Firebase Admin default app.
+    Supports credentials from file path or JSON string in environment variables.
+    """
+    global _firebase_initialized
+    if _firebase_initialized:
+        return True
+
+    try:
+        import firebase_admin
+        from firebase_admin import credentials
+
+        if firebase_admin._apps:
+            _firebase_initialized = True
+            return True
+
+        cred_path = getattr(settings, "FIREBASE_CREDENTIALS_PATH", "") or os.getenv("FIREBASE_CREDENTIALS_PATH", "")
+        cred_json = getattr(settings, "FIREBASE_CREDENTIALS_JSON", "") or os.getenv("FIREBASE_CREDENTIALS_JSON", "")
+
+        cred = None
+        if cred_path and os.path.isfile(cred_path):
+            cred = credentials.Certificate(cred_path)
+        elif cred_json:
+            try:
+                cert_dict = json.loads(cred_json)
+                cred = credentials.Certificate(cert_dict)
+            except Exception as e:
+                logger.error("Failed to parse FIREBASE_CREDENTIALS_JSON: %s", e)
+
+        if cred:
+            firebase_admin.initialize_app(cred)
+            _firebase_initialized = True
+            logger.info("Firebase Admin SDK successfully initialized.")
+            return True
+        else:
+            return False
+    except ImportError:
+        logger.debug("firebase_admin package is not installed.")
+        return False
+    except Exception as exc:
+        logger.warning("Error initializing Firebase Admin SDK: %s", exc)
+        return False
+
 
 def send_push_notification(fcm_token: str, title: str, body: str, data: dict = None) -> bool:
     """
-    Sends a push notification to a specific device FCM token.
-    Falls back gracefully to logging if FCM is not configured or in development.
+    Sends a push notification to a specific device FCM token using the HTTP v1 API.
+    Falls back gracefully to logging if Firebase is not configured or in development.
     """
     if not fcm_token:
         logger.debug("No FCM token provided for notification: %s - %s", title, body)
         return False
 
-    server_key = getattr(settings, "FCM_SERVER_KEY", None)
-    if not server_key or server_key == "YOUR_FCM_SERVER_KEY":
-        logger.info(
-            "[DEV FCM] Simulated Push to [%s...]: Title: '%s' | Body: '%s' | Data: %s",
-            fcm_token[:10] if len(fcm_token) > 10 else fcm_token,
-            title,
-            body,
-            data or {},
-        )
-        return True
+    # Stringify all data payload values as required by FCM specification
+    str_data = {str(k): str(v) for k, v in (data or {}).items()}
 
-    # Real FCM dispatch via HTTP request / Firebase
-    try:
-        import requests
-        headers = {
-            "Authorization": f"key={server_key}",
-            "Content-Type": "application/json",
-        }
-        payload = {
-            "to": fcm_token,
-            "notification": {
-                "title": title,
-                "body": body,
-                "sound": "default",
-            },
-            "data": data or {},
-        }
-        response = requests.post(
-            "https://fcm.googleapis.com/fcm/send",
-            json=payload,
-            headers=headers,
-            timeout=5,
-        )
-        logger.info("FCM response: %s %s", response.status_code, response.text)
-        return response.status_code == 200
-    except Exception as exc:
-        logger.warning("Failed to send FCM notification: %s", exc)
-        return False
+    # Check if Firebase Admin SDK can be initialized
+    if _get_firebase_app():
+        try:
+            from firebase_admin import messaging
+
+            message = messaging.Message(
+                notification=messaging.Notification(
+                    title=title,
+                    body=body,
+                ),
+                data=str_data,
+                token=fcm_token,
+            )
+            response = messaging.send(message)
+            logger.info("Successfully sent FCM message: %s", response)
+            return True
+        except Exception as exc:
+            logger.warning("Firebase Admin failed to send notification to token [%s...]: %s", fcm_token[:10], exc)
+            return False
+
+    # Graceful fallback: simulated push notification in development/testing
+    logger.info(
+        "[DEV FCM] Simulated Push to [%s...]: Title: '%s' | Body: '%s' | Data: %s",
+        fcm_token[:10] if len(fcm_token) > 10 else fcm_token,
+        title,
+        body,
+        str_data,
+    )
+    return True
 
 
 def notify_order_status_change(order, action: str, extra_msg: str = ""):

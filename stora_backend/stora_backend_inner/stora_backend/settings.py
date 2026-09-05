@@ -158,5 +158,7 @@ if os.getenv("CLOUDINARY_URL"):
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# Firebase Cloud Messaging
+# Firebase Cloud Messaging (Modern HTTP v1 via Firebase Admin SDK)
+FIREBASE_CREDENTIALS_PATH = os.getenv("FIREBASE_CREDENTIALS_PATH", "")
+FIREBASE_CREDENTIALS_JSON = os.getenv("FIREBASE_CREDENTIALS_JSON", "")
 FCM_SERVER_KEY = os.getenv("FCM_SERVER_KEY", "")
