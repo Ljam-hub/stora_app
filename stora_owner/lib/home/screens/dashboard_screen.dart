@@ -12,6 +12,7 @@ import 'add_edit_product_screen.dart';
 import 'pending_orders_screen.dart';
 import 'pos_screen.dart';
 import 'profile_screen.dart';
+import 'sales_analytics_screen.dart';
 import 'sales_history_screen.dart';
 
 class DashboardScreen extends StatelessWidget {
@@ -110,6 +111,46 @@ class DashboardScreen extends StatelessWidget {
                   badge: sales.changeBadge,
                   onTap: () => Navigator.of(context).push(
                     MaterialPageRoute(builder: (_) => const SalesHistoryScreen()),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                // Analytics Shortcut Bar
+                GestureDetector(
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const SalesAnalyticsScreen()),
+                  ),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: HomeColors.cardBackground,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: HomeColors.cardBorder),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: AppColors.purple.withValues(alpha: 0.18),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(Icons.insights_rounded, color: AppColors.purpleLight, size: 18),
+                        ),
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Sales Analytics & Reports',
+                                  style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700)),
+                              Text('View 7-day revenue charts & top sellers',
+                                  style: TextStyle(color: AppColors.label, fontSize: 11)),
+                            ],
+                          ),
+                        ),
+                        const Icon(Icons.chevron_right_rounded, color: AppColors.label, size: 20),
+                      ],
+                    ),
                   ),
                 ),
                 const SizedBox(height: 14),

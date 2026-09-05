@@ -5,11 +5,13 @@ import '../../data/stores/account_status_store.dart';
 import 'barcode_scanner_screen.dart';
 import '../models/cart_item.dart';
 import '../models/product.dart';
+import '../models/sale.dart';
 import '../stores/cart_store.dart';
 import '../stores/inventory_store.dart';
 import '../stores/sales_store.dart';
 import '../theme/home_colors.dart';
 import '../widgets/category_filter_row.dart';
+import '../widgets/receipt_dialog.dart';
 import '../widgets/stock_step_button.dart';
 
 // ---------------------------------------------------------------------
@@ -138,11 +140,12 @@ class _PosScreenState extends State<PosScreen> {
     }
     final items = List<CartItem>.from(cart.items);
     final total = cart.total;
+    Sale? recordedSale;
     try {
-      await SalesStore.instance.recordSale(items, total);
+      recordedSale = await SalesStore.instance.recordSale(items, total);
       cart.clear();
       if (!mounted) return;
-      showStoraSnackBar(context, 'Sale completed', isError: false);
+      ReceiptDialog.show(context, recordedSale);
     } on ApiException catch (e) {
       if (!mounted) return;
       showStoraSnackBar(context, e.message);

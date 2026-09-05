@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/order_model.dart';
 import '../theme/app_theme.dart';
+import 'order_status_stepper.dart';
 
 class OrderCard extends StatefulWidget {
   final CustomerOrder order;
@@ -99,6 +100,12 @@ class _OrderCardState extends State<OrderCard> {
           ),
 
           const Divider(height: 1, color: AppColors.cardBorder),
+
+          // Order Progress Stepper
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            child: OrderStatusStepper(order: order),
+          ),
 
           // Counter Offer Box (if applicable)
           if (order.status == 'counter_offer') ...[

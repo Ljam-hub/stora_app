@@ -4,6 +4,7 @@ import '../models/sale.dart';
 import '../stores/sales_store.dart';
 import '../theme/home_colors.dart';
 import '../utils/date_utils.dart';
+import '../widgets/receipt_dialog.dart';
 
 // ---------------------------------------------------------------------
 // Sales history — opened by tapping "Today's Total Earnings" on the
@@ -247,14 +248,28 @@ class _SaleCard extends StatelessWidget {
                       style: const TextStyle(color: AppColors.purpleLight, fontSize: 16, fontWeight: FontWeight.w900)),
                   const SizedBox(width: 8),
                   GestureDetector(
+                    onTap: () => ReceiptDialog.show(context, sale),
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: HomeColors.cardElevated,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: HomeColors.cardBorder),
+                      ),
+                      child: const Icon(Icons.receipt_long_rounded, size: 16, color: AppColors.purpleLight),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  GestureDetector(
                     onTap: () => _confirmDelete(context),
                     child: Container(
-                      padding: const EdgeInsets.all(4),
+                      padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
-                        color: HomeColors.dangerBg,
+                        color: HomeColors.cardElevated,
                         borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: HomeColors.cardBorder),
                       ),
-                      child: const Icon(Icons.delete_outline_rounded, color: AppColors.error, size: 16),
+                      child: const Icon(Icons.delete_outline_rounded, size: 16, color: AppColors.error),
                     ),
                   ),
                 ],

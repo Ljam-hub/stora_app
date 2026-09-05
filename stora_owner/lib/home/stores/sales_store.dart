@@ -33,7 +33,8 @@ class SalesStore extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> recordSale(List<CartItem> items, double total) async {
+  Future<Sale> recordSale(List<CartItem> items, double total) async {
+    Sale sale;
     try {
       final created = Sale.fromJson(
         await _api.createSale({
@@ -50,18 +51,20 @@ class SalesStore extends ChangeNotifier {
       _sales.add(created);
       await _db.salesDao.upsertSale(created);
       await InventoryStore.instance.loadProducts();
+      sale = created;
     } on ApiException catch (e) {
       if (e.statusCode != null && e.statusCode! < 500) {
         rethrow;
       }
-      await _recordOfflineSale(items, total);
+      sale = await _recordOfflineSale(items, total);
     } catch (_) {
-      await _recordOfflineSale(items, total);
+      sale = await _recordOfflineSale(items, total);
     }
     notifyListeners();
+    return sale;
   }
 
-  Future<void> _recordOfflineSale(List<CartItem> items, double total) async {
+  Future<Sale> _recordOfflineSale(List<CartItem> items, double total) async {
     final local = Sale(
       id: 'local-${DateTime.now().microsecondsSinceEpoch}',
       date: DateTime.now(),
@@ -89,6 +92,7 @@ class SalesStore extends ChangeNotifier {
       entityId: local.id,
       payload: payload,
     );
+    return local;
   }
 
   Future<void> deleteSale(String id) async {
