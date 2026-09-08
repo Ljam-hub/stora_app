@@ -163,28 +163,59 @@ class CustomerApiService {
     final reqHeaders = headers ?? _headers;
     final encoded = body != null ? (body is String ? body : jsonEncode(body)) : null;
 
+    http.Response response;
     try {
-      var response = await _executeRequest(method, uri, reqHeaders, encoded, timeout);
-      if (response.statusCode == 401 && retryOn401 && accessToken != null) {
-        final refreshed = await _refreshAccessToken();
-        if (refreshed) {
-          final retryHeaders = headers ?? _headers;
-          response = await _executeRequest(method, uri, retryHeaders, encoded, timeout);
-        }
-      }
-      return response;
-    } on TimeoutException {
-      throw ApiException('Server request timed out. Is the backend running at $baseUrl?');
-    } on SocketException {
-      throw ApiException('Cannot reach backend server. Please check your network connection.');
+      response = await _executeRequest(method, uri, reqHeaders, encoded, timeout);
+    } on TimeoutException catch (e) {
+      response = await _attemptReResolveAndRetry(method, uri, reqHeaders, encoded, timeout, e);
+    } on SocketException catch (e) {
+      response = await _attemptReResolveAndRetry(method, uri, reqHeaders, encoded, timeout, e);
     } on http.ClientException catch (e) {
-      debugPrint('ClientException intercepted: $e');
-      throw ApiException('Connection failed: Unable to reach $baseUrl.');
+      response = await _attemptReResolveAndRetry(method, uri, reqHeaders, encoded, timeout, e);
     } on FormatException {
       throw ApiException('Invalid response received from server.');
     } catch (e) {
       if (e is ApiException) rethrow;
       throw ApiException('Network error: $e');
+    }
+
+    if (response.statusCode == 401 && retryOn401 && accessToken != null) {
+      final refreshed = await _refreshAccessToken();
+      if (refreshed) {
+        final retryHeaders = headers ?? _headers;
+        response = await _executeRequest(method, uri, retryHeaders, encoded, timeout);
+      }
+    }
+    return response;
+  }
+
+  Future<http.Response> _attemptReResolveAndRetry(
+    String method,
+    Uri failedUri,
+    Map<String, String> headers,
+    String? encoded,
+    Duration timeout,
+    Object originalError,
+  ) async {
+    final previousBase = baseUrl;
+    final foundReachable = await ApiConfig.resolve();
+    if (foundReachable || baseUrl != previousBase) {
+      try {
+        final path = failedUri.path.replaceFirst(RegExp(r'^/api'), '');
+        final retryUri = _uri(path, failedUri.queryParameters.isEmpty ? null : failedUri.queryParameters);
+        debugPrint('CustomerApiService: Retrying request with newly resolved baseUrl: $baseUrl');
+        return await _executeRequest(method, retryUri, headers, encoded, timeout);
+      } catch (_) {}
+    }
+
+    if (originalError is TimeoutException) {
+      throw ApiException('Server request timed out. Is the backend running at $baseUrl?');
+    } else if (originalError is SocketException) {
+      throw ApiException('Cannot reach backend server at $baseUrl. Please check your network connection.');
+    } else if (originalError is http.ClientException) {
+      throw ApiException('Connection failed: Unable to reach $baseUrl.');
+    } else {
+      throw ApiException('Connection failed: $originalError');
     }
   }
 

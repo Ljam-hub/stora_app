@@ -16,7 +16,7 @@ class OrdersStore extends ChangeNotifier {
   String? get error => _error;
 
   int get pendingCount =>
-      _orders.where((o) => o['status'] == 'pending' || o['status'] == 'counter_offer').length;
+      _orders.where((o) => o['status'] == 'pending' || o['status'] == 'counter_offer' || o['status'] == 'accepted').length;
 
   Future<void> fetchOrders() async {
     _isLoading = true;
@@ -38,6 +38,11 @@ class OrdersStore extends ChangeNotifier {
     // Reload products & sales to sync decremented stock & new sale record
     await InventoryStore.instance.loadProducts();
     await SalesStore.instance.loadSales();
+    await fetchOrders();
+  }
+
+  Future<void> markOrderReady(int orderId) async {
+    await ApiClient.instance.markOrderReady(orderId);
     await fetchOrders();
   }
 

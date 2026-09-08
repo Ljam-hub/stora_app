@@ -82,7 +82,8 @@ class _PosScreenState extends State<PosScreen> {
       if ((p.barcode != null && p.barcode!.trim().toLowerCase() == code.toLowerCase()) ||
           p.id == code ||
           p.name.trim().toLowerCase() == code.toLowerCase()) {
-        if (!isPremium && i >= 20) {
+        final freeLimit = accountStatus.productLimit > 0 ? accountStatus.productLimit : 20;
+        if (!isPremium && i >= freeLimit) {
           if (!mounted) return;
           showStoraSnackBar(
             context,

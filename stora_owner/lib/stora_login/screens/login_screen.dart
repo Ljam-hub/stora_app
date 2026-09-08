@@ -2,6 +2,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:stora/auth/auth_store.dart';
 import 'package:stora/data/api/api_client.dart';
+import 'package:stora/data/api/api_config.dart';
 import '../theme/app_colors.dart';
 import '../utils/snackbar.dart';
 import '../utils/validators.dart';
@@ -30,6 +31,125 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+  void _showServerDialog() {
+    final controller = TextEditingController(text: ApiConfig.baseUrl);
+    bool testing = false;
+    String? testResult;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: const Color(0xFF1E1827),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Row(
+            children: [
+              Icon(Icons.dns_rounded, color: AppColors.purple, size: 22),
+              SizedBox(width: 8),
+              Text('Server Connection', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Current active backend URL:',
+                  style: TextStyle(color: AppColors.label, fontSize: 13),
+                ),
+                const SizedBox(height: 4),
+                SelectableText(
+                  ApiConfig.baseUrl,
+                  style: const TextStyle(color: AppColors.purpleLight, fontSize: 13, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: controller,
+                  style: const TextStyle(color: Colors.white, fontSize: 14),
+                  decoration: InputDecoration(
+                    labelText: 'Custom Server URL or IP:port',
+                    labelStyle: const TextStyle(color: AppColors.label, fontSize: 12),
+                    hintText: 'e.g. 192.168.254.105:8000',
+                    hintStyle: const TextStyle(color: AppColors.hint),
+                    filled: true,
+                    fillColor: AppColors.fieldBackground,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                  ),
+                ),
+                if (testResult != null) ...[
+                  const SizedBox(height: 10),
+                  Text(
+                    testResult!,
+                    style: TextStyle(
+                      color: testResult!.startsWith('Success') ? Colors.greenAccent : AppColors.error,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: testing
+                  ? null
+                  : () async {
+                      setDialogState(() {
+                        testing = true;
+                        testResult = 'Auto-detecting reachable server...';
+                      });
+                      final ok = await ApiConfig.resolve();
+                      if (ctx.mounted) {
+                        setDialogState(() {
+                          testing = false;
+                          controller.text = ApiConfig.baseUrl;
+                          testResult = ok
+                              ? 'Success: Connected to ${ApiConfig.baseUrl}'
+                              : 'Could not reach server. Verify backend is running on 0.0.0.0:8000';
+                        });
+                        setState(() {});
+                      }
+                    },
+              child: const Text('Auto-Detect', style: TextStyle(color: AppColors.purpleLight)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.purple),
+              onPressed: testing
+                  ? null
+                  : () async {
+                      setDialogState(() {
+                        testing = true;
+                        testResult = 'Testing connection...';
+                      });
+                      ApiConfig.setCustomUrl(controller.text);
+                      final ok = await ApiConfig.resolve();
+                      if (ctx.mounted) {
+                        setDialogState(() {
+                          testing = false;
+                          testResult = ok
+                              ? 'Success: Connected to ${ApiConfig.baseUrl}'
+                              : 'Connection failed. Please check IP or firewall.';
+                        });
+                        setState(() {});
+                        if (ok) {
+                          Future.delayed(const Duration(milliseconds: 600), () {
+                            if (ctx.mounted) Navigator.of(ctx).pop();
+                          });
+                        }
+                      }
+                    },
+              child: testing
+                  ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : const Text('Save & Test', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _submit() async {
     final isValid = _formKey.currentState!.validate();
     if (!isValid) {
@@ -47,7 +167,23 @@ class _LoginScreenState extends State<LoginScreen> {
       Navigator.of(context).pushReplacementNamed('/home');
     } on ApiException catch (e) {
       if (!mounted) return;
-      showStoraSnackBar(context, e.message);
+      final isNetwork = e.message.toLowerCase().contains('reach') ||
+          e.message.toLowerCase().contains('timed out');
+      if (isNetwork) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.message),
+            backgroundColor: AppColors.error,
+            action: SnackBarAction(
+              label: 'Settings',
+              textColor: Colors.white,
+              onPressed: _showServerDialog,
+            ),
+          ),
+        );
+      } else {
+        showStoraSnackBar(context, e.message);
+      }
     } catch (e) {
       if (!mounted) return;
       showStoraSnackBar(context, e.toString());
@@ -70,6 +206,34 @@ class _LoginScreenState extends State<LoginScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  // Server connection button / pill
+                  Align(
+                    alignment: Alignment.topRight,
+                    child: InkWell(
+                      onTap: _showServerDialog,
+                      borderRadius: BorderRadius.circular(20),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1E1827),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: const Color(0xFF332A40)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.dns_rounded, size: 13, color: AppColors.label),
+                            const SizedBox(width: 6),
+                            Text(
+                              ApiConfig.baseUrl.replaceFirst('http://', '').replaceFirst('/api', ''),
+                              style: const TextStyle(color: AppColors.label, fontSize: 11),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
                   const StoraHeader(),
                   const SizedBox(height: 32),
                   Container(

@@ -34,9 +34,21 @@ class DashboardScreen extends StatelessWidget {
         final lowStockCount = store.lowStock.length;
 
         return SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
-            child: Column(
+          child: RefreshIndicator(
+            color: AppColors.purpleLight,
+            backgroundColor: HomeColors.cardBackground,
+            onRefresh: () async {
+              await Future.wait([
+                store.loadProducts(),
+                sales.loadSales(),
+                orders.fetchOrders(),
+                AccountStatusStore.instance.fetchStatus(),
+              ]);
+            },
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+              child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Row(
@@ -242,8 +254,9 @@ class DashboardScreen extends StatelessWidget {
               ],
             ),
           ),
-        );
-      },
+        ),
+      );
+    },
     );
   }
 }
@@ -259,14 +272,25 @@ class _EarningsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(22),
       child: Container(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(22),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          gradient: HomeColors.heroGradient,
-          border: Border.all(color: Colors.white.withValues(alpha: 0.12), width: 1),
-          boxShadow: HomeColors.cardShadow,
+          borderRadius: BorderRadius.circular(22),
+          gradient: const LinearGradient(
+            colors: [Color(0xFF8B5CF6), Color(0xFF6D28D9), Color(0xFF201733)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.18), width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF7C3AED).withValues(alpha: 0.28),
+              blurRadius: 24,
+              offset: const Offset(0, 8),
+            ),
+            ...HomeColors.cardShadow,
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -277,38 +301,46 @@ class _EarningsCard extends StatelessWidget {
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(6),
+                      padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(8),
+                        color: Colors.white.withValues(alpha: 0.16),
+                        borderRadius: BorderRadius.circular(10),
                       ),
-                      child: const Icon(Icons.payments_rounded, color: Colors.white, size: 16),
+                      child: const Icon(Icons.payments_rounded, color: Colors.white, size: 18),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 10),
                     const Text("Today's Total Earnings",
-                        style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
+                        style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700, letterSpacing: 0.2)),
                   ],
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
+                    color: Colors.white.withValues(alpha: 0.22),
                     borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.2), width: 0.8),
                   ),
                   child: Text(badge, style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w800)),
                 ),
               ],
             ),
-            const SizedBox(height: 14),
-            Text(amount, style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.w900, letterSpacing: -0.5)),
-            const SizedBox(height: 6),
+            const SizedBox(height: 16),
+            Text(amount, style: const TextStyle(color: Colors.white, fontSize: 34, fontWeight: FontWeight.w900, letterSpacing: -0.8)),
+            const SizedBox(height: 8),
             Row(
               children: [
                 Expanded(
                   child: Text(subtitle, style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500)),
                 ),
                 if (onTap != null)
-                  const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white70, size: 14),
+                  Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 12),
+                  ),
               ],
             ),
           ],
@@ -339,11 +371,11 @@ class _StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: HomeColors.cardBackground,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: HomeColors.cardBorder),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: HomeColors.cardBorder.withValues(alpha: 0.8)),
         boxShadow: HomeColors.cardShadow,
       ),
       child: Column(
@@ -354,8 +386,15 @@ class _StatCard extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Icon(icon, size: 16, color: badgeColor),
-                  const SizedBox(width: 6),
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: badgeBg,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(icon, size: 16, color: badgeColor),
+                  ),
+                  const SizedBox(width: 8),
                   Text(title, style: const TextStyle(color: AppColors.label, fontSize: 13, fontWeight: FontWeight.w600)),
                 ],
               ),
@@ -366,8 +405,8 @@ class _StatCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          Text(value, style: TextStyle(color: valueColor, fontSize: 26, fontWeight: FontWeight.w900)),
+          const SizedBox(height: 14),
+          Text(value, style: TextStyle(color: valueColor, fontSize: 26, fontWeight: FontWeight.w900, letterSpacing: -0.5)),
         ],
       ),
     );
@@ -496,36 +535,37 @@ class _IncomingOrdersCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
         decoration: BoxDecoration(
           color: hasPending ? HomeColors.cardBackground : HomeColors.cardElevated,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: hasPending ? AppColors.purpleLight : Colors.white10,
+            color: hasPending ? AppColors.purpleLight : HomeColors.cardBorder,
             width: hasPending ? 1.5 : 1,
           ),
           boxShadow: hasPending
               ? [
                   BoxShadow(
-                    color: AppColors.purple.withValues(alpha: 0.2),
-                    blurRadius: 12,
+                    color: AppColors.purple.withValues(alpha: 0.25),
+                    blurRadius: 16,
                     offset: const Offset(0, 4),
                   ),
+                  ...HomeColors.cardShadow,
                 ]
-              : null,
+              : HomeColors.cardShadow,
         ),
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: hasPending ? AppColors.purpleLight.withValues(alpha: 0.2) : Colors.white10,
-                shape: BoxShape.circle,
+                color: hasPending ? AppColors.purpleLight.withValues(alpha: 0.18) : Colors.white10,
+                borderRadius: BorderRadius.circular(14),
               ),
               child: Icon(
                 Icons.shopping_bag_outlined,
                 color: hasPending ? AppColors.purpleLight : AppColors.label,
-                size: 20,
+                size: 22,
               ),
             ),
             const SizedBox(width: 14),
@@ -541,20 +581,22 @@ class _IncomingOrdersCard extends StatelessWidget {
                           color: Colors.white,
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
+                          letterSpacing: -0.2,
                         ),
                       ),
                       if (hasPending) ...[
                         const SizedBox(width: 8),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
-                            color: AppColors.purpleLight,
-                            borderRadius: BorderRadius.circular(10),
+                            gradient: HomeColors.purpleGradient,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: HomeColors.glowShadow(AppColors.purple, opacity: 0.4),
                           ),
                           child: const Text(
                             'NEW',
                             style: TextStyle(
-                              color: Colors.white,
+                              color: Colors.black,
                               fontSize: 9,
                               fontWeight: FontWeight.w900,
                             ),
@@ -563,7 +605,7 @@ class _IncomingOrdersCard extends StatelessWidget {
                       ],
                     ],
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 3),
                   Text(
                     hasPending
                         ? 'Tap to review, accept, or counter-offer'
@@ -577,10 +619,17 @@ class _IncomingOrdersCard extends StatelessWidget {
                 ],
               ),
             ),
-            Icon(
-              Icons.chevron_right_rounded,
-              color: hasPending ? AppColors.purpleLight : AppColors.label,
-              size: 20,
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: hasPending ? AppColors.purple.withValues(alpha: 0.15) : Colors.transparent,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.arrow_forward_ios_rounded,
+                color: hasPending ? AppColors.purpleLight : AppColors.label,
+                size: 14,
+              ),
             ),
           ],
         ),

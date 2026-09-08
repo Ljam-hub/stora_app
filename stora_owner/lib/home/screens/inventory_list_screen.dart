@@ -79,25 +79,39 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
                   child: TextField(
                     controller: _searchController,
                     onChanged: (v) => setState(() => _query = v),
-                    style: const TextStyle(color: Colors.white),
+                    style: const TextStyle(color: Colors.white, fontSize: 14),
                     decoration: InputDecoration(
-                      hintText: 'Search products...',
-                      hintStyle: const TextStyle(color: AppColors.hint),
-                      prefixIcon: const Icon(Icons.search, color: AppColors.label),
-                      suffixIcon: IconButton(
-                        icon: const Icon(Icons.qr_code_scanner, color: AppColors.purple),
-                        onPressed: _onScan,
+                      hintText: 'Search products by name or barcode...',
+                      hintStyle: const TextStyle(color: AppColors.hint, fontSize: 14),
+                      prefixIcon: const Icon(Icons.search_rounded, color: AppColors.label, size: 20),
+                      suffixIcon: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (_query.isNotEmpty)
+                            IconButton(
+                              icon: const Icon(Icons.clear_rounded, color: AppColors.hint, size: 18),
+                              onPressed: () {
+                                _searchController.clear();
+                                setState(() => _query = '');
+                              },
+                            ),
+                          IconButton(
+                            icon: const Icon(Icons.qr_code_scanner_rounded, color: AppColors.purpleLight),
+                            onPressed: _onScan,
+                          ),
+                          const SizedBox(width: 4),
+                        ],
                       ),
                       filled: true,
                       fillColor: HomeColors.cardBackground,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                      contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
                       enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: const BorderSide(color: AppColors.fieldBorder),
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: const BorderSide(color: HomeColors.cardBorder),
                       ),
                       focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: const BorderSide(color: AppColors.purple),
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: const BorderSide(color: AppColors.purpleLight, width: 1.5),
                       ),
                     ),
                   ),
@@ -116,87 +130,104 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
                   ),
                 const SizedBox(height: 12),
                 Expanded(
-                  child: products.isEmpty
-                      ? Center(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 32),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(20),
-                                  decoration: BoxDecoration(
-                                    color: HomeColors.cardElevated,
-                                    shape: BoxShape.circle,
-                                    border: Border.all(color: HomeColors.cardBorder),
-                                  ),
-                                  child: const Icon(Icons.inventory_2_outlined, size: 48, color: AppColors.purpleLight),
-                                ),
-                                const SizedBox(height: 18),
-                                Text(
-                                  _query.isNotEmpty ? 'No products match "$_query"' : 'No products in inventory yet',
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  _query.isNotEmpty
-                                      ? 'Try searching with a different keyword or barcode'
-                                      : 'Tap the button below to add your first product.',
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(color: AppColors.label, fontSize: 13),
-                                ),
-                                if (_query.isEmpty) ...[
-                                  const SizedBox(height: 20),
-                                  ElevatedButton.icon(
-                                    onPressed: () {
-                                      if (!AccountStatusStore.instance.canAddProduct) {
-                                        Navigator.of(context).push(
-                                          MaterialPageRoute(
-                                            builder: (_) => SubscriptionScreen(
-                                              productsUsed: AccountStatusStore.instance.productCount,
-                                              productsLimit: AccountStatusStore.instance.productLimit,
+                  child: RefreshIndicator(
+                    color: AppColors.purpleLight,
+                    backgroundColor: HomeColors.cardBackground,
+                    onRefresh: () => InventoryStore.instance.loadProducts(),
+                    child: products.isEmpty
+                        ? LayoutBuilder(
+                            builder: (context, constraints) => SingleChildScrollView(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              child: ConstrainedBox(
+                                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                                child: Center(
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 32),
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.all(20),
+                                          decoration: BoxDecoration(
+                                            color: HomeColors.cardElevated,
+                                            shape: BoxShape.circle,
+                                            border: Border.all(color: HomeColors.cardBorder),
+                                          ),
+                                          child: const Icon(Icons.inventory_2_outlined, size: 48, color: AppColors.purpleLight),
+                                        ),
+                                        const SizedBox(height: 18),
+                                        Text(
+                                          _query.isNotEmpty ? 'No products match "$_query"' : 'No products in inventory yet',
+                                          textAlign: TextAlign.center,
+                                          style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          _query.isNotEmpty
+                                              ? 'Try searching with a different keyword or barcode'
+                                              : 'Tap the button below to add your first product.',
+                                          textAlign: TextAlign.center,
+                                          style: const TextStyle(color: AppColors.label, fontSize: 13),
+                                        ),
+                                        if (_query.isEmpty) ...[
+                                          const SizedBox(height: 20),
+                                          ElevatedButton.icon(
+                                            onPressed: () {
+                                              if (!AccountStatusStore.instance.canAddProduct) {
+                                                Navigator.of(context).push(
+                                                  MaterialPageRoute(
+                                                    builder: (_) => SubscriptionScreen(
+                                                      productsUsed: AccountStatusStore.instance.productCount,
+                                                      productsLimit: AccountStatusStore.instance.productLimit,
+                                                    ),
+                                                  ),
+                                                );
+                                              } else {
+                                                Navigator.of(context).push(
+                                                  MaterialPageRoute(builder: (_) => const AddEditProductScreen()),
+                                                );
+                                              }
+                                            },
+                                            icon: const Icon(Icons.add, size: 18, color: Colors.black),
+                                            label: const Text('Add Product', style: TextStyle(color: Colors.black, fontWeight: FontWeight.w800)),
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: AppColors.purpleLight,
+                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                                             ),
                                           ),
-                                        );
-                                      } else {
-                                        Navigator.of(context).push(
-                                          MaterialPageRoute(builder: (_) => const AddEditProductScreen()),
-                                        );
-                                      }
-                                    },
-                                    icon: const Icon(Icons.add, size: 18, color: Colors.black),
-                                    label: const Text('Add Product', style: TextStyle(color: Colors.black, fontWeight: FontWeight.w800)),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: AppColors.purpleLight,
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                                        ],
+                                      ],
                                     ),
                                   ),
-                                ],
-                              ],
+                                ),
+                              ),
                             ),
+                          )
+                        : GridView.builder(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            padding: const EdgeInsets.fromLTRB(20, 0, 20, 90),
+                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              mainAxisSpacing: 14,
+                              crossAxisSpacing: 14,
+                              childAspectRatio: 0.74,
+                            ),
+                            itemCount: products.length,
+                            itemBuilder: (context, i) {
+                              // On free plan, items beyond the plan limit are locked
+                              final freeLimit = AccountStatusStore.instance.productLimit > 0
+                                  ? AccountStatusStore.instance.productLimit
+                                  : 20;
+                              final allIdx = InventoryStore.instance.products.indexOf(products[i]);
+                              final isLocked = !isPremium && (allIdx >= freeLimit || (allIdx == -1 && i >= freeLimit));
+                              return ProductCard(
+                                product: products[i],
+                                isLocked: isLocked,
+                              );
+                            },
                           ),
-                        )
-                      : GridView.builder(
-                          padding: const EdgeInsets.fromLTRB(20, 0, 20, 90),
-                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            mainAxisSpacing: 14,
-                            crossAxisSpacing: 14,
-                            childAspectRatio: 0.74,
-                          ),
-                          itemCount: products.length,
-                          itemBuilder: (context, i) {
-                            // On free plan, items after first 20 products in the store are locked
-                            final allIdx = InventoryStore.instance.products.indexOf(products[i]);
-                            final isLocked = !isPremium && (allIdx >= 20 || (allIdx == -1 && i >= 20));
-                            return ProductCard(
-                              product: products[i],
-                              isLocked: isLocked,
-                            );
-                          },
-                        ),
+                  ),
                 ),
               ],
             ),
@@ -304,7 +335,7 @@ class ProductCard extends StatelessWidget {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: HomeColors.cardBackground,
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(20),
                 border: Border.all(color: isOutOfStock ? AppColors.error.withValues(alpha: 0.3) : HomeColors.cardBorder),
                 boxShadow: HomeColors.cardShadow,
               ),
@@ -312,45 +343,55 @@ class ProductCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
-                    child: Container(
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        color: AppColors.fieldBackground,
-                        borderRadius: BorderRadius.circular(14),
-                        image: product.imageBytes != null
-                            ? DecorationImage(image: MemoryImage(product.imageBytes!), fit: BoxFit.cover)
-                            : null,
-                      ),
-                      child: product.imageBytes == null
-                          ? const Center(
-                              child: Icon(Icons.inventory_2_outlined, color: AppColors.hint, size: 30),
-                            )
-                          : null,
+                    child: Stack(
+                      children: [
+                        Container(
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: HomeColors.cardElevated,
+                            borderRadius: BorderRadius.circular(14),
+                            image: product.imageBytes != null
+                                ? DecorationImage(image: MemoryImage(product.imageBytes!), fit: BoxFit.cover)
+                                : null,
+                          ),
+                          child: product.imageBytes == null
+                              ? const Center(
+                                  child: Icon(Icons.inventory_2_outlined, color: AppColors.label, size: 30),
+                                )
+                              : null,
+                        ),
+                        if (isOutOfStock)
+                          Positioned(
+                            top: 6,
+                            left: 6,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: HomeColors.dangerBg.withValues(alpha: 0.9),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: const Text('OUT OF STOCK',
+                                  style: TextStyle(color: AppColors.error, fontSize: 8, fontWeight: FontWeight.w900)),
+                            ),
+                          )
+                        else if (isLowStock)
+                          Positioned(
+                            top: 6,
+                            left: 6,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: HomeColors.warningBg.withValues(alpha: 0.9),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text('LOW (${product.stock})',
+                                  style: const TextStyle(color: HomeColors.warningText, fontSize: 8, fontWeight: FontWeight.w900)),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
                   const SizedBox(height: 8),
-                  if (isOutOfStock)
-                    Container(
-                      margin: const EdgeInsets.only(bottom: 4),
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: HomeColors.dangerBg,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: const Text('OUT OF STOCK',
-                          style: TextStyle(color: AppColors.error, fontSize: 9, fontWeight: FontWeight.w800)),
-                    )
-                  else if (isLowStock)
-                    Container(
-                      margin: const EdgeInsets.only(bottom: 4),
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: HomeColors.warningBg,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text('LOW STOCK (${product.stock})',
-                          style: const TextStyle(color: HomeColors.warningText, fontSize: 9, fontWeight: FontWeight.w800)),
-                    ),
                   Text(
                     product.name,
                     maxLines: 1,
@@ -374,30 +415,38 @@ class ProductCard extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(color: AppColors.purpleLight, fontSize: 13, fontWeight: FontWeight.w800)),
                       ),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          StockStepButton(
-                            icon: Icons.remove,
-                            onTap: isLocked ? () {} : () => InventoryStore.instance.adjustStock(product.id, -1),
-                            disabled: isLocked,
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 6),
-                            child: Text('${product.stock}',
-                                style: TextStyle(
-                                    color: isOutOfStock ? AppColors.error : isLowStock ? HomeColors.warningText : Colors.white,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w800)),
-                          ),
-                          StockStepButton(
-                            icon: Icons.add,
-                            onTap: (isLocked || product.stock >= kMaxStock)
-                                ? () {}
-                                : () => InventoryStore.instance.adjustStock(product.id, 1),
-                            disabled: isLocked || product.stock >= kMaxStock,
-                          ),
-                        ],
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: HomeColors.cardElevated,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: HomeColors.cardBorderLight.withValues(alpha: 0.4)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            StockStepButton(
+                              icon: Icons.remove,
+                              onTap: isLocked ? () {} : () => InventoryStore.instance.adjustStock(product.id, -1),
+                              disabled: isLocked,
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 6),
+                              child: Text('${product.stock}',
+                                  style: TextStyle(
+                                      color: isOutOfStock ? AppColors.error : isLowStock ? HomeColors.warningText : Colors.white,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w800)),
+                            ),
+                            StockStepButton(
+                              icon: Icons.add,
+                              onTap: (isLocked || product.stock >= kMaxStock)
+                                  ? () {}
+                                  : () => InventoryStore.instance.adjustStock(product.id, 1),
+                              disabled: isLocked || product.stock >= kMaxStock,
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),

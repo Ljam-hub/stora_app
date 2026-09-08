@@ -38,10 +38,16 @@ class AppColors {
     end: Alignment.bottomRight,
   );
 
+  static const meshGradient = LinearGradient(
+    colors: [Color(0xFF2A1C46), Color(0xFF1D1430), Color(0xFF120E1C)],
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+  );
+
   static const cardShadow = [
     BoxShadow(
       color: Color(0x33000000),
-      blurRadius: 12,
+      blurRadius: 16,
       offset: Offset(0, 4),
     ),
   ];
@@ -49,7 +55,7 @@ class AppColors {
   static List<BoxShadow> glowShadow(Color color, {double opacity = 0.25}) => [
         BoxShadow(
           color: color.withValues(alpha: opacity),
-          blurRadius: 14,
+          blurRadius: 16,
           offset: const Offset(0, 4),
         ),
       ];
@@ -90,7 +96,7 @@ class AppTheme {
         color: AppColors.cardBackground,
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(20),
           side: const BorderSide(color: AppColors.cardBorder, width: 1),
         ),
       ),
@@ -100,19 +106,19 @@ class AppTheme {
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 14),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           borderSide: const BorderSide(color: AppColors.cardBorder),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           borderSide: const BorderSide(color: AppColors.cardBorder),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           borderSide: const BorderSide(color: AppColors.danger),
         ),
       ),
@@ -121,12 +127,13 @@ class AppTheme {
           backgroundColor: AppColors.primary,
           foregroundColor: Colors.black,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+          elevation: 0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(14),
           ),
           textStyle: const TextStyle(
             fontSize: 15,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w700,
           ),
         ),
       ),

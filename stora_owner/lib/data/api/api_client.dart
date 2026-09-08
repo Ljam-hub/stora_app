@@ -162,8 +162,8 @@ class ApiClient {
     } on ApiException {
       // If the current host failed to connect, attempt re-resolution across candidates
       final currentBase = ApiConfig.baseUrl;
-      await ApiConfig.resolve();
-      if (ApiConfig.baseUrl != currentBase) {
+      final reResolved = await ApiConfig.resolve();
+      if (reResolved || ApiConfig.baseUrl != currentBase) {
         response = await _dispatch(method, _uri(path), await _headers(auth: auth), encoded);
       } else {
         rethrow;
@@ -464,6 +464,12 @@ class ApiClient {
 
   Future<Map<String, dynamic>> acceptOrder(int orderId) async {
     final response = await _send('POST', '/orders/$orderId/accept/');
+    if (response.statusCode != 200) _throw(response);
+    return _decode(response) as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> markOrderReady(int orderId) async {
+    final response = await _send('POST', '/orders/$orderId/ready/');
     if (response.statusCode != 200) _throw(response);
     return _decode(response) as Map<String, dynamic>;
   }

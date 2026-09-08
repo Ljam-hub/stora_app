@@ -88,35 +88,49 @@ class SalesHistoryScreen extends StatelessWidget {
                   child: _HistorySummaryCard(sales: sales),
                 ),
                 Expanded(
-                  child: sales.isEmpty
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(20),
-                                decoration: BoxDecoration(
-                                  color: HomeColors.cardElevated,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(color: HomeColors.cardBorder),
+                  child: RefreshIndicator(
+                    color: AppColors.purpleLight,
+                    backgroundColor: HomeColors.cardBackground,
+                    onRefresh: () => SalesStore.instance.loadSales(),
+                    child: sales.isEmpty
+                        ? LayoutBuilder(
+                            builder: (context, constraints) => SingleChildScrollView(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              child: ConstrainedBox(
+                                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                                child: Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.all(20),
+                                        decoration: BoxDecoration(
+                                          color: HomeColors.cardElevated,
+                                          shape: BoxShape.circle,
+                                          border: Border.all(color: HomeColors.cardBorder),
+                                        ),
+                                        child: const Icon(Icons.receipt_long_outlined, size: 48, color: AppColors.purpleLight),
+                                      ),
+                                      const SizedBox(height: 16),
+                                      const Text('No sales recorded yet',
+                                          style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700)),
+                                      const SizedBox(height: 6),
+                                      const Text('Complete a sale from POS to see it here.',
+                                          style: TextStyle(color: AppColors.label, fontSize: 13)),
+                                    ],
+                                  ),
                                 ),
-                                child: const Icon(Icons.receipt_long_outlined, size: 48, color: AppColors.purpleLight),
                               ),
-                              const SizedBox(height: 16),
-                              const Text('No sales recorded yet',
-                                  style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700)),
-                              const SizedBox(height: 6),
-                              const Text('Complete a sale from POS to see it here.',
-                                  style: TextStyle(color: AppColors.label, fontSize: 13)),
-                            ],
+                            ),
+                          )
+                        : ListView.separated(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                            itemCount: sales.length,
+                            separatorBuilder: (_, _) => const SizedBox(height: 12),
+                            itemBuilder: (context, i) => _SaleCard(sale: sales[i]),
                           ),
-                        )
-                      : ListView.separated(
-                          padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-                          itemCount: sales.length,
-                          separatorBuilder: (_, _) => const SizedBox(height: 12),
-                          itemBuilder: (context, i) => _SaleCard(sale: sales[i]),
-                        ),
+                  ),
                 ),
               ],
             ),

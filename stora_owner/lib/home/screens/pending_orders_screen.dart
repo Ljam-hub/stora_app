@@ -34,12 +34,6 @@ class _PendingOrdersScreenState extends State<PendingOrdersScreen> {
           'Customer Orders',
           style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded, color: AppColors.purpleLight),
-            onPressed: () => OrdersStore.instance.fetchOrders(),
-          ),
-        ],
       ),
       body: AnimatedBuilder(
         animation: OrdersStore.instance,
@@ -53,30 +47,43 @@ class _PendingOrdersScreenState extends State<PendingOrdersScreen> {
           }
 
           if (store.error != null && store.orders.isEmpty) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.cloud_off_rounded, color: HomeColors.dangerText, size: 48),
-                    const SizedBox(height: 12),
-                    Text(
-                      store.error!,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(color: AppColors.label, fontSize: 14),
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.purpleLight,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            return RefreshIndicator(
+              color: AppColors.purpleLight,
+              backgroundColor: HomeColors.cardBackground,
+              onRefresh: () => store.fetchOrders(),
+              child: LayoutBuilder(
+                builder: (context, constraints) => SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                    child: Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.cloud_off_rounded, color: HomeColors.dangerText, size: 48),
+                            const SizedBox(height: 12),
+                            Text(
+                              store.error!,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(color: AppColors.label, fontSize: 14),
+                            ),
+                            const SizedBox(height: 16),
+                            ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.purpleLight,
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              ),
+                              onPressed: () => store.fetchOrders(),
+                              child: const Text('Try Again'),
+                            ),
+                          ],
+                        ),
                       ),
-                      onPressed: () => store.fetchOrders(),
-                      child: const Text('Try Again'),
                     ),
-                  ],
+                  ),
                 ),
               ),
             );
@@ -84,7 +91,7 @@ class _PendingOrdersScreenState extends State<PendingOrdersScreen> {
 
           final allOrders = store.orders;
           final displayedOrders = _filter == 'pending'
-              ? allOrders.where((o) => o['status'] == 'pending' || o['status'] == 'counter_offer').toList()
+              ? allOrders.where((o) => o['status'] == 'pending' || o['status'] == 'counter_offer' || o['status'] == 'accepted').toList()
               : allOrders;
 
           return RefreshIndicator(
@@ -92,6 +99,7 @@ class _PendingOrdersScreenState extends State<PendingOrdersScreen> {
             backgroundColor: HomeColors.cardBackground,
             onRefresh: () => store.fetchOrders(),
             child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
               children: [
                 // Filter chips
@@ -222,6 +230,8 @@ class _OrderCardState extends State<_OrderCard> {
 
   Color get _statusColor {
     switch (status) {
+      case 'ready':
+        return const Color(0xFF00E676);
       case 'accepted':
         return HomeColors.successText;
       case 'declined':
@@ -236,8 +246,10 @@ class _OrderCardState extends State<_OrderCard> {
 
   String get _statusLabel {
     switch (status) {
+      case 'ready':
+        return 'READY FOR PICKUP';
       case 'accepted':
-        return 'ACCEPTED';
+        return 'ACCEPTED (PREPARING)';
       case 'declined':
         return 'DECLINED';
       case 'auto_declined':
@@ -267,6 +279,32 @@ class _OrderCardState extends State<_OrderCard> {
           SnackBar(
             backgroundColor: HomeColors.dangerBg,
             content: Text('Failed to accept order: $e'),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isProcessing = false);
+    }
+  }
+
+  Future<void> _handleMarkReady() async {
+    setState(() => _isProcessing = true);
+    try {
+      await OrdersStore.instance.markOrderReady(orderId);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: HomeColors.successBg,
+            content: Text('Order #$orderId marked as ready! Customer notified for pickup.'),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: HomeColors.dangerBg,
+            content: Text('Failed to mark order as ready: $e'),
           ),
         );
       }
@@ -462,22 +500,58 @@ class _OrderCardState extends State<_OrderCard> {
     final isPending = status == 'pending' || status == 'counter_offer';
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 14),
+      margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: HomeColors.cardBackground,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: isPending ? AppColors.purpleLight.withValues(alpha: 0.3) : Colors.white10,
+          color: isPending ? AppColors.purpleLight.withValues(alpha: 0.35) : Colors.white.withValues(alpha: 0.08),
         ),
+        boxShadow: isPending ? HomeColors.glowShadow(AppColors.purpleLight) : HomeColors.cardShadow,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Header
+          // Header with Avatar & Details
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Customer Avatar Circle
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      colors: [
+                        AppColors.purpleLight.withValues(alpha: 0.8),
+                        const Color(0xFF6366F1),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.purpleLight.withValues(alpha: 0.25),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Center(
+                    child: Text(
+                      customerName.isNotEmpty ? customerName[0].toUpperCase() : 'C',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -490,6 +564,7 @@ class _OrderCardState extends State<_OrderCard> {
                               color: Colors.white,
                               fontSize: 16,
                               fontWeight: FontWeight.w800,
+                              letterSpacing: -0.2,
                             ),
                           ),
                           const SizedBox(width: 8),
@@ -497,7 +572,11 @@ class _OrderCardState extends State<_OrderCard> {
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                             decoration: BoxDecoration(
                               color: _statusColor.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(6),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: _statusColor.withValues(alpha: 0.3),
+                                width: 0.8,
+                              ),
                             ),
                             child: Text(
                               _statusLabel,
@@ -505,12 +584,13 @@ class _OrderCardState extends State<_OrderCard> {
                                 color: _statusColor,
                                 fontSize: 10,
                                 fontWeight: FontWeight.w800,
+                                letterSpacing: 0.5,
                               ),
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 3),
                       Text(
                         customerName,
                         style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
@@ -524,6 +604,7 @@ class _OrderCardState extends State<_OrderCard> {
                     color: Colors.white,
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
+                    letterSpacing: -0.3,
                   ),
                 ),
               ],
@@ -534,10 +615,11 @@ class _OrderCardState extends State<_OrderCard> {
           if (customerPhone.isNotEmpty || customerAddress.isNotEmpty || notes.isNotEmpty)
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: HomeColors.cardElevated,
-                borderRadius: BorderRadius.circular(10),
+                color: HomeColors.cardElevated.withValues(alpha: 0.6),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -545,18 +627,18 @@ class _OrderCardState extends State<_OrderCard> {
                   if (customerPhone.isNotEmpty)
                     Row(
                       children: [
-                        const Icon(Icons.phone_rounded, color: AppColors.label, size: 14),
-                        const SizedBox(width: 6),
-                        Text(customerPhone, style: const TextStyle(color: AppColors.label, fontSize: 12)),
+                        const Icon(Icons.phone_rounded, color: AppColors.purpleLight, size: 14),
+                        const SizedBox(width: 8),
+                        Text(customerPhone, style: const TextStyle(color: AppColors.label, fontSize: 12, fontWeight: FontWeight.w500)),
                       ],
                     ),
                   if (customerAddress.isNotEmpty) ...[
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 6),
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(Icons.location_on_rounded, color: AppColors.label, size: 14),
-                        const SizedBox(width: 6),
+                        const Icon(Icons.location_on_rounded, color: AppColors.purpleLight, size: 14),
+                        const SizedBox(width: 8),
                         Expanded(
                           child: Text(customerAddress, style: const TextStyle(color: AppColors.label, fontSize: 12)),
                         ),
@@ -564,12 +646,12 @@ class _OrderCardState extends State<_OrderCard> {
                     ),
                   ],
                   if (notes.isNotEmpty) ...[
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 6),
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(Icons.notes_rounded, color: AppColors.label, size: 14),
-                        const SizedBox(width: 6),
+                        const Icon(Icons.notes_rounded, color: Color(0xFFFFA726), size: 14),
+                        const SizedBox(width: 8),
                         Expanded(
                           child: Text('Note: "$notes"', style: const TextStyle(color: Colors.white70, fontSize: 12, fontStyle: FontStyle.italic)),
                         ),
@@ -582,14 +664,22 @@ class _OrderCardState extends State<_OrderCard> {
 
           // Items Divider & Toggle
           InkWell(
+            borderRadius: BorderRadius.circular(12),
             onTap: () => setState(() => _isExpanded = !_isExpanded),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               child: Row(
                 children: [
-                  Text(
-                    '${items.length} ${items.length == 1 ? 'item' : 'items'}',
-                    style: const TextStyle(color: AppColors.label, fontSize: 12, fontWeight: FontWeight.w600),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.06),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      '${items.length} ${items.length == 1 ? 'item' : 'items'}',
+                      style: const TextStyle(color: AppColors.label, fontSize: 11, fontWeight: FontWeight.w700),
+                    ),
                   ),
                   const Spacer(),
                   Icon(
@@ -617,24 +707,24 @@ class _OrderCardState extends State<_OrderCard> {
                     child: Row(
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                           decoration: BoxDecoration(
-                            color: Colors.white10,
-                            borderRadius: BorderRadius.circular(4),
+                            color: AppColors.purpleLight.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
                             '${qty}x',
-                            style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700),
+                            style: const TextStyle(color: AppColors.purpleLight, fontSize: 12, fontWeight: FontWeight.w700),
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 10),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
                                 name,
-                                style: const TextStyle(color: Colors.white, fontSize: 13),
+                                style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500),
                               ),
                               Text(
                                 '₱$price each',
@@ -654,7 +744,7 @@ class _OrderCardState extends State<_OrderCard> {
               ),
             ),
 
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
 
           // Action Buttons for Pending Orders
           if (isPending)
@@ -674,9 +764,9 @@ class _OrderCardState extends State<_OrderCard> {
                           child: OutlinedButton(
                             style: OutlinedButton.styleFrom(
                               foregroundColor: HomeColors.dangerText,
-                              side: const BorderSide(color: HomeColors.dangerText),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              side: BorderSide(color: HomeColors.dangerText.withValues(alpha: 0.6)),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                              padding: const EdgeInsets.symmetric(vertical: 13),
                             ),
                             onPressed: _showDeclineDialog,
                             child: const Text('Decline', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
@@ -688,9 +778,9 @@ class _OrderCardState extends State<_OrderCard> {
                           child: OutlinedButton(
                             style: OutlinedButton.styleFrom(
                               foregroundColor: const Color(0xFFFFA726),
-                              side: const BorderSide(color: Color(0xFFFFA726)),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              side: BorderSide(color: const Color(0xFFFFA726).withValues(alpha: 0.6)),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                              padding: const EdgeInsets.symmetric(vertical: 13),
                             ),
                             onPressed: _showCounterDialog,
                             child: const Text('Counter', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
@@ -704,14 +794,46 @@ class _OrderCardState extends State<_OrderCard> {
                             style: ElevatedButton.styleFrom(
                               backgroundColor: HomeColors.successText,
                               foregroundColor: Colors.black,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                              padding: const EdgeInsets.symmetric(vertical: 13),
+                              elevation: 0,
                             ),
                             onPressed: _handleAccept,
                             child: const Text('Accept Order', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
                           ),
                         ),
                       ],
+                    ),
+            ),
+
+          // Action Button for Accepted Orders (Mark as Ready)
+          if (status == 'accepted')
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: _isProcessing
+                  ? const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(8.0),
+                        child: CircularProgressIndicator(color: AppColors.purpleLight),
+                      ),
+                    )
+                  : SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        icon: const Icon(Icons.done_all_rounded, size: 18),
+                        label: const Text(
+                          'Mark as Ready for Pickup',
+                          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF00E676),
+                          foregroundColor: Colors.black,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          padding: const EdgeInsets.symmetric(vertical: 13),
+                          elevation: 0,
+                        ),
+                        onPressed: _handleMarkReady,
+                      ),
                     ),
             ),
         ],

@@ -103,34 +103,56 @@ class _ShopScreenState extends State<ShopScreen> {
       ),
       body: RefreshIndicator(
         color: AppColors.primary,
+        backgroundColor: AppColors.cardElevated,
         onRefresh: () => catalog.refresh(),
         child: Column(
           children: [
             // Search Bar & Store Selector
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-              child: TextField(
-                controller: _searchController,
-                onChanged: (val) => catalog.setSearchQuery(val),
-                style: const TextStyle(color: Colors.white, fontSize: 14),
-                decoration: InputDecoration(
-                  hintText: 'Search products by name or barcode...',
-                  prefixIcon: const Icon(Icons.search, color: AppColors.textMuted, size: 20),
-                  suffixIcon: _searchController.text.isNotEmpty
-                      ? IconButton(
-                          icon: const Icon(Icons.clear, color: AppColors.textMuted, size: 18),
-                          onPressed: () {
-                            _searchController.clear();
-                            catalog.setSearchQuery('');
-                          },
-                        )
-                      : null,
-                  filled: true,
-                  fillColor: AppColors.cardBackground,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(color: AppColors.cardBorder),
+              padding: const EdgeInsets.fromLTRB(16, 6, 16, 10),
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.2),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: TextField(
+                  controller: _searchController,
+                  onChanged: (val) => catalog.setSearchQuery(val),
+                  style: const TextStyle(color: Colors.white, fontSize: 14),
+                  decoration: InputDecoration(
+                    hintText: 'Search products by name or barcode...',
+                    hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+                    prefixIcon: const Icon(Icons.search_rounded, color: AppColors.primary, size: 20),
+                    suffixIcon: _searchController.text.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear_rounded, color: AppColors.textMuted, size: 18),
+                            onPressed: () {
+                              _searchController.clear();
+                              catalog.setSearchQuery('');
+                            },
+                          )
+                        : null,
+                    filled: true,
+                    fillColor: AppColors.cardBackground,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+                    ),
                   ),
                 ),
               ),
@@ -139,7 +161,7 @@ class _ShopScreenState extends State<ShopScreen> {
             // Store Filter Row (if multiple stores exist)
             if (catalog.stores.isNotEmpty) ...[
               SizedBox(
-                height: 36,
+                height: 38,
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -154,14 +176,15 @@ class _ShopScreenState extends State<ShopScreen> {
                           selected: isSelected,
                           onSelected: (_) => catalog.selectStore(null),
                           selectedColor: AppColors.primary,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                           labelStyle: TextStyle(
                             color: isSelected ? Colors.black : AppColors.textSecondary,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                             fontSize: 12,
                           ),
                           backgroundColor: AppColors.cardBackground,
                           side: BorderSide(
-                            color: isSelected ? AppColors.primary : AppColors.cardBorder,
+                            color: isSelected ? AppColors.primary : Colors.white.withValues(alpha: 0.08),
                           ),
                         ),
                       );
@@ -172,7 +195,7 @@ class _ShopScreenState extends State<ShopScreen> {
                       padding: const EdgeInsets.only(right: 8),
                       child: ChoiceChip(
                         avatar: Icon(
-                          Icons.storefront,
+                          Icons.storefront_rounded,
                           size: 14,
                           color: isSelected ? Colors.black : AppColors.primaryLight,
                         ),
@@ -180,21 +203,22 @@ class _ShopScreenState extends State<ShopScreen> {
                         selected: isSelected,
                         onSelected: (_) => catalog.selectStore(store),
                         selectedColor: AppColors.primary,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                         labelStyle: TextStyle(
                           color: isSelected ? Colors.black : AppColors.textSecondary,
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                           fontSize: 12,
                         ),
                         backgroundColor: AppColors.cardBackground,
                         side: BorderSide(
-                          color: isSelected ? AppColors.primary : AppColors.cardBorder,
+                          color: isSelected ? AppColors.primary : Colors.white.withValues(alpha: 0.08),
                         ),
                       ),
                     );
                   },
                 ),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 8),
             ],
 
             // Category Filter Chips
@@ -214,16 +238,17 @@ class _ShopScreenState extends State<ShopScreen> {
                           label: const Text('All Categories'),
                           selected: isSelected,
                           onSelected: (_) => catalog.selectCategory(null),
-                          selectedColor: AppColors.cardElevated,
-                          checkmarkColor: AppColors.primaryLight,
+                          selectedColor: AppColors.primary.withValues(alpha: 0.2),
+                          checkmarkColor: AppColors.primary,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                           labelStyle: TextStyle(
                             color: isSelected ? Colors.white : AppColors.textSecondary,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                             fontSize: 12,
                           ),
                           backgroundColor: AppColors.cardBackground,
                           side: BorderSide(
-                            color: isSelected ? AppColors.primaryLight : AppColors.cardBorder,
+                            color: isSelected ? AppColors.primary : Colors.white.withValues(alpha: 0.08),
                           ),
                         ),
                       );
@@ -236,23 +261,24 @@ class _ShopScreenState extends State<ShopScreen> {
                         label: Text(cat.name),
                         selected: isSelected,
                         onSelected: (_) => catalog.selectCategory(cat),
-                        selectedColor: AppColors.cardElevated,
-                        checkmarkColor: AppColors.primaryLight,
+                        selectedColor: AppColors.primary.withValues(alpha: 0.2),
+                        checkmarkColor: AppColors.primary,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                         labelStyle: TextStyle(
                           color: isSelected ? Colors.white : AppColors.textSecondary,
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                           fontSize: 12,
                         ),
                         backgroundColor: AppColors.cardBackground,
                         side: BorderSide(
-                          color: isSelected ? AppColors.primaryLight : AppColors.cardBorder,
+                          color: isSelected ? AppColors.primary : Colors.white.withValues(alpha: 0.08),
                         ),
                       ),
                     );
                   },
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
             ],
 
             // Product Grid or Empty/Loading State
@@ -262,23 +288,30 @@ class _ShopScreenState extends State<ShopScreen> {
                       child: CircularProgressIndicator(color: AppColors.primary),
                     )
                   : catalog.products.isEmpty
-                      ? EmptyState(
-                          icon: Icons.search_off_rounded,
-                          title: 'No Products Found',
-                          message: catalog.searchQuery.isNotEmpty
-                              ? 'No items matched "${catalog.searchQuery}". Try a different keyword.'
-                              : 'There are no products listed in this category or store yet.',
-                          buttonText: catalog.searchQuery.isNotEmpty ? 'Clear Search' : 'Refresh',
-                          onButtonPressed: () {
-                            if (catalog.searchQuery.isNotEmpty) {
-                              _searchController.clear();
-                              catalog.setSearchQuery('');
-                            } else {
-                              catalog.refresh();
-                            }
-                          },
+                      ? LayoutBuilder(
+                          builder: (context, constraints) => SingleChildScrollView(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            child: ConstrainedBox(
+                              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                              child: EmptyState(
+                                icon: Icons.search_off_rounded,
+                                title: 'No Products Found',
+                                message: catalog.searchQuery.isNotEmpty
+                                    ? 'No items matched "${catalog.searchQuery}". Try a different keyword.'
+                                    : 'There are no products listed here yet. Swipe down to refresh.',
+                                buttonText: catalog.searchQuery.isNotEmpty ? 'Clear Search' : null,
+                                onButtonPressed: catalog.searchQuery.isNotEmpty
+                                    ? () {
+                                        _searchController.clear();
+                                        catalog.setSearchQuery('');
+                                      }
+                                    : null,
+                              ),
+                            ),
+                          ),
                         )
                       : GridView.builder(
+                          physics: const AlwaysScrollableScrollPhysics(),
                           padding: const EdgeInsets.all(16),
                           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: 2,

@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 
 /// Extra palette and styling tokens used across the application.
 class HomeColors {
-  static const navBackground = Color(0xFF18131E);
-  static const cardBackground = Color(0xFF1F1A28);
-  static const cardElevated = Color(0xFF262032);
-  static const surfaceHover = Color(0xFF2E263C);
-  static const cardBorder = Color(0xFF332A40);
-  static const cardBorderLight = Color(0xFF453955);
+  static const navBackground = Color(0xFF130E1B);
+  static const cardBackground = Color(0xFF1B1526);
+  static const cardElevated = Color(0xFF241D32);
+  static const surfaceHover = Color(0xFF2D243E);
+  static const cardBorder = Color(0xFF352B46);
+  static const cardBorderLight = Color(0xFF4C3E63);
   
   static const successText = Color(0xFF4ADE80);
   static const successBg = Color(0xFF132D1B);
@@ -18,6 +18,9 @@ class HomeColors {
   static const dangerBg = Color(0xFF3A1620);
   static const dangerText = Color(0xFFFF6B6B);
 
+  static const infoText = Color(0xFF38BDF8);
+  static const infoBg = Color(0xFF102A3D);
+
   static const purpleGradient = LinearGradient(
     colors: [Color(0xFF9B87F5), Color(0xFF7C3AED)],
     begin: Alignment.topLeft,
@@ -25,23 +28,29 @@ class HomeColors {
   );
 
   static const heroGradient = LinearGradient(
-    colors: [Color(0xFF8B5CF6), Color(0xFF6D28D9), Color(0xFF1E1826)],
+    colors: [Color(0xFF8B5CF6), Color(0xFF6D28D9), Color(0xFF1B1428)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
+  static const meshGradient = LinearGradient(
+    colors: [Color(0xFF2A1C46), Color(0xFF1D1430), Color(0xFF120E1C)],
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+  );
+
   static const cardShadow = [
     BoxShadow(
-      color: Color(0x33000000),
-      blurRadius: 12,
-      offset: Offset(0, 4),
+      color: Color(0x40000000),
+      blurRadius: 16,
+      offset: Offset(0, 6),
     ),
   ];
 
   static List<BoxShadow> glowShadow(Color color, {double opacity = 0.25}) => [
     BoxShadow(
       color: color.withValues(alpha: opacity),
-      blurRadius: 14,
+      blurRadius: 16,
       offset: const Offset(0, 4),
     ),
   ];

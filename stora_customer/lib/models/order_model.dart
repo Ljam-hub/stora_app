@@ -78,8 +78,10 @@ class CustomerOrder {
 
   String get statusDisplay {
     switch (status.toLowerCase()) {
+      case 'ready':
+        return 'Ready for Pickup';
       case 'accepted':
-        return 'Accepted';
+        return 'Accepted (Preparing)';
       case 'declined':
         return 'Declined';
       case 'auto_declined':
@@ -94,8 +96,10 @@ class CustomerOrder {
 
   Color get statusColor {
     switch (status.toLowerCase()) {
-      case 'accepted':
+      case 'ready':
         return AppColors.success;
+      case 'accepted':
+        return AppColors.primary;
       case 'declined':
       case 'auto_declined':
         return AppColors.danger;
@@ -109,8 +113,10 @@ class CustomerOrder {
 
   Color get statusBgColor {
     switch (status.toLowerCase()) {
-      case 'accepted':
+      case 'ready':
         return AppColors.successBg;
+      case 'accepted':
+        return AppColors.primary.withValues(alpha: 0.15);
       case 'declined':
       case 'auto_declined':
         return AppColors.dangerBg;
@@ -124,8 +130,10 @@ class CustomerOrder {
 
   IconData get statusIcon {
     switch (status.toLowerCase()) {
+      case 'ready':
+        return Icons.done_all_rounded;
       case 'accepted':
-        return Icons.check_circle_outline;
+        return Icons.shopping_bag_outlined;
       case 'declined':
       case 'auto_declined':
         return Icons.cancel_outlined;

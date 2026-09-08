@@ -13,28 +13,31 @@ class OrderStatusStepper extends StatelessWidget {
     final isDeclined = status == 'declined' || status == 'auto_declined';
     final isCounter = status == 'counter_offer';
     final isAccepted = status == 'accepted';
+    final isReady = status == 'ready';
 
     // Step calculation:
     // Step 0: Placed
     // Step 1: Confirmed / Accepted / Counter / Declined
-    // Step 2: Preparing / Ready
-    // Step 3: Completed
+    // Step 2: Preparing
+    // Step 3: Ready for Pickup
     int currentStep = 0;
     if (isCounter) {
       currentStep = 1;
     } else if (isAccepted) {
       currentStep = 2;
+    } else if (isReady) {
+      currentStep = 3;
     } else if (isDeclined) {
       currentStep = 1;
     }
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 12),
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.cardElevated,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.cardBorder),
+        color: AppColors.cardElevated.withValues(alpha: 0.7),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -44,11 +47,11 @@ class OrderStatusStepper extends StatelessWidget {
             children: [
               const Text(
                 'Live Order Status',
-                style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w800, letterSpacing: -0.2),
               ),
               if (order.expiresAt != null && status == 'pending')
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
                     color: AppColors.warningBg,
                     borderRadius: BorderRadius.circular(8),
@@ -65,7 +68,7 @@ class OrderStatusStepper extends StatelessWidget {
                 ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 18),
 
           // Stepper Horizontal Line & Nodes
           Row(
@@ -79,8 +82,11 @@ class OrderStatusStepper extends StatelessWidget {
               ),
               Expanded(
                 child: Container(
-                  height: 2,
-                  color: currentStep >= 1 ? (isDeclined ? AppColors.danger : AppColors.success) : AppColors.cardBorder,
+                  height: 2.5,
+                  decoration: BoxDecoration(
+                    color: currentStep >= 1 ? (isDeclined ? AppColors.danger : AppColors.success) : AppColors.cardBorder,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
               ),
               _StepNode(
@@ -96,8 +102,11 @@ class OrderStatusStepper extends StatelessWidget {
               ),
               Expanded(
                 child: Container(
-                  height: 2,
-                  color: currentStep >= 2 ? AppColors.success : AppColors.cardBorder,
+                  height: 2.5,
+                  decoration: BoxDecoration(
+                    color: currentStep >= 2 ? AppColors.success : AppColors.cardBorder,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
               ),
               _StepNode(
@@ -109,8 +118,11 @@ class OrderStatusStepper extends StatelessWidget {
               ),
               Expanded(
                 child: Container(
-                  height: 2,
-                  color: currentStep >= 3 ? AppColors.success : AppColors.cardBorder,
+                  height: 2.5,
+                  decoration: BoxDecoration(
+                    color: currentStep >= 3 ? AppColors.success : AppColors.cardBorder,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
               ),
               _StepNode(
@@ -118,13 +130,57 @@ class OrderStatusStepper extends StatelessWidget {
                 title: 'Ready',
                 isActive: currentStep >= 3,
                 isCompleted: currentStep >= 3,
-                color: AppColors.success,
+                color: const Color(0xFF00E676),
               ),
             ],
           ),
 
-          // Contextual Message Box for Counter or Decline
-          if (isDeclined) ...[
+          // Contextual Message Box for Ready, Preparing, Counter or Decline
+          if (isReady) ...[
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF00E676).withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFF00E676).withValues(alpha: 0.4)),
+              ),
+              child: Row(
+                children: const [
+                  Icon(Icons.check_circle_rounded, color: Color(0xFF00E676), size: 20),
+                  SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Your order is prepared and ready for pickup at the store! 🎉',
+                      style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ] else if (isAccepted) ...[
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppColors.primary.withValues(alpha: 0.35)),
+              ),
+              child: Row(
+                children: const [
+                  Icon(Icons.shopping_bag_outlined, color: AppColors.primaryLight, size: 18),
+                  SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Order accepted! The store is currently preparing and packing your items.',
+                      style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w500),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ] else if (isDeclined) ...[
             const SizedBox(height: 14),
             Container(
               padding: const EdgeInsets.all(10),
@@ -214,20 +270,30 @@ class _StepNode extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Container(
-          width: 30,
-          height: 30,
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          width: 32,
+          height: 32,
           decoration: BoxDecoration(
-            color: isActive ? color.withValues(alpha: 0.2) : AppColors.cardBackground,
+            color: isActive ? color.withValues(alpha: 0.18) : AppColors.cardBackground,
             shape: BoxShape.circle,
             border: Border.all(
               color: isActive ? color : AppColors.cardBorder,
-              width: 1.5,
+              width: isActive ? 2 : 1.2,
             ),
+            boxShadow: isActive
+                ? [
+                    BoxShadow(
+                      color: color.withValues(alpha: 0.3),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : null,
           ),
           child: Icon(
             icon,
-            size: 15,
+            size: 16,
             color: isActive ? color : AppColors.textMuted,
           ),
         ),
@@ -237,7 +303,8 @@ class _StepNode extends StatelessWidget {
           style: TextStyle(
             color: isActive ? Colors.white : AppColors.textMuted,
             fontSize: 10,
-            fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+            fontWeight: isActive ? FontWeight.w800 : FontWeight.w500,
+            letterSpacing: -0.1,
           ),
         ),
       ],

@@ -80,7 +80,7 @@ class AccountStatus {
           ? parseApiDateTime(json['trial_ends_at'] as String)
           : null,
       productCount: _asInt(json['product_count'], 0),
-      productLimit: _asInt(json['product_limit'], 20),
+      productLimit: json['product_limit'] == null ? 0 : _asInt(json['product_limit'], 20),
       daysLeft: _asInt(json['days_left'], 0),
       canAddProduct: json['can_add_product'] as bool? ?? false,
       monthlyPrice: _asDouble(json['monthly_price'], 70.0),

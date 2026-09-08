@@ -23,20 +23,20 @@ class _OrderCardState extends State<OrderCard> {
     final order = widget.order;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 14),
+      margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: order.status == 'counter_offer'
               ? AppColors.primary
               : (order.status == 'accepted'
                   ? AppColors.success.withValues(alpha: 0.5)
-                  : AppColors.cardBorder),
+                  : Colors.white.withValues(alpha: 0.08)),
           width: order.status == 'counter_offer' ? 1.5 : 1,
         ),
         boxShadow: order.status == 'counter_offer'
-            ? AppColors.glowShadow(AppColors.primary, opacity: 0.2)
+            ? AppColors.glowShadow(AppColors.primary, opacity: 0.25)
             : AppColors.cardShadow,
       ),
       child: Column(
