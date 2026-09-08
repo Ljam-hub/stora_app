@@ -1,0 +1,171 @@
+{% load i18n static %}<!DOCTYPE html>
+{% get_current_language as LANGUAGE_CODE %}{% get_current_language_bidi as LANGUAGE_BIDI %}
+<html lang="{{ LANGUAGE_CODE|default:'en-us' }}" dir="{{ LANGUAGE_BIDI|yesno:'rtl,ltr,auto' }}" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}{% endblock %}</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="{% block stylesheet %}{% static 'admin/css/base.css' %}{% endblock %}">
+{% block dark-mode-vars %}
+  <link rel="stylesheet" href="{% static 'admin/css/dark_mode.css' %}">
+  <script src="{% static 'admin/js/theme.js' %}"></script>
+{% endblock %}
+{% if not is_popup and is_nav_sidebar_enabled %}
+  <link rel="stylesheet" href="{% static 'admin/css/nav_sidebar.css' %}">
+  <script src="{% static 'admin/js/nav_sidebar.js' %}" defer></script>
+{% endif %}
+{% block extrastyle %}{% endblock %}
+{% if LANGUAGE_BIDI %}<link rel="stylesheet" href="{% block stylesheet_rtl %}{% static 'admin/css/rtl.css' %}{% endblock %}">{% endif %}
+
+<!-- Stora Unified Modern Stylesheet with Cache Busting -->
+<link rel="stylesheet" href="{% static 'admin/css/stora_admin.css' %}?v={% now 'U' %}">
+<link rel="stylesheet" href="{% static 'css/backend-pages.css' %}?v={% now 'U' %}">
+
+{% block extrahead %}{% endblock %}
+{% block responsive %}
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{% static 'admin/css/responsive.css' %}">
+    {% if LANGUAGE_BIDI %}<link rel="stylesheet" href="{% static 'admin/css/responsive_rtl.css' %}">{% endif %}
+{% endblock %}
+{% block blockbots %}<meta name="robots" content="NONE,NOARCHIVE">{% endblock %}
+</head>
+
+<body class="{% if is_popup %}popup {% endif %}{% block bodyclass %}{% endblock %}"
+  data-admin-utc-offset="{% now 'Z' %}">
+<a href="#content-start" class="skip-to-content-link">{% translate 'Skip to main content' %}</a>
+
+<div id="container">
+    {% if not is_popup %}
+    <!-- Header -->
+    {% block header %}
+      <header id="header">
+        <div class="stora-header-container">
+          <div id="branding">
+            {% block branding %}{% endblock %}
+          </div>
+          <div class="stora-header-right">
+            {% block nav-global %}{% endblock %}
+            {% block usertools %}
+            {% if has_permission %}
+            <div id="user-tools">
+                {% block welcome-msg %}
+                    <span class="user-greeting">{% translate 'Welcome,' %} <strong>{% firstof user.get_short_name user.get_username %}</strong></span>
+                {% endblock %}
+                {% block userlinks %}
+                    {% if user.has_usable_password %}
+                    <a href="{% url 'admin:password_change' %}">{% translate 'Password' %}</a>
+                    {% endif %}
+                    <button type="button" class="logout-btn" onclick="showLogoutModal();">{% translate 'Log out' %}</button>
+                    <form id="logout-form" class="stora-hidden-form" method="post" action="{% url 'admin:logout' %}">
+                        {% csrf_token %}
+                    </form>
+                {% endblock %}
+            </div>
+            {% endif %}
+            {% endblock %}
+          </div>
+        </div>
+      </header>
+    {% endblock %}
+    <!-- END Header -->
+
+    {% block nav-breadcrumbs %}
+      <nav aria-label="{% translate 'Breadcrumbs' %}" class="stora-breadcrumbs-bar">
+        <div class="stora-breadcrumbs-container">
+          {% block breadcrumbs %}
+            <div class="breadcrumbs">
+              <a href="{% url 'admin:index' %}">{% translate 'Home' %}</a>
+              {% if title %} &rsaquo; {{ title }}{% endif %}
+            </div>
+          {% endblock %}
+        </div>
+      </nav>
+    {% endblock %}
+    {% endif %}
+
+    <div class="main stora-main-container" id="main">
+      {% if not is_popup and is_nav_sidebar_enabled %}
+        {% block nav-sidebar %}
+          {% include 'admin/nav_sidebar.html' %}
+        {% endblock %}
+      {% endif %}
+      <main id="content-start" class="content stora-content-area" tabindex="-1">
+        {% block messages %}
+          {% if messages %}
+            <ul class="messagelist">{% for message in messages %}
+              <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message|capfirst }}</li>
+            {% endfor %}</ul>
+          {% endif %}
+        {% endblock messages %}
+        <!-- Content -->
+        <div id="content" class="{% block coltype %}colM{% endblock %}">
+          {% block pretitle %}{% endblock %}
+          {% block content_title %}{% if title %}<h1 class="stora-page-title">{{ title }}</h1>{% endif %}{% endblock %}
+          {% block content_subtitle %}{% if subtitle %}<h2>{{ subtitle }}</h2>{% endif %}{% endblock %}
+          {% block content %}
+            {% block object-tools %}{% endblock %}
+            {{ content }}
+          {% endblock %}
+          {% block sidebar %}{% endblock %}
+          <br class="clear">
+        </div>
+        <!-- END Content -->
+      </main>
+    </div>
+    <footer id="footer">
+      <div class="stora-footer-container">
+        {% block footer %}
+          <p>STORA &bull; High-Performance Retail Engine & Control Center</p>
+        {% endblock %}
+      </div>
+    </footer>
+</div>
+
+<!-- Custom Logout Confirmation Modal -->
+<div id="logout-modal" class="stora-modal" hidden>
+    <div class="stora-modal-backdrop" onclick="hideLogoutModal()"></div>
+    <div class="stora-modal-content">
+        <div class="stora-modal-header">
+            <h3 class="stora-modal-title">Confirm Logout</h3>
+        </div>
+        <div class="stora-modal-body">
+            <p>Are you sure you want to log out of the control panel?</p>
+        </div>
+        <div class="stora-modal-footer">
+            <button type="button" class="stora-modal-btn stora-modal-btn-cancel" onclick="hideLogoutModal()">Cancel</button>
+            <button type="button" class="stora-modal-btn stora-modal-btn-confirm" onclick="confirmLogout()">Log out</button>
+        </div>
+    </div>
+</div>
+
+{% block extrabody %}
+<script>
+function showLogoutModal() {
+  document.getElementById('logout-modal').hidden = false;
+    document.body.style.overflow = 'hidden';
+}
+
+function hideLogoutModal() {
+  document.getElementById('logout-modal').hidden = true;
+    document.body.style.overflow = '';
+}
+
+function confirmLogout() {
+    document.getElementById('logout-form').submit();
+}
+
+// Close modal on escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        hideLogoutModal();
+    }
+});
+</script>
+{% endblock extrabody %}
+</body>
+</html>

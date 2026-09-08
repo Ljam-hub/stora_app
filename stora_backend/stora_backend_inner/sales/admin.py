@@ -23,6 +23,7 @@ class SaleAdmin(admin.ModelAdmin):
     date_hierarchy = "created_at"
     readonly_fields = ("total", "created_at")
     inlines = [SaleItemInline]
+    actions = ["recalculate_selected_sales"]
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
@@ -46,6 +47,14 @@ class SaleAdmin(admin.ModelAdmin):
     @admin.display(description="Items")
     def item_count(self, obj):
         return obj.items.count()
+
+    @admin.action(description="↻ Recalculate selected sale totals")
+    def recalculate_selected_sales(self, request, queryset):
+        updated_count = 0
+        for sale in queryset:
+            sale.recalculate_total()
+            updated_count += 1
+        self.message_user(request, f"Recalculated totals for {updated_count} sale(s).")
 
     def save_related(self, request, form, formsets, change):
         # Recompute the snapshot total from the (possibly just-edited)

@@ -61,7 +61,7 @@ class OrderAdmin(admin.ModelAdmin):
         "expires_at",
     )
     inlines = [OrderItemInline]
-    actions = ["accept_orders", "decline_orders"]
+    actions = ["accept_orders", "mark_ready_orders", "decline_orders"]
 
     @admin.display(description="Store / Owner")
     def owner_display(self, obj):
@@ -71,7 +71,7 @@ class OrderAdmin(admin.ModelAdmin):
     def customer_account(self, obj):
         if obj.customer:
             return format_html(
-                '<span style="color: #9B87F5; font-weight: 600;">{}</span>',
+                '<span style="color: #8bd3ca; font-weight: 600;">{}</span>',
                 obj.customer.email,
             )
         return format_html('<span style="color: #888888; font-style: italic;">Guest</span>')
@@ -84,14 +84,15 @@ class OrderAdmin(admin.ModelAdmin):
     @admin.display(description="Status")
     def status_badge(self, obj):
         colors = {
-            Order.STATUS_PENDING: ("#9B87F5", "#241D38", "Pending"),
-            Order.STATUS_ACCEPTED: ("#4ADE80", "#132D1B", "Accepted"),
-            Order.STATUS_DECLINED: ("#FF6B6B", "#3A1620", "Declined"),
-            Order.STATUS_AUTO_DECLINED: ("#A0A0A0", "#262032", "Auto-Declined"),
-            Order.STATUS_COUNTER_OFFER: ("#FBBF24", "#332408", "Counter-Offer"),
+            Order.STATUS_PENDING: ("#8bd3ca", "#1a3435", "Pending"),
+            Order.STATUS_ACCEPTED: ("#4ade80", "#132d1b", "Accepted"),
+            Order.STATUS_READY: ("#38bdf8", "#0c2d48", "Ready for Pickup"),
+            Order.STATUS_DECLINED: ("#f87171", "#3a1620", "Declined"),
+            Order.STATUS_AUTO_DECLINED: ("#aab8bb", "#262d30", "Auto-Declined"),
+            Order.STATUS_COUNTER_OFFER: ("#fbbf24", "#332408", "Counter-Offer"),
         }
         text_color, bg_color, label = colors.get(
-            obj.status, ("#FFFFFF", "#262032", obj.status)
+            obj.status, ("#f5f8f8", "#262d30", obj.status)
         )
         return format_html(
             '<span style="background-color: {}; color: {}; padding: 4px 10px; '
@@ -120,6 +121,17 @@ class OrderAdmin(admin.ModelAdmin):
                 accepted_count += 1
         self.message_user(
             request, f"Successfully accepted {accepted_count} order(s)."
+        )
+
+    @admin.action(description="📦 Mark selected orders as Ready for Pickup")
+    def mark_ready_orders(self, request, queryset):
+        ready_count = 0
+        for order in queryset:
+            if order.status == Order.STATUS_ACCEPTED:
+                order.mark_as_ready()
+                ready_count += 1
+        self.message_user(
+            request, f"Successfully marked {ready_count} order(s) as Ready for Pickup."
         )
 
     @admin.action(description="✗ Decline selected orders")

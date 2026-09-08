@@ -158,3 +158,63 @@ class OrderAPITests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.customer.refresh_from_db()
         self.assertEqual(self.customer.fcm_token, "new_device_token_xyz")
+
+    def test_admin_mark_ready_action(self):
+        from orders.admin import OrderAdmin
+        from stora_backend.admin_site import stora_admin_site
+        order = Order.objects.create(
+            owner=self.owner,
+            customer=self.customer,
+            status=Order.STATUS_ACCEPTED,
+        )
+        admin_instance = OrderAdmin(Order, stora_admin_site)
+        from unittest.mock import MagicMock
+        mock_request = MagicMock()
+        admin_instance.mark_ready_orders(mock_request, Order.objects.filter(id=order.id))
+        order.refresh_from_db()
+        self.assertEqual(order.status, Order.STATUS_READY)
+
+    def test_sale_admin_has_bulk_action(self):
+        from django.test import RequestFactory
+        from sales.admin import SaleAdmin
+        from stora_backend.admin_site import stora_admin_site
+
+        self.owner.is_staff = True
+        self.owner.is_superuser = True
+        self.owner.save()
+
+        request = RequestFactory().get("/admin/")
+        request.user = self.owner
+        actions = list(SaleAdmin(Sale, stora_admin_site).get_actions(request).keys())
+
+        self.assertIn("recalculate_selected_sales", actions)
+
+    def test_screens_render_successfully(self):
+        from django.test import Client
+        c = Client()
+        # 1. Portal at /
+        resp = c.get("/", HTTP_ACCEPT="text/html")
+        self.assertEqual(resp.status_code, 200)
+        # 2. Admin login
+        resp = c.get("/admin/login/")
+        self.assertEqual(resp.status_code, 200)
+        # 3. Password reset form
+        resp = c.get("/admin/password_reset/")
+        self.assertEqual(resp.status_code, 200)
+        # 4. Password reset done
+        resp = c.get("/admin/password_reset/done/")
+        self.assertEqual(resp.status_code, 200)
+        # 5. Logged out screen
+        self.owner.is_staff = True
+        self.owner.save()
+        c.force_login(self.owner)
+        resp = c.post("/admin/logout/")
+        self.assertEqual(resp.status_code, 200)
+        # 6. Admin dashboard
+        c.force_login(self.owner)
+        resp = c.get("/admin/")
+        self.assertEqual(resp.status_code, 200)
+        # 7. Password change screen
+        resp = c.get("/admin/password_change/")
+        self.assertEqual(resp.status_code, 200)
+

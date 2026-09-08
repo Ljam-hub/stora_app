@@ -1,15 +1,23 @@
 {% extends "admin/base.html" %}
 {% load static %}
 
-{% block extrastyle %}
-  {{ block.super }}
-  <link rel="stylesheet" href="{% static 'admin/css/stora_admin.css' %}">
-{% endblock %}
-
 {% block branding %}
   <h1 id="site-name">
-    <a href="{% url 'admin:index' %}">STORA<span class="stora-dot">.</span> Admin</a>
+    <a href="{% url 'admin:index' %}" class="stora-brand">
+      <span class="stora-brand__mark" aria-hidden="true">S</span>
+      <span class="stora-brand__name">STORA<span class="stora-dot">.</span></span>
+      <span class="stora-brand__context">Control Panel</span>
+    </a>
   </h1>
 {% endblock %}
 
-{% block nav-global %}{% endblock %}
+{% block nav-global %}
+<div class="stora-global-actions">
+  <span class="stora-api-status">
+    <span class="stora-api-status__dot" aria-hidden="true"></span>
+    API Online
+  </span>
+  <a href="/api/health/" target="_blank" class="stora-header-link">Health Check <span aria-hidden="true">↗</span></a>
+  <a href="/" target="_blank" class="stora-header-link">Backend Portal <span aria-hidden="true">↗</span></a>
+</div>
+{% endblock %}

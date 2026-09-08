@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% translate "Password reset sent" %} | STORA Admin</title>
+  <title>{% translate "Logged out" %} | STORA Admin</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -20,9 +20,9 @@
       min-height: 100vh;
       padding: 24px 16px;
     }
-    .card-wrapper {
+    .logout-wrapper {
       width: 100%;
-      max-width: 440px;
+      max-width: 420px;
     }
     .brand {
       display: flex;
@@ -34,36 +34,34 @@
       padding: 40px 32px;
       text-align: center;
     }
-    .card h2 {
-      margin-bottom: 12px;
-    }
-    .card p {
-      margin-bottom: 24px;
+    .card-footer {
+      margin-top: 24px;
+      padding-top: 18px;
+      border-top: 1px solid var(--backend-border);
     }
   </style>
 </head>
 
 <body>
-  <div class="card-wrapper">
+  <div class="logout-wrapper">
     <!-- Branding -->
     <div class="brand">
       <div class="brand-icon" style="margin-bottom: 12px;">S</div>
       <div class="brand-name">STORA<span class="brand-dot">.</span></div>
-      <span class="brand-sub">Security Recovery</span>
+      <span class="brand-sub">Control Panel</span>
     </div>
 
     <!-- Card -->
     <div class="card">
-      <div class="status-badge" style="margin: 0 auto 20px;">&#9993;</div>
-      <h2>{% translate "Check Your Inbox" %}</h2>
-      <p>
-        {% translate "We’ve emailed you instructions for setting your password, if an account exists with the email you entered. You should receive them shortly." %}
-      </p>
-      <p style="font-size: 13px; color: var(--backend-dim); margin-top: -12px;">
-        {% translate "If you don’t receive an email, please verify the address you registered with, or check your spam folder." %}
-      </p>
+      <div class="status-badge" style="margin: 0 auto 20px;">&#128075;</div>
+      <h2>{% translate "Logged out successfully" %}</h2>
+      <p>{% translate "Thanks for spending some quality time with Stora today. You have been securely logged out." %}</p>
 
-      <a href="{% url 'admin:login' %}" class="btn-return">{% translate "Return to Log In" %} &rarr;</a>
+      <a href="{% url 'admin:login' %}" class="btn-login">{% translate "Log in again" %} &rarr;</a>
+
+      <div class="card-footer">
+        <a href="/">{% translate "Return to Backend Portal" %} &rarr;</a>
+      </div>
     </div>
 
     <div class="powered">STORA &bull; High-Performance Retail Engine</div>

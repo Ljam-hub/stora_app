@@ -1,69 +1,63 @@
-{% extends "admin/index.html" %}
+{% extends "admin/base_site.html" %}
 {% load i18n %}
 
 {% block content %}
-{% if stora_stats.pending_orders_count > 0 %}
-<div class="stora-alert-banner" style="background: linear-gradient(135deg, #241D38, #181326); border: 1px solid #9B87F5; border-radius: 12px; padding: 16px 20px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between;">
-  <div style="display: flex; align-items: center; gap: 12px;">
-    <span style="font-size: 24px;">🛒</span>
-    <div>
-      <h3 style="margin: 0; color: #FFFFFF; font-size: 15px; font-weight: 700;">Incoming Customer Orders Pending Review</h3>
-      <p style="margin: 3px 0 0 0; color: #B9A9FF; font-size: 13px;">You have <strong>{{ stora_stats.pending_orders_count }}</strong> pending customer cart order{{ stora_stats.pending_orders_count|pluralize }} waiting for acceptance.</p>
+<section class="stora-alerts" aria-label="Notifications">
+  {% if stora_stats.pending_orders_count > 0 %}
+  <article class="stora-alert stora-alert--orders">
+    <span class="stora-alert__icon" aria-hidden="true">&#128722;</span>
+    <div class="stora-alert__copy">
+      <h2>Incoming customer orders</h2>
+      <p><strong>{{ stora_stats.pending_orders_count }}</strong> pending order{{ stora_stats.pending_orders_count|pluralize }} waiting for acceptance.</p>
     </div>
-  </div>
-  <a href="/admin/orders/order/?status__exact=pending" style="background-color: #9B87F5; color: #141018; font-weight: 700; font-size: 13px; padding: 8px 16px; border-radius: 8px; text-decoration: none; display: inline-block;">Review Orders →</a>
-</div>
-{% endif %}
+    <a class="stora-alert__action" href="/admin/orders/order/?status__exact=pending">Review orders <span aria-hidden="true">&rarr;</span></a>
+  </article>
+  {% endif %}
 
-{% if stora_stats.pending_requests > 0 %}
-<div class="stora-alert-banner" style="background: linear-gradient(135deg, #3A1620, #2E121B); border: 1px solid #FF6B6B; border-radius: 12px; padding: 16px 20px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between;">
-  <div style="display: flex; align-items: center; gap: 12px;">
-    <span style="font-size: 24px;">🔔</span>
-    <div>
-      <h3 style="margin: 0; color: #FFFFFF; font-size: 15px; font-weight: 700;">Account Subscription Requests Pending Review</h3>
-      <p style="margin: 3px 0 0 0; color: #FF6B6B; font-size: 13px;">You have <strong>{{ stora_stats.pending_requests }}</strong> user subscription payment proof request{{ stora_stats.pending_requests|pluralize }} awaiting approval.</p>
+  {% if stora_stats.pending_requests > 0 %}
+  <article class="stora-alert stora-alert--payments">
+    <span class="stora-alert__icon" aria-hidden="true">&#128276;</span>
+    <div class="stora-alert__copy">
+      <h2>Subscription requests</h2>
+      <p><strong>{{ stora_stats.pending_requests }}</strong> payment proof request{{ stora_stats.pending_requests|pluralize }} awaiting approval.</p>
     </div>
-  </div>
-  <a href="/admin/accounts/paymentproof/?status__exact=pending" style="background-color: #9B87F5; color: #141018; font-weight: 700; font-size: 13px; padding: 8px 16px; border-radius: 8px; text-decoration: none; display: inline-block;">Review Payments →</a>
-</div>
-{% endif %}
+    <a class="stora-alert__action" href="/admin/accounts/paymentproof/?status__exact=pending">Review payments <span aria-hidden="true">&rarr;</span></a>
+  </article>
+  {% endif %}
 
-{% if stora_stats.active_reset_requests > 0 %}
-<div class="stora-alert-banner" style="background: linear-gradient(135deg, #241D38, #1A1528); border: 1px solid #9B87F5; border-radius: 12px; padding: 16px 20px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between;">
-  <div style="display: flex; align-items: center; gap: 12px;">
-    <span style="font-size: 24px;">🔑</span>
-    <div>
-      <h3 style="margin: 0; color: #FFFFFF; font-size: 15px; font-weight: 700;">Active Password Reset Requests</h3>
-      <p style="margin: 3px 0 0 0; color: #B9A9FF; font-size: 13px;">There {{ stora_stats.active_reset_requests|pluralize:"is,are" }} <strong>{{ stora_stats.active_reset_requests }}</strong> active password reset token request{{ stora_stats.active_reset_requests|pluralize }} generated in the last hour.</p>
+  {% if stora_stats.active_reset_requests > 0 %}
+  <article class="stora-alert stora-alert--resets">
+    <span class="stora-alert__icon" aria-hidden="true">&#128273;</span>
+    <div class="stora-alert__copy">
+      <h2>Active password resets</h2>
+      <p><strong>{{ stora_stats.active_reset_requests }}</strong> reset request{{ stora_stats.active_reset_requests|pluralize }} created in the last hour.</p>
     </div>
-  </div>
-  <a href="/admin/accounts/passwordresettoken/?used__exact=0" style="background-color: #B9A9FF; color: #141018; font-weight: 700; font-size: 13px; padding: 8px 16px; border-radius: 8px; text-decoration: none; display: inline-block;">View Reset Codes →</a>
-</div>
-{% endif %}
+    <a class="stora-alert__action" href="/admin/accounts/passwordresettoken/?used__exact=0">View requests <span aria-hidden="true">&rarr;</span></a>
+  </article>
+  {% endif %}
+</section>
 
-<div class="stora-dashboard">
-  <div class="stora-card stora-card--earnings">
-    <p class="stora-card__label">Today's Total Earnings</p>
-    <p class="stora-card__value">₱{{ stora_stats.todays_total|floatformat:2 }}</p>
-    <p class="stora-card__sub">{{ stora_stats.todays_count }} sale{{ stora_stats.todays_count|pluralize }}</p>
-  </div>
-  <div class="stora-card">
-    <p class="stora-card__label">Pending Orders</p>
+<section class="stora-dashboard" aria-label="Store overview">
+  <article class="stora-card stora-card--earnings">
+    <div class="stora-card__top"><span class="stora-card__label">Today's revenue</span><span class="stora-card__icon" aria-hidden="true">&#8369;</span></div>
+    <p class="stora-card__value">&#8369;{{ stora_stats.todays_total|floatformat:2 }}</p>
+    <p class="stora-card__sub">{{ stora_stats.todays_count }} completed sale{{ stora_stats.todays_count|pluralize }}</p>
+  </article>
+  <article class="stora-card">
+    <div class="stora-card__top"><span class="stora-card__label">Pending orders</span><span class="stora-card__icon" aria-hidden="true">&#8599;</span></div>
     <p class="stora-card__value">{{ stora_stats.pending_orders_count }}</p>
-    <p class="stora-card__sub"><a href="/admin/orders/order/?status__exact=pending" style="color: #9B87F5; text-decoration: none;">View carts →</a></p>
-  </div>
-  <div class="stora-card">
-    <p class="stora-card__label">In stock</p>
-    <p class="stora-card__value">{{ stora_stats.total_stock }}</p>
-  </div>
-  <div class="stora-card stora-card--danger">
-    <p class="stora-card__label">Low stock</p>
-    <p class="stora-card__value">{{ stora_stats.low_stock_count }}</p>
-  </div>
-  <div class="stora-card">
-    <p class="stora-card__label">Products</p>
+    <p class="stora-card__sub"><a href="/admin/orders/order/?status__exact=pending">Review carts <span aria-hidden="true">&rarr;</span></a></p>
+  </article>
+  <article class="stora-card">
+    <div class="stora-card__top"><span class="stora-card__label">Total products</span><span class="stora-card__icon stora-card__icon--blue" aria-hidden="true">&#9632;</span></div>
     <p class="stora-card__value">{{ stora_stats.product_count }}</p>
-  </div>
-</div>
+    <p class="stora-card__sub">{{ stora_stats.total_stock }} total units in stock</p>
+  </article>
+  <article class="stora-card stora-card--danger">
+    <div class="stora-card__top"><span class="stora-card__label">Stock alerts</span><span class="stora-card__icon" aria-hidden="true">!</span></div>
+    <p class="stora-card__value">{{ stora_stats.low_stock_count }}</p>
+    <p class="stora-card__sub"><a href="/admin/inventory/product/?stock_level=low">Low stock items <span aria-hidden="true">&rarr;</span></a></p>
+  </article>
+</section>
 {{ block.super }}
 {% endblock %}

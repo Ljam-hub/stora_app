@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.conf import settings
 from django.db import models
 
@@ -21,7 +23,7 @@ class Sale(models.Model):
         return f"Sale #{self.pk} \u2014 {self.created_at:%Y-%m-%d %H:%M}"
 
     def recalculate_total(self):
-        total = sum((item.subtotal for item in self.items.all()), start=0)
+        total = sum((item.subtotal for item in self.items.all()), Decimal("0"))
         self.total = total
         self.save(update_fields=["total"])
 

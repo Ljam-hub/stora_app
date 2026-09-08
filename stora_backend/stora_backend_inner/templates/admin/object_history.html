@@ -1,0 +1,85 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls static %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+<a href="{% url 'admin:index' %}">{% translate 'Home' %}</a>
+&rsaquo; <a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a>
+&rsaquo; <a href="{% url opts|admin_urlname:'changelist' %}">{{ module_name }}</a>
+&rsaquo; <a href="{% url opts|admin_urlname:'change' object.pk|admin_urlquote %}">{{ object|truncatewords:"18" }}</a>
+&rsaquo; {% translate 'History' %}
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main" style="max-width: 1040px; margin: 16px auto;">
+  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+    <div>
+      <h2 style="font-size: 20px; font-weight: 800; color: var(--backend-text-strong); margin: 0; letter-spacing: -0.02em;">
+        {% translate "Audit History" %}: <span style="color: var(--backend-accent);">{{ object }}</span>
+      </h2>
+      <p style="color: var(--backend-muted); font-size: 13px; margin: 4px 0 0 0;">
+        {% translate "Chronological log of changes, status transitions, and user modifications." %}
+      </p>
+    </div>
+    <a href="{% url opts|admin_urlname:'change' object.pk|admin_urlquote %}" class="btn-secondary">
+      &larr; {% translate "Back to Editor" %}
+    </a>
+  </div>
+
+  <div id="change-history" class="module">
+  {% if action_list %}
+      <table style="width: 100%; border-collapse: collapse;">
+          <thead>
+          <tr>
+              <th scope="col" style="padding: 14px 20px; text-align: left; font-size: 12px; font-weight: 700; text-transform: uppercase;">{% translate 'Date / Time' %}</th>
+              <th scope="col" style="padding: 14px 20px; text-align: left; font-size: 12px; font-weight: 700; text-transform: uppercase;">{% translate 'User / Staff' %}</th>
+              <th scope="col" style="padding: 14px 20px; text-align: left; font-size: 12px; font-weight: 700; text-transform: uppercase;">{% translate 'Action Description' %}</th>
+          </tr>
+          </thead>
+          <tbody>
+          {% for action in action_list %}
+          <tr style="border-bottom: 1px solid var(--backend-border); transition: background 0.15s ease;">
+              <th scope="row" style="padding: 14px 20px; color: var(--backend-accent-strong); font-size: 13px; font-family: 'JetBrains Mono', monospace; font-weight: 500;">
+                {{ action.action_time|date:"Y-m-d H:i:s" }}
+              </th>
+              <td style="padding: 14px 20px; color: var(--backend-text-strong); font-size: 13px; font-weight: 600;">
+                <span style="display: inline-flex; align-items: center; gap: 8px;">
+                  <span style="width: 8px; height: 8px; border-radius: 50%; background: var(--backend-accent);"></span>
+                  {{ action.user.get_username }}{% if action.user.get_full_name %} ({{ action.user.get_full_name }}){% endif %}
+                </span>
+              </td>
+              <td style="padding: 14px 20px; color: var(--backend-text); font-size: 13px; line-height: 1.5;">
+                {{ action.get_change_message }}
+              </td>
+          </tr>
+          {% endfor %}
+          </tbody>
+      </table>
+
+      <div class="paginator" style="padding: 16px 20px; border-top: 1px solid var(--backend-border); display: flex; align-items: center; justify-content: space-between; font-size: 13px; color: var(--backend-muted);">
+        <div>
+          {{ action_list.paginator.count }} {% blocktranslate count counter=action_list.paginator.count %}audit record{% plural %}audit records{% endblocktranslate %}
+        </div>
+        {% if pagination_required %}
+          <div style="display: flex; gap: 6px;">
+          {% for i in page_range %}
+            {% if i == action_list.paginator.ELLIPSIS %}
+              <span style="padding: 4px 8px;">{{ action_list.paginator.ELLIPSIS }}</span>
+            {% elif i == action_list.number %}
+              <span class="this-page" style="background: var(--backend-accent); color: #102022; font-weight: 700; padding: 4px 10px; border-radius: 6px;">{{ i }}</span>
+            {% else %}
+              <a href="?{{ page_var }}={{ i }}" style="background: var(--backend-accent-bg); color: var(--backend-accent-strong); padding: 4px 10px; border-radius: 6px; text-decoration: none;">{{ i }}</a>
+            {% endif %}
+          {% endfor %}
+          </div>
+        {% endif %}
+      </div>
+  {% else %}
+      <div style="padding: 36px; text-align: center; color: var(--backend-muted); font-size: 14px;">
+        <p style="margin: 0;">{% translate 'This object doesn’t have an audit history recorded yet.' %}</p>
+      </div>
+  {% endif %}
+  </div>
+</div>
+{% endblock %}

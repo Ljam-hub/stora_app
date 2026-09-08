@@ -1,0 +1,83 @@
+{% extends "admin/base_site.html" %}
+{% load i18n l10n admin_urls static %}
+
+{% block extrahead %}
+    {{ block.super }}
+    {{ media }}
+    <script src="{% static 'admin/js/cancel.js' %}" async></script>
+{% endblock %}
+
+{% block bodyclass %}{{ block.super }} app-{{ opts.app_label }} model-{{ opts.model_name }} delete-confirmation delete-selected-confirmation{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+<a href="{% url 'admin:index' %}">{% translate 'Home' %}</a>
+&rsaquo; <a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a>
+&rsaquo; <a href="{% url opts|admin_urlname:'changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a>
+&rsaquo; {% translate 'Delete multiple objects' %}
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="stora-delete-wrapper" style="max-width: 720px; margin: 32px auto; padding: 32px;">
+
+  <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--stora-border);">
+    <div style="width: 50px; height: 50px; border-radius: 12px; background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+        <line x1="12" y1="9" x2="12" y2="13"></line>
+        <line x1="12" y1="17" x2="12.01" y2="17"></line>
+      </svg>
+    </div>
+    <div>
+      <h2 style="font-size: 20px; font-weight: 800; color: #ffffff; margin: 0; letter-spacing: -0.02em;">
+        {% translate "Confirm Batch Deletion" %}
+      </h2>
+      <p style="color: #fca5a5; font-size: 13px; margin: 4px 0 0 0;">
+        {% translate "You are about to delete multiple records permanently." %}
+      </p>
+    </div>
+  </div>
+
+{% if perms_lacking %}
+    <div style="background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 10px; padding: 16px; margin-bottom: 20px; color: #fca5a5; font-size: 13px; line-height: 1.5;">
+      <p style="margin: 0 0 8px 0;">{% blocktranslate %}Deleting the selected {{ objects_name }} would result in deleting related objects, but your account doesn't have permission to delete the following types of objects:{% endblocktranslate %}</p>
+      <ul style="margin: 0; padding-left: 20px;">{{ perms_lacking|unordered_list }}</ul>
+    </div>
+    <a href="#" class="button cancel-link">{% translate "Go back" %}</a>
+{% elif protected %}
+    <div style="background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 10px; padding: 16px; margin-bottom: 20px; color: #fca5a5; font-size: 13px; line-height: 1.5;">
+      <p style="margin: 0 0 8px 0;">{% blocktranslate %}Deleting the selected {{ objects_name }} would require deleting the following protected related objects:{% endblocktranslate %}</p>
+      <ul style="margin: 0; padding-left: 20px;">{{ protected|unordered_list }}</ul>
+    </div>
+    <a href="#" class="button cancel-link">{% translate "Go back" %}</a>
+{% else %}
+    <p style="color: var(--stora-text); font-size: 14px; line-height: 1.6; margin-bottom: 18px;">
+      {% blocktranslate %}Are you sure you want to delete the selected {{ objects_name }}? All of the following objects and their related items will be deleted:{% endblocktranslate %}
+    </p>
+
+    {% include "admin/includes/object_delete_summary.html" %}
+
+    <div style="background: var(--stora-field); border: 1px solid var(--stora-border); border-radius: 12px; padding: 18px 22px; margin: 18px 0; max-height: 240px; overflow-y: auto;">
+      <h3 style="color: #fca5a5; font-size: 12px; font-weight: 800; text-transform: uppercase; margin: 0 0 10px 0; letter-spacing: 0.06em;">{% translate "Objects to Delete" %}</h3>
+      {% for deletable_object in deletable_objects %}
+        <ul style="margin: 0; padding-left: 20px; color: var(--stora-text); font-size: 13px; line-height: 1.5;">{{ deletable_object|unordered_list }}</ul>
+      {% endfor %}
+    </div>
+
+    <form method="post">{% csrf_token %}
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--stora-border);">
+        <a href="#" class="button cancel-link">{% translate "No, take me back" %}</a>
+        <div>
+          {% for obj in queryset %}
+            <input type="hidden" name="{{ action_checkbox_name }}" value="{{ obj.pk|unlocalize }}">
+          {% endfor %}
+          <input type="hidden" name="action" value="delete_selected">
+          <input type="hidden" name="post" value="yes">
+          <input type="submit" value="{% translate 'Yes, delete selected permanently' %}" style="background: #ef4444 !important; color: #ffffff !important; font-weight: 700; padding: 12px 28px; border-radius: 9999px; border: none; cursor: pointer; box-shadow: 0 4px 18px rgba(239, 68, 68, 0.45); font-size: 13px; letter-spacing: 0.02em;">
+        </div>
+      </div>
+    </form>
+{% endif %}
+</div>
+{% endblock %}

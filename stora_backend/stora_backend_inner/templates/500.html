@@ -1,0 +1,73 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>500 Internal Server Error | STORA</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <meta name="robots" content="NONE,NOARCHIVE">
+  <link rel="stylesheet" href="{% static 'css/backend-pages.css' %}?v={% now 'U' %}">
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 24px 16px;
+    }
+    .error-card {
+      width: 100%;
+      max-width: 440px;
+      padding: 44px 36px;
+      text-align: center;
+    }
+    .brand {
+      margin-bottom: 24px;
+    }
+    .code-badge.server-error {
+      background: linear-gradient(135deg, #ffffff 30%, #f87171 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .error-card h1 {
+      font-size: 22px;
+      margin-bottom: 10px;
+    }
+    .error-card p {
+      margin-bottom: 32px;
+    }
+    .cta-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="error-card">
+    <a href="/" class="brand">
+      <div class="brand-icon">S</div>
+      <div class="brand-name">STORA<span>.</span></div>
+    </a>
+
+    <div class="code-badge server-error">500</div>
+    <h1>Internal Server Error</h1>
+    <p>
+      An unexpected condition occurred on the Stora backend server while handling this request. The core team has been notified.
+    </p>
+
+    <div class="cta-stack">
+      <a href="/" class="btn-primary">Return to Backend Portal &rarr;</a>
+      <a href="/api/health/" class="btn-secondary">Check System Health</a>
+    </div>
+
+    <div class="powered">STORA &bull; High-Performance Retail Engine</div>
+  </div>
+</body>
+</html>

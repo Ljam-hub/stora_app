@@ -32,30 +32,38 @@ class UserAdmin(DjangoUserAdmin):
     def role_badge(self, obj):
         from django.utils.html import format_html
         if obj.role == "owner":
-            return format_html(
-                '<span style="background-color: #241D38; color: #9B87F5; padding: 3px 8px; border-radius: 6px; font-weight: 700; font-size: 11px;">🏪 Store Owner</span>'
-            )
-        return format_html(
-            '<span style="background-color: #132D1B; color: #4ADE80; padding: 3px 8px; border-radius: 6px; font-weight: 700; font-size: 11px;">🛒 Customer</span>'
-        )
+            return format_html('<span class="user-badge user-badge--owner">Store Owner</span>')
+        return format_html('<span class="user-badge user-badge--customer">Customer</span>')
 
-    @admin.display(description="Subscription Status")
+    @admin.display(description="Subscription")
     def subscription_status(self, obj):
+        from django.utils.html import format_html
         if obj.is_premium_active:
             days = obj.days_left
-            return f"🌟 Premium ({days} days left)"
+            return format_html(
+                '<span class="user-badge user-badge--premium">Premium ({}d left)</span>',
+                days,
+            )
         elif obj.is_trial_active:
             days = obj.days_left
-            return f"Free Trial ({days} days left)"
+            return format_html(
+                '<span class="user-badge user-badge--trial">Trial ({}d left)</span>',
+                days,
+            )
         elif obj.is_premium:
-            return "⚠️ Premium Expired (Reverted to Free - First 20 items)"
+            return format_html(
+                '<span class="user-badge user-badge--expired">Expired</span>'
+            )
         else:
-            return "Free Plan (Expired - First 20 items)"
+            return format_html(
+                '<span class="user-badge user-badge--free">Free Plan</span>'
+            )
 
     @admin.display(description="Expires On")
     def subscription_expiration(self, obj):
+        from django.utils.html import format_html
         if obj.is_premium and obj.premium_until:
-            return obj.premium_until.strftime("%Y-%m-%d %H:%M")
+            return format_html('<span class="user-expiration">{}</span>', obj.premium_until.strftime("%Y-%m-%d %H:%M"))
         return "-"
 
     def get_queryset(self, request):

@@ -140,3 +140,11 @@ def notify_order_status_change(order, action: str, extra_msg: str = ""):
             title = f"Counter-Offer for Order #{order.id}"
             body = f"Store suggested changes for Order #{order.id}{price_text}: {order.counter_notes}"
             send_push_notification(order.customer.fcm_token, title, body, data_payload)
+
+    elif action == "ready":
+        # Notify customer that order is ready for pickup
+        if order.customer and getattr(order.customer, "fcm_token", None):
+            store_name = (order.owner.business_name if hasattr(order.owner, 'business_name') and order.owner.business_name else None) or "the store"
+            title = f"Order #{order.id} Ready for Pickup! 🛍️"
+            body = f"Your order #{order.id} is prepared and ready for pickup at {store_name}."
+            send_push_notification(order.customer.fcm_token, title, body, data_payload)

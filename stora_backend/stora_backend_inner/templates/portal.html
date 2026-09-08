@@ -1,0 +1,83 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#102e31">
+  <title>STORA Backend</title>
+  <link rel="stylesheet" href="{% static 'css/portal.css' %}">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="/" aria-label="STORA backend home">
+      <span class="brand__mark" aria-hidden="true">S</span>
+      <span class="brand__name">STORA<span>.</span></span>
+      <span class="brand__context">Backend</span>
+    </a>
+    <nav class="site-nav" aria-label="Backend navigation">
+      <span class="status"><span class="status__dot" aria-hidden="true"></span>System operational</span>
+      <a class="button button--primary" href="/admin/">Open admin <span aria-hidden="true">&#8599;</span></a>
+    </nav>
+  </header>
+
+  <main class="page-shell">
+    <section class="intro" aria-labelledby="page-title">
+      <p class="eyebrow">Commerce operations console</p>
+      <h1 id="page-title">Everything behind your store, in one place.</h1>
+      <p class="intro__copy">Manage products, orders, sales, accounts, and the API from a clear backend workspace built for daily operations.</p>
+      <div class="intro__actions">
+        <a class="button button--primary button--large" href="/admin/">Go to admin dashboard <span aria-hidden="true">&#8594;</span></a>
+        <a class="button button--quiet button--large" href="/api/health/" target="_blank">Check API health</a>
+      </div>
+    </section>
+
+    <section class="status-panel" aria-labelledby="status-title">
+      <div>
+        <p class="section-label">Live status</p>
+        <h2 id="status-title">Core services are ready.</h2>
+      </div>
+      <div class="status-grid">
+        <div class="status-item"><span class="status-item__indicator"></span><span>API gateway</span><strong>Online</strong></div>
+        <div class="status-item"><span class="status-item__indicator"></span><span>Admin console</span><strong>Online</strong></div>
+        <div class="status-item"><span class="status-item__indicator"></span><span>Notifications</span><strong>Connected</strong></div>
+      </div>
+    </section>
+
+    <section class="feature-grid" aria-label="Backend areas">
+      <article class="feature-card">
+        <span class="feature-card__number">01</span>
+        <h2>Store operations</h2>
+        <p>Keep products, categories, inventory, and low-stock actions accurate and easy to find.</p>
+        <a href="/admin/inventory/product/">Manage inventory <span aria-hidden="true">&#8594;</span></a>
+      </article>
+      <article class="feature-card">
+        <span class="feature-card__number">02</span>
+        <h2>Order flow</h2>
+        <p>Review incoming carts and move customer orders from pending to completed.</p>
+        <a href="/admin/orders/order/">Review orders <span aria-hidden="true">&#8594;</span></a>
+      </article>
+      <article class="feature-card">
+        <span class="feature-card__number">03</span>
+        <h2>API access</h2>
+        <p>Inspect the backend response and verify the service your mobile clients depend on.</p>
+        <a href="/api/" target="_blank">Open API root <span aria-hidden="true">&#8599;</span></a>
+      </article>
+    </section>
+
+    <section class="developer-note" aria-labelledby="connection-title">
+      <div>
+        <p class="section-label">Local development</p>
+        <h2 id="connection-title">Connect a mobile client</h2>
+        <p>Use the local backend address for device testing and USB development.</p>
+      </div>
+      <code><span>$</span> adb reverse tcp:8000 tcp:8000</code>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <span>STORA Backend</span>
+    <span>Retail operations platform</span>
+  </footer>
+</body>
+</html>

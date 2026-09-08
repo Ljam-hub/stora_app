@@ -1,0 +1,398 @@
+/* ==========================================================================
+   STORA UNIFIED BACKEND DESIGN SYSTEM
+   Modern Dark Graphite & Mint-Teal Theme for All Backend Screens:
+   - Portal (/), Admin (/admin/), Login (/admin/login/),
+   - Password Reset screens (/admin/password_reset/, confirm, done, complete),
+   - Error pages (404, 500), Audit history, Object Deletion confirmation.
+   ========================================================================== */
+
+:root {
+  /* Color Palette */
+  --backend-bg: #0c0f12;
+  --backend-bg-gradient: #0c0f12;
+  --backend-surface: #14191c;
+  --backend-surface-raised: #1c2327;
+  --backend-border: #283439;
+  --backend-field: #0e1215;
+  --backend-field-border: #38464d;
+  
+  /* Typography & Text */
+  --backend-text: #f5f8f8;
+  --backend-text-strong: #ffffff;
+  --backend-muted: #aab8bb;
+  --backend-dim: #718184;
+
+  /* Accent Colors */
+  --backend-accent: #8bd3ca;
+  --backend-accent-strong: #c7eeea;
+  --backend-accent-dark: #5fb8ae;
+  --backend-accent-glow: rgba(139, 211, 202, 0.2);
+  --backend-accent-bg: rgba(139, 211, 202, 0.12);
+
+  /* Status Colors */
+  --backend-danger: #f87171;
+  --backend-danger-bg: rgba(248, 113, 113, 0.14);
+  --backend-danger-border: rgba(248, 113, 113, 0.35);
+  --backend-danger-hover: #ef4444;
+  --backend-success: #4ade80;
+  --backend-success-bg: rgba(74, 222, 128, 0.12);
+  --backend-warning: #fbbf24;
+  --backend-warning-bg: rgba(251, 191, 36, 0.12);
+  --backend-info: #38bdf8;
+  --backend-info-bg: rgba(56, 189, 248, 0.12);
+
+  /* Standard Radii & Shadows */
+  --backend-radius-sm: 8px;
+  --backend-radius-md: 12px;
+  --backend-radius-lg: 16px;
+  --backend-radius-xl: 20px;
+  --backend-shadow-card: 0 16px 48px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+/* Page Base */
+body {
+  background: var(--backend-bg) !important;
+  background-image: none !important;
+  color: var(--backend-text) !important;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Card Shells */
+.error-card,
+.card,
+.stora-form-card,
+.stora-delete-wrapper {
+  background: var(--backend-surface) !important;
+  border: 1px solid var(--backend-border) !important;
+  border-radius: var(--backend-radius-lg) !important;
+  box-shadow: var(--backend-shadow-card) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  color: var(--backend-text) !important;
+}
+
+/* Branding */
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: var(--backend-text-strong);
+}
+
+.brand-icon {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 44px !important;
+  height: 44px !important;
+  background: var(--backend-accent) !important;
+  color: #102022 !important;
+  border-radius: var(--backend-radius-md) !important;
+  font-weight: 800 !important;
+  box-shadow: 0 4px 14px var(--backend-accent-glow) !important;
+}
+
+.brand-name {
+  font-size: 24px !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.02em !important;
+  color: var(--backend-text-strong) !important;
+}
+
+.brand-name span,
+.brand-dot {
+  color: var(--backend-accent) !important;
+  text-shadow: none !important;
+}
+
+.brand-sub {
+  color: var(--backend-muted) !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+}
+
+/* Headings and Descriptions */
+.card h2,
+.error-card h1,
+.stora-page-title,
+.stora-modal-title {
+  color: var(--backend-text-strong) !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.02em !important;
+}
+
+.card-desc,
+.error-card p,
+.card p {
+  color: var(--backend-muted) !important;
+  font-size: 14px !important;
+  line-height: 1.6 !important;
+}
+
+.code-badge {
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 58px !important;
+  font-weight: 800 !important;
+  line-height: 1 !important;
+  margin-bottom: 12px !important;
+  color: var(--backend-accent) !important;
+  -webkit-text-fill-color: var(--backend-accent) !important;
+  background: none !important;
+}
+
+/* Primary Action Buttons */
+.btn-primary,
+.btn-submit,
+.btn-login,
+.btn-return,
+.stora-modal-btn-confirm {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  padding: 13px 20px !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  background: var(--backend-accent) !important;
+  color: #102022 !important;
+  border: none !important;
+  border-radius: var(--backend-radius-sm) !important;
+  text-decoration: none !important;
+  cursor: pointer !important;
+  box-shadow: 0 4px 16px var(--backend-accent-glow) !important;
+  transition: all 0.2s ease !important;
+}
+
+.btn-primary:hover,
+.btn-submit:hover,
+.btn-login:hover,
+.btn-return:hover,
+.stora-modal-btn-confirm:hover {
+  background: var(--backend-accent-strong) !important;
+  color: #102022 !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 6px 20px rgba(139, 211, 202, 0.35) !important;
+}
+
+/* Secondary Action Buttons & Links */
+.btn-secondary,
+.card-footer a,
+.cancel-link,
+.stora-modal-btn-cancel {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 12px 18px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  background: rgba(139, 211, 202, 0.08) !important;
+  border: 1px solid var(--backend-border) !important;
+  color: var(--backend-accent) !important;
+  border-radius: var(--backend-radius-sm) !important;
+  text-decoration: none !important;
+  transition: all 0.2s ease !important;
+}
+
+.btn-secondary:hover,
+.card-footer a:hover,
+.cancel-link:hover,
+.stora-modal-btn-cancel:hover {
+  background: var(--backend-surface-raised) !important;
+  color: var(--backend-accent-strong) !important;
+  border-color: var(--backend-accent) !important;
+}
+
+/* Form Input Controls */
+.field-group label,
+.stora-form-card .form-row label {
+  display: block !important;
+  color: var(--backend-muted) !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  margin-bottom: 7px !important;
+}
+
+.field-group input[type="email"],
+.field-group input[type="text"],
+.field-group input[type="password"],
+.field-group input[type="number"],
+.stora-form-card input[type="password"],
+.stora-form-card input[type="text"] {
+  width: 100% !important;
+  background: var(--backend-field) !important;
+  border: 1px solid var(--backend-field-border) !important;
+  color: var(--backend-text-strong) !important;
+  border-radius: var(--backend-radius-sm) !important;
+  padding: 12px 14px !important;
+  font-size: 14px !important;
+  font-family: inherit !important;
+  outline: none !important;
+  box-sizing: border-box !important;
+  transition: border-color 0.2s, box-shadow 0.2s !important;
+}
+
+.field-group input:focus,
+.stora-form-card input:focus {
+  border-color: var(--backend-accent) !important;
+  box-shadow: 0 0 0 3px var(--backend-accent-glow) !important;
+}
+
+/* Status Badges */
+.status-badge {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 60px !important;
+  height: 60px !important;
+  border-radius: 50% !important;
+  background: var(--backend-accent-bg) !important;
+  border: 1px solid var(--backend-accent) !important;
+  font-size: 28px !important;
+  margin-bottom: 20px !important;
+}
+
+/* Alert Boxes & Validation Errors */
+.field-error,
+.errorlist,
+.invalid-alert {
+  color: var(--backend-danger) !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+}
+
+.invalid-alert {
+  background: var(--backend-danger-bg) !important;
+  border: 1px solid var(--backend-danger-border) !important;
+  border-radius: var(--backend-radius-md) !important;
+  padding: 20px !important;
+  text-align: center !important;
+}
+
+.invalid-alert p {
+  color: var(--backend-text) !important;
+}
+
+/* Help text containers */
+.field-help {
+  font-size: 12px !important;
+  color: var(--backend-muted) !important;
+  margin-top: 6px !important;
+  line-height: 1.4 !important;
+}
+
+/* Footers */
+.powered {
+  text-align: center !important;
+  margin-top: 24px !important;
+  font-size: 11px !important;
+  color: var(--backend-dim) !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+  font-weight: 600 !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 520px) {
+  .error-card,
+  .card,
+  .stora-form-card,
+  .stora-delete-wrapper {
+    padding: 24px 18px !important;
+  }
+}
+
+/* ==========================================================================
+   Logout / Action Confirmation Modal
+   ========================================================================== */
+.stora-modal[hidden] {
+  display: none !important;
+}
+
+.stora-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.stora-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(16, 20, 22, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.stora-modal-content {
+  position: relative;
+  background: var(--backend-surface);
+  border: 1px solid var(--backend-border);
+  border-radius: var(--backend-radius-lg);
+  padding: 28px 24px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  color: var(--backend-text);
+  z-index: 1;
+}
+
+.stora-modal-header {
+  margin-bottom: 12px;
+}
+
+.stora-modal-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--backend-text-strong);
+  margin: 0;
+}
+
+.stora-modal-body p {
+  color: var(--backend-muted);
+  font-size: 14px;
+  line-height: 1.5;
+  margin-bottom: 24px;
+}
+
+.stora-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.stora-modal-btn {
+  padding: 9px 18px;
+  border-radius: var(--backend-radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+
+.stora-modal-btn-cancel {
+  background: transparent;
+  color: var(--backend-muted);
+  border-color: var(--backend-border);
+}
+
+.stora-modal-btn-cancel:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--backend-text-strong);
+}
+
+.stora-modal-btn-confirm {
+  background: var(--backend-danger);
+  color: #ffffff;
+  border-color: var(--backend-danger);
+}
+
+.stora-modal-btn-confirm:hover {
+  background: var(--backend-danger-hover);
+  border-color: var(--backend-danger-hover);
+}

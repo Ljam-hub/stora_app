@@ -120,7 +120,7 @@ def account_status(request):
     user = request.user
     product_count = Product.objects.filter(owner=user).count()
     free_limit = django_settings.FREE_PLAN_PRODUCT_LIMIT
-    limit = 0 if user.is_premium_active else free_limit
+    limit = None if user.is_premium_active else free_limit
     trial_ends = user.trial_ends_at
     if user.is_premium_active:
         days_left = (user.premium_until - timezone.now()).days if user.premium_until else 0
@@ -288,7 +288,7 @@ class OwnerQuerysetMixin:
             owner_id = self.request.query_params.get("owner") or self.request.query_params.get("store")
             if owner_id:
                 return super().get_queryset().filter(owner_id=owner_id)
-            return super().get_queryset().all()
+            return super().get_queryset().none()
         return super().get_queryset().filter(owner=user)
 
 
@@ -330,8 +330,10 @@ class ProductViewSet(OwnerQuerysetMixin, viewsets.ModelViewSet):
         if getattr(user, "role", "owner") != "customer":
             if not user.is_premium_active:
                 free_limit = django_settings.FREE_PLAN_PRODUCT_LIMIT
-                # If user is on the free plan, only the first 20 products are open
-                return qs[:free_limit]
+                # Use a subquery so the result is still a filterable queryset
+                # (slicing with [:N] would break DRF's .filter() / .get_object())
+                allowed_ids = qs.values_list("id", flat=True)[:free_limit]
+                return qs.filter(id__in=list(allowed_ids))
         return qs
 
     def perform_create(self, serializer):
@@ -431,6 +433,23 @@ class OrderViewSet(viewsets.ModelViewSet):
             "status": "accepted",
             "order": OrderSerializer(order).data,
             "sale_id": sale.id if sale else None,
+        })
+
+    @action(detail=True, methods=["post"])
+    def ready(self, request, pk=None):
+        order = self.get_object()
+        if request.user != order.owner:
+            raise PermissionDenied("Only the store owner can mark this order as ready.")
+        if order.status != Order.STATUS_ACCEPTED:
+            return Response(
+                {"error": f"Only accepted orders can be marked ready. Current status: '{order.status}'."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        order.mark_as_ready()
+        notify_order_status_change(order, "ready")
+        return Response({
+            "status": "ready",
+            "order": OrderSerializer(order).data,
         })
 
     @action(detail=True, methods=["post"])

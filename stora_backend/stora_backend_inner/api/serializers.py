@@ -351,7 +351,7 @@ class AccountStatusSerializer(serializers.Serializer):
     trial_started_at = UTCDateTimeField()
     trial_ends_at = UTCDateTimeField()
     product_count = serializers.IntegerField()
-    product_limit = serializers.IntegerField()
+    product_limit = serializers.IntegerField(allow_null=True)
     days_left = serializers.IntegerField()
     can_add_product = serializers.BooleanField()
     monthly_price = serializers.DecimalField(max_digits=8, decimal_places=2)

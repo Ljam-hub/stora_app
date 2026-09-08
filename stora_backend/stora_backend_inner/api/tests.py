@@ -3,6 +3,7 @@ from datetime import timedelta
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
 from django.utils import timezone
+from django.test import Client, TestCase
 from rest_framework.test import APITestCase
 from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -435,4 +436,28 @@ class FCMNotificationTests(APITestCase):
         order.counter_notes = "Discount applied"
         order.save()
         notify_order_status_change(order, "counter")
+
+
+class AdminPasswordResetViewTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+
+    def test_admin_login_renders_successfully(self):
+        response = self.client.get("/admin/login/?next=/admin/")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Log in to Stora Admin")
+        self.assertContains(response, "/admin/password_reset/")
+
+    def test_admin_password_reset_views_render(self):
+        reset_res = self.client.get("/admin/password_reset/")
+        self.assertEqual(reset_res.status_code, 200)
+
+        done_res = self.client.get("/admin/password_reset/done/")
+        self.assertEqual(done_res.status_code, 200)
+
+        confirm_res = self.client.get("/reset/MQ/set-password/")
+        self.assertEqual(confirm_res.status_code, 200)
+
+        complete_res = self.client.get("/reset/done/")
+        self.assertEqual(complete_res.status_code, 200)
 

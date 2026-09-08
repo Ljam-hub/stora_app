@@ -1,105 +1,2463 @@
-/* Approximates AppColors from lib/stora_login/theme/app_colors.dart so the
-   admin feels like the same product as the app, rather than stock Django
-   admin green. */
+/* ==========================================================================
+   STORA ADMIN — Unified Design System
+   Sleek Black & Grey Gradient Theme. High-Contrast Legibility.
+   Zero Layout Distortions. Fixed Non-Shrinking Columns & Form Controls.
+   ========================================================================== */
+
+/* ---- Fonts ---- */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+/* ==========================================================================
+   1. DESIGN TOKENS (Black & Grey Gradient System)
+   ========================================================================== */
 :root {
-  --stora-bg: #141018;
-  --stora-bg-top: #1E1826;
-  --stora-field-bg: #1F1A28;
-  --stora-field-border: #3A3245;
-  --stora-purple: #9B87F5;
-  --stora-purple-light: #B9A9FF;
-  --stora-label: #8E8798;
-  --stora-error: #FF6B6B;
+  /* Backgrounds (Clean Solid Dark Charcoal - Single Uniform Color, Zero Gradient Split) */
+  --stora-bg:             #0c0f12;
+  --stora-bg-gradient:    #0c0f12;
+  --stora-surface:        #14191c;
+  --stora-surface-raised: #1c2327;
+  --stora-border:         #283439;
+  --stora-border-subtle:  rgba(255, 255, 255, 0.05);
+
+  /* Form Fields */
+  --stora-field:          #0e1113;
+  --stora-field-border:   #38444a;
+  --stora-field-focus:    #8bd3ca;
+
+  /* Typography & Text */
+  --stora-text:           #f5f8f8;
+  --stora-text-strong:    #ffffff;
+  --stora-muted:          #b4c2c5;
+  --stora-dim:            #829396;
+
+  /* Accent Mint-Teal */
+  --stora-accent:         #8bd3ca;
+  --stora-accent-strong:  #c7eeea;
+  --stora-accent-dark:    #5fb8ae;
+  --stora-accent-glow:    rgba(139, 211, 202, 0.22);
+  --stora-accent-bg:      rgba(139, 211, 202, 0.12);
+
+  /* Status Colors */
+  --stora-danger:         #f87171;
+  --stora-danger-bg:      rgba(248, 113, 113, 0.16);
+  --stora-danger-border:  rgba(248, 113, 113, 0.35);
+  --stora-danger-hover:   #ef4444;
+  --stora-success:        #4ade80;
+  --stora-success-bg:     rgba(74, 222, 128, 0.14);
+  --stora-warning:        #fbbf24;
+  --stora-warning-bg:     rgba(251, 191, 36, 0.14);
+  --stora-info:           #38bdf8;
+  --stora-info-bg:        rgba(56, 189, 248, 0.14);
+
+  /* Radii & Shadows */
+  --stora-radius-sm:  8px;
+  --stora-radius-md:  12px;
+  --stora-radius-lg:  16px;
+  --stora-shadow:     0 16px 48px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.05);
+
+  /* Fonts */
+  --stora-font:       'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --stora-font-mono:  'JetBrains Mono', Consolas, monospace;
+
+  /* Header & Navigation */
+  --stora-header-bg:      #090b0d;
+  --stora-sidebar-bg:     linear-gradient(180deg, #0d1012 0%, #161b1e 50%, #0f1214 100%);
+  --stora-sidebar-border: #283338;
+  --stora-sidebar-hover:  rgba(139, 211, 202, 0.08);
+  --stora-sidebar-active: rgba(139, 211, 202, 0.15);
+}
+
+/* ==========================================================================
+   2. GLOBAL RESETS & BASE
+   ========================================================================== */
+*, *::before, *::after {
+  box-sizing: border-box !important;
+}
+
+html {
+  background: var(--stora-bg) !important;
 }
 
 body {
+  margin: 0;
   background: var(--stora-bg) !important;
-  color: #fff;
+  background-image: none !important;
+  color: var(--stora-text) !important;
+  font-family: var(--stora-font) !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
+a {
+  color: var(--stora-accent);
+}
+
+a:link, a:visited {
+  color: var(--stora-accent);
+}
+
+a:hover {
+  color: var(--stora-accent-strong);
+}
+
+::selection {
+  background: var(--stora-accent);
+  color: #102022;
+}
+
+/* ==========================================================================
+   3. HEADER & BRANDING
+   ========================================================================== */
 #header {
-  background: var(--stora-bg-top);
-  border-bottom: 1px solid var(--stora-field-border);
-  color: #fff;
-}
-#header a:link, #header a:visited { color: var(--stora-purple-light); }
-.stora-dot { color: var(--stora-purple-light); }
-
-div.breadcrumbs {
-  background: var(--stora-field-bg);
-  color: var(--stora-label);
-  border: none;
-}
-div.breadcrumbs a { color: var(--stora-purple-light); }
-
-#content, .module, .dashboard #content, .card { background: transparent; }
-
-.module h2, .module caption, .inline-group h2 {
-  background: var(--stora-field-bg);
-  color: #fff;
+  background: var(--stora-header-bg) !important;
+  border-bottom: 1px solid var(--stora-border) !important;
+  color: var(--stora-text) !important;
+  padding: 0 !important;
 }
 
-a:link, a:visited { color: var(--stora-purple-light); }
-
-.button, input[type="submit"], input[type="button"], .submit-row input, a.button {
-  background: var(--stora-purple);
-  color: #000 !important;
-  border: none;
-  border-radius: 8px;
-}
-.button:hover, input[type="submit"]:hover, input[type="button"]:hover {
-  background: var(--stora-purple-light);
-}
-.button.default, input[type="submit"].default {
-  background: var(--stora-purple-light);
+#header a:link,
+#header a:visited {
+  color: var(--stora-accent) !important;
 }
 
-.object-tools a { background: var(--stora-purple); border-radius: 8px; }
-
-#changelist-filter, .module { border: 1px solid var(--stora-field-border); }
-
-table thead th, .results { background: var(--stora-field-bg); }
-.row1 { background: var(--stora-bg); }
-.row2 { background: var(--stora-field-bg); }
-
-/* Dashboard summary cards injected by templates/admin/index.html */
-.stora-dashboard {
+.stora-header-container {
   display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  max-width: 100%;
+  padding: 14px max(24px, calc((100vw - 1340px) / 2));
+}
+
+.stora-header-right {
+  display: flex;
+  align-items: center;
   gap: 16px;
   flex-wrap: wrap;
-  margin-bottom: 24px;
 }
-.stora-card {
-  background: var(--stora-field-bg);
-  border: 1px solid var(--stora-field-border);
-  border-radius: 16px;
-  padding: 16px 20px;
-  min-width: 160px;
+
+.stora-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none !important;
+  color: var(--stora-text-strong) !important;
 }
-.stora-card__label {
-  color: var(--stora-label);
+
+.stora-brand__mark {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  background: var(--stora-accent);
+  border-radius: 10px;
+  color: #102022;
+  font-weight: 800;
+  font-size: 17px;
+  box-shadow: 0 4px 14px var(--stora-accent-glow);
+}
+
+.stora-brand__name {
+  font-family: var(--stora-font);
+  font-size: 21px;
+  font-weight: 800;
+  letter-spacing: -.02em;
+  color: var(--stora-text-strong) !important;
+}
+
+.stora-dot {
+  color: var(--stora-accent) !important;
+}
+
+.stora-brand__context {
+  margin-left: 8px;
+  padding-left: 14px;
+  border-left: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--stora-muted) !important;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.stora-global-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.stora-api-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border: 1px solid rgba(74, 222, 128, 0.3);
+  border-radius: 99px;
+  background: rgba(74, 222, 128, 0.08);
+  color: #b7f0c6;
   font-size: 12px;
-  margin: 0 0 6px;
-  text-transform: uppercase;
-  letter-spacing: .5px;
-}
-.stora-card__value {
-  color: #fff;
-  font-size: 24px;
   font-weight: 700;
+}
+
+.stora-api-status__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #56c779;
+  box-shadow: 0 0 0 3px rgba(86, 199, 121, 0.2);
+}
+
+.stora-header-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 1px solid var(--stora-border);
+  border-radius: var(--stora-radius-sm);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--stora-muted) !important;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none !important;
+  transition: all .2s ease;
+}
+
+.stora-header-link:hover {
+  border-color: var(--stora-accent) !important;
+  color: var(--stora-accent) !important;
+  background: var(--stora-accent-bg);
+}
+
+#user-tools {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--stora-muted) !important;
+  font-size: 13px;
+  border: none !important;
+  background: none !important;
+  padding: 0 !important;
+  float: none !important;
+  text-align: right;
+}
+
+#user-tools a {
+  color: var(--stora-accent) !important;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+#user-tools a:hover {
+  color: var(--stora-accent-strong) !important;
+}
+
+.user-greeting {
+  color: var(--stora-dim);
+  font-size: 13px;
+}
+
+.user-greeting strong {
+  color: var(--stora-text-strong);
+  font-weight: 800;
+}
+
+.logout-btn {
+  background: transparent;
+  border: 1px solid var(--stora-border);
+  border-radius: var(--stora-radius-sm);
+  color: var(--stora-muted);
+  padding: 7px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all .2s;
+}
+
+.logout-btn:hover {
+  border-color: var(--stora-danger);
+  color: #ffffff;
+  background: var(--stora-danger);
+}
+
+/* ==========================================================================
+   4. BREADCRUMBS
+   ========================================================================== */
+div.breadcrumbs,
+.stora-breadcrumbs-bar {
+  background: #0f1315 !important;
+  border: none !important;
+  border-bottom: 1px solid var(--stora-border) !important;
+  color: var(--stora-dim) !important;
+  padding: 0 !important;
+}
+
+.stora-breadcrumbs-container {
+  padding: 12px max(24px, calc((100vw - 1340px) / 2));
+}
+
+div.breadcrumbs {
+  padding: 12px 24px !important;
+  font-size: 13px;
+}
+
+div.breadcrumbs a {
+  color: var(--stora-accent) !important;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+div.breadcrumbs a:hover {
+  color: var(--stora-accent-strong) !important;
+}
+
+/* ==========================================================================
+   5. NAVIGATION SIDEBAR (Black & Grey Gradient, Spaced Cards, Scrollable)
+   ========================================================================== */
+/* Modern Sidebar Toggle Rail & Pill Handle (Replaces raw >> and << ASCII characters) */
+.toggle-nav-sidebar {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 30 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex: 0 0 24px !important;
+  width: 24px !important;
+  height: 100vh !important;
+  background: transparent !important;
+  border: none !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.06) !important;
+  cursor: pointer !important;
+  padding: 0 !important;
+  outline: none !important;
+  transition: all 0.2s ease !important;
+}
+
+.toggle-nav-sidebar:hover {
+  background: rgba(139, 211, 202, 0.04) !important;
+}
+
+/* Floating Sleek Handle Pill */
+.toggle-nav-sidebar::before {
+  content: '' !important;
+  display: block !important;
+  width: 20px !important;
+  height: 52px !important;
+  border-radius: 6px !important;
+  background-color: #182024 !important;
+  border: 1px solid #36444b !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5) !important;
+  background-repeat: no-repeat !important;
+  background-position: center !important;
+  background-size: 13px 13px !important;
+  /* Crisp Modern Vector Chevron Right (Collapsed State: >>) */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238bd3ca' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='9 18 15 12 9 6'%3E%3C/polyline%3E%3C/svg%3E") !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* Crisp Modern Vector Chevron Left (Expanded State: <<) */
+.main.shifted .toggle-nav-sidebar::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238bd3ca' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='15 18 9 12 15 6'%3E%3C/polyline%3E%3C/svg%3E") !important;
+}
+
+.toggle-nav-sidebar:hover::before {
+  background-color: #222c33 !important;
+  border-color: #8bd3ca !important;
+  box-shadow: 0 0 16px rgba(139, 211, 202, 0.4) !important;
+  transform: scale(1.1) !important;
+}
+
+#nav-sidebar {
+  background: var(--stora-sidebar-bg) !important;
+  border-right: 1px solid var(--stora-sidebar-border) !important;
+  flex: 0 0 295px !important;
+  width: 295px !important;
+  min-width: 295px !important;
+  padding-top: 16px !important;
+  padding-bottom: 30px !important;
+  max-height: calc(100vh - 110px) !important;
+  overflow-y: auto !important;
+  scrollbar-width: thin !important;
+  scrollbar-color: #354247 transparent !important;
+  box-shadow: 6px 0 24px rgba(0, 0, 0, 0.35);
+}
+
+.main.shifted > #nav-sidebar + .content {
+  max-width: calc(100% - 318px) !important;
+}
+
+/* Sidebar Search Filter */
+#nav-filter {
+  width: calc(100% - 24px) !important;
+  margin: 0 12px 18px 12px !important;
+  padding: 10px 14px !important;
+  border-radius: 10px !important;
+  background: #090b0d !important;
+  border: 1px solid var(--stora-border) !important;
+  color: #ffffff !important;
+  font-size: 13px !important;
+  font-family: var(--stora-font) !important;
+  outline: none !important;
+  box-sizing: border-box !important;
+  transition: border-color .2s, box-shadow .2s;
+}
+
+#nav-filter:focus {
+  border-color: var(--stora-accent) !important;
+  box-shadow: 0 0 0 3px var(--stora-accent-glow) !important;
+}
+
+#nav-filter::placeholder {
+  color: #728489 !important;
+}
+
+/* App Modules in Sidebar (Accounts, Inventory, Orders, etc.) */
+#nav-sidebar .module {
+  margin: 0 12px 18px 12px !important;
+  padding: 12px 14px !important;
+  background: rgba(255, 255, 255, 0.025) !important;
+  border: 1px solid #273338 !important;
+  border-radius: 14px !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25) !important;
+  overflow: visible !important;
+}
+
+#nav-sidebar .module:last-child {
+  margin-bottom: 30px !important;
+}
+
+/* App Section Caption (ACCOUNTS, INVENTORY, etc.) */
+#nav-sidebar .module caption {
+  display: block !important;
+  padding: 0 0 10px 0 !important;
+  margin: 0 0 8px 0 !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  text-align: left !important;
+  background: transparent !important;
+}
+
+#nav-sidebar .module caption a.section {
+  color: #8bd3ca !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.12em !important;
+  text-transform: uppercase !important;
+  display: block !important;
+  text-decoration: none !important;
+}
+
+#nav-sidebar .module caption a.section:hover {
+  color: #c7eeea !important;
+}
+
+/* Model rows inside sidebar */
+#nav-sidebar table {
+  width: 100% !important;
+  border-collapse: separate !important;
+  border-spacing: 0 3px !important;
+  background: transparent !important;
+}
+
+#nav-sidebar tr {
+  border-radius: 8px !important;
+  transition: background 0.15s ease !important;
+}
+
+#nav-sidebar tr:hover {
+  background: var(--stora-sidebar-hover) !important;
+}
+
+#nav-sidebar tr.current-model {
+  background: var(--stora-sidebar-active) !important;
+  box-shadow: inset 3px 0 0 var(--stora-accent) !important;
+}
+
+#nav-sidebar th {
+  padding: 8px 8px 8px 6px !important;
+  vertical-align: middle !important;
+  width: auto !important;
+  background: transparent !important;
+  border: none !important;
+}
+
+#nav-sidebar th a {
+  color: #e8edf0 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  line-height: 1.4 !important;
+  text-decoration: none !important;
+  display: block !important;
+  word-break: normal !important;
+  padding: 0 !important;
+}
+
+#nav-sidebar tr:hover th a {
+  color: #ffffff !important;
+}
+
+#nav-sidebar tr.current-model th a {
+  color: var(--stora-accent) !important;
+  font-weight: 800 !important;
+}
+
+#nav-sidebar td {
+  padding: 8px 4px !important;
+  text-align: right !important;
+  vertical-align: middle !important;
+  white-space: nowrap !important;
+  background: transparent !important;
+  border: none !important;
+}
+
+/* + Add link in sidebar */
+#nav-sidebar a.addlink {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  padding: 4px 10px !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  border-radius: 6px !important;
+  background: rgba(139, 211, 202, 0.14) !important;
+  color: var(--stora-accent) !important;
+  text-decoration: none !important;
+  transition: all 0.18s ease !important;
+}
+
+#nav-sidebar a.addlink:hover {
+  background: var(--stora-accent) !important;
+  color: #102022 !important;
+  transform: translateY(-1px);
+}
+
+/* ==========================================================================
+   6. MAIN CONTENT AREA & SHELLS
+   ========================================================================== */
+.stora-main-container {
+  display: flex;
+  min-height: calc(100vh - 140px);
+}
+
+.stora-content-area {
+  flex: 1;
+  min-width: 0;
+  padding: 28px max(24px, calc((100vw - 1340px) / 2));
+}
+
+#content {
+  background: transparent !important;
+  max-width: 100%;
+}
+
+#content-main {
+  max-width: 100%;
+}
+
+.stora-page-title,
+#content h1 {
+  font-size: 28px !important;
+  font-weight: 800 !important;
+  color: var(--stora-text-strong) !important;
+  letter-spacing: -.025em;
+  margin: 0 0 24px 0;
+}
+
+#content h2 {
+  color: var(--stora-text-strong);
+  font-weight: 700;
+}
+
+/* ==========================================================================
+   7. FORM ROWS & FIELDS (Fix Tiny Inputs, Fix Alignment, Fix Help Text)
+   ========================================================================== */
+.module:not(#changelist),
+fieldset.module {
+  background: var(--stora-surface) !important;
+  border: 1px solid var(--stora-border) !important;
+  border-radius: var(--stora-radius-md) !important;
+  margin-bottom: 24px !important;
+  box-shadow: var(--stora-shadow);
+  overflow: visible !important;
+}
+
+#changelist.module,
+#changelist,
+#changelist-form {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+.module h2,
+.module caption,
+.inline-group h2 {
+  background: var(--stora-surface-raised) !important;
+  color: var(--stora-text-strong) !important;
+  font-size: 13px !important;
+  font-weight: 800 !important;
+  padding: 14px 20px !important;
+  margin: 0 !important;
+  border-bottom: 1px solid var(--stora-border) !important;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  border-top-left-radius: var(--stora-radius-md);
+  border-top-right-radius: var(--stora-radius-md);
+}
+
+/* Form Row: Block container so field and help text stack cleanly */
+.aligned .form-row {
+  display: block !important;
+  padding: 16px 20px !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+
+.aligned .form-row:last-child {
+  border-bottom: none !important;
+}
+
+.aligned .form-row > div:not(.checkbox-row) {
+  display: block !important;
+  width: 100% !important;
+  max-width: 900px !important;
+}
+
+/* The horizontal field container (Label on left, Input on right) */
+.aligned .form-row .flex-container:not(.checkbox-row),
+.aligned .form-row > div:not(.checkbox-row):not(:has(.flex-container)) {
+  display: flex !important;
+  align-items: center !important;
+  gap: 20px !important;
+  width: 100% !important;
+}
+
+/* Labels: Fixed non-shrinking 180px width */
+.aligned label:not(.vCheckboxLabel) {
+  float: none !important;
+  width: 180px !important;
+  min-width: 180px !important;
+  max-width: 180px !important;
+  flex-shrink: 0 !important;
+  padding: 0 !important;
+  color: #c1ced0 !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  line-height: 1.4 !important;
+  text-align: left !important;
+  margin: 0 !important;
+}
+
+label.required::after {
+  content: " *" !important;
+  color: var(--stora-danger) !important;
+  font-weight: 800;
+}
+
+/* Full-width responsive inputs inside form rows */
+.aligned .form-row input:not([type="checkbox"]):not([type="radio"]):not(#searchbar):not(.vDateField):not(.vTimeField),
+.aligned .form-row select,
+.aligned .form-row textarea,
+.aligned .form-row .related-widget-wrapper,
+.aligned .form-row .radiolist,
+.aligned .form-row .readonly {
+  flex: 1 1 auto !important;
+  width: 100% !important;
+  max-width: 620px !important;
+  min-width: 240px !important;
+}
+
+/* Help text: sits nicely below the input control, indented under the input */
+.aligned .form-row .help,
+.aligned .form-row p.help,
+.aligned .form-row div.help {
+  display: block !important;
+  margin: 8px 0 0 200px !important; /* 180px label + 20px gap */
+  max-width: 620px !important;
+  color: var(--stora-dim) !important;
+  font-size: 12px !important;
+  line-height: 1.5 !important;
+  padding: 0 !important;
+}
+
+/* Checkbox Rows (Fix Stretched Box Bug) */
+.form-row .checkbox-row,
+.aligned .form-row > div.checkbox-row,
+.aligned .form-row .flex-container.checkbox-row {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  width: 100% !important;
+  padding: 4px 0 !important;
+}
+
+.checkbox-row input[type="checkbox"],
+input[type="checkbox"] {
+  width: 20px !important;
+  height: 20px !important;
+  min-width: 20px !important;
+  max-width: 20px !important;
+  flex: 0 0 20px !important;
+  margin: 0 !important;
+  cursor: pointer !important;
+  accent-color: var(--stora-accent) !important;
+  border-radius: 4px !important;
+  border: 1px solid var(--stora-field-border) !important;
+  background-color: var(--stora-field) !important;
+}
+
+.checkbox-row label,
+.aligned label.vCheckboxLabel {
+  float: none !important;
+  width: auto !important;
+  min-width: auto !important;
+  max-width: none !important;
+  padding: 0 !important;
+  color: #ffffff !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  margin: 0 !important;
+  line-height: 1.4 !important;
+}
+
+.checkbox-row + .help,
+.checkbox-row + div.help {
+  margin-left: 32px !important;
+  margin-top: 4px !important;
+}
+
+/* Radio Lists (Password-based auth etc.) */
+form div.radiolist {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+form div.radiolist div {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+form div.radiolist input[type="radio"] {
+  width: 18px !important;
+  height: 18px !important;
+  margin: 0 !important;
+  cursor: pointer !important;
+  accent-color: var(--stora-accent) !important;
+}
+
+form div.radiolist label {
+  width: auto !important;
+  min-width: auto !important;
+  max-width: none !important;
+  color: #f5f8f8 !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  padding: 0 !important;
+}
+
+/* Readonly fields & plain text values */
+.aligned .readonly,
+.aligned label + p,
+.aligned label + div.readonly {
+  padding: 0 !important;
+  color: #ffffff !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  line-height: 1.6 !important;
+  margin: 0 !important;
+}
+
+/* TEXT INPUTS */
+input[type="text"]:not(#searchbar):not(.vDateField):not(.vTimeField),
+input[type="password"],
+input[type="email"],
+input[type="url"],
+input[type="number"],
+input[type="search"]:not(#nav-filter):not(#searchbar),
+input[type="tel"] {
+  box-sizing: border-box !important;
+  height: 42px !important;
+  min-height: 42px !important;
+  line-height: 40px !important;
+  padding: 0 14px !important;
+  font-size: 14px !important;
+  font-family: var(--stora-font) !important;
+  color: #ffffff !important;
+  background-color: var(--stora-field) !important;
+  border: 1px solid var(--stora-field-border) !important;
+  border-radius: var(--stora-radius-sm) !important;
+  outline: none !important;
+  transition: border-color .2s, box-shadow .2s !important;
+  width: 100%;
+}
+
+/* SELECT DROPDOWNS (Zero Vertical Clipping) */
+select {
+  box-sizing: border-box !important;
+  height: 42px !important;
+  min-height: 42px !important;
+  line-height: 40px !important;
+  padding: 0 36px 0 14px !important;
+  font-size: 14px !important;
+  font-family: var(--stora-font) !important;
+  color: #ffffff !important;
+  background-color: var(--stora-field) !important;
+  border: 1px solid var(--stora-field-border) !important;
+  border-radius: var(--stora-radius-sm) !important;
+  outline: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%238bd3ca' d='M6 8L0 0h12z'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 14px center !important;
+  background-size: 10px 7px !important;
+  cursor: pointer !important;
+  width: 100%;
+}
+
+select option {
+  background-color: #141a1d !important;
+  color: #ffffff !important;
+  padding: 10px 14px !important;
+}
+
+select[multiple],
+select[size]:not([size="1"]) {
+  height: auto !important;
+  min-height: 130px !important;
+  padding: 8px 12px !important;
+  line-height: 1.5 !important;
+  background-image: none !important;
+}
+
+/* DATE & TIME FIELDS (Two Clean Lines: Date on line 1, Time on line 2) */
+.aligned .form-row p.datetime {
+  display: block !important;
+  margin: 0 !important;
+  color: #c1ced0 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  line-height: 2.4 !important;
+}
+
+.aligned .form-row p.datetime br {
+  display: block !important;
+  content: "" !important;
+  margin-top: 6px !important;
+}
+
+.aligned .form-row p.datetime .vDateField,
+.aligned .form-row p.datetime .vTimeField {
+  box-sizing: border-box !important;
+  height: 40px !important;
+  min-height: 40px !important;
+  line-height: 38px !important;
+  padding: 0 12px !important;
+  font-size: 14px !important;
+  font-family: var(--stora-font) !important;
+  color: #ffffff !important;
+  background-color: var(--stora-field) !important;
+  border: 1px solid var(--stora-field-border) !important;
+  border-radius: var(--stora-radius-sm) !important;
+  width: 140px !important;
+  max-width: 160px !important;
+  min-width: 120px !important;
+  display: inline-block !important;
+  vertical-align: middle !important;
+  margin: 0 8px !important;
+}
+
+.aligned .form-row p.datetime .datetimeshortcuts {
+  display: inline-flex !important;
+  align-items: center !important;
+  vertical-align: middle !important;
+  gap: 6px !important;
+  font-size: 12px !important;
+  color: var(--stora-dim) !important;
+  white-space: nowrap !important;
+}
+
+.datetimeshortcuts a {
+  color: var(--stora-accent) !important;
+  font-weight: 700 !important;
+  text-decoration: none !important;
+}
+
+.datetimeshortcuts a:hover {
+  color: var(--stora-accent-strong) !important;
+  text-decoration: underline !important;
+}
+
+/* FILE UPLOADS (Screenshot, Documents) */
+.aligned .form-row p.file-upload {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 10px !important;
+  margin: 0 !important;
+  color: #c1ced0 !important;
+  font-size: 13px !important;
+  line-height: 1.5 !important;
+}
+
+.file-upload a {
+  color: var(--stora-accent) !important;
+  font-weight: 600 !important;
+  text-decoration: underline !important;
+  word-break: break-all !important;
+}
+
+input[type="file"] {
+  color: var(--stora-muted) !important;
+  font-size: 13px !important;
+  padding: 6px 0 !important;
+  cursor: pointer !important;
+}
+
+input[type="file"]::file-selector-button {
+  background: var(--stora-surface-raised) !important;
+  border: 1px solid var(--stora-border) !important;
+  border-radius: var(--stora-radius-sm) !important;
+  color: #ffffff !important;
+  padding: 8px 16px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  font-family: inherit !important;
+  cursor: pointer !important;
+  margin-right: 12px !important;
+  transition: all 0.2s ease !important;
+}
+
+input[type="file"]::file-selector-button:hover {
+  background: var(--stora-accent) !important;
+  color: #102022 !important;
+  border-color: var(--stora-accent) !important;
+}
+
+/* DATE HIERARCHY BAR (All dates, Month links) */
+.xfull,
+.toplinks,
+ul.toplinks {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  padding: 12px 18px !important;
+  margin: 0 0 16px 0 !important;
+  background: var(--stora-surface) !important;
+  border: 1px solid var(--stora-border) !important;
+  border-radius: var(--stora-radius-md) !important;
+  list-style: none !important;
+  box-shadow: var(--stora-shadow);
+  flex-wrap: wrap !important;
+  font-size: 13px !important;
+  color: var(--stora-dim) !important;
+}
+
+.toplinks a {
+  display: inline-flex !important;
+  align-items: center !important;
+  padding: 6px 14px !important;
+  border-radius: 6px !important;
+  background: rgba(139, 211, 202, 0.1) !important;
+  color: var(--stora-accent) !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  text-decoration: none !important;
+  transition: all 0.15s ease !important;
+}
+
+.toplinks a:hover {
+  background: var(--stora-accent) !important;
+  color: #102022 !important;
+}
+
+.toplinks li.selected a,
+.toplinks a.selected {
+  background: var(--stora-accent) !important;
+  color: #102022 !important;
+}
+
+/* TEXTAREAS */
+textarea {
+  box-sizing: border-box !important;
+  width: 100% !important;
+  max-width: 620px !important;
+  min-height: 110px !important;
+  padding: 12px 14px !important;
+  line-height: 1.5 !important;
+  font-size: 14px !important;
+  font-family: var(--stora-font) !important;
+  color: #ffffff !important;
+  background-color: var(--stora-field) !important;
+  border: 1px solid var(--stora-field-border) !important;
+  border-radius: var(--stora-radius-sm) !important;
+  outline: none !important;
+  resize: vertical !important;
+  transition: border-color .2s, box-shadow .2s !important;
+}
+
+/* Focus States */
+input[type="text"]:focus,
+input[type="password"]:focus,
+input[type="email"]:focus,
+input[type="url"]:focus,
+input[type="number"]:focus,
+input[type="date"]:focus,
+input[type="datetime-local"]:focus,
+input[type="time"]:focus,
+input[type="search"]:focus,
+input[type="tel"]:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--stora-field-focus) !important;
+  box-shadow: 0 0 0 3px var(--stora-accent-glow) !important;
+}
+
+ul.errorlist {
+  color: var(--stora-danger) !important;
+  font-size: 13px;
+  font-weight: 700;
+  margin: 6px 0 0 200px !important;
+  padding: 0;
+  list-style: none;
+}
+
+ul.errorlist li {
+  color: var(--stora-danger) !important;
+}
+
+/* ==========================================================================
+   7b. DUAL LIST SELECTOR / FILTERED SELECT MULTIPLE (User Permissions / Groups)
+   Fix Color Mismatch, Expand Width to Fit Perfectly, Style Filter and Buttons
+   ========================================================================== */
+.aligned .form-row:has(.selector) > div,
+.aligned .form-row:has(.selectfilter) > div {
+  max-width: 1200px !important;
+  width: 100% !important;
+}
+
+.aligned .form-row:has(.selector) .flex-container,
+.aligned .form-row:has(.selectfilter) .flex-container {
+  align-items: flex-start !important;
+  padding-top: 4px !important;
+}
+
+.aligned .form-row .related-widget-wrapper:has(.selector),
+.aligned .form-row .related-widget-wrapper:has(.selectfilter),
+.aligned .form-row:has(.selector) .related-widget-wrapper,
+.aligned .form-row:has(.selectfilter) .related-widget-wrapper {
+  display: block !important;
+  width: 100% !important;
+  max-width: 980px !important;
+}
+
+.aligned .form-row:has(.selector) .help,
+.aligned .form-row:has(.selectfilter) .help {
+  max-width: 980px !important;
+}
+
+.selector {
+  display: flex !important;
+  align-items: stretch !important;
+  width: 100% !important;
+  max-width: 980px !important;
+  gap: 16px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.selector-available,
+.selector-chosen {
+  flex: 1 1 0 !important;
+  min-width: 340px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  background: var(--stora-surface) !important;
+  border: 1px solid var(--stora-border) !important;
+  border-radius: var(--stora-radius-md) !important;
+  overflow: hidden !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35) !important;
+}
+
+/* Headers: Unified dark graphite theme (No more bright blue on Chosen!) */
+.selector-available-title,
+.selector-chosen-title {
+  background: var(--stora-surface-raised) !important;
+  border-bottom: 1px solid var(--stora-border) !important;
+  border-top: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-radius: 0 !important;
+  padding: 14px 18px !important;
+  color: #ffffff !important;
+  margin: 0 !important;
+}
+
+.selector-available-title label,
+.selector-chosen-title label {
+  display: block !important;
+  width: 100% !important;
+  color: #ffffff !important;
+  font-size: 13px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.02em !important;
+  text-transform: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  float: none !important;
+}
+
+.selector-available-title .helptext,
+.selector-chosen-title .helptext {
+  display: block !important;
+  color: var(--stora-dim) !important;
+  font-size: 11px !important;
+  line-height: 1.5 !important;
+  margin: 4px 0 0 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+}
+
+/* Filter Input Box */
+.selector .selector-filter {
+  background: #0e1215 !important;
+  border-bottom: 1px solid var(--stora-border) !important;
+  border-top: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  padding: 10px 14px !important;
+  margin: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+}
+
+.selector .selector-filter label {
+  width: 18px !important;
+  height: 18px !important;
+  min-width: 18px !important;
+  max-width: 18px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  float: none !important;
+  background: transparent !important;
+}
+
+.selector .selector-filter .search-label-icon {
+  display: block !important;
+  width: 15px !important;
+  height: 15px !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238bd3ca' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'%3E%3C/circle%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'%3E%3C/line%3E%3C/svg%3E") !important;
+  background-size: contain !important;
+  background-repeat: no-repeat !important;
+}
+
+.selector .selector-filter input {
+  flex: 1 1 auto !important;
+  height: 36px !important;
+  line-height: 34px !important;
+  padding: 0 12px !important;
+  border-radius: 6px !important;
+  background: var(--stora-surface) !important;
+  border: 1px solid var(--stora-field-border) !important;
+  color: #ffffff !important;
+  font-size: 13px !important;
+  outline: none !important;
+  width: 100% !important;
+  max-width: none !important;
+  box-sizing: border-box !important;
+  transition: border-color 0.2s, box-shadow 0.2s !important;
+}
+
+.selector .selector-filter input:focus {
+  border-color: var(--stora-accent) !important;
+  box-shadow: 0 0 0 2px var(--stora-accent-glow) !important;
+}
+
+/* Select Multiple Listboxes */
+.selector select,
+.selector select.filtered {
+  flex: 1 1 auto !important;
+  width: 100% !important;
+  min-height: 230px !important;
+  height: 230px !important;
+  background: #090c0e !important;
+  background-image: none !important;
+  border: none !important;
+  border-radius: 0 !important;
+  color: var(--stora-text) !important;
+  padding: 6px !important;
+  margin: 0 !important;
+  outline: none !important;
+  overflow-y: auto !important;
+  overflow-x: auto !important;
+  scrollbar-width: thin !important;
+  scrollbar-color: #35434a transparent !important;
+}
+
+.selector select option {
+  padding: 8px 12px !important;
+  border-radius: 6px !important;
+  margin-bottom: 2px !important;
+  font-size: 13px !important;
+  color: #d1dde0 !important;
+  background: transparent !important;
+  cursor: pointer !important;
+  white-space: normal !important;
+  word-break: break-word !important;
+  line-height: 1.4 !important;
+  transition: background 0.15s ease !important;
+}
+
+.selector select option:hover {
+  background-color: rgba(139, 211, 202, 0.1) !important;
+  color: #ffffff !important;
+}
+
+.selector select option:checked,
+.selector select option:selected {
+  background-color: rgba(139, 211, 202, 0.22) !important;
+  color: var(--stora-accent-strong) !important;
+  font-weight: 700 !important;
+}
+
+/* Chooser Buttons (Middle column arrows) */
+.selector ul.selector-chooser {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  align-items: center !important;
+  gap: 12px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  list-style: none !important;
+  width: 44px !important;
+  flex-shrink: 0 !important;
+  transform: none !important;
+  background: transparent !important;
+  align-self: center !important;
+}
+
+.selector-chooser li {
+  margin: 0 !important;
+  padding: 0 !important;
+  list-style: none !important;
+}
+
+.selector-add,
+.selector-remove {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 38px !important;
+  height: 38px !important;
+  border-radius: 50% !important;
+  background-color: var(--stora-surface-raised) !important;
+  border: 1px solid var(--stora-border) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45) !important;
+  cursor: pointer !important;
+  padding: 0 !important;
+  text-indent: -9999px !important;
+  overflow: hidden !important;
+  background-repeat: no-repeat !important;
+  background-position: center !important;
+  background-size: 16px 16px !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.selector-add {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238bd3ca' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cline x1='5' y1='12' x2='19' y2='12'%3E%3C/line%3E%3Cpolyline points='12 5 19 12 12 19'%3E%3C/polyline%3E%3C/svg%3E") !important;
+}
+
+.selector-remove {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238bd3ca' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cline x1='19' y1='12' x2='5' y2='12'%3E%3C/line%3E%3Cpolyline points='12 19 5 12 12 5'%3E%3C/polyline%3E%3C/svg%3E") !important;
+}
+
+.selector-add:hover,
+.selector-remove:hover {
+  background-color: var(--stora-accent) !important;
+  border-color: var(--stora-accent) !important;
+  box-shadow: 0 0 16px rgba(139, 211, 202, 0.45) !important;
+  transform: scale(1.1) !important;
+}
+
+.selector-add:hover {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230c0f12' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cline x1='5' y1='12' x2='19' y2='12'%3E%3C/line%3E%3Cpolyline points='12 5 19 12 12 19'%3E%3C/polyline%3E%3C/svg%3E") !important;
+}
+
+.selector-remove:hover {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230c0f12' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cline x1='19' y1='12' x2='5' y2='12'%3E%3C/line%3E%3Cpolyline points='12 19 5 12 12 5'%3E%3C/polyline%3E%3C/svg%3E") !important;
+}
+
+/* Footer Action Buttons ("Choose all" / "Remove all") - Full Height, Never Clipped */
+.selector-chooseall,
+.selector-clearall,
+.selector button.selector-chooseall,
+.selector button.selector-clearall,
+.selector a.selector-chooseall,
+.selector a.selector-clearall,
+button.selector-chooseall,
+button.selector-clearall,
+a.selector-chooseall,
+a.selector-clearall {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 42px !important;
+  max-height: none !important;
+  overflow: visible !important;
+  line-height: 1.4 !important;
+  padding: 11px 16px !important;
+  margin: 0 !important;
+  background: var(--stora-surface-raised) !important;
+  background-image: none !important;
+  border: none !important;
+  border-top: 1px solid var(--stora-border) !important;
+  border-radius: 0 0 var(--stora-radius-md) var(--stora-radius-md) !important;
+  color: var(--stora-accent) !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.01em !important;
+  cursor: pointer !important;
+  text-decoration: none !important;
+  text-align: center !important;
+  box-sizing: border-box !important;
+  opacity: 1 !important;
+  transition: all 0.2s ease !important;
+}
+
+.selector-chooseall:hover,
+.selector-clearall:hover,
+.selector button.selector-chooseall:hover,
+.selector button.selector-clearall:hover,
+.selector a.selector-chooseall:hover,
+.selector a.selector-clearall:hover,
+button.selector-chooseall:hover,
+button.selector-clearall:hover,
+a.selector-chooseall:hover,
+a.selector-clearall:hover {
+  background: rgba(139, 211, 202, 0.14) !important;
+  color: var(--stora-accent-strong) !important;
+  opacity: 1 !important;
+}
+
+.selector-chooseall:active,
+.selector-clearall:active,
+.selector button.selector-chooseall:active,
+.selector button.selector-clearall:active {
+  background: rgba(139, 211, 202, 0.22) !important;
+  opacity: 1 !important;
+}
+
+/* List footer warning when filter is active */
+.selector .list-footer-display {
+  display: block !important;
+  background: rgba(139, 211, 202, 0.1) !important;
+  border-top: 1px solid var(--stora-border) !important;
+  color: var(--stora-accent) !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  padding: 8px 12px !important;
+  text-align: center !important;
+  cursor: pointer !important;
+}
+
+.selector .selector-chosen:not(.selector-chosen--with-filtered) .list-footer-display {
+  display: none !important;
+}
+
+/* ==========================================================================
+   8. RELATED WIDGET WRAPPER (Never Wrap Icons, Keep Sized)
+   ========================================================================== */
+.related-widget-wrapper {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex-wrap: nowrap !important;
+  width: 100% !important;
+  max-width: 620px !important;
+  vertical-align: middle !important;
+}
+
+.related-widget-wrapper > select {
+  flex: 1 1 auto !important;
+  min-width: 160px !important;
+  width: auto !important;
+}
+
+.related-widget-wrapper > .select2-container {
+  flex: 1 1 auto !important;
+  min-width: 160px !important;
+  width: auto !important;
+}
+
+.related-widget-wrapper-link {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 34px !important;
+  height: 34px !important;
+  min-width: 34px !important;
+  min-height: 34px !important;
+  border-radius: var(--stora-radius-sm) !important;
+  background: rgba(139, 211, 202, 0.12) !important;
+  color: var(--stora-accent) !important;
+  opacity: 1 !important;
+  filter: none !important;
+  flex-shrink: 0 !important;
+  transition: all 0.2s ease !important;
+  text-decoration: none !important;
+  border: 1px solid rgba(139, 211, 202, 0.25) !important;
+}
+
+.related-widget-wrapper-link:hover {
+  background: var(--stora-accent) !important;
+  color: #102022 !important;
+  transform: translateY(-1px);
+}
+
+.related-widget-wrapper-link img {
+  width: 16px !important;
+  height: 16px !important;
+  filter: invert(1) brightness(1.3) !important;
+}
+
+/* ==========================================================================
+   9. SELECT2 AUTOCOMPLETE WIDGETS
+   ========================================================================== */
+.select2-container--admin-autocomplete.select2-container {
+  min-height: 42px !important;
+  height: 42px !important;
+  vertical-align: middle !important;
+}
+
+.select2-container--admin-autocomplete .select2-selection--single {
+  height: 42px !important;
+  min-height: 42px !important;
+  background-color: var(--stora-field) !important;
+  border: 1px solid var(--stora-field-border) !important;
+  border-radius: var(--stora-radius-sm) !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  align-items: center !important;
+  padding: 0 12px !important;
+  position: relative !important;
+}
+
+.select2-container--admin-autocomplete.select2-container--focus .select2-selection--single,
+.select2-container--admin-autocomplete.select2-container--open .select2-selection--single {
+  border-color: var(--stora-field-focus) !important;
+  box-shadow: 0 0 0 3px var(--stora-accent-glow) !important;
+}
+
+.select2-container--admin-autocomplete .select2-selection--single .select2-selection__rendered {
+  color: #ffffff !important;
+  line-height: 40px !important;
+  font-size: 14px !important;
+  font-family: var(--stora-font) !important;
+  padding: 0 !important;
+  display: block !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.select2-container--admin-autocomplete .select2-selection--single .select2-selection__placeholder {
+  color: var(--stora-dim) !important;
+  font-style: normal !important;
+}
+
+.select2-container--admin-autocomplete .select2-selection--single .select2-selection__clear {
+  color: var(--stora-accent) !important;
+  font-size: 16px !important;
+  font-weight: 800 !important;
+  line-height: 40px !important;
+  position: absolute !important;
+  right: 28px !important;
+  cursor: pointer !important;
+}
+
+.select2-container--admin-autocomplete .select2-selection--single .select2-selection__arrow {
+  height: 40px !important;
+  position: absolute !important;
+  top: 0 !important;
+  right: 8px !important;
+  width: 18px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.select2-container--admin-autocomplete .select2-selection--single .select2-selection__arrow b {
+  border-color: var(--stora-accent) transparent transparent transparent !important;
+  border-width: 5px 4px 0 4px !important;
+}
+
+.select2-dropdown {
+  background-color: #181e22 !important;
+  border: 1px solid var(--stora-border) !important;
+  border-radius: var(--stora-radius-sm) !important;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5) !important;
+  color: #ffffff !important;
+  z-index: 99999 !important;
+}
+
+.select2-results__option {
+  padding: 10px 14px !important;
+  font-size: 13px !important;
+  color: #f5f8f8 !important;
+}
+
+.select2-results__option--highlighted {
+  background-color: var(--stora-accent-bg) !important;
+  color: var(--stora-accent) !important;
+}
+
+.select2-results__option[aria-selected="true"] {
+  background-color: var(--stora-accent) !important;
+  color: #102022 !important;
+}
+
+/* ==========================================================================
+   10. TABULAR INLINE TABLES (SALE ITEMS, ORDER ITEMS - Non-Shrinking)
+   ========================================================================== */
+.inline-group {
+  margin-bottom: 28px;
+}
+
+.inline-group .tabular {
+  overflow-x: auto !important;
+  background: var(--stora-surface) !important;
+  border: 1px solid var(--stora-border) !important;
+  border-radius: var(--stora-radius-md) !important;
+  box-shadow: var(--stora-shadow);
+  padding: 0 !important;
+  width: 100% !important;
+  display: block !important;
+  scrollbar-width: thin !important;
+  scrollbar-color: #404d53 #121618 !important;
+}
+
+.inline-group .tabular table {
+  width: 100% !important;
+  border-collapse: collapse !important;
+  table-layout: auto !important;
+}
+
+.inline-group .tabular th {
+  background: var(--stora-surface-raised) !important;
+  color: #aab8bb !important;
+  font-size: 12px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+  padding: 12px 14px !important;
+  border-bottom: 1px solid var(--stora-border) !important;
+  white-space: nowrap !important;
+  text-align: left !important;
+}
+
+.inline-group .tabular td {
+  padding: 10px 12px !important;
+  border-bottom: 1px solid var(--stora-border) !important;
+  vertical-align: middle !important;
+}
+
+/* Compact, proportional inline columns that fit cleanly without clipping */
+.inline-group .tabular td.field-product,
+.inline-group .tabular th.column-product {
+  min-width: 280px !important;
+}
+
+.inline-group .tabular td.field-product_name,
+.inline-group .tabular th.column-product_name {
+  min-width: 140px !important;
+}
+
+.inline-group .tabular td.field-quantity,
+.inline-group .tabular th.column-quantity {
+  min-width: 80px !important;
+  text-align: center !important;
+}
+
+.inline-group .tabular td.field-unit_price,
+.inline-group .tabular th.column-unit_price {
+  min-width: 110px !important;
+}
+
+.inline-group .tabular td.field-subtotal,
+.inline-group .tabular th.column-subtotal {
+  min-width: 90px !important;
+  font-weight: 700 !important;
+  color: var(--stora-accent) !important;
+}
+
+.inline-group .tabular td.delete,
+.inline-group .tabular th.column-delete {
+  min-width: 60px !important;
+  text-align: center !important;
+}
+
+.inline-group .tabular td input[type="text"],
+.inline-group .tabular td input[type="number"] {
+  width: 100% !important;
+  height: 38px !important;
+  line-height: 36px !important;
+  box-sizing: border-box !important;
+}
+
+.inline-group .add-row,
+.inline-group .tabular tr.add-row td {
+  background: var(--stora-surface) !important;
+  border-top: 1px solid var(--stora-border) !important;
+  padding: 14px 20px !important;
+}
+
+.inline-group .add-row a,
+.inline-group .tabular tr.add-row td a,
+.inline-group tr.add-row .addlink {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  background: transparent !important;
+  background-image: none !important;
+  padding: 0 !important;
+  color: var(--stora-accent) !important;
+  font-size: 13px !important;
+  font-weight: 800 !important;
+  line-height: 1 !important;
+  text-decoration: none !important;
+  vertical-align: middle !important;
+}
+
+.inline-group .add-row a::before,
+.inline-group .tabular tr.add-row td a::before,
+.inline-group tr.add-row .addlink::before {
+  content: '+' !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 18px !important;
+  height: 18px !important;
+  border-radius: 4px !important;
+  background: var(--stora-accent-bg) !important;
+  border: 1px solid var(--stora-accent) !important;
+  color: var(--stora-accent) !important;
+  font-size: 14px !important;
+  font-weight: 800 !important;
+  line-height: 1 !important;
+  flex-shrink: 0 !important;
+  margin: 0 !important;
+  transition: all 0.2s ease !important;
+}
+
+.inline-group .add-row a:hover,
+.inline-group .tabular tr.add-row td a:hover,
+.inline-group tr.add-row .addlink:hover {
+  color: var(--stora-accent-strong) !important;
+}
+
+.inline-group .add-row a:hover::before,
+.inline-group .tabular tr.add-row td a:hover::before,
+.inline-group tr.add-row .addlink:hover::before {
+  background: var(--stora-accent) !important;
+  color: #0c0f12 !important;
+  transform: scale(1.08) !important;
+}
+
+/* ==========================================================================
+   11. DATA TABLES (Changelist / Search / Filters)
+   ========================================================================== */
+#changelist {
+  width: 100% !important;
+}
+
+#changelist.filtered {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: flex-start !important;
+  gap: 20px !important;
+}
+
+#changelist.filtered .changelist-form-container {
+  flex: 1 1 0 !important;
+  min-width: 0 !important;
+  width: auto !important;
+  margin-right: 0 !important;
+}
+
+#changelist .results {
+  width: 100% !important;
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  border-radius: var(--stora-radius-md) !important;
+  border: 1px solid var(--stora-border) !important;
+  box-shadow: var(--stora-shadow);
+  scrollbar-width: thin !important;
+  scrollbar-color: #404d53 #121618 !important;
+}
+
+#result_list {
+  width: 100% !important;
+  border-collapse: collapse !important;
+}
+
+#result_list thead th {
+  background: var(--stora-surface-raised) !important;
+  color: #aab8bb !important;
+  font-size: 11px !important;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  padding: 14px 18px !important;
+  border-bottom: 1px solid var(--stora-border) !important;
+  white-space: nowrap;
+  text-align: left;
+}
+
+#result_list thead th a {
+  color: #aab8bb !important;
+  text-decoration: none;
+}
+
+#result_list thead th a:hover {
+  color: var(--stora-accent) !important;
+}
+
+#result_list thead th.sorted {
+  background: var(--stora-accent-bg) !important;
+}
+
+#result_list thead th.sorted a {
+  color: var(--stora-accent) !important;
+}
+
+#result_list tbody tr:nth-child(odd) {
+  background: var(--stora-bg) !important;
+}
+
+#result_list tbody tr:nth-child(even) {
+  background: var(--stora-surface) !important;
+}
+
+#result_list tbody tr:hover {
+  background: var(--stora-surface-raised) !important;
+}
+
+#result_list tbody td,
+#result_list tbody th {
+  padding: 12px 18px !important;
+  color: var(--stora-text) !important;
+  font-size: 14px;
+  border-bottom: 1px solid var(--stora-border) !important;
+  vertical-align: middle;
+}
+
+#result_list tbody th a,
+#result_list tbody td a {
+  color: var(--stora-accent) !important;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+#result_list tbody th a:hover,
+#result_list tbody td a:hover {
+  color: var(--stora-accent-strong) !important;
+  text-decoration: underline;
+}
+
+/* Search Bar */
+#toolbar {
+  background: var(--stora-surface) !important;
+  border: 1px solid var(--stora-border) !important;
+  border-radius: var(--stora-radius-md) !important;
+  padding: 14px 18px !important;
+  margin-bottom: 20px !important;
+  box-shadow: var(--stora-shadow);
+}
+
+#toolbar form {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  flex-wrap: wrap !important;
+  margin: 0 !important;
+}
+
+#toolbar form #searchbar {
+  width: 320px !important;
+  max-width: 100% !important;
+  flex: 0 1 320px !important;
+  height: 40px !important;
+  min-height: 40px !important;
+  line-height: 38px !important;
+  padding: 0 14px 0 38px !important;
+  font-size: 14px !important;
+  color: #ffffff !important;
+  background-color: var(--stora-field) !important;
+  border: 1px solid var(--stora-field-border) !important;
+  border-radius: var(--stora-radius-sm) !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238bd3ca' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'%3E%3C/circle%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'%3E%3C/line%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: 12px center !important;
+  background-size: 16px 16px !important;
+  outline: none !important;
+}
+
+#toolbar form #searchbar:focus {
+  border-color: var(--stora-field-focus) !important;
+  box-shadow: 0 0 0 3px var(--stora-accent-glow) !important;
+}
+
+#toolbar form input[type="submit"] {
+  height: 40px !important;
+  padding: 0 20px !important;
+  margin: 0 !important;
+  flex-shrink: 0 !important;
+}
+
+/* Actions Bar (Dropdown, Go Button, Selection Counter) */
+.actions {
+  background: var(--stora-surface) !important;
+  border: 1px solid var(--stora-border) !important;
+  border-radius: var(--stora-radius-md) !important;
+  padding: 12px 18px !important;
+  margin-bottom: 16px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  flex-wrap: wrap !important;
+  box-shadow: var(--stora-shadow);
+}
+
+.actions label {
+  color: #c1ced0 !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.actions select {
+  width: auto !important;
+  min-width: 220px !important;
+  height: 38px !important;
+  min-height: 38px !important;
+  line-height: 36px !important;
+}
+
+.actions .button {
+  height: 38px !important;
+  padding: 0 16px !important;
+  font-size: 12px !important;
+}
+
+.actions span.action-counter {
+  color: var(--stora-muted) !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+}
+
+/* ==========================================================================
+   12. BUTTONS & SUBMIT BAR
+   ========================================================================== */
+.button,
+input[type="submit"],
+input[type="button"],
+.submit-row input,
+a.button {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px;
+  background: var(--stora-accent) !important;
+  color: #102022 !important;
+  border: none !important;
+  border-radius: var(--stora-radius-sm) !important;
+  padding: 11px 20px !important;
+  font-size: 13px !important;
+  font-weight: 800 !important;
+  font-family: var(--stora-font) !important;
+  cursor: pointer;
+  text-decoration: none !important;
+  transition: all .2s ease !important;
+  box-shadow: 0 4px 16px var(--stora-accent-glow);
+  white-space: nowrap;
+}
+
+.button:hover,
+input[type="submit"]:hover,
+input[type="button"]:hover,
+.submit-row input:hover,
+a.button:hover {
+  background: var(--stora-accent-strong) !important;
+  color: #102022 !important;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(139, 211, 202, 0.35);
+}
+
+.button.default,
+input[type="submit"].default {
+  background: var(--stora-accent-strong) !important;
+  color: #102022 !important;
+}
+
+.submit-row {
+  background: var(--stora-surface) !important;
+  border: 1px solid var(--stora-border) !important;
+  border-radius: var(--stora-radius-md) !important;
+  padding: 16px 20px !important;
+  margin: 24px 0 !important;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  box-shadow: var(--stora-shadow);
+}
+
+/* Delete Button on Change Form */
+.submit-row p.deletelink-box {
+  margin: 0 0 0 auto !important;
+  padding: 0 !important;
+  float: none !important;
+}
+
+.submit-row a.deletelink {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  background: rgba(239, 68, 68, 0.12) !important;
+  color: #fca5a5 !important;
+  border: 1px solid rgba(239, 68, 68, 0.32) !important;
+  border-radius: 9999px !important;
+  padding: 10px 22px !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  text-decoration: none !important;
+  letter-spacing: 0.02em !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  box-shadow: none !important;
+}
+
+.submit-row a.deletelink::before {
+  content: '' !important;
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fca5a5' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='3 6 5 6 21 6'%3E%3C/polyline%3E%3Cpath d='M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2'%3E%3C/path%3E%3C/svg%3E");
+  background-size: contain;
+  background-repeat: no-repeat;
+  transition: all 0.2s;
+}
+
+.submit-row a.deletelink:hover {
+  background: #ef4444 !important;
+  color: #ffffff !important;
+  border-color: #ef4444 !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(239, 68, 68, 0.45) !important;
+}
+
+.submit-row a.deletelink:hover::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='3 6 5 6 21 6'%3E%3C/polyline%3E%3Cpath d='M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2'%3E%3C/path%3E%3C/svg%3E");
+}
+
+/* ==========================================================================
+   DELETE CONFIRMATION CARD (Single / Multiple Object Deletion)
+   ========================================================================== */
+.stora-delete-wrapper {
+  background: var(--stora-surface) !important;
+  border: 1px solid var(--stora-border) !important;
+  border-radius: var(--stora-radius-lg) !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.04) !important;
+  backdrop-filter: blur(20px) !important;
+  box-sizing: border-box !important;
+}
+
+.stora-delete-wrapper > h2 {
+  font-size: 13px !important;
+  font-weight: 800 !important;
+  color: var(--stora-dim) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.06em !important;
+  margin: 20px 0 10px 0 !important;
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+}
+
+.stora-delete-wrapper > ul {
+  list-style: none !important;
+  padding: 0 !important;
+  margin: 0 0 18px 0 !important;
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+}
+
+.stora-delete-wrapper > ul > li {
+  background: rgba(248, 113, 113, 0.12) !important;
+  border: 1px solid rgba(248, 113, 113, 0.3) !important;
+  color: #fca5a5 !important;
+  padding: 6px 14px !important;
+  border-radius: 9999px !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+}
+
+.stora-delete-wrapper #deleted-objects {
+  list-style-type: disc !important;
+  margin: 0 !important;
+  padding-left: 20px !important;
+}
+
+.stora-delete-wrapper #deleted-objects li {
+  padding: 4px 0 !important;
+  color: var(--stora-text) !important;
+}
+
+.stora-delete-wrapper #deleted-objects li a {
+  color: var(--stora-accent) !important;
+  font-weight: 600 !important;
+  text-decoration: underline !important;
+}
+
+.stora-delete-wrapper .cancel-link {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: var(--stora-muted) !important;
+  border: 1px solid var(--stora-border) !important;
+  border-radius: 9999px !important;
+  padding: 11px 24px !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  text-decoration: none !important;
+  transition: all 0.2s ease !important;
+}
+
+.stora-delete-wrapper .cancel-link:hover {
+  background: var(--stora-surface-raised) !important;
+  color: #ffffff !important;
+  border-color: var(--stora-border) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Object Tools (Top add/history buttons) */
+.object-tools {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  margin: 0 0 20px 0 !important;
+  padding: 0 !important;
+  float: right !important;
+}
+
+.object-tools li {
+  list-style: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.object-tools a,
+.object-tools a:link,
+.object-tools a:visited {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  background: var(--stora-accent) !important;
+  color: #102022 !important;
+  border-radius: var(--stora-radius-sm) !important;
+  padding: 10px 18px !important;
+  font-size: 13px !important;
+  font-weight: 800 !important;
+  text-decoration: none !important;
+  box-shadow: 0 4px 14px var(--stora-accent-glow) !important;
+  transition: all 0.2s ease !important;
+}
+
+.object-tools a:hover {
+  background: var(--stora-accent-strong) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(139, 211, 202, 0.35) !important;
+}
+
+/* ==========================================================================
+   13. CHANGELIST FILTER SIDEBAR
+   ========================================================================== */
+#changelist-filter {
+  flex: 0 0 240px !important;
+  width: 240px !important;
+  min-width: 240px !important;
+  position: static !important;
+  margin: 0 !important;
+  background: var(--stora-surface) !important;
+  border: 1px solid var(--stora-border) !important;
+  border-radius: var(--stora-radius-md) !important;
+  overflow: hidden !important;
+  box-shadow: var(--stora-shadow);
+}
+
+#changelist-filter h2 {
+  background: var(--stora-surface-raised) !important;
+  color: var(--stora-text-strong) !important;
+  font-size: 12px !important;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  padding: 12px 16px !important;
+  border-bottom: 1px solid var(--stora-border) !important;
+}
+
+#changelist-filter h3 {
+  color: #aab8bb !important;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  padding: 14px 16px 6px;
   margin: 0;
 }
-.stora-card__sub {
-  color: var(--stora-label);
+
+#changelist-filter ul {
+  padding: 0 10px 10px;
+  margin: 0;
+  list-style: none;
+}
+
+#changelist-filter li a {
+  display: block;
+  padding: 7px 12px;
+  border-radius: 6px;
+  color: var(--stora-text) !important;
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: background .15s, color .15s;
+}
+
+#changelist-filter li a:hover {
+  background: var(--stora-sidebar-hover);
+  color: var(--stora-accent) !important;
+}
+
+#changelist-filter li.selected a {
+  background: var(--stora-accent-bg) !important;
+  color: var(--stora-accent) !important;
+  font-weight: 700;
+}
+
+/* ==========================================================================
+   14. DASHBOARD CARDS & ALERTS
+   ========================================================================== */
+.stora-dashboard {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 18px;
+  margin-bottom: 28px;
+}
+
+.stora-card {
+  background: var(--stora-surface);
+  border: 1px solid var(--stora-border);
+  border-radius: var(--stora-radius-lg);
+  padding: 22px 24px;
+  box-shadow: var(--stora-shadow);
+  transition: border-color .2s, box-shadow .2s;
+}
+
+.stora-card:hover {
+  border-color: var(--stora-accent-dark);
+}
+
+.stora-card__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.stora-card__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: var(--stora-accent-bg);
+  color: var(--stora-accent);
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.stora-card__icon--blue {
+  background: var(--stora-info-bg);
+  color: var(--stora-info);
+}
+
+.stora-card__label {
+  color: var(--stora-dim);
   font-size: 12px;
-  margin: 4px 0 0;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  margin: 0;
 }
+
+.stora-card__value {
+  color: var(--stora-text-strong);
+  font-size: 30px;
+  font-weight: 800;
+  margin: 0;
+  letter-spacing: -.02em;
+}
+
+.stora-card__sub {
+  color: var(--stora-muted);
+  font-size: 13px;
+  margin: 6px 0 0;
+}
+
+.stora-card__sub a {
+  color: var(--stora-accent) !important;
+  font-weight: 700;
+  text-decoration: none;
+}
+
 .stora-card--earnings {
-  background: linear-gradient(135deg, var(--stora-purple), var(--stora-bg-top));
+  background: linear-gradient(135deg, var(--stora-accent-dark), var(--stora-surface));
+  border-color: var(--stora-accent-dark);
 }
+
 .stora-card--earnings .stora-card__label,
 .stora-card--earnings .stora-card__value,
 .stora-card--earnings .stora-card__sub {
   color: #fff;
 }
-.stora-card--danger .stora-card__value { color: var(--stora-error); }
+
+.stora-card--danger .stora-card__value {
+  color: var(--stora-danger);
+}
+
+.stora-card--danger .stora-card__icon {
+  background: var(--stora-danger-bg);
+  color: var(--stora-danger);
+}
+
+/* Dashboard Alerts */
+.stora-alerts {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.stora-alert {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 22px;
+  border-radius: var(--stora-radius-md);
+  background: var(--stora-surface);
+  border: 1px solid var(--stora-border);
+  box-shadow: var(--stora-shadow);
+}
+
+.stora-alert__icon {
+  font-size: 28px;
+  flex-shrink: 0;
+}
+
+.stora-alert__copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.stora-alert__copy h2 {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--stora-text-strong);
+  margin: 0 0 4px 0;
+}
+
+.stora-alert__copy p {
+  color: var(--stora-muted);
+  font-size: 13px;
+  margin: 0;
+}
+
+.stora-alert__copy p strong {
+  color: var(--stora-accent);
+  font-weight: 800;
+}
+
+.stora-alert__action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: 1px solid var(--stora-border);
+  border-radius: var(--stora-radius-sm);
+  color: var(--stora-accent) !important;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none !important;
+  white-space: nowrap;
+  transition: all .2s;
+  flex-shrink: 0;
+}
+
+.stora-alert__action:hover {
+  background: var(--stora-accent);
+  color: #102022 !important;
+}
+
+.stora-alert--orders {
+  border-left: 4px solid var(--stora-warning);
+}
+
+.stora-alert--payments {
+  border-left: 4px solid var(--stora-accent);
+}
+
+.stora-alert--resets {
+  border-left: 4px solid var(--stora-info);
+}
+
+/* ==========================================================================
+   15. POPUP WINDOWS
+   ========================================================================== */
+body.popup {
+  background: radial-gradient(circle at 10% 10%, rgba(139, 211, 202, 0.08), transparent 35%),
+              linear-gradient(135deg, #0e1113 0%, #151a1d 100%) !important;
+  padding: 24px !important;
+  min-height: 100vh !important;
+  color: #f5f8f8 !important;
+}
+
+body.popup #content {
+  padding: 0 !important;
+  max-width: 100% !important;
+}
+
+body.popup .submit-row {
+  margin-top: 24px !important;
+  margin-bottom: 0 !important;
+  position: sticky !important;
+  bottom: 0 !important;
+  background: #181e22 !important;
+  z-index: 100 !important;
+}
+
+/* ==========================================================================
+   16. FOOTER
+   ========================================================================== */
+#footer {
+  background: transparent !important;
+  border-top: 1px solid var(--stora-border) !important;
+  color: var(--stora-dim) !important;
+  padding: 0 !important;
+}
+
+.stora-footer-container {
+  padding: 20px max(24px, calc((100vw - 1340px) / 2));
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--stora-dim);
+}
+
+.stora-footer-container p {
+  margin: 0;
+}
+
+/* ==========================================================================
+   17. RESPONSIVE (Mobile & Tablet)
+   ========================================================================== */
+@media (max-width: 767px) {
+  .stora-header-container {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 14px 18px;
+  }
+
+  .stora-header-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  #nav-sidebar {
+    display: none !important;
+  }
+
+  .main.shifted > #nav-sidebar + .content,
+  .main > #nav-sidebar + .content {
+    max-width: 100% !important;
+  }
+
+  .stora-content-area {
+    padding: 16px;
+  }
+
+  .aligned .form-row .flex-container:not(.checkbox-row) {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 8px !important;
+  }
+
+  .aligned label:not(.vCheckboxLabel) {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .aligned .form-row .help,
+  .aligned .form-row p.help,
+  .aligned .form-row div.help,
+  ul.errorlist {
+    margin-left: 0 !important;
+  }
+
+  .aligned .form-row input,
+  .aligned .form-row select,
+  .aligned .form-row textarea,
+  .aligned .form-row .related-widget-wrapper {
+    max-width: 100% !important;
+  }
+
+  .submit-row {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .submit-row input,
+  .submit-row a {
+    width: 100% !important;
+  }
+
+  .stora-dashboard {
+    grid-template-columns: 1fr;
+  }
+
+  #changelist.filtered {
+    flex-direction: column !important;
+  }
+
+  #changelist-filter {
+    width: 100% !important;
+    min-width: 100% !important;
+  }
+}

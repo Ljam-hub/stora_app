@@ -6,7 +6,10 @@ Cloudinary image storage, CORS headers, and Stora business logic.
 import os
 from datetime import timedelta
 from pathlib import Path
-import dj_database_url
+try:
+    import dj_database_url
+except ImportError:
+    dj_database_url = None
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -37,8 +40,8 @@ INSTALLED_APPS = [
 # Cloudinary support if configured
 if os.getenv("CLOUDINARY_URL"):
     INSTALLED_APPS += [
-        "cloudinary_storage",
         "django.contrib.staticfiles",
+        "cloudinary_storage",
         "cloudinary",
     ]
 else:
@@ -96,7 +99,7 @@ ASGI_APPLICATION = "stora_backend.asgi.application"
 
 # Database configuration: PostgreSQL if DATABASE_URL is set, otherwise SQLite
 DATABASE_URL = os.getenv("DATABASE_URL")
-if DATABASE_URL:
+if DATABASE_URL and dj_database_url:
     DATABASES = {
         "default": dj_database_url.config(
             default=DATABASE_URL,
@@ -150,15 +153,45 @@ STATIC_URL = "static/"
 STATICFILES_DIRS = [BASE_DIR / "static"] if (BASE_DIR / "static").exists() else []
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
+# Whitenoise static storage with fallback
+STATICFILES_STORAGE = "whitenoise.storage.CompressedStaticFilesStorage"
+WHITENOISE_MANIFEST_STRICT = False
+
+STORAGES = {
+    "default": {
+        "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage" if os.getenv("CLOUDINARY_URL") else "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
+    },
+}
+
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
 if os.getenv("CLOUDINARY_URL"):
     DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
 
+# Email configuration
+if DEBUG:
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+else:
+    EMAIL_BACKEND = os.getenv("EMAIL_BACKEND", "django.core.mail.backends.smtp.EmailBackend")
+    EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp.gmail.com")
+    EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
+    EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "True").lower() in ("true", "1", "yes")
+    EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
+    EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
+
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "STORA <noreply@stora.app>")
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Firebase Cloud Messaging (Modern HTTP v1 via Firebase Admin SDK)
-FIREBASE_CREDENTIALS_PATH = os.getenv("FIREBASE_CREDENTIALS_PATH", "")
+default_fcm_cred = BASE_DIR / "firebase-service-account.json"
+FIREBASE_CREDENTIALS_PATH = os.getenv(
+    "FIREBASE_CREDENTIALS_PATH",
+    str(default_fcm_cred) if default_fcm_cred.exists() else ""
+)
 FIREBASE_CREDENTIALS_JSON = os.getenv("FIREBASE_CREDENTIALS_JSON", "")
 FCM_SERVER_KEY = os.getenv("FCM_SERVER_KEY", "")

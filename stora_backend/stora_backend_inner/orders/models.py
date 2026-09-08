@@ -18,12 +18,14 @@ class Order(models.Model):
 
     STATUS_PENDING = "pending"
     STATUS_ACCEPTED = "accepted"
+    STATUS_READY = "ready"
     STATUS_DECLINED = "declined"
     STATUS_AUTO_DECLINED = "auto_declined"
     STATUS_COUNTER_OFFER = "counter_offer"
     STATUS_CHOICES = (
         (STATUS_PENDING, "Pending"),
         (STATUS_ACCEPTED, "Accepted"),
+        (STATUS_READY, "Ready for Pickup"),
         (STATUS_DECLINED, "Declined"),
         (STATUS_AUTO_DECLINED, "Auto‑Declined"),
         (STATUS_COUNTER_OFFER, "Counter‑Offer"),
@@ -116,6 +118,14 @@ class Order(models.Model):
                     unit_price=item.unit_price,
                 )
             return sale
+
+    def mark_as_ready(self):
+        """Mark an accepted order as ready for pickup."""
+        if self.status != self.STATUS_ACCEPTED:
+            return False
+        self.status = self.STATUS_READY
+        self.save(update_fields=["status"])
+        return True
 
     def decline(self, reason: str = None, auto: bool = False):
         """Mark as declined (manual or auto) with an optional reason."""
