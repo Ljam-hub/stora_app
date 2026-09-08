@@ -12,8 +12,8 @@ services:
     name: stora-backend
     runtime: python
     plan: free
-    buildCommand: "./build.sh"
-    startCommand: "chmod +x start.sh && ./start.sh"
+    buildCommand: "cd stora_backend/stora_backend_inner && ./build.sh"
+    startCommand: "cd stora_backend/stora_backend_inner && chmod +x start.sh && ./start.sh"
     envVars:
       - key: SECRET_KEY
         generateValue: true
