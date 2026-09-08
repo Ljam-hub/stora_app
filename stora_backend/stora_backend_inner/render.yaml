@@ -12,8 +12,7 @@ services:
     name: stora-backend
     runtime: python
     plan: free
-    buildCommand: "./build.sh"
-    startCommand: "gunicorn stora_backend.wsgi:application"
+    startCommand: "chmod +x start.sh && ./start.sh"
     envVars:
       - key: SECRET_KEY
         generateValue: true
