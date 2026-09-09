@@ -181,17 +181,23 @@ class ProductCard extends StatelessWidget {
                       ],
                     ),
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          product.formattedPrice,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: -0.3,
+                        Expanded(
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              product.formattedPrice,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: -0.3,
+                              ),
+                            ),
                           ),
                         ),
+                        const SizedBox(width: 4),
                         if (product.isOutOfStock)
                           const SizedBox()
                         else if (inCartQty > 0)

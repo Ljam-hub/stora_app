@@ -391,23 +391,25 @@ class _EarningsCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.16),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(Icons.payments_rounded, color: Colors.white, size: 18),
-                    ),
-                    const SizedBox(width: 10),
-                    const Text("Today's Total Earnings",
-                        style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700, letterSpacing: 0.2)),
-                  ],
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.16),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.payments_rounded, color: Colors.white, size: 18),
                 ),
+                const SizedBox(width: 10),
+                const Expanded(
+                  child: Text(
+                    "Today's Total Earnings",
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700, letterSpacing: 0.2),
+                  ),
+                ),
+                const SizedBox(width: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
@@ -477,22 +479,25 @@ class _StatCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: badgeBg,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(icon, size: 16, color: badgeColor),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(title, style: const TextStyle(color: AppColors.label, fontSize: 13, fontWeight: FontWeight.w600)),
-                ],
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: badgeBg,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, size: 16, color: badgeColor),
               ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: AppColors.label, fontSize: 13, fontWeight: FontWeight.w600),
+                ),
+              ),
+              const SizedBox(width: 4),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(color: badgeBg, borderRadius: BorderRadius.circular(20)),
@@ -529,25 +534,33 @@ class _FreePlanCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(Icons.workspace_premium_outlined, size: 16, color: AppColors.purpleLight),
                   SizedBox(width: 6),
                   Text('Free plan', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700)),
                 ],
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.fieldBackground,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: HomeColors.cardBorder),
-                ),
-                child: Text(
-                  limit > 0 ? '$current/$limit items · $daysLeft days left' : '$current items',
-                  style: const TextStyle(color: AppColors.purpleLight, fontSize: 12, fontWeight: FontWeight.w700),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.fieldBackground,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: HomeColors.cardBorder),
+                    ),
+                    child: Text(
+                      limit > 0 ? '$current/$limit items · $daysLeft days left' : '$current items',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: AppColors.purpleLight, fontSize: 12, fontWeight: FontWeight.w700),
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -670,13 +683,17 @@ class _IncomingOrdersCard extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Text(
-                        hasPending ? '$pendingCount Incoming ${pendingCount == 1 ? 'Order' : 'Orders'}' : 'Customer Orders',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: -0.2,
+                      Flexible(
+                        child: Text(
+                          hasPending ? '$pendingCount Incoming ${pendingCount == 1 ? 'Order' : 'Orders'}' : 'Customer Orders',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: -0.2,
+                          ),
                         ),
                       ),
                       if (hasPending) ...[
