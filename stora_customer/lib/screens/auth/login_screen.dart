@@ -70,17 +70,18 @@ class _LoginScreenState extends State<LoginScreen> {
 
                   Center(
                     child: Container(
-                      width: 80,
-                      height: 80,
+                      width: 84,
+                      height: 84,
                       decoration: BoxDecoration(
-                        gradient: AppColors.heroGradient,
                         borderRadius: BorderRadius.circular(22),
                         boxShadow: AppColors.glowShadow(AppColors.primary, opacity: 0.4),
                       ),
-                      child: const Icon(
-                        Icons.shopping_bag_rounded,
-                        size: 42,
-                        color: Colors.white,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(22),
+                        child: Image.asset(
+                          'assets/icons/stora_logo.png',
+                          fit: BoxFit.cover,
+                        ),
                       ),
                     ),
                   ),

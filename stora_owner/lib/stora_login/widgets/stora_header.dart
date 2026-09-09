@@ -11,33 +11,23 @@ class StoraHeader extends StatelessWidget {
     return Column(
       children: [
         Container(
-          padding: const EdgeInsets.all(3),
+          width: 76,
+          height: 76,
           decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: const LinearGradient(
-              colors: [AppColors.purpleLight, AppColors.purple],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
+            borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: AppColors.purple.withValues(alpha: 0.35),
+                color: AppColors.primary.withValues(alpha: 0.35),
                 blurRadius: 20,
-                offset: const Offset(0, 4),
+                offset: const Offset(0, 6),
               ),
             ],
           ),
-          child: Container(
-            width: 68,
-            height: 68,
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              color: Color(0xFF1F1A28),
-            ),
-            child: const Icon(
-              Icons.storefront_rounded,
-              color: AppColors.primary,
-              size: 34,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: Image.asset(
+              'assets/icons/stora_logo.png',
+              fit: BoxFit.cover,
             ),
           ),
         ),
