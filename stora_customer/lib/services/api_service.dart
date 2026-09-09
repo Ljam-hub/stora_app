@@ -327,9 +327,14 @@ class CustomerApiService {
     }
   }
 
-  Future<List<StoreModel>> fetchStores() async {
+  Future<List<StoreModel>> fetchStores({double? lat, double? lng}) async {
     try {
-      final response = await _dispatch('GET', _uri('/stores/'));
+      final params = <String, String>{};
+      if (lat != null && lng != null) {
+        params['lat'] = lat.toString();
+        params['lng'] = lng.toString();
+      }
+      final response = await _dispatch('GET', _uri('/stores/', params));
       if (response.statusCode == 200) {
         final list = jsonDecode(response.body) as List;
         return list.map((e) => StoreModel.fromJson(e as Map<String, dynamic>)).toList();
@@ -339,6 +344,7 @@ class CustomerApiService {
     }
     return [];
   }
+
 
   Future<List<CategoryModel>> fetchCategories({int? storeId}) async {
     try {

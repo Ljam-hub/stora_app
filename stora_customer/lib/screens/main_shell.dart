@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/cart_provider.dart';
+import '../providers/catalog_provider.dart';
+import '../providers/order_provider.dart';
+import '../services/notification_service.dart';
 import '../theme/app_theme.dart';
 import 'cart/cart_screen.dart';
+import 'map/store_map_screen.dart';
 import 'orders/orders_screen.dart';
 import 'profile/profile_screen.dart';
 import 'shop/shop_screen.dart';
 
-import '../providers/order_provider.dart';
-import '../services/notification_service.dart';
+
 
 class MainShell extends StatefulWidget {
   final int initialTab;
@@ -60,7 +63,7 @@ class _MainShellState extends State<MainShell> {
             label: 'View',
             textColor: AppColors.primary,
             onPressed: () {
-              setState(() => _currentIndex = 2); // Switch to Orders tab
+              setState(() => _currentIndex = 3); // Switch to Orders tab
             },
           ),
           duration: const Duration(seconds: 5),
@@ -85,11 +88,17 @@ class _MainShellState extends State<MainShell> {
 
     final screens = [
       ShopScreen(
-        onGoToCart: () => setState(() => _currentIndex = 1),
+        onGoToCart: () => setState(() => _currentIndex = 2),
+      ),
+      StoreMapScreen(
+        onSelectStoreAndShop: (store) {
+          context.read<CatalogProvider>().selectStore(store);
+          setState(() => _currentIndex = 0); // Switch to Shop tab
+        },
       ),
       CartScreen(
         onStartShopping: () => setState(() => _currentIndex = 0),
-        onOrderPlaced: () => setState(() => _currentIndex = 2),
+        onOrderPlaced: () => setState(() => _currentIndex = 3),
       ),
       OrdersScreen(
         onStartShopping: () => setState(() => _currentIndex = 0),
@@ -131,15 +140,21 @@ class _MainShellState extends State<MainShell> {
                 activeIcon: Icons.storefront_rounded,
                 label: 'Shop',
               ),
-              _buildCartNavItem(cart: cart),
               _buildNavItem(
-                index: 2,
+                index: 1,
+                icon: Icons.map_outlined,
+                activeIcon: Icons.map_rounded,
+                label: 'Map',
+              ),
+              _buildCartNavItem(cart: cart, index: 2),
+              _buildNavItem(
+                index: 3,
                 icon: Icons.receipt_long_outlined,
                 activeIcon: Icons.receipt_long_rounded,
                 label: 'Orders',
               ),
               _buildNavItem(
-                index: 3,
+                index: 4,
                 icon: Icons.person_outline,
                 activeIcon: Icons.person_rounded,
                 label: 'Profile',
@@ -149,6 +164,7 @@ class _MainShellState extends State<MainShell> {
         ),
       ),
     );
+
   }
 
   Widget _buildNavItem({
@@ -195,8 +211,7 @@ class _MainShellState extends State<MainShell> {
     );
   }
 
-  Widget _buildCartNavItem({required CartProvider cart}) {
-    const index = 1;
+  Widget _buildCartNavItem({required CartProvider cart, int index = 2}) {
     final isSelected = _currentIndex == index;
     final count = cart.totalItemCount;
 

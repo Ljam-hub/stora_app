@@ -13,6 +13,9 @@ import 'package:http/http.dart' as http;
 class ApiConfig {
   static const _envUrl = String.fromEnvironment('STORA_API_URL');
 
+  /// Production cloud backend deployed on Render
+  static const cloudUrl = 'https://stora-app-4hpz.onrender.com/api';
+
   /// Primary Wi-Fi LAN IP of host machine (192.168.254.105)
   static const lanUrl = 'http://192.168.254.105:8000/api';
 
@@ -28,7 +31,7 @@ class ApiConfig {
   static String _defaultUrl() {
     if (_customUrl != null && _customUrl!.isNotEmpty) return _customUrl!;
     if (_envUrl.isNotEmpty) return _envUrl;
-    return 'http://127.0.0.1:8000/api';
+    return cloudUrl;
   }
 
   static void setCustomUrl(String? url) {
@@ -64,12 +67,14 @@ class ApiConfig {
 
     add(_customUrl);
     add(_envUrl);
+    // Cloud URL has top priority so no local connection/PC is needed
+    add(cloudUrl);
     if (!kIsWeb && Platform.isAndroid) {
-      add('http://127.0.0.1:8000/api'); // ADB reverse port forwarding (USB connection)
+      add('http://127.0.0.1:8000/api'); // ADB reverse port forwarding
       add('http://10.0.2.2:8000/api'); // Android Emulator default
-      add(lanUrl); // Wi-Fi LAN IP (192.168.254.105)
-      add(altLanUrl); // Alternate LAN IP (192.168.254.107)
-      add(hotspotUrl); // Windows Mobile Hotspot IP (192.168.137.1)
+      add(lanUrl); // Wi-Fi LAN IP
+      add(altLanUrl);
+      add(hotspotUrl);
       add('http://localhost:8000/api');
     } else {
       add('http://127.0.0.1:8000/api');
@@ -80,6 +85,7 @@ class ApiConfig {
     }
     return urls;
   }
+
 
   /// Probes candidate hosts in parallel and selects the highest-priority reachable host.
   /// Returns `true` if a reachable host was found, `false` otherwise.

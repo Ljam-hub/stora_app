@@ -5,7 +5,7 @@ from django.utils import timezone
 
 from stora_backend.admin_site import stora_admin_site
 
-from .models import User, PasswordResetToken, PaymentProof, SubscriptionConfig
+from .models import User, PasswordResetToken, PaymentProof, SubscriptionConfig, StoreLocation, AIInsight
 
 
 @admin.register(User, site=stora_admin_site)
@@ -151,7 +151,18 @@ class SubscriptionConfigAdmin(admin.ModelAdmin):
     def has_add_permission(self, request):
         return not SubscriptionConfig.objects.exists()
 
-    def has_delete_permission(self, request, obj=None):
-        return False
+@admin.register(StoreLocation, site=stora_admin_site)
+class StoreLocationAdmin(admin.ModelAdmin):
+    list_display = ("owner", "latitude", "longitude", "address", "is_visible", "updated_at")
+    search_fields = ("owner__email", "owner__business_name", "address")
+    list_filter = ("is_visible",)
+
+
+@admin.register(AIInsight, site=stora_admin_site)
+class AIInsightAdmin(admin.ModelAdmin):
+    list_display = ("title", "owner", "category", "priority", "action_label", "is_dismissed", "created_at")
+    list_filter = ("category", "priority", "is_dismissed", "created_at")
+    search_fields = ("title", "description", "owner__email", "owner__business_name")
+
 
 

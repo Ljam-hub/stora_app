@@ -500,4 +500,49 @@ class ApiClient {
     if (response.statusCode != 200) _throw(response);
     return _decode(response) as Map<String, dynamic>;
   }
+
+  // ---------- Store Location ----------
+
+  Future<Map<String, dynamic>> getStoreLocation() async {
+    final response = await _send('GET', '/stores/my-location/');
+    if (response.statusCode != 200) _throw(response);
+    return _decode(response) as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> updateStoreLocation({
+    required double latitude,
+    required double longitude,
+    required String address,
+  }) async {
+    final response = await _send(
+      'PUT',
+      '/stores/my-location/',
+      body: {
+        'latitude': latitude,
+        'longitude': longitude,
+        'address': address,
+        'is_visible': true,
+      },
+    );
+    if (response.statusCode != 200) _throw(response);
+    return _decode(response) as Map<String, dynamic>;
+  }
+
+  // ---------- AI Store Insights ----------
+
+  Future<List<Map<String, dynamic>>> fetchAiInsights() async {
+    final response = await _send('GET', '/ai/insights/');
+    if (response.statusCode != 200) _throw(response);
+    final decoded = _decode(response);
+    if (decoded is List) {
+      return decoded.cast<Map<String, dynamic>>();
+    }
+    return [];
+  }
+
+  Future<void> dismissAiInsight(int insightId) async {
+    final response = await _send('POST', '/ai/insights/$insightId/dismiss/');
+    if (response.statusCode != 200) _throw(response);
+  }
 }
+

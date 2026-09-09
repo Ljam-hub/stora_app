@@ -36,7 +36,13 @@ urlpatterns = [
     # Products & Inventory
     path("products/barcode/<str:code>/", views.barcode_lookup, name="barcode_lookup"),
     path("stores/", views.list_stores, name="list_stores"),
+    path("stores/my-location/", views.store_location, name="store_location"),
+
+    # AI Insights
+    path("ai/insights/", views.ai_store_insights, name="ai_store_insights"),
+    path("ai/insights/<int:pk>/dismiss/", views.dismiss_ai_insight, name="dismiss_ai_insight"),
 
     # ViewSets (Categories, Products, Sales, Orders)
     path("", include(router.urls)),
+
 ]

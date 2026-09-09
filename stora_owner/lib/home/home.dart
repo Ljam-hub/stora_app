@@ -26,3 +26,6 @@ export 'screens/add_edit_product_screen.dart';
 export 'screens/alerts_screen.dart';
 export 'screens/pos_screen.dart';
 export 'screens/sales_history_screen.dart';
+export 'screens/ai_insights_screen.dart';
+export 'screens/set_store_location_screen.dart';
+

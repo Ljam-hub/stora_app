@@ -7,7 +7,7 @@ from django.core.files.base import ContentFile
 from django.db import transaction
 from rest_framework import serializers
 
-from accounts.models import PaymentProof, SubscriptionConfig
+from accounts.models import PaymentProof, SubscriptionConfig, StoreLocation, AIInsight
 from inventory.models import DEFAULT_CATEGORIES, MAX_STOCK, Category, Product
 from orders.models import Order, OrderItem
 from sales.models import Sale, SaleItem
@@ -471,4 +471,30 @@ class OrderCounterSerializer(serializers.Serializer):
 
 class FCMTokenSerializer(serializers.Serializer):
     fcm_token = serializers.CharField(max_length=255, required=True)
+
+
+class StoreLocationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = StoreLocation
+        fields = ("id", "latitude", "longitude", "address", "is_visible", "updated_at")
+        read_only_fields = ("id", "updated_at")
+
+
+class AIInsightSerializer(serializers.ModelSerializer):
+    created_at = UTCDateTimeField(read_only=True)
+
+    class Meta:
+        model = AIInsight
+        fields = (
+            "id",
+            "title",
+            "description",
+            "category",
+            "priority",
+            "action_label",
+            "action_target",
+            "is_dismissed",
+            "created_at",
+        )
+        read_only_fields = ("id", "created_at")
 

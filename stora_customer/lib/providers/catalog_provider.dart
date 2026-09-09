@@ -97,13 +97,14 @@ class CatalogProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> fetchStores() async {
+  Future<void> fetchStores({double? lat, double? lng}) async {
     try {
-      _stores = await CustomerApiService.instance.fetchStores();
+      _stores = await CustomerApiService.instance.fetchStores(lat: lat, lng: lng);
     } catch (e) {
       debugPrint('Error fetching stores: $e');
     }
   }
+
 
   Future<void> fetchCategories() async {
     try {

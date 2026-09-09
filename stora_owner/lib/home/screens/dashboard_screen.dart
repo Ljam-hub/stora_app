@@ -9,11 +9,14 @@ import '../theme/home_colors.dart';
 import '../utils/date_utils.dart';
 import '../../subscription/subscription_screen.dart';
 import 'add_edit_product_screen.dart';
+import 'ai_insights_screen.dart';
 import 'pending_orders_screen.dart';
 import 'pos_screen.dart';
 import 'profile_screen.dart';
 import 'sales_analytics_screen.dart';
 import 'sales_history_screen.dart';
+import 'set_store_location_screen.dart';
+
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -125,6 +128,101 @@ class DashboardScreen extends StatelessWidget {
                     MaterialPageRoute(builder: (_) => const SalesHistoryScreen()),
                   ),
                 ),
+                // AI Insights & Map Row
+                Row(
+                  children: [
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => const AiInsightsScreen()),
+                        ),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: HomeColors.cardBackground,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: AppColors.purpleLight.withValues(alpha: 0.4), width: 1),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.purple.withValues(alpha: 0.18),
+                                blurRadius: 10,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  gradient: HomeColors.purpleGradient,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: const Icon(Icons.auto_awesome_rounded, color: Colors.black, size: 16),
+                              ),
+                              const SizedBox(width: 10),
+                              const Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Text('AI Insights',
+                                            style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700)),
+                                      ],
+                                    ),
+                                    Text('Smart store tips',
+                                        style: TextStyle(color: AppColors.label, fontSize: 11)),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => const SetStoreLocationScreen()),
+                        ),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: HomeColors.cardBackground,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: HomeColors.cardBorder),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF38BDF8).withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: const Icon(Icons.location_on_rounded, color: Color(0xFF38BDF8), size: 16),
+                              ),
+                              const SizedBox(width: 10),
+                              const Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('Store Map',
+                                        style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700)),
+                                    Text('Pin your location',
+                                        style: TextStyle(color: AppColors.label, fontSize: 11)),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 10),
                 // Analytics Shortcut Bar
                 GestureDetector(
@@ -166,6 +264,7 @@ class DashboardScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 14),
+
                 Row(
                   children: [
                     Expanded(

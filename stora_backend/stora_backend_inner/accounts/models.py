@@ -135,3 +135,62 @@ class SubscriptionConfig(models.Model):
         )
         return config
 
+
+class StoreLocation(models.Model):
+    owner = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="location",
+    )
+    latitude = models.FloatField(default=14.5995)
+    longitude = models.FloatField(default=120.9842)
+    address = models.CharField(max_length=255, blank=True, default="")
+    is_visible = models.BooleanField(default=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.owner.business_name or self.owner.email} ({self.latitude}, {self.longitude})"
+
+
+class AIInsight(models.Model):
+    PRIORITY_HIGH = "high"
+    PRIORITY_MEDIUM = "medium"
+    PRIORITY_LOW = "low"
+    PRIORITY_CHOICES = (
+        (PRIORITY_HIGH, "High"),
+        (PRIORITY_MEDIUM, "Medium"),
+        (PRIORITY_LOW, "Low"),
+    )
+
+    CATEGORY_INVENTORY = "inventory"
+    CATEGORY_SALES = "sales"
+    CATEGORY_PRICING = "pricing"
+    CATEGORY_GROWTH = "growth"
+    CATEGORY_CHOICES = (
+        (CATEGORY_INVENTORY, "Inventory"),
+        (CATEGORY_SALES, "Sales"),
+        (CATEGORY_PRICING, "Pricing"),
+        (CATEGORY_GROWTH, "Growth"),
+    )
+
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="ai_insights",
+    )
+    title = models.CharField(max_length=200)
+    description = models.TextField()
+    category = models.CharField(max_length=30, choices=CATEGORY_CHOICES, default=CATEGORY_INVENTORY)
+    priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default=PRIORITY_MEDIUM)
+    action_label = models.CharField(max_length=80, blank=True, default="View Details")
+    action_target = models.CharField(max_length=80, blank=True, default="inventory")
+    is_dismissed = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"[{self.priority.upper()}] {self.title} - {self.owner.email}"
+
+
