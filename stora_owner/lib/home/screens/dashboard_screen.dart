@@ -315,8 +315,11 @@ class DashboardScreen extends StatelessWidget {
                             MaterialPageRoute(builder: (_) => const PosScreen(isStandalone: true)),
                           ),
                           icon: const Icon(Icons.point_of_sale_rounded, color: Colors.white, size: 20),
-                          label: const Text('New Sale',
-                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14)),
+                          label: const FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text('New Sale',
+                                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14)),
+                          ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.transparent,
                             shadowColor: Colors.transparent,
@@ -422,7 +425,11 @@ class _EarningsCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 16),
-            Text(amount, style: const TextStyle(color: Colors.white, fontSize: 34, fontWeight: FontWeight.w900, letterSpacing: -0.8)),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(amount, style: const TextStyle(color: Colors.white, fontSize: 34, fontWeight: FontWeight.w900, letterSpacing: -0.8)),
+            ),
             const SizedBox(height: 8),
             Row(
               children: [
@@ -479,34 +486,45 @@ class _StatCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Container(
-                padding: const EdgeInsets.all(6),
+                padding: const EdgeInsets.all(7),
                 decoration: BoxDecoration(
                   color: badgeBg,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(icon, size: 16, color: badgeColor),
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: AppColors.label, fontSize: 13, fontWeight: FontWeight.w600),
-                ),
-              ),
-              const SizedBox(width: 4),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(color: badgeBg, borderRadius: BorderRadius.circular(20)),
-                child: Text(badge, style: TextStyle(color: badgeColor, fontSize: 10, fontWeight: FontWeight.w700)),
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                decoration: BoxDecoration(
+                  color: badgeBg,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  badge,
+                  style: TextStyle(color: badgeColor, fontSize: 11, fontWeight: FontWeight.w700),
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 14),
-          Text(value, style: TextStyle(color: valueColor, fontSize: 26, fontWeight: FontWeight.w900, letterSpacing: -0.5)),
+          const SizedBox(height: 12),
+          Text(
+            title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(color: AppColors.label, fontSize: 13, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 6),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              value,
+              style: TextStyle(color: valueColor, fontSize: 26, fontWeight: FontWeight.w900, letterSpacing: -0.5),
+            ),
+          ),
         ],
       ),
     );
@@ -619,7 +637,10 @@ class _OutlinedAction extends StatelessWidget {
       child: OutlinedButton.icon(
         onPressed: onPressed,
         icon: Icon(icon, color: AppColors.purpleLight, size: 18),
-        label: Text(label, style: const TextStyle(color: AppColors.purpleLight, fontWeight: FontWeight.w700, fontSize: 14)),
+        label: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(label, style: const TextStyle(color: AppColors.purpleLight, fontWeight: FontWeight.w700, fontSize: 14)),
+        ),
         style: OutlinedButton.styleFrom(
           backgroundColor: HomeColors.cardBackground,
           side: const BorderSide(color: HomeColors.cardBorderLight),

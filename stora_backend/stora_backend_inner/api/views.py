@@ -293,7 +293,8 @@ class OwnerQuerysetMixin:
             owner_id = self.request.query_params.get("owner") or self.request.query_params.get("store")
             if owner_id:
                 return super().get_queryset().filter(owner_id=owner_id)
-            return super().get_queryset().none()
+            # When customer selects 'All Stores' (no store param), return products/categories from all stores
+            return super().get_queryset().all()
         return super().get_queryset().filter(owner=user)
 
 

@@ -5,9 +5,17 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib.auth import views as auth_views
 from django.http import JsonResponse
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 from django.urls import include, path, reverse_lazy
 from .admin_site import stora_admin_site
+
+GITHUB_RELEASE_BASE = "https://github.com/Ljam-hub/stora_app/releases/download/v1.0.0"
+
+def download_customer(request):
+    return redirect(f"{GITHUB_RELEASE_BASE}/Stora.Customer.apk")
+
+def download_owner(request):
+    return redirect(f"{GITHUB_RELEASE_BASE}/Stora.apk")
 
 def root_status(request):
     # If requested by a browser, render the modern Stora Backend Portal
@@ -25,6 +33,8 @@ def root_status(request):
 
 urlpatterns = [
     path("", root_status, name="root_status"),
+    path("download/customer/", download_customer, name="download_customer"),
+    path("download/owner/", download_owner, name="download_owner"),
     path(
         "admin/password_reset/",
         auth_views.PasswordResetView.as_view(

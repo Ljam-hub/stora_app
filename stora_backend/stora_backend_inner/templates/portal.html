@@ -4,80 +4,148 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#102e31">
-  <title>STORA Backend</title>
+  <meta name="theme-color" content="#0E0B14">
+  <title>STORA Portal | Retail Operations & Mobile Commerce</title>
   <link rel="stylesheet" href="{% static 'css/portal.css' %}">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2224%22 fill=%22%23FF6B00%22/><text y=%2268%22 x=%2250%22 font-family=%22sans-serif%22 font-size=%2256%22 font-weight=%22bold%22 text-anchor=%22middle%22 fill=%22white%22>S</text></svg>">
 </head>
 <body>
   <header class="site-header">
-    <a class="brand" href="/" aria-label="STORA backend home">
+    <a class="brand" href="/" aria-label="STORA home">
       <span class="brand__mark" aria-hidden="true">S</span>
       <span class="brand__name">STORA<span>.</span></span>
-      <span class="brand__context">Backend</span>
+      <span class="brand__context">Cloud Portal</span>
     </a>
-    <nav class="site-nav" aria-label="Backend navigation">
-      <span class="status"><span class="status__dot" aria-hidden="true"></span>System operational</span>
-      <a class="button button--primary" href="/admin/">Open admin <span aria-hidden="true">&#8599;</span></a>
+    <nav class="site-nav" aria-label="Main navigation">
+      <span class="status"><span class="status__dot" aria-hidden="true"></span>Services Online</span>
+      <a class="button button--quiet" href="#downloads">Download Apps &#8595;</a>
+      <a class="button button--primary" href="/admin/">Admin Console <span aria-hidden="true">&#8599;</span></a>
     </nav>
   </header>
 
   <main class="page-shell">
     <section class="intro" aria-labelledby="page-title">
-      <p class="eyebrow">Commerce operations console</p>
-      <h1 id="page-title">Everything behind your store, in one place.</h1>
-      <p class="intro__copy">Manage products, orders, sales, accounts, and the API from a clear backend workspace built for daily operations.</p>
+      <p class="eyebrow">Commerce Operations Platform</p>
+      <h1 id="page-title">Retail commerce and store operations made seamless.</h1>
+      <p class="intro__copy">Powering modern sari-sari stores, neighborhood groceries, and mobile customers across the Philippines with real-time inventory and instant ordering.</p>
       <div class="intro__actions">
-        <a class="button button--primary button--large" href="/admin/">Go to admin dashboard <span aria-hidden="true">&#8594;</span></a>
-        <a class="button button--quiet button--large" href="/api/health/" target="_blank">Check API health</a>
+        <a class="button button--primary button--large" href="#downloads">
+          Get Mobile Apps (APK) &#8595;
+        </a>
+        <a class="button button--quiet button--large" href="/admin/">
+          Merchant Dashboard <span aria-hidden="true">&#8594;</span>
+        </a>
       </div>
     </section>
 
+    <!-- Mobile Applications Download Section -->
+    <section id="downloads" class="downloads-section" style="margin-bottom: 48px; padding: 36px 32px; border-radius: 20px; border: 1px solid var(--border-card); background: var(--bg-card); box-shadow: var(--shadow-card);">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; flex-wrap: wrap; margin-bottom: 28px;">
+        <div>
+          <p class="section-label" style="margin: 0 0 6px;">Android App Downloads</p>
+          <h2 style="margin: 0 0 8px; font-family: var(--font-display); font-size: 28px; letter-spacing: -.025em; color: var(--text-white);">Get the Official Stora Apps</h2>
+          <p style="margin: 0; color: var(--text-muted); font-size: 15px;">Download and install the latest Stora release builds directly onto your Android smartphone.</p>
+        </div>
+        <span style="display: inline-flex; align-items: center; gap: 8px; padding: 6px 16px; background: var(--orange-badge-bg); color: #FF9E58; border-radius: 99px; font-size: 13px; font-weight: 700; border: 1px solid var(--orange-badge-border);">
+          <span class="status__dot" style="background: #FF6B00; box-shadow: 0 0 0 4px rgba(255,107,0,0.25);" aria-hidden="true"></span>
+          Release v1.0.0
+        </span>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px;">
+        <!-- Card 1: Customer App -->
+        <div style="display: flex; flex-direction: column; padding: 28px; border-radius: 16px; background: #130E1B; border: 1px solid rgba(255, 107, 0, 0.4); box-shadow: 0 8px 30px rgba(0,0,0,0.4); position: relative; overflow: hidden;">
+          <div style="position: absolute; top: -30px; right: -30px; width: 120px; height: 120px; background: radial-gradient(circle, rgba(255,107,0,0.2) 0%, transparent 70%); pointer-events: none;"></div>
+          <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;">
+            <div style="width: 54px; height: 54px; border-radius: 14px; background: linear-gradient(135deg, #FF6B00, #A04100); display: grid; place-items: center; color: #fff; font-size: 26px; box-shadow: 0 4px 16px rgba(255,107,0,0.4);">
+              🛍️
+            </div>
+            <div>
+              <h3 style="margin: 0; color: #ffffff; font-size: 20px; font-weight: 700; font-family: var(--font-display);">Stora Customer</h3>
+              <span style="color: #FF9E58; font-size: 13px; font-weight: 600;">Store Discovery &amp; Orders</span>
+            </div>
+          </div>
+          <p style="margin: 0 0 24px; color: #9CA3AF; font-size: 14px; line-height: 1.6; flex-grow: 1;">
+            Explore nearby sari-sari stores and groceries on the interactive map, browse live product catalogs, check available stock in real-time, and place orders directly for pickup.
+          </p>
+          <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+            <a href="https://github.com/Ljam-hub/stora_app/releases/download/v1.0.0/Stora.Customer.apk"
+               download="Stora.Customer.apk"
+               class="button button--primary"
+               style="flex: 1; padding: 13px 20px; border-radius: 12px; font-size: 14px;">
+              <span>Download Customer APK</span>
+              <span aria-hidden="true">&#8595;</span>
+            </a>
+            <span style="color: #9CA3AF; font-size: 12px; font-weight: 600; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 6px;">50 MB</span>
+          </div>
+        </div>
+
+        <!-- Card 2: Owner App -->
+        <div style="display: flex; flex-direction: column; padding: 28px; border-radius: 16px; background: #130E1B; border: 1px solid rgba(255, 255, 255, 0.12); box-shadow: 0 8px 30px rgba(0,0,0,0.4); position: relative; overflow: hidden;">
+          <div style="position: absolute; top: -30px; right: -30px; width: 120px; height: 120px; background: radial-gradient(circle, rgba(74,222,128,0.15) 0%, transparent 70%); pointer-events: none;"></div>
+          <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;">
+            <div style="width: 54px; height: 54px; border-radius: 14px; background: #1E1729; border: 1.5px solid #FF6B00; display: grid; place-items: center; color: #FF6B00; font-size: 26px; box-shadow: 0 4px 16px rgba(0,0,0,0.4);">
+              🏪
+            </div>
+            <div>
+              <h3 style="margin: 0; color: #ffffff; font-size: 20px; font-weight: 700; font-family: var(--font-display);">Stora Owner</h3>
+              <span style="color: #4ADE80; font-size: 13px; font-weight: 600;">Point-of-Sale &amp; Inventory</span>
+            </div>
+          </div>
+          <p style="margin: 0 0 24px; color: #9CA3AF; font-size: 14px; line-height: 1.6; flex-grow: 1;">
+            High-speed POS cash register with camera barcode scanning, offline-first SQLite database synchronization, automated stock alerts, and AI business growth insights.
+          </p>
+          <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+            <a href="https://github.com/Ljam-hub/stora_app/releases/download/v1.0.0/Stora.apk"
+               download="Stora.apk"
+               class="button button--quiet"
+               style="flex: 1; padding: 13px 20px; border-radius: 12px; font-size: 14px; border-color: rgba(255, 107, 0, 0.6); color: #ffffff; background: #1C1527;">
+              <span>Download Owner APK</span>
+              <span aria-hidden="true">&#8595;</span>
+            </a>
+            <span style="color: #9CA3AF; font-size: 12px; font-weight: 600; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 6px;">75 MB</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top: 24px; padding: 16px 20px; border-radius: 12px; background: rgba(255, 107, 0, 0.08); border: 1px solid rgba(255, 107, 0, 0.28); color: var(--text-dim); font-size: 13px; line-height: 1.6;">
+        <strong style="color: #FF9E58;">💡 Android Installation:</strong> If your mobile browser prompts <em>"File might be harmful"</em>, tap <strong>"Download anyway"</strong>. When installing, enable <strong>"Allow from this source"</strong> (Install unknown apps) in your device settings to complete setup.
+      </div>
+    </section>
+
+    <!-- Cloud Platform Services Status -->
     <section class="status-panel" aria-labelledby="status-title">
       <div>
-        <p class="section-label">Live status</p>
-        <h2 id="status-title">Core services are ready.</h2>
+        <p class="section-label">Live Cloud Network</p>
+        <h2 id="status-title">Platform systems operational.</h2>
       </div>
       <div class="status-grid">
-        <div class="status-item"><span class="status-item__indicator"></span><span>API gateway</span><strong>Online</strong></div>
-        <div class="status-item"><span class="status-item__indicator"></span><span>Admin console</span><strong>Online</strong></div>
-        <div class="status-item"><span class="status-item__indicator"></span><span>Notifications</span><strong>Connected</strong></div>
+        <div class="status-item"><span class="status-item__indicator"></span><span>Cloud Gateway</span><strong>Online</strong></div>
+        <div class="status-item"><span class="status-item__indicator"></span><span>Store Engine</span><strong>Online</strong></div>
+        <div class="status-item"><span class="status-item__indicator"></span><span>Sync Service</span><strong>Connected</strong></div>
       </div>
     </section>
 
-    <section class="feature-grid" aria-label="Backend areas">
+    <!-- Business Features Grid -->
+    <section class="feature-grid" aria-label="Platform Operations">
       <article class="feature-card">
         <span class="feature-card__number">01</span>
-        <h2>Store operations</h2>
-        <p>Keep products, categories, inventory, and low-stock actions accurate and easy to find.</p>
+        <h2>Store &amp; Inventory</h2>
+        <p>Manage product catalogs, categories, pricing, barcodes, and automated low-stock warnings from the management console.</p>
         <a href="/admin/inventory/product/">Manage inventory <span aria-hidden="true">&#8594;</span></a>
       </article>
       <article class="feature-card">
         <span class="feature-card__number">02</span>
-        <h2>Order flow</h2>
-        <p>Review incoming carts and move customer orders from pending to completed.</p>
+        <h2>Order Processing</h2>
+        <p>Review customer carts, track order fulfillments, manage payments, and streamline customer store pickups in real time.</p>
         <a href="/admin/orders/order/">Review orders <span aria-hidden="true">&#8594;</span></a>
       </article>
-      <article class="feature-card">
-        <span class="feature-card__number">03</span>
-        <h2>API access</h2>
-        <p>Inspect the backend response and verify the service your mobile clients depend on.</p>
-        <a href="/api/" target="_blank">Open API root <span aria-hidden="true">&#8599;</span></a>
-      </article>
-    </section>
-
-    <section class="developer-note" aria-labelledby="connection-title">
-      <div>
-        <p class="section-label">Local development</p>
-        <h2 id="connection-title">Connect a mobile client</h2>
-        <p>Use the local backend address for device testing and USB development.</p>
-      </div>
-      <code><span>$</span> adb reverse tcp:8000 tcp:8000</code>
     </section>
   </main>
 
   <footer class="site-footer">
-    <span>STORA Backend</span>
-    <span>Retail operations platform</span>
+    <span>&copy; STORA Platform &bull; Retail Operations &amp; Mobile Commerce</span>
+    <span>Production Cloud Services</span>
   </footer>
 </body>
 </html>

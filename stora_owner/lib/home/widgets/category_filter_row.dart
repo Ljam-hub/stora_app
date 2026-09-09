@@ -73,35 +73,39 @@ class CategoryFilterRow extends StatelessWidget {
             if (!chips.contains(selected)) onSelect('All');
           });
         }
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              ...chips.map((cat) => CategoryChip(
-                    label: cat,
-                    selected: cat == selected,
-                    onTap: () => onSelect(cat),
-                  )),
-              if (showManageButton)
-                GestureDetector(
-                  onTap: () => showDialog(
-                    context: context,
-                    builder: (ctx) => const ManageCategoriesDialog(),
-                  ),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: HomeColors.cardBackground,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: AppColors.fieldBorder),
-                    ),
-                    child: const Icon(Icons.tune_rounded, size: 16, color: AppColors.label),
-                  ),
+        final items = <Widget>[
+          ...chips.map((cat) => Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: CategoryChip(
+                  label: cat,
+                  selected: cat == selected,
+                  onTap: () => onSelect(cat),
                 ),
-            ],
+              )),
+          if (showManageButton)
+            GestureDetector(
+              onTap: () => showDialog(
+                context: context,
+                builder: (ctx) => const ManageCategoriesDialog(),
+              ),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                decoration: BoxDecoration(
+                  color: HomeColors.cardBackground,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: AppColors.fieldBorder),
+                ),
+                child: const Icon(Icons.tune_rounded, size: 16, color: AppColors.label),
+              ),
+            ),
+        ];
+
+        return SizedBox(
+          height: 42,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            children: items,
           ),
         );
       },

@@ -41,14 +41,63 @@ class ProductCard extends StatelessWidget {
   }
 
   Widget _buildFallbackImage() {
+    final cat = product.categoryName.toLowerCase();
+    final IconData iconData;
+    final List<Color> gradientColors;
+
+    if (cat.contains('drink') || cat.contains('beverage')) {
+      iconData = Icons.local_drink_rounded;
+      gradientColors = const [Color(0xFF1E293B), Color(0xFF0F172A)];
+    } else if (cat.contains('snack') || cat.contains('food')) {
+      iconData = Icons.fastfood_rounded;
+      gradientColors = const [Color(0xFF2E1065), Color(0xFF1E1B4B)];
+    } else if (cat.contains('house') || cat.contains('clean')) {
+      iconData = Icons.cleaning_services_rounded;
+      gradientColors = const [Color(0xFF064E3B), Color(0xFF022C22)];
+    } else if (cat.contains('care') || cat.contains('person')) {
+      iconData = Icons.sanitizer_rounded;
+      gradientColors = const [Color(0xFF4C1D95), Color(0xFF2E1065)];
+    } else {
+      iconData = Icons.inventory_2_rounded;
+      gradientColors = const [Color(0xFF1F1A28), Color(0xFF141018)];
+    }
+
     return Container(
-      color: AppColors.cardElevated,
-      child: Center(
-        child: Icon(
-          Icons.inventory_2_outlined,
-          size: 40,
-          color: AppColors.primaryLight.withValues(alpha: 0.5),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: gradientColors,
         ),
+      ),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // Subtle glow background circle
+          Container(
+            width: 72,
+            height: 72,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: AppColors.primary.withValues(alpha: 0.08),
+            ),
+          ),
+          // Product emblem container
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: AppColors.cardElevated,
+              shape: BoxShape.circle,
+              border: Border.all(color: AppColors.primary.withValues(alpha: 0.25), width: 1.2),
+              boxShadow: AppColors.glowShadow(AppColors.primary, opacity: 0.2),
+            ),
+            child: Icon(
+              iconData,
+              size: 32,
+              color: AppColors.primaryLight,
+            ),
+          ),
+        ],
       ),
     );
   }

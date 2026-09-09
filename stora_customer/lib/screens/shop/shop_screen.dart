@@ -161,7 +161,7 @@ class _ShopScreenState extends State<ShopScreen> {
             // Store Filter Row (if multiple stores exist)
             if (catalog.stores.isNotEmpty) ...[
               SizedBox(
-                height: 38,
+                height: 44,
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -224,7 +224,7 @@ class _ShopScreenState extends State<ShopScreen> {
             // Category Filter Chips
             if (catalog.categories.isNotEmpty) ...[
               SizedBox(
-                height: 38,
+                height: 44,
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: 16),

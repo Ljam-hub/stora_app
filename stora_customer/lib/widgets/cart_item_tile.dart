@@ -44,9 +44,20 @@ class CartItemTile extends StatelessWidget {
 
   Widget _buildFallbackThumbnail() {
     return Container(
-      color: AppColors.cardElevated,
-      child: const Center(
-        child: Icon(Icons.shopping_bag_outlined, size: 24, color: AppColors.primaryLight),
+      decoration: BoxDecoration(
+        color: AppColors.cardElevated,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: AppColors.cardBackground,
+            shape: BoxShape.circle,
+            border: Border.all(color: AppColors.primary.withValues(alpha: 0.25), width: 1),
+          ),
+          child: const Icon(Icons.inventory_2_rounded, size: 20, color: AppColors.primaryLight),
+        ),
       ),
     );
   }

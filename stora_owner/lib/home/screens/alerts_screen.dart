@@ -3,6 +3,7 @@ import '../../stora_login/stora_login.dart';
 import '../models/product.dart';
 import '../stores/inventory_store.dart';
 import '../theme/home_colors.dart';
+import '../widgets/product_image_widget.dart';
 import 'add_edit_product_screen.dart';
 
 class AlertsScreen extends StatelessWidget {
@@ -122,23 +123,14 @@ class _AlertCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Container(
+          ProductImageWidget(
+            imageBytes: product.imageBytes,
+            productName: product.name,
+            category: product.category,
             width: 44,
             height: 44,
-            decoration: BoxDecoration(
-              color: isOut ? HomeColors.dangerBg : HomeColors.warningBg,
-              borderRadius: BorderRadius.circular(12),
-              image: product.imageBytes != null
-                  ? DecorationImage(image: MemoryImage(product.imageBytes!), fit: BoxFit.cover)
-                  : null,
-            ),
-            child: product.imageBytes == null
-                ? Icon(
-                    isOut ? Icons.remove_shopping_cart_outlined : Icons.inventory_2_outlined,
-                    color: isOut ? AppColors.error : HomeColors.warningText,
-                    size: 20,
-                  )
-                : null,
+            borderRadius: BorderRadius.circular(12),
+            iconSize: 20,
           ),
           const SizedBox(width: 14),
           Expanded(

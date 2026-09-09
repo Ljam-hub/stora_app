@@ -11,6 +11,7 @@ import '../stores/inventory_store.dart';
 import '../stores/sales_store.dart';
 import '../theme/home_colors.dart';
 import '../widgets/category_filter_row.dart';
+import '../widgets/product_image_widget.dart';
 import '../widgets/receipt_dialog.dart';
 import '../widgets/stock_step_button.dart';
 
@@ -247,7 +248,7 @@ class _PosScreenState extends State<PosScreen> {
                 // as a buffer; the card itself uses Expanded + FittedBox
                 // internally so it never overflows even if this buffer
                 // isn't quite enough on a given platform's text scale.
-                height: 116,
+                height: 124,
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -392,7 +393,7 @@ class _PosProductCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 104,
+        width: 116,
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
           color: HomeColors.cardBackground,
@@ -405,18 +406,12 @@ class _PosProductCard extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Expanded(
-              child: Container(
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: AppColors.fieldBackground,
-                  borderRadius: BorderRadius.circular(10),
-                  image: product.imageBytes != null
-                      ? DecorationImage(image: MemoryImage(product.imageBytes!), fit: BoxFit.cover)
-                      : null,
-                ),
-                child: product.imageBytes == null
-                    ? const Icon(Icons.image_outlined, color: AppColors.hint, size: 20)
-                    : null,
+              child: ProductImageWidget(
+                imageBytes: product.imageBytes,
+                productName: product.name,
+                category: product.category,
+                borderRadius: BorderRadius.circular(10),
+                iconSize: 20,
               ),
             ),
             const SizedBox(height: 6),
@@ -459,19 +454,14 @@ class _CartRow extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Container(
+          ProductImageWidget(
+            imageBytes: item.product.imageBytes,
+            productName: item.product.name,
+            category: item.product.category,
             width: 36,
             height: 36,
-            decoration: BoxDecoration(
-              color: AppColors.fieldBackground,
-              borderRadius: BorderRadius.circular(10),
-              image: item.product.imageBytes != null
-                  ? DecorationImage(image: MemoryImage(item.product.imageBytes!), fit: BoxFit.cover)
-                  : null,
-            ),
-            child: item.product.imageBytes == null
-                ? const Icon(Icons.inventory_2_outlined, size: 16, color: AppColors.purpleLight)
-                : null,
+            borderRadius: BorderRadius.circular(10),
+            iconSize: 16,
           ),
           const SizedBox(width: 12),
           Expanded(

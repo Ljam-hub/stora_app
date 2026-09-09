@@ -100,6 +100,7 @@ class CatalogProvider extends ChangeNotifier {
   Future<void> fetchStores({double? lat, double? lng}) async {
     try {
       _stores = await CustomerApiService.instance.fetchStores(lat: lat, lng: lng);
+      notifyListeners();
     } catch (e) {
       debugPrint('Error fetching stores: $e');
     }

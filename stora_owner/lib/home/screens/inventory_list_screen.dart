@@ -8,6 +8,7 @@ import '../stores/inventory_store.dart';
 import '../theme/home_colors.dart';
 import '../utils/constants.dart';
 import '../widgets/category_filter_row.dart';
+import '../widgets/product_image_widget.dart';
 import '../widgets/stock_step_button.dart';
 import '../../subscription/subscription_screen.dart';
 import 'add_edit_product_screen.dart';
@@ -345,20 +346,14 @@ class ProductCard extends StatelessWidget {
                   Expanded(
                     child: Stack(
                       children: [
-                        Container(
-                          width: double.infinity,
-                          decoration: BoxDecoration(
-                            color: HomeColors.cardElevated,
+                        Positioned.fill(
+                          child: ProductImageWidget(
+                            imageBytes: product.imageBytes,
+                            productName: product.name,
+                            category: product.category,
                             borderRadius: BorderRadius.circular(14),
-                            image: product.imageBytes != null
-                                ? DecorationImage(image: MemoryImage(product.imageBytes!), fit: BoxFit.cover)
-                                : null,
+                            iconSize: 26,
                           ),
-                          child: product.imageBytes == null
-                              ? const Center(
-                                  child: Icon(Icons.inventory_2_outlined, color: AppColors.label, size: 30),
-                                )
-                              : null,
                         ),
                         if (isOutOfStock)
                           Positioned(
@@ -394,9 +389,9 @@ class ProductCard extends StatelessWidget {
                   const SizedBox(height: 8),
                   Text(
                     product.name,
-                    maxLines: 1,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700),
+                    style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700, height: 1.2),
                   ),
                   const SizedBox(height: 2),
                   Text(
@@ -410,10 +405,12 @@ class ProductCard extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Flexible(
-                        child: Text('₱${product.price.toStringAsFixed(2)}',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(color: AppColors.purpleLight, fontSize: 13, fontWeight: FontWeight.w800)),
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text('₱${product.price.toStringAsFixed(2)}',
+                              style: const TextStyle(color: AppColors.purpleLight, fontSize: 13, fontWeight: FontWeight.w800)),
+                        ),
                       ),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
