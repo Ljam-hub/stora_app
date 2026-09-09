@@ -10,6 +10,7 @@ import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
 import 'screens/main_shell.dart';
 import 'theme/app_theme.dart';
+import 'theme/theme_controller.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,9 +19,12 @@ void main() async {
   final authProvider = AuthProvider();
   final loggedIn = await authProvider.tryAutoLogin();
 
+  await CustomerThemeController.instance.init();
+
   runApp(
     MultiProvider(
       providers: [
+        ChangeNotifierProvider<CustomerThemeController>.value(value: CustomerThemeController.instance),
         ChangeNotifierProvider<AuthProvider>.value(value: authProvider),
         ChangeNotifierProvider<CatalogProvider>(create: (_) => CatalogProvider()),
         ChangeNotifierProvider<CartProvider>(create: (_) => CartProvider()),
@@ -38,10 +42,14 @@ class StoraCustomerApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final themeController = context.watch<CustomerThemeController>();
+
     return MaterialApp(
       title: 'Stora Customer',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.darkTheme,
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: themeController.themeMode,
       initialRoute: initialRoute,
       routes: {
         '/login': (context) => const LoginScreen(),

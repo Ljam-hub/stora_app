@@ -12,6 +12,7 @@ import '../widgets/status_chip.dart';
 import '../../subscription/subscription_screen.dart';
 import '../../subscription/subscription_status_screen.dart';
 import '../../subscription/subscription_status.dart';
+import '../theme/theme_mode_controller.dart';
 
 // ---------------------------------------------------------------------
 // Profile — store header (name, owner, plan pill) plus a settings
@@ -355,6 +356,65 @@ class ProfileScreen extends StatelessWidget {
                           ),
                         );
                       }
+                    },
+                  ),
+                  AnimatedBuilder(
+                    animation: ThemeModeController.instance,
+                    builder: (context, _) {
+                      final themeCtrl = ThemeModeController.instance;
+                      final isDark = themeCtrl.isDarkMode;
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: HomeColors.cardBackground,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: HomeColors.cardBorder),
+                            boxShadow: HomeColors.cardShadow,
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Icon(
+                                  isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+                                  size: 18,
+                                  color: AppColors.primaryLight,
+                                ),
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      isDark ? 'Dark Mode' : 'Light Mode',
+                                      style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700),
+                                    ),
+                                    Text(
+                                      isDark ? 'Comfortable dark theme' : 'Crisp light retail theme',
+                                      style: const TextStyle(color: AppColors.label, fontSize: 11),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Switch.adaptive(
+                                value: isDark,
+                                activeTrackColor: AppColors.primary,
+                                activeThumbColor: Colors.white,
+                                onChanged: (val) {
+                                  themeCtrl.setThemeMode(val ? ThemeMode.dark : ThemeMode.light);
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
                     },
                   ),
                   _MenuTile(
