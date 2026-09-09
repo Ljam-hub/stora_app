@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../config/api_config.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/custom_text_field.dart';
@@ -27,125 +26,6 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void _showServerDialog() {
-    final controller = TextEditingController(text: ApiConfig.baseUrl);
-    bool testing = false;
-    String? testResult;
-
-    showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          backgroundColor: AppColors.cardBackground,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Row(
-            children: [
-              Icon(Icons.dns_rounded, color: AppColors.primary, size: 22),
-              SizedBox(width: 8),
-              Text('Server Connection', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-            ],
-          ),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Current active backend URL:',
-                  style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
-                ),
-                const SizedBox(height: 4),
-                SelectableText(
-                  ApiConfig.baseUrl,
-                  style: const TextStyle(color: AppColors.primaryLight, fontSize: 13, fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: controller,
-                  style: const TextStyle(color: Colors.white, fontSize: 14),
-                  decoration: InputDecoration(
-                    labelText: 'Custom Server URL or IP:port',
-                    labelStyle: const TextStyle(color: AppColors.textMuted, fontSize: 12),
-                    hintText: 'e.g. 192.168.254.105:8000',
-                    hintStyle: const TextStyle(color: AppColors.textMuted),
-                    filled: true,
-                    fillColor: AppColors.cardElevated,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
-                  ),
-                ),
-                if (testResult != null) ...[
-                  const SizedBox(height: 10),
-                  Text(
-                    testResult!,
-                    style: TextStyle(
-                      color: testResult!.startsWith('Success') ? AppColors.success : AppColors.danger,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: testing
-                  ? null
-                  : () async {
-                      setDialogState(() {
-                        testing = true;
-                        testResult = 'Auto-detecting reachable server...';
-                      });
-                      final ok = await ApiConfig.resolve();
-                      if (ctx.mounted) {
-                        setDialogState(() {
-                          testing = false;
-                          controller.text = ApiConfig.baseUrl;
-                          testResult = ok
-                              ? 'Success: Connected to ${ApiConfig.baseUrl}'
-                              : 'Could not reach server. Verify backend is running on 0.0.0.0:8000';
-                        });
-                        setState(() {});
-                      }
-                    },
-              child: const Text('Auto-Detect'),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-              onPressed: testing
-                  ? null
-                  : () async {
-                      setDialogState(() {
-                        testing = true;
-                        testResult = 'Testing connection...';
-                      });
-                      ApiConfig.setCustomUrl(controller.text);
-                      final ok = await ApiConfig.resolve();
-                      if (ctx.mounted) {
-                        setDialogState(() {
-                          testing = false;
-                          testResult = ok
-                              ? 'Success: Connected to ${ApiConfig.baseUrl}'
-                              : 'Connection failed. Please check IP or firewall.';
-                        });
-                        setState(() {});
-                        if (ok) {
-                          Future.delayed(const Duration(milliseconds: 600), () {
-                            if (ctx.mounted) Navigator.of(ctx).pop();
-                          });
-                        }
-                      }
-                    },
-              child: testing
-                  ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                  : const Text('Save & Test', style: TextStyle(color: Colors.white)),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
     FocusScope.of(context).unfocus();
@@ -160,20 +40,10 @@ class _LoginScreenState extends State<LoginScreen> {
       if (success) {
         Navigator.of(context).pushReplacementNamed('/home');
       } else if (auth.errorMessage != null) {
-        final isNetwork = auth.errorMessage!.toLowerCase().contains('reach') ||
-            auth.errorMessage!.toLowerCase().contains('connection') ||
-            auth.errorMessage!.toLowerCase().contains('timed out');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(auth.errorMessage!),
             backgroundColor: AppColors.danger,
-            action: isNetwork
-                ? SnackBarAction(
-                    label: 'Server Settings',
-                    textColor: Colors.white,
-                    onPressed: _showServerDialog,
-                  )
-                : null,
           ),
         );
       }
@@ -195,36 +65,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Server connection button / pill
-                  Align(
-                    alignment: Alignment.topRight,
-                    child: InkWell(
-                      onTap: _showServerDialog,
-                      borderRadius: BorderRadius.circular(20),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: AppColors.cardBackground,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: AppColors.cardBorder),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.dns_rounded, size: 13, color: AppColors.textMuted),
-                            const SizedBox(width: 6),
-                            Text(
-                              ApiConfig.baseUrl.replaceFirst('http://', '').replaceFirst('/api', ''),
-                              style: const TextStyle(color: AppColors.textSecondary, fontSize: 11),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
                   // App Branding Icon & Title
+
+
                   Center(
                     child: Container(
                       width: 80,

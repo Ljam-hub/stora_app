@@ -9,7 +9,6 @@ import '../stores/inventory_store.dart';
 import '../stores/sales_store.dart';
 import '../theme/home_colors.dart';
 import '../widgets/status_chip.dart';
-import '../../data/api/api_config.dart';
 import '../../subscription/subscription_screen.dart';
 import '../../subscription/subscription_status_screen.dart';
 import '../../subscription/subscription_status.dart';
@@ -236,123 +235,6 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  void _showServerDialog(BuildContext context) {
-    final controller = TextEditingController(text: ApiConfig.baseUrl);
-    bool testing = false;
-    String? testResult;
-
-    showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          backgroundColor: HomeColors.cardBackground,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Row(
-            children: [
-              Icon(Icons.dns_rounded, color: AppColors.purple, size: 22),
-              SizedBox(width: 8),
-              Text('Server Connection', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-            ],
-          ),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Current active backend URL:',
-                  style: TextStyle(color: AppColors.label, fontSize: 13),
-                ),
-                const SizedBox(height: 4),
-                SelectableText(
-                  ApiConfig.baseUrl,
-                  style: const TextStyle(color: AppColors.purpleLight, fontSize: 13, fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: controller,
-                  style: const TextStyle(color: Colors.white, fontSize: 14),
-                  decoration: InputDecoration(
-                    labelText: 'Custom Server URL or IP:port',
-                    labelStyle: const TextStyle(color: AppColors.label, fontSize: 12),
-                    hintText: 'e.g. 192.168.254.105:8000',
-                    hintStyle: const TextStyle(color: AppColors.hint),
-                    filled: true,
-                    fillColor: AppColors.fieldBackground,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
-                  ),
-                ),
-                if (testResult != null) ...[
-                  const SizedBox(height: 10),
-                  Text(
-                    testResult!,
-                    style: TextStyle(
-                      color: testResult!.startsWith('Success') ? Colors.greenAccent : AppColors.error,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: testing
-                  ? null
-                  : () async {
-                      setDialogState(() {
-                        testing = true;
-                        testResult = 'Auto-detecting reachable server...';
-                      });
-                      final ok = await ApiConfig.resolve();
-                      if (ctx.mounted) {
-                        setDialogState(() {
-                          testing = false;
-                          controller.text = ApiConfig.baseUrl;
-                          testResult = ok
-                              ? 'Success: Connected to ${ApiConfig.baseUrl}'
-                              : 'Could not reach server. Verify backend is running on 0.0.0.0:8000';
-                        });
-                      }
-                    },
-              child: const Text('Auto-Detect', style: TextStyle(color: AppColors.purpleLight)),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.purple),
-              onPressed: testing
-                  ? null
-                  : () async {
-                      setDialogState(() {
-                        testing = true;
-                        testResult = 'Testing connection...';
-                      });
-                      ApiConfig.setCustomUrl(controller.text);
-                      final ok = await ApiConfig.resolve();
-                      if (ctx.mounted) {
-                        setDialogState(() {
-                          testing = false;
-                          testResult = ok
-                              ? 'Success: Connected to ${ApiConfig.baseUrl}'
-                              : 'Connection failed. Please check IP or firewall.';
-                        });
-                        if (ok) {
-                          Future.delayed(const Duration(milliseconds: 600), () {
-                            if (ctx.mounted) Navigator.of(ctx).pop();
-                          });
-                        }
-                      }
-                    },
-              child: testing
-                  ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                  : const Text('Save & Test', style: TextStyle(color: Colors.white)),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
@@ -474,11 +356,6 @@ class ProfileScreen extends StatelessWidget {
                         );
                       }
                     },
-                  ),
-                  _MenuTile(
-                    icon: Icons.dns_rounded,
-                    label: 'Server Connection',
-                    onTap: () => _showServerDialog(context),
                   ),
                   _MenuTile(
                     icon: Icons.logout_rounded,
