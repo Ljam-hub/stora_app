@@ -57,7 +57,7 @@ class StoraGradientButton extends StatelessWidget {
               : Text(
                   label,
                   style: const TextStyle(
-                    color: Colors.black,
+                    color: Colors.white,
                     fontSize: 15,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 0.3,

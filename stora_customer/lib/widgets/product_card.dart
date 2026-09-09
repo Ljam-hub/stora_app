@@ -265,12 +265,12 @@ class ProductCard extends StatelessWidget {
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Icon(Icons.add_rounded, size: 15, color: Colors.black),
+                                    Icon(Icons.add_rounded, size: 15, color: Colors.white),
                                     SizedBox(width: 2),
                                     Text(
                                       'Add',
                                       style: TextStyle(
-                                        color: Colors.black,
+                                        color: Colors.white,
                                         fontWeight: FontWeight.w800,
                                         fontSize: 12,
                                       ),

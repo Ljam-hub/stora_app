@@ -9,17 +9,21 @@ class AppColors {
   static const cardBorder = Color(0xFF332A40);
   static const cardBorderLight = Color(0xFF453955);
 
-  static const primary = Color(0xFF9B87F5);
-  static const primaryDark = Color(0xFF7C3AED);
-  static const primaryLight = Color(0xFFBCAAF8);
+  // Stitch Design System: Retail Warm Orange & Merchant Green
+  static const primary = Color(0xFFFF6B00);
+  static const primaryDark = Color(0xFFA04100);
+  static const primaryLight = Color(0xFFFF9E58);
 
-  static const success = Color(0xFF4ADE80);
+  static const secondary = Color(0xFF00875A);
+  static const secondaryLight = Color(0xFF4ADE80);
+
+  static const success = Color(0xFF00875A);
   static const successBg = Color(0xFF132D1B);
 
-  static const warning = Color(0xFFFBBF24);
+  static const warning = Color(0xFFF59E0B);
   static const warningBg = Color(0xFF332408);
 
-  static const danger = Color(0xFFFF6B6B);
+  static const danger = Color(0xFFEF4444);
   static const dangerBg = Color(0xFF3A1620);
 
   static const textPrimary = Colors.white;
@@ -27,19 +31,19 @@ class AppColors {
   static const textMuted = Color(0xFF6B7280);
 
   static const purpleGradient = LinearGradient(
-    colors: [Color(0xFF9B87F5), Color(0xFF7C3AED)],
+    colors: [Color(0xFFFF6B00), Color(0xFFA04100)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   static const heroGradient = LinearGradient(
-    colors: [Color(0xFF8B5CF6), Color(0xFF6D28D9), Color(0xFF1E1826)],
+    colors: [Color(0xFFFF6B00), Color(0xFFA04100), Color(0xFF1E1826)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   static const meshGradient = LinearGradient(
-    colors: [Color(0xFF2A1C46), Color(0xFF1D1430), Color(0xFF120E1C)],
+    colors: [Color(0xFF3D2115), Color(0xFF261812), Color(0xFF160F0C)],
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
   );

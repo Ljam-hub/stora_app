@@ -16,25 +16,25 @@ class HomeColors {
   static const warningBg = Color(0xFF332408);
   
   static const dangerBg = Color(0xFF3A1620);
-  static const dangerText = Color(0xFFFF6B6B);
+  static const dangerText = Color(0xFFEF4444);
 
   static const infoText = Color(0xFF38BDF8);
   static const infoBg = Color(0xFF102A3D);
 
   static const purpleGradient = LinearGradient(
-    colors: [Color(0xFF9B87F5), Color(0xFF7C3AED)],
+    colors: [Color(0xFFFF6B00), Color(0xFFA04100)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   static const heroGradient = LinearGradient(
-    colors: [Color(0xFF8B5CF6), Color(0xFF6D28D9), Color(0xFF1B1428)],
+    colors: [Color(0xFFFF6B00), Color(0xFFA04100), Color(0xFF261812)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   static const meshGradient = LinearGradient(
-    colors: [Color(0xFF2A1C46), Color(0xFF1D1430), Color(0xFF120E1C)],
+    colors: [Color(0xFF3D2115), Color(0xFF261812), Color(0xFF160F0C)],
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
   );

@@ -178,7 +178,7 @@ class _ShopScreenState extends State<ShopScreen> {
                           selectedColor: AppColors.primary,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                           labelStyle: TextStyle(
-                            color: isSelected ? Colors.black : AppColors.textSecondary,
+                            color: isSelected ? Colors.white : AppColors.textSecondary,
                             fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                             fontSize: 12,
                           ),
@@ -197,7 +197,7 @@ class _ShopScreenState extends State<ShopScreen> {
                         avatar: Icon(
                           Icons.storefront_rounded,
                           size: 14,
-                          color: isSelected ? Colors.black : AppColors.primaryLight,
+                          color: isSelected ? Colors.white : AppColors.primaryLight,
                         ),
                         label: Text(store.displayName),
                         selected: isSelected,
@@ -205,7 +205,7 @@ class _ShopScreenState extends State<ShopScreen> {
                         selectedColor: AppColors.primary,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                         labelStyle: TextStyle(
-                          color: isSelected ? Colors.black : AppColors.textSecondary,
+                          color: isSelected ? Colors.white : AppColors.textSecondary,
                           fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                           fontSize: 12,
                         ),

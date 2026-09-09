@@ -237,7 +237,7 @@ class _StoreDetailCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: AppColors.glowShadow(AppColors.primary, opacity: 0.35),
                 ),
-                child: const Icon(Icons.storefront_rounded, color: Colors.black, size: 24),
+                child: const Icon(Icons.storefront_rounded, color: Colors.white, size: 24),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -320,11 +320,11 @@ class _StoreDetailCard extends StatelessWidget {
             height: 48,
             child: ElevatedButton.icon(
               onPressed: onViewStore,
-              icon: const Icon(Icons.shopping_bag_outlined, color: Colors.black, size: 18),
+              icon: const Icon(Icons.shopping_bag_outlined, color: Colors.white, size: 18),
               label: const Text(
                 'View Store Catalog',
                 style: TextStyle(
-                  color: Colors.black,
+                  color: Colors.white,
                   fontSize: 14,
                   fontWeight: FontWeight.w800,
                 ),

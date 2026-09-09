@@ -35,9 +35,9 @@ class StoraHeader extends StatelessWidget {
               color: Color(0xFF1F1A28),
             ),
             child: const Icon(
-              Icons.inventory_2_rounded,
-              color: AppColors.purpleLight,
-              size: 32,
+              Icons.storefront_rounded,
+              color: AppColors.primary,
+              size: 34,
             ),
           ),
         ),

@@ -158,7 +158,7 @@ class DashboardScreen extends StatelessWidget {
                                   gradient: HomeColors.purpleGradient,
                                   borderRadius: BorderRadius.circular(10),
                                 ),
-                                child: const Icon(Icons.auto_awesome_rounded, color: Colors.black, size: 16),
+                                child: const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 16),
                               ),
                               const SizedBox(width: 10),
                               const Expanded(
@@ -314,9 +314,9 @@ class DashboardScreen extends StatelessWidget {
                           onPressed: () => Navigator.of(context).push(
                             MaterialPageRoute(builder: (_) => const PosScreen(isStandalone: true)),
                           ),
-                          icon: const Icon(Icons.point_of_sale_rounded, color: Colors.black, size: 20),
+                          icon: const Icon(Icons.point_of_sale_rounded, color: Colors.white, size: 20),
                           label: const Text('New Sale',
-                              style: TextStyle(color: Colors.black, fontWeight: FontWeight.w800, fontSize: 14)),
+                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14)),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.transparent,
                             shadowColor: Colors.transparent,
@@ -376,15 +376,11 @@ class _EarningsCard extends StatelessWidget {
         padding: const EdgeInsets.all(22),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(22),
-          gradient: const LinearGradient(
-            colors: [Color(0xFF8B5CF6), Color(0xFF6D28D9), Color(0xFF201733)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          gradient: HomeColors.heroGradient,
           border: Border.all(color: Colors.white.withValues(alpha: 0.18), width: 1),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF7C3AED).withValues(alpha: 0.28),
+              color: AppColors.primary.withValues(alpha: 0.28),
               blurRadius: 24,
               offset: const Offset(0, 8),
             ),

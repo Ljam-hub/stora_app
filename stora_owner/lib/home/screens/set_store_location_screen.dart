@@ -237,7 +237,7 @@ class _SetStoreLocationScreenState extends State<SetStoreLocationScreen> {
                                   shape: BoxShape.circle,
                                   boxShadow: HomeColors.glowShadow(AppColors.purple, opacity: 0.6),
                                 ),
-                                child: const Icon(Icons.storefront_rounded, color: Colors.black, size: 22),
+                                child: const Icon(Icons.storefront_rounded, color: Colors.white, size: 22),
                               ),
                               Container(
                                 width: 4,
@@ -484,15 +484,15 @@ class _SetStoreLocationScreenState extends State<SetStoreLocationScreen> {
                           ? const SizedBox(
                               width: 18,
                               height: 18,
-                              child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2),
+                              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                             )
-                          : const Icon(Icons.save_rounded, color: Colors.black, size: 20),
+                          : const Icon(Icons.save_rounded, color: Colors.white, size: 20),
                       label: Text(
                         _isSaving ? 'Saving Location...' : 'Pin & Save Store Location',
-                        style: const TextStyle(color: Colors.black, fontWeight: FontWeight.w800, fontSize: 14),
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14),
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.purpleLight,
+                        backgroundColor: AppColors.primary,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                         elevation: 0,
                       ),

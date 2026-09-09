@@ -379,18 +379,18 @@ class _InsightCard extends StatelessWidget {
                   alignment: Alignment.centerRight,
                   child: ElevatedButton.icon(
                     onPressed: onAction,
-                    icon: const Icon(Icons.arrow_forward_rounded, size: 16, color: Colors.black),
+                    icon: const Icon(Icons.arrow_forward_rounded, size: 16, color: Colors.white),
                     label: Text(
                       actionLabel,
                       style: const TextStyle(
-                        color: Colors.black,
+                        color: Colors.white,
                         fontWeight: FontWeight.w800,
                         fontSize: 13,
                       ),
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.purpleLight,
-                      foregroundColor: Colors.black,
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
                       elevation: 0,
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
