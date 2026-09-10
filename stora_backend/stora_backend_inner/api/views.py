@@ -162,18 +162,23 @@ def register(request):
     user = serializer.save()
     update_last_login(None, user)
 
-    # Generate verification code and dispatch email asynchronously so request never hangs
+    # Generate verification code and dispatch email + admin notification in background
     code_obj = EmailVerificationCode.generate_code(user)
-    dispatch_email_async(send_verification_email, user, code_obj)
 
-    # Notify admin of new account registration
-    user_type = "Store Owner" if getattr(user, "role", "") == "owner" else "Customer"
-    identifier = user.business_name or user.email
-    notify_admin(
-        title=f"New {user_type} Registered 👤",
-        body=f"{identifier} ({user.email}) just created an account.",
-        data={"user_id": str(user.id), "role": getattr(user, "role", ""), "action": "user_registered"},
-    )
+    def _async_post_register():
+        send_verification_email(user, code_obj)
+        try:
+            user_type = "Store Owner" if getattr(user, "role", "") == "owner" else "Customer"
+            identifier = user.business_name or user.email
+            notify_admin(
+                title=f"New {user_type} Registered 👤",
+                body=f"{identifier} ({user.email}) just created an account.",
+                data={"user_id": str(user.id), "role": getattr(user, "role", ""), "action": "user_registered"},
+            )
+        except Exception as err:
+            logger.warning("Failed to dispatch admin registration alert: %s", err)
+
+    dispatch_email_async(_async_post_register)
 
     data = _tokens_for(user)
     data["message"] = "Account created. Please check your email for the verification code."
@@ -409,17 +414,18 @@ def upload_payment_proof(request):
         status=PaymentProof.STATUS_PENDING,
     )
 
-    # Trigger push notification to all administrator devices
-    notify_admin(
-        title="New Payment Proof Submitted 💳",
-        body=f"₱{proof.amount:.2f} (Ref: {proof.reference_number}) from {request.user.business_name or request.user.email}",
-        data={"proof_id": str(proof.id), "action": "payment_proof_submitted", "user_id": str(request.user.id)},
-    )
+    def _async_post_payment_proof():
+        try:
+            notify_admin(
+                title="New Payment Proof Submitted 💳",
+                body=f"₱{proof.amount:.2f} (Ref: {proof.reference_number}) from {request.user.business_name or request.user.email}",
+                data={"proof_id": str(proof.id), "action": "payment_proof_submitted", "user_id": str(request.user.id)},
+            )
+        except Exception as e:
+            logger.warning("Failed to dispatch admin payment push alert: %s", e)
 
-    # Trigger backend notification email to admin asynchronously
-    admin_recipient = getattr(django_settings, "DEFAULT_FROM_EMAIL", None) or getattr(django_settings, "EMAIL_HOST_USER", None)
-    if admin_recipient:
-        def _send_admin_payment_proof_email():
+        admin_recipient = getattr(django_settings, "DEFAULT_FROM_EMAIL", None) or getattr(django_settings, "EMAIL_HOST_USER", None)
+        if admin_recipient:
             try:
                 send_mail(
                     subject=f"[STORA ADMIN] New Account Request: Payment Proof from {request.user.email}",
@@ -441,7 +447,7 @@ def upload_payment_proof(request):
             except Exception as e:
                 logger.warning("Failed to send admin payment notification email: %s", e)
 
-        dispatch_email_async(_send_admin_payment_proof_email)
+    dispatch_email_async(_async_post_payment_proof)
 
     return Response(PaymentProofSerializer(proof).data, status=status.HTTP_201_CREATED)
 
