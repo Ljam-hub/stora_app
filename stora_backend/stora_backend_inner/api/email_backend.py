@@ -76,15 +76,48 @@ class UniversalEmailBackend(BaseEmailBackend):
                 raise
             return False
 
+    def _get_brevo_verified_sender(self):
+        if hasattr(self, "_cached_brevo_sender") and self._cached_brevo_sender:
+            return self._cached_brevo_sender
+        configured = os.getenv("BREVO_SENDER_EMAIL", "").strip()
+        if configured:
+            self._cached_brevo_sender = configured
+            return self._cached_brevo_sender
+        try:
+            req = urllib.request.Request(
+                "https://api.brevo.com/v3/senders",
+                headers={
+                    "api-key": self.brevo_api_key,
+                    "Accept": "application/json",
+                    "User-Agent": "StoraBackend/1.0",
+                },
+            )
+            with urllib.request.urlopen(req, timeout=5) as r:
+                data = json.loads(r.read().decode("utf-8"))
+                senders = data.get("senders", [])
+                for s in senders:
+                    if s.get("active") and s.get("email"):
+                        self._cached_brevo_sender = s["email"].strip()
+                        logger.info("Auto-selected Brevo verified sender: %s", self._cached_brevo_sender)
+                        return self._cached_brevo_sender
+        except Exception as e:
+            logger.warning("Could not auto-fetch Brevo verified sender: %s", e)
+        return None
+
     def _send_via_brevo(self, message, html_content):
         url = "https://api.brevo.com/v3/smtp/email"
-        from_email = os.getenv("BREVO_SENDER_EMAIL") or message.from_email or "STORA <laisojl014@gmail.com>"
+        verified_sender = self._get_brevo_verified_sender()
+
         sender_name = "STORA"
-        sender_email = "laisojl014@gmail.com"
+        sender_email = verified_sender or "osiallj@gmail.com"
+
+        from_email = message.from_email or ""
         if "<" in from_email and ">" in from_email:
             sender_name = from_email.split("<")[0].strip().strip('"').strip("'")
-            sender_email = from_email.split("<")[1].split(">")[0].strip()
-        elif "@" in from_email:
+            parsed_email = from_email.split("<")[1].split(">")[0].strip()
+            if not verified_sender and "@" in parsed_email:
+                sender_email = parsed_email
+        elif "@" in from_email and not verified_sender:
             sender_email = from_email.strip()
 
         payload = {

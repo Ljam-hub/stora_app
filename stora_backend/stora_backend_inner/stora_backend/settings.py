@@ -186,7 +186,7 @@ EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp.gmail.com")
 EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
 EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "True").lower() in ("true", "1", "yes")
 EMAIL_USE_SSL = os.getenv("EMAIL_USE_SSL", "False").lower() in ("true", "1", "yes")
-EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "laisojl014@gmail.com")
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "osiallj@gmail.com")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "kworofuerbnejybp")
 EMAIL_TIMEOUT = int(os.getenv("EMAIL_TIMEOUT", "15"))
 
@@ -204,7 +204,7 @@ else:
 
 _default_from = os.getenv(
     "DEFAULT_FROM_EMAIL",
-    f"STORA <{EMAIL_HOST_USER}>" if EMAIL_HOST_USER else "STORA <laisojl014@gmail.com>"
+    f"STORA <{EMAIL_HOST_USER}>" if EMAIL_HOST_USER else "STORA <osiallj@gmail.com>"
 )
 DEFAULT_FROM_EMAIL = _default_from.strip('"').strip("'")
 

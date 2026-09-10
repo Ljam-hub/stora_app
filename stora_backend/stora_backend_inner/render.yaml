@@ -32,11 +32,11 @@ services:
       - key: EMAIL_USE_TLS
         value: "True"
       - key: EMAIL_HOST_USER
-        value: "laisojl014@gmail.com"
+        value: "osiallj@gmail.com"
       - key: EMAIL_HOST_PASSWORD
         value: "kworofuerbnejybp"
       - key: DEFAULT_FROM_EMAIL
-        value: "STORA <laisojl014@gmail.com>"
+        value: "STORA <osiallj@gmail.com>"
       # Set these manually in the Render dashboard:
       # - DATABASE_URL              (your Supabase connection string)
       # - CLOUDINARY_URL            (from your Cloudinary account)
