@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../models/order_model.dart';
 import '../services/api_service.dart';
+import '../services/notification_service.dart';
 
 class OrderProvider extends ChangeNotifier {
   List<CustomerOrder> _orders = [];
@@ -8,11 +10,75 @@ class OrderProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _errorMessage;
 
+  final Map<int, String> _knownStatuses = {};
+  bool _hasInitialFetch = false;
+  Timer? _pollingTimer;
+
+  void Function(CustomerOrder order, String newStatus)? onOrderStatusChanged;
+
   List<CustomerOrder> get orders => _filteredOrders();
   List<CustomerOrder> get rawOrders => _orders;
   String get selectedStatusFilter => _selectedStatusFilter;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
+
+  void startPolling({Duration interval = const Duration(seconds: 12)}) {
+    _pollingTimer?.cancel();
+    _pollingTimer = Timer.periodic(interval, (_) => refresh(isSilent: true));
+  }
+
+  void stopPolling() {
+    _pollingTimer?.cancel();
+    _pollingTimer = null;
+  }
+
+  void _checkStatusTransitions(List<CustomerOrder> newOrders) {
+    if (!_hasInitialFetch) {
+      for (final o in newOrders) {
+        _knownStatuses[o.id] = o.status;
+      }
+      _hasInitialFetch = true;
+      return;
+    }
+
+    for (final o in newOrders) {
+      final oldStatus = _knownStatuses[o.id];
+      if (oldStatus != null && oldStatus != o.status) {
+        if (o.status == 'accepted') {
+          NotificationService.instance.showNotification(
+            title: '👨‍🍳 Order #${o.id} Accepted!',
+            body: 'The store is now preparing your items! We will notify you when it is ready.',
+            payload: o.id.toString(),
+          );
+          onOrderStatusChanged?.call(o, 'accepted');
+        } else if (o.status == 'ready') {
+          NotificationService.instance.showNotification(
+            title: '🎉 Order #${o.id} Ready for Pickup!',
+            body: 'Your items are packed and ready for pickup! Tap to view details.',
+            payload: o.id.toString(),
+          );
+          onOrderStatusChanged?.call(o, 'ready');
+        } else if (o.status == 'declined' || o.status == 'auto_declined') {
+          final reason = o.declineReason?.isNotEmpty == true ? ': ${o.declineReason}' : '.';
+          NotificationService.instance.showNotification(
+            title: 'Order #${o.id} Declined',
+            body: 'Your order was declined by the store$reason',
+            payload: o.id.toString(),
+          );
+          onOrderStatusChanged?.call(o, 'declined');
+        } else if (o.status == 'counter_offer') {
+          final priceText = o.counterPrice != null ? ' (₱${o.counterPrice!.toStringAsFixed(2)})' : '';
+          NotificationService.instance.showNotification(
+            title: '💬 Counter-Offer on Order #${o.id}',
+            body: 'The store suggested an update$priceText. Tap to view notes.',
+            payload: o.id.toString(),
+          );
+          onOrderStatusChanged?.call(o, 'counter_offer');
+        }
+      }
+      _knownStatuses[o.id] = o.status;
+    }
+  }
 
   List<CustomerOrder> _filteredOrders() {
     if (_selectedStatusFilter == 'all') {
@@ -46,7 +112,9 @@ class OrderProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _orders = await CustomerApiService.instance.fetchMyOrders();
+      final fetched = await CustomerApiService.instance.fetchMyOrders();
+      _checkStatusTransitions(fetched);
+      _orders = fetched;
     } catch (e) {
       _errorMessage = e.toString().replaceAll('Exception: ', '');
     }
@@ -55,12 +123,14 @@ class OrderProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> refresh() async {
+  Future<void> refresh({bool isSilent = false}) async {
     try {
-      _orders = await CustomerApiService.instance.fetchMyOrders();
+      final fetched = await CustomerApiService.instance.fetchMyOrders();
+      _checkStatusTransitions(fetched);
+      _orders = fetched;
       notifyListeners();
     } catch (e) {
-      debugPrint('Error refreshing orders: $e');
+      if (!isSilent) debugPrint('Error refreshing orders: $e');
     }
   }
 
@@ -86,6 +156,15 @@ class OrderProvider extends ChangeNotifier {
         items: items,
       );
       _orders.insert(0, order);
+      _knownStatuses[order.id] = order.status;
+
+      // Pop up system notification for order placed
+      NotificationService.instance.showNotification(
+        title: '🛍️ Order #${order.id} Placed!',
+        body: 'Your order has been sent to the store! Waiting for confirmation.',
+        payload: order.id.toString(),
+      );
+
       _isLoading = false;
       notifyListeners();
       return order;

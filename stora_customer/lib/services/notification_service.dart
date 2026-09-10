@@ -1,6 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'api_service.dart';
 
@@ -100,29 +100,35 @@ class NotificationService {
     }
   }
 
-  /// Explicitly displays a local heads-up notification banner.
+  /// Explicitly displays a local heads-up notification banner with Stora branding.
   Future<void> showNotification({
     required String title,
     required String body,
     String? payload,
   }) async {
     try {
-      const androidDetails = AndroidNotificationDetails(
-        'stora_customer_orders',
-        'Order Updates',
-        channelDescription: 'Important order status updates from stores',
+      final androidDetails = AndroidNotificationDetails(
+        _orderChannel.id,
+        _orderChannel.name,
+        channelDescription: _orderChannel.description,
         importance: Importance.max,
         priority: Priority.max,
         playSound: true,
         enableVibration: true,
-        icon: '@mipmap/ic_launcher',
+        icon: '@drawable/ic_notification',
+        color: const Color(0xFFFF6B00),
+        styleInformation: BigTextStyleInformation(
+          body,
+          contentTitle: title,
+          summaryText: 'Stora Orders',
+        ),
       );
 
       await _localNotifications.show(
         DateTime.now().millisecondsSinceEpoch ~/ 1000,
         title,
         body,
-        const NotificationDetails(android: androidDetails),
+        NotificationDetails(android: androidDetails),
         payload: payload,
       );
     } catch (e) {
@@ -143,7 +149,13 @@ class NotificationService {
       priority: Priority.max,
       playSound: true,
       enableVibration: true,
-      icon: '@mipmap/ic_launcher',
+      icon: '@drawable/ic_notification',
+      color: const Color(0xFFFF6B00),
+      styleInformation: BigTextStyleInformation(
+        body,
+        contentTitle: title,
+        summaryText: 'Stora Orders',
+      ),
     );
 
     _localNotifications.show(

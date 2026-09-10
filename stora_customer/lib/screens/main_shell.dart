@@ -31,50 +31,145 @@ class _MainShellState extends State<MainShell> {
     _currentIndex = widget.initialTab;
     NotificationService.instance.init();
 
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final orderProvider = context.read<OrderProvider>();
+      orderProvider.startPolling();
+      orderProvider.onOrderStatusChanged = (order, newStatus) {
+        if (!mounted) return;
+        final isReady = newStatus == 'ready';
+        final isAccepted = newStatus == 'accepted';
+        final isDeclined = newStatus == 'declined' || newStatus == 'auto_declined';
+
+        _showInAppCustomerPopup(
+          title: isReady
+              ? '🎉 Order #${order.id} Ready for Pickup!'
+              : (isAccepted
+                  ? '👨‍🍳 Order #${order.id} Accepted!'
+                  : (isDeclined ? 'Order #${order.id} Declined' : 'Order #${order.id} Update')),
+          message: isReady
+              ? 'Your items are packed and ready for pickup at the store!'
+              : (isAccepted
+                  ? 'The store accepted your order and is now preparing it.'
+                  : (isDeclined ? 'The store was unable to fulfill your order.' : 'The store updated your order.')),
+          icon: isReady
+              ? Icons.storefront_rounded
+              : (isAccepted ? Icons.check_circle_rounded : (isDeclined ? Icons.cancel_outlined : Icons.info_outline_rounded)),
+          accentColor: isReady
+              ? const Color(0xFF00E676)
+              : (isAccepted ? const Color(0xFFFF6B00) : (isDeclined ? const Color(0xFFEF4444) : const Color(0xFFFFA726))),
+        );
+      };
+    });
+
     NotificationService.instance.onForegroundMessageReceived = (message) {
       if (!mounted) return;
 
       // Auto refresh customer orders when an update is pushed
       context.read<OrderProvider>().refresh();
 
-      final title = message.notification?.title ?? 'Order Update';
-      final body = message.notification?.body ?? 'Your order status has changed.';
+      final title = message.notification?.title ?? message.data['title'] ?? 'Order Update';
+      final body = message.notification?.body ?? message.data['body'] ?? 'Your order status has changed.';
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: AppColors.cardBackground,
-          content: Row(
-            children: [
-              const Icon(Icons.notifications_active_rounded, color: AppColors.primary),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(title, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-                    Text(body, style: const TextStyle(fontSize: 12, color: Colors.white70), maxLines: 2, overflow: TextOverflow.ellipsis),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          action: SnackBarAction(
-            label: 'View',
-            textColor: AppColors.primary,
-            onPressed: () {
-              setState(() => _currentIndex = 3); // Switch to Orders tab
-            },
-          ),
-          duration: const Duration(seconds: 5),
-        ),
+      _showInAppCustomerPopup(
+        title: title,
+        message: body,
+        icon: Icons.notifications_active_rounded,
+        accentColor: const Color(0xFFFF6B00),
       );
     };
   }
 
+  void _showInAppCustomerPopup({
+    required String title,
+    required String message,
+    required IconData icon,
+    required Color accentColor,
+  }) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        backgroundColor: const Color(0xFF1B1428),
+        elevation: 10,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: accentColor, width: 1.5),
+        ),
+        duration: const Duration(seconds: 8),
+        content: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: accentColor.withValues(alpha: 0.2),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: accentColor, size: 22),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    message,
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.8),
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            TextButton(
+              onPressed: () {
+                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                setState(() => _currentIndex = 3);
+              },
+              style: TextButton.styleFrom(
+                backgroundColor: accentColor,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              child: const Text(
+                'View',
+                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12.5),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   void dispose() {
+    try {
+      final orderProvider = context.read<OrderProvider>();
+      orderProvider.stopPolling();
+      orderProvider.onOrderStatusChanged = null;
+    } catch (_) {}
     NotificationService.instance.onForegroundMessageReceived = null;
     super.dispose();
   }

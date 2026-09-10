@@ -5,6 +5,7 @@ import '../../stora_login/stora_login.dart';
 import '../screens/alerts_screen.dart';
 import '../screens/dashboard_screen.dart';
 import '../screens/inventory_list_screen.dart';
+import '../screens/pending_orders_screen.dart';
 import '../screens/pos_screen.dart';
 import '../stores/category_store.dart';
 import '../stores/inventory_store.dart';
@@ -41,47 +42,132 @@ class _StoraShellState extends State<StoraShell> {
     CategoryStore.instance.loadCategories();
     SalesStore.instance.loadSales();
     OrdersStore.instance.fetchOrders();
+    OrdersStore.instance.startPolling();
     OwnerNotificationService.instance.init();
+
+    OrdersStore.instance.onNewOrderReceived = (order) {
+      if (!mounted) return;
+      final id = order['id'];
+      final cust = (order['customer_name'] as String?)?.trim();
+      final name = (cust != null && cust.isNotEmpty) ? cust : 'A customer';
+      final total = order['total_amount']?.toString() ?? '0.00';
+      _showInAppOrderPopup(
+        title: '🔔 New Order #$id Received!',
+        message: '$name placed an order for ₱$total.',
+        onAction: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const PendingOrdersScreen()),
+          );
+        },
+      );
+    };
 
     OwnerNotificationService.instance.onForegroundMessageReceived = (message) {
       if (!mounted) return;
-      final title = message.notification?.title ?? 'New Order';
-      final body = message.notification?.body ?? 'A new customer order just arrived!';
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: const Color(0xFF2C2250),
-          content: Row(
-            children: [
-              const Icon(Icons.notifications_active_rounded, color: AppColors.purpleLight),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(title, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-                    Text(body, style: const TextStyle(fontSize: 12, color: Colors.white70), maxLines: 2, overflow: TextOverflow.ellipsis),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          action: SnackBarAction(
-            label: 'View',
-            textColor: AppColors.purpleLight,
-            onPressed: () {
-              setState(() => _index = 3); // Switch to Alerts / Orders tab
-            },
-          ),
-          duration: const Duration(seconds: 5),
-        ),
+      final title = message.notification?.title ?? message.data['title'] ?? 'New Customer Order';
+      final body = message.notification?.body ?? message.data['body'] ?? 'A customer just placed an order!';
+      _showInAppOrderPopup(
+        title: title,
+        message: body,
+        onAction: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const PendingOrdersScreen()),
+          );
+        },
       );
     };
   }
 
+  void _showInAppOrderPopup({
+    required String title,
+    required String message,
+    required VoidCallback onAction,
+  }) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        backgroundColor: const Color(0xFF1B1428),
+        elevation: 10,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: Color(0xFFFF6B00), width: 1.5),
+        ),
+        duration: const Duration(seconds: 8),
+        content: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFF6B00).withValues(alpha: 0.2),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.shopping_bag_rounded,
+                color: Color(0xFFFF6B00),
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    message,
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.8),
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            TextButton(
+              onPressed: () {
+                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                onAction();
+              },
+              style: TextButton.styleFrom(
+                backgroundColor: const Color(0xFFFF6B00),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              child: const Text(
+                'Review',
+                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12.5),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   void dispose() {
+    OrdersStore.instance.stopPolling();
+    OrdersStore.instance.onNewOrderReceived = null;
     AccountStatusStore.instance.removeListener(_checkPriceChange);
     OwnerNotificationService.instance.onForegroundMessageReceived = null;
     super.dispose();

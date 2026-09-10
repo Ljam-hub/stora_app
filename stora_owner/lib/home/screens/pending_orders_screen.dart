@@ -623,65 +623,65 @@ class _OrderCardState extends State<_OrderCard> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           Text(
                             'Order #$orderId',
                             style: const TextStyle(
                               color: Colors.white,
-                              fontSize: 16,
+                              fontSize: 15,
                               fontWeight: FontWeight.w800,
                               letterSpacing: -0.2,
                             ),
                           ),
-                          Text(
-                            '₱$totalAmount',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: -0.3,
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: _statusColor.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color: _statusColor.withValues(alpha: 0.3),
+                                  width: 0.8,
+                                ),
+                              ),
+                              child: Text(
+                                _statusLabel,
+                                style: TextStyle(
+                                  color: _statusColor,
+                                  fontSize: 8.5,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 0.2,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 3),
                       Text(
                         customerName,
                         style: TextStyle(
                           color: Colors.white.withValues(alpha: 0.85),
-                          fontSize: 14,
+                          fontSize: 13,
                           fontWeight: FontWeight.w600,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 6),
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: _statusColor.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: _statusColor.withValues(alpha: 0.3),
-                              width: 0.8,
-                            ),
-                          ),
-                          child: Text(
-                            _statusLabel,
-                            style: TextStyle(
-                              color: _statusColor,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ),
-                      ),
                     ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  '₱$totalAmount',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.3,
                   ),
                 ),
               ],

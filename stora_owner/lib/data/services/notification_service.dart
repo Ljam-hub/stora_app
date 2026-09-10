@@ -1,6 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import '../api/api_client.dart';
 import '../../home/stores/orders_store.dart';
@@ -108,29 +108,35 @@ class OwnerNotificationService {
     }
   }
 
-  /// Explicitly displays a local heads-up notification banner.
+  /// Explicitly displays a local heads-up notification banner with Stora branding.
   Future<void> showNotification({
     required String title,
     required String body,
     String? payload,
   }) async {
     try {
-      const androidDetails = AndroidNotificationDetails(
-        'stora_owner_orders',
-        'Store Orders',
-        channelDescription: 'New incoming customer orders and updates',
+      final androidDetails = AndroidNotificationDetails(
+        _orderChannel.id,
+        _orderChannel.name,
+        channelDescription: _orderChannel.description,
         importance: Importance.max,
         priority: Priority.max,
         playSound: true,
         enableVibration: true,
-        icon: '@mipmap/ic_launcher',
+        icon: '@drawable/ic_notification',
+        color: const Color(0xFFFF6B00),
+        styleInformation: BigTextStyleInformation(
+          body,
+          contentTitle: title,
+          summaryText: 'Stora Orders',
+        ),
       );
 
       await _localNotifications.show(
         DateTime.now().millisecondsSinceEpoch ~/ 1000,
         title,
         body,
-        const NotificationDetails(android: androidDetails),
+        NotificationDetails(android: androidDetails),
         payload: payload,
       );
     } catch (e) {
@@ -151,7 +157,13 @@ class OwnerNotificationService {
       priority: Priority.max,
       playSound: true,
       enableVibration: true,
-      icon: '@mipmap/ic_launcher',
+      icon: '@drawable/ic_notification',
+      color: const Color(0xFFFF6B00),
+      styleInformation: BigTextStyleInformation(
+        body,
+        contentTitle: title,
+        summaryText: 'Stora Orders',
+      ),
     );
 
     _localNotifications.show(
