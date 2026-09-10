@@ -18,6 +18,28 @@ from .fields import UTCDateTimeField
 User = get_user_model()
 
 
+def canonicalize_email(email: str) -> str:
+    """Normalizes an email address so that Gmail aliases (dots, +tags, googlemail)
+    collapse into a single unique canonical identity (1 Gmail per user).
+    Non-Gmail domains are lowercased and trimmed without altering dots/pluses.
+    """
+    if not email or "@" not in email:
+        return (email or "").strip().lower()
+
+    local_part, domain = email.rsplit("@", 1)
+    local_part = local_part.strip().lower()
+    domain = domain.strip().lower()
+
+    if domain in ("gmail.com", "googlemail.com"):
+        domain = "gmail.com"
+        # Strip all dots from local part
+        local_part = local_part.replace(".", "")
+        # Strip plus aliases (+anything)
+        local_part = local_part.split("+", 1)[0]
+
+    return f"{local_part}@{domain}"
+
+
 class UserSerializer(serializers.ModelSerializer):
     premium_until = UTCDateTimeField(read_only=True, allow_null=True)
     date_joined = UTCDateTimeField(read_only=True)
@@ -34,7 +56,7 @@ class UserUpdateSerializer(serializers.ModelSerializer):
         fields = ("business_name", "email")
 
     def validate_email(self, value):
-        email = value.strip().lower()
+        email = canonicalize_email(value)
         owner = self.instance
         if User.objects.filter(email__iexact=email).exclude(pk=owner.pk).exists():
             raise serializers.ValidationError("An account with this email already exists.")
@@ -46,10 +68,24 @@ class UserUpdateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Business name cannot be blank.")
         return val
 
+    def update(self, instance, validated_data):
+        new_email = validated_data.get("email")
+        if new_email and new_email != instance.email:
+            instance.email = new_email
+            instance.username = new_email
+            instance.is_email_verified = False
+        if "business_name" in validated_data:
+            instance.business_name = validated_data["business_name"]
+        instance.save()
+        return instance
+
 
 class VerifyEmailSerializer(serializers.Serializer):
     email = serializers.EmailField()
     code = serializers.CharField(max_length=6, min_length=6)
+
+    def validate_email(self, value):
+        return canonicalize_email(value)
 
     def validate_code(self, value):
         val = value.strip()
@@ -60,6 +96,9 @@ class VerifyEmailSerializer(serializers.Serializer):
 
 class ResendVerificationSerializer(serializers.Serializer):
     email = serializers.EmailField()
+
+    def validate_email(self, value):
+        return canonicalize_email(value)
 
 
 class ChangePasswordSerializer(serializers.Serializer):
@@ -74,7 +113,7 @@ class RegisterSerializer(serializers.Serializer):
     role = serializers.ChoiceField(choices=(("owner", "Store Owner"), ("customer", "Customer")), default="owner")
 
     def validate_email(self, value):
-        email = value.strip().lower()
+        email = canonicalize_email(value)
         if User.objects.filter(email__iexact=email).exists():
             raise serializers.ValidationError("An account with this email already exists.")
         return email
@@ -102,7 +141,7 @@ class LoginSerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True)
 
     def validate(self, attrs):
-        email = attrs["email"].strip().lower()
+        email = canonicalize_email(attrs["email"])
         password = attrs["password"]
         try:
             user = User.objects.get(email__iexact=email)
@@ -390,7 +429,7 @@ class ForgotPasswordSerializer(serializers.Serializer):
     email = serializers.EmailField()
 
     def validate_email(self, value):
-        return value.strip().lower()
+        return canonicalize_email(value)
 
 
 class ResetPasswordSerializer(serializers.Serializer):

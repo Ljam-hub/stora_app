@@ -62,13 +62,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
         businessName: _businessNameController.text.trim(),
       );
       if (!mounted) return;
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (_) => EmailVerificationScreen(
-            email: _emailController.text.trim(),
+
+      // Route to verification screen so user verifies their email code
+      if (AuthStore.instance.isEmailVerified) {
+        Navigator.of(context).pushReplacementNamed('/home');
+      } else {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => EmailVerificationScreen(
+              email: _emailController.text.trim(),
+            ),
           ),
-        ),
-      );
+        );
+      }
     } on ApiException catch (e) {
       if (!mounted) return;
       showStoraSnackBar(context, e.message);

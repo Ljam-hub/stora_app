@@ -49,6 +49,7 @@ from .serializers import (
     UserSerializer,
     UserUpdateSerializer,
     VerifyEmailSerializer,
+    canonicalize_email,
 )
 
 
@@ -125,6 +126,17 @@ def health_check(request):
     return Response({"status": "ok", "message": "Stora backend is reachable"})
 
 
+TRUSTED_EMAIL_DOMAINS = {"gmail.com", "googlemail.com"}
+
+
+def is_trusted_email(email: str) -> bool:
+    if not email or "@" not in email:
+        return False
+    canonical = canonicalize_email(email)
+    domain = canonical.rsplit("@", 1)[-1].strip().lower()
+    return domain in TRUSTED_EMAIL_DOMAINS
+
+
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def register(request):
@@ -133,7 +145,7 @@ def register(request):
     user = serializer.save()
     update_last_login(None, user)
 
-    # Generate verification code and dispatch email
+    # Generate verification code and dispatch email to verify real inbox ownership
     code_obj = EmailVerificationCode.generate_code(user)
     send_verification_email(user, code_obj)
 

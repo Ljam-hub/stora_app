@@ -549,7 +549,7 @@ class RoleAndSubscriptionPermissionsTests(APITestCase):
 
 
 class EmailVerificationTests(APITestCase):
-    def test_registration_creates_verification_code_and_sends_email(self):
+    def test_registration_with_gmail_sends_verification_code(self):
         from django.core import mail
         mail.outbox.clear()
         payload = {
@@ -562,6 +562,34 @@ class EmailVerificationTests(APITestCase):
         self.assertEqual(res.status_code, 201)
 
         user = User.objects.get(email="newowner@gmail.com")
+        self.assertFalse(user.is_email_verified)
+        self.assertFalse(res.data["user"]["is_email_verified"])
+        self.assertIn("verification code", res.data["message"])
+
+        # Verification code created
+        code_obj = EmailVerificationCode.objects.filter(user=user, used=False).first()
+        self.assertIsNotNone(code_obj)
+        self.assertEqual(len(code_obj.code), 6)
+        self.assertTrue(code_obj.is_valid())
+
+        # Email dispatched to Gmail inbox
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn(code_obj.code, mail.outbox[0].body)
+        self.assertIn("Verification Code", mail.outbox[0].subject)
+
+    def test_registration_with_non_gmail_creates_verification_code_and_sends_email(self):
+        from django.core import mail
+        mail.outbox.clear()
+        payload = {
+            "email": "newowner@yahoo.com",
+            "password": "strongpassword123",
+            "business_name": "New Owner Store",
+            "role": "owner",
+        }
+        res = self.client.post("/api/auth/register/", payload, format="json")
+        self.assertEqual(res.status_code, 201)
+
+        user = User.objects.get(email="newowner@yahoo.com")
         self.assertFalse(user.is_email_verified)
         self.assertFalse(res.data["user"]["is_email_verified"])
 
@@ -677,6 +705,112 @@ class EmailVerificationTests(APITestCase):
         self.assertIsNotNone(new_code)
         self.assertNotEqual(first_code.code, new_code.code)
         self.assertEqual(len(mail.outbox), 1)
+
+    def test_profile_update_resets_email_verification(self):
+        user = User.objects.create_user(
+            username="user_update@gmail.com",
+            email="user_update@gmail.com",
+            password="testpassword123",
+            is_email_verified=True,
+        )
+        self.client.force_authenticate(user=user)
+
+        # Update to new email -> should reset is_email_verified to False
+        res = self.client.patch(
+            "/api/auth/me/",
+            {"email": "user_update2@gmail.com"},
+            format="json",
+        )
+        self.assertEqual(res.status_code, 200)
+        user.refresh_from_db()
+        self.assertEqual(user.email, "user_update2@gmail.com")
+        self.assertEqual(user.username, "user_update2@gmail.com")
+        self.assertFalse(user.is_email_verified)
+
+
+class GmailCanonicalizationTests(APITestCase):
+    def test_gmail_dots_and_plus_collapse_to_single_account(self):
+        # Register with dots in username
+        res = self.client.post(
+            "/api/auth/register/",
+            {
+                "email": "Juan.Dela.Cruz@gmail.com",
+                "password": "strongpassword123",
+                "business_name": "Juan Store",
+                "role": "owner",
+            },
+            format="json",
+        )
+        self.assertEqual(res.status_code, 201)
+        # Should be stored canonically without dots and lowercase
+        user = User.objects.get(email="juandelacruz@gmail.com")
+        self.assertEqual(user.email, "juandelacruz@gmail.com")
+        self.assertFalse(user.is_email_verified)
+
+        # Attempting to register with plus-alias should be REJECTED (already exists)
+        res_plus = self.client.post(
+            "/api/auth/register/",
+            {
+                "email": "juandelacruz+freetrial@gmail.com",
+                "password": "otherpassword123",
+                "business_name": "Another Store",
+                "role": "owner",
+            },
+            format="json",
+        )
+        self.assertEqual(res_plus.status_code, 400)
+        self.assertIn("already exists", str(res_plus.data))
+
+        # Attempting to register with googlemail domain alias should be REJECTED
+        res_googlemail = self.client.post(
+            "/api/auth/register/",
+            {
+                "email": "j.u.a.n.delacruz@googlemail.com",
+                "password": "otherpassword123",
+                "business_name": "Another Store",
+                "role": "owner",
+            },
+            format="json",
+        )
+        self.assertEqual(res_googlemail.status_code, 400)
+        self.assertIn("already exists", str(res_googlemail.data))
+
+    def test_login_with_gmail_alias_logs_into_canonical_account(self):
+        User.objects.create_user(
+            username="mariaclara@gmail.com",
+            email="mariaclara@gmail.com",
+            password="testpassword123",
+            is_email_verified=True,
+        )
+
+        # Log in using dotted alias with plus tag
+        res = self.client.post(
+            "/api/auth/login/",
+            {
+                "email": "maria.clara+store@gmail.com",
+                "password": "testpassword123",
+            },
+            format="json",
+        )
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.data["user"]["email"], "mariaclara@gmail.com")
+
+    def test_non_gmail_preserves_dots_and_pluses(self):
+        res = self.client.post(
+            "/api/auth/register/",
+            {
+                "email": "john.doe@yahoo.com",
+                "password": "strongpassword123",
+                "business_name": "Yahoo Store",
+                "role": "owner",
+            },
+            format="json",
+        )
+        self.assertEqual(res.status_code, 201)
+        user = User.objects.get(email="john.doe@yahoo.com")
+        self.assertEqual(user.email, "john.doe@yahoo.com")
+
+
 
 
 
