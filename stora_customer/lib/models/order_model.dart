@@ -75,6 +75,7 @@ class CustomerOrder {
 
   String get formattedTotal => '₱${totalAmount.toStringAsFixed(2)}';
   String get formattedCounterPrice => counterPrice != null ? '₱${counterPrice!.toStringAsFixed(2)}' : '';
+  int get totalQuantity => items.fold(0, (sum, i) => sum + i.quantity);
 
   String get statusDisplay {
     switch (status.toLowerCase()) {

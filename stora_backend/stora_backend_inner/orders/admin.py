@@ -20,15 +20,15 @@ class OrderItemInline(admin.TabularInline):
 class OrderAdmin(admin.ModelAdmin):
     list_display = (
         "id",
-        "owner_display",
-        "customer_account",
-        "customer_name",
-        "customer_phone",
+        "products_summary",
         "items_count",
-        "status_badge",
         "total_amount_display",
+        "status_badge",
+        "owner_display",
+        "customer_name",
         "created_at",
     )
+    list_display_links = ("id", "products_summary")
     list_filter = ("status", "created_at", "owner")
     search_fields = (
         "id",
@@ -76,10 +76,26 @@ class OrderAdmin(admin.ModelAdmin):
             )
         return format_html('<span style="color: #888888; font-style: italic;">Guest</span>')
 
-    @admin.display(description="Items")
+    @admin.display(description="Products Ordered")
+    def products_summary(self, obj):
+        items = list(obj.items.all())
+        if not items:
+            return format_html('<span style="color: #888888; font-style: italic;">No items</span>')
+        parts = [
+            f'<span style="font-weight: 700; color: #ffffff;">{it.product_name}</span> '
+            f'<span style="color: #FF6B00; font-weight: 600;">(x{it.quantity})</span>'
+            for it in items
+        ]
+        return format_html(", ".join(parts))
+
+    @admin.display(description="Total Qty")
     def items_count(self, obj):
-        count = obj.items.count()
-        return f"{count} item{'s' if count != 1 else ''}"
+        items = list(obj.items.all())
+        total_qty = sum(it.quantity for it in items)
+        distinct_types = len(items)
+        if distinct_types > 1 and total_qty != distinct_types:
+            return f"{total_qty} items ({distinct_types} products)"
+        return f"{total_qty} item{'s' if total_qty != 1 else ''}"
 
     @admin.display(description="Status")
     def status_badge(self, obj):

@@ -261,7 +261,7 @@ class _OrderCardState extends State<OrderCard> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    '${order.items.length} ${order.items.length == 1 ? "item" : "items"}',
+                    '${order.totalQuantity} ${order.totalQuantity == 1 ? "item" : "items"}${order.items.length > 1 && order.totalQuantity != order.items.length ? " (${order.items.length} products)" : ""}',
                     style: const TextStyle(
                       color: AppColors.primaryLight,
                       fontWeight: FontWeight.w600,

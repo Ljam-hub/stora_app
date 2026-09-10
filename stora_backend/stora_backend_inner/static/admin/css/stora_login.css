@@ -1,58 +1,224 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap');
 
-:root { --ink: #102e31; --ink-soft: #536568; --muted: #718184; --paper: #edf3f1; --surface: #ffffff; --line: #d3dfdd; --teal: #147d78; --gold: #e9b949; }
-* { box-sizing: border-box; }
-body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 28px 20px; background: linear-gradient(135deg, #f7faf9, var(--paper)); color: var(--ink); font-family: 'DM Sans', sans-serif; -webkit-font-smoothing: antialiased; }
-.stora-login-shell { width: min(100%, 430px); }
-.stora-login-brand { display: flex; align-items: center; gap: 12px; margin: 0 0 24px 4px; }
-.stora-login-brand__mark { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 10px; background: var(--gold); color: var(--ink); font-family: 'Space Grotesk', sans-serif; font-weight: 700; }
-.stora-login-brand__name { font: 700 21px 'Space Grotesk', sans-serif; letter-spacing: .04em; }
-.stora-login-brand__name span { color: var(--teal); }
-.stora-login-brand__context { margin-top: 2px; color: var(--muted); font-size: 12px; }
-.stora-login-card { padding: 34px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); box-shadow: 0 20px 50px rgba(16, 46, 49, .1); }
-.stora-login-heading { margin-bottom: 26px; }
-.stora-login-eyebrow { margin: 0 0 8px; color: var(--teal); font-size: 11px; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; }
-.stora-login-heading h1 { margin: 0 0 8px; font: 700 30px 'Space Grotesk', sans-serif; letter-spacing: -.03em; }
-.stora-login-heading p:last-child { margin: 0; color: var(--muted); font-size: 14px; }
-.stora-login-field { margin-bottom: 18px; }
-.stora-login-field label { display: block; margin-bottom: 7px; color: var(--ink-soft); font-size: 13px; font-weight: 700; }
-.stora-login-field input { width: 100%; padding: 12px 13px; border: 1px solid #c4d4d1; border-radius: 8px; background: #fff; color: var(--ink); font: 15px 'DM Sans', sans-serif; outline: none; }
-.stora-login-field input:focus { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(20,125,120,.14); }
-.stora-login-field ul.errorlist { margin: 0 0 6px; padding: 0; list-style: none; color: #9a4a2f; font-size: 12px; }
-.stora-login-error { margin: 0 0 18px; padding: 11px 13px; border: 1px solid #f1c5ad; border-radius: 8px; background: #fff1eb; color: #9a4a2f; font-size: 13px; line-height: 1.5; }
-.stora-login-submit { width: 100%; padding: 13px 16px; border: 0; border-radius: 8px; background: var(--teal); color: #fff; font: 700 14px 'DM Sans', sans-serif; cursor: pointer; }
-.stora-login-submit:hover { background: #0f625e; }
-.stora-login-forgot { display: block; margin-top: 20px; color: var(--teal); font-size: 13px; font-weight: 600; text-align: center; text-decoration: none; }
-.stora-login-forgot:hover { color: var(--ink); }
-.stora-login-footer { margin: 18px 0 0; color: var(--muted); font-size: 11px; text-align: center; }
-@media (max-width: 480px) { body { padding: 20px 14px; } .stora-login-card { padding: 26px 20px; } }
+:root {
+  /* Stora Portal Orange Theme Tokens */
+  --bg-primary: #0E0B14;
+  --bg-card: #1B1526;
+  --bg-field: #140F1D;
+  --border-card: #2D243D;
+  --border-field: #3E3254;
 
-/* Dark + white system theme */
-:root { --ink: #f7f9fa; --ink-soft: #c1cbd0; --muted: #89949b; --paper: #0f1113; --surface: #1a1e22; --line: #343a40; --teal: #8bd3ca; --gold: #ffffff; }
-body { background: radial-gradient(circle at 0 0, rgba(139,211,202,.08), transparent 32%), #0f1113; color: #f7f9fa; }
-.stora-login-brand__mark { background: #ffffff; color: #0f1113; }
-.stora-login-brand__name { color: #ffffff; }
-.stora-login-brand__name span, .stora-login-eyebrow, .stora-login-forgot { color: #8bd3ca; }
-.stora-login-brand__context, .stora-login-heading p:last-child, .stora-login-footer { color: #89949b; }
-.stora-login-card { background: #1a1e22; border-color: #343a40; box-shadow: 0 20px 50px rgba(0,0,0,.3); }
-.stora-login-heading h1 { color: #ffffff; }
-.stora-login-field label { color: #c1cbd0; }
-.stora-login-field input { background: #111416; color: #ffffff; border-color: #3b444b; }
-.stora-login-field input:focus { border-color: #8bd3ca; box-shadow: 0 0 0 3px rgba(139,211,202,.18); }
-.stora-login-submit { background: #ffffff; color: #0f1113; }
-.stora-login-submit:hover { background: #dfe7e8; }
-.stora-login-error { background: #382727; border-color: #704d4d; color: #f0b5a0; }
+  --orange-primary: #FF6B00;
+  --orange-hover: #FF8533;
+  --orange-dark: #C24A00;
+  --orange-glow: rgba(255, 107, 0, 0.38);
 
-/* Keep authentication screens visually consistent with the admin console. */
-:root { --login-bg: #101416; --login-surface: #1a2023; --login-field: #141a1d; --login-border: #354247; --login-text: #f5f8f8; --login-muted: #aab8bb; --login-accent: #8bd3ca; }
-body { background: radial-gradient(circle at 0 0, rgba(139,211,202,.08), transparent 30%), linear-gradient(135deg, #101416, #172024) !important; color: var(--login-text) !important; }
-.stora-login-brand__mark { background: var(--login-accent) !important; color: #102022 !important; }
-.stora-login-brand__name, .stora-login-heading h1 { color: var(--login-text) !important; }
-.stora-login-brand__name span, .stora-login-eyebrow, .stora-login-forgot { color: var(--login-accent) !important; }
-.stora-login-brand__context, .stora-login-heading p:last-child, .stora-login-footer { color: var(--login-muted) !important; }
-.stora-login-card { background: var(--login-surface) !important; border-color: var(--login-border) !important; box-shadow: 0 20px 50px rgba(0,0,0,.3) !important; }
-.stora-login-field label { color: var(--login-muted) !important; }
-.stora-login-field input { background: var(--login-field) !important; color: var(--login-text) !important; border-color: #48575d !important; }
-.stora-login-field input:focus { border-color: var(--login-accent) !important; box-shadow: 0 0 0 3px rgba(139,211,202,.18) !important; }
-.stora-login-submit { background: var(--login-accent) !important; color: #102022 !important; }
-.stora-login-submit:hover { background: #c7eeea !important; }
+  --text-white: #FFFFFF;
+  --text-muted: #9CA3AF;
+  --text-dim: #D1D5DB;
+
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-display: 'Space Grotesk', sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body.stora-login-page {
+  margin: 0;
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 28px 20px;
+  background: var(--bg-primary);
+  background-image: 
+    radial-gradient(circle at 10% 0%, rgba(255, 107, 0, 0.15), transparent 40%),
+    radial-gradient(circle at 90% 90%, rgba(0, 135, 90, 0.08), transparent 35%),
+    linear-gradient(180deg, #0E0B14 0%, #140F1D 100%);
+  color: var(--text-white);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+.stora-login-shell {
+  width: min(100%, 430px);
+}
+
+.stora-login-brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 0 0 24px 4px;
+}
+
+.stora-login-brand__mark {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  background: linear-gradient(135deg, var(--orange-primary), var(--orange-dark)) !important;
+  border-radius: 12px;
+  color: #ffffff !important;
+  font-family: var(--font-sans);
+  font-weight: 800;
+  font-size: 20px;
+  box-shadow: 0 4px 16px var(--orange-glow);
+}
+
+.stora-login-brand__name {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -.02em;
+  color: var(--text-white) !important;
+}
+
+.stora-login-brand__name span {
+  color: var(--orange-primary) !important;
+}
+
+.stora-login-brand__context {
+  margin-top: 2px;
+  color: var(--text-muted) !important;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.stora-login-card {
+  padding: 34px;
+  border: 1px solid var(--border-card) !important;
+  border-radius: 20px;
+  background: var(--bg-card) !important;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.04) !important;
+}
+
+.stora-login-heading {
+  margin-bottom: 24px;
+}
+
+.stora-login-eyebrow {
+  margin: 0 0 8px;
+  color: var(--orange-primary) !important;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.stora-login-heading h1 {
+  margin: 0 0 8px;
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -.03em;
+  color: var(--text-white) !important;
+}
+
+.stora-login-heading p:last-child {
+  margin: 0;
+  color: var(--text-muted) !important;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.stora-login-field {
+  margin-bottom: 18px;
+}
+
+.stora-login-field label {
+  display: block;
+  margin-bottom: 7px;
+  color: var(--text-dim) !important;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.stora-login-field input {
+  width: 100%;
+  padding: 13px 14px;
+  border: 1px solid var(--border-card) !important;
+  border-radius: 10px;
+  background: var(--bg-field) !important;
+  color: var(--text-white) !important;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.stora-login-field input:focus {
+  border-color: var(--orange-primary) !important;
+  box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.22) !important;
+}
+
+.stora-login-field ul.errorlist {
+  margin: 0 0 6px;
+  padding: 0;
+  list-style: none;
+  color: #f87171;
+  font-size: 12px;
+}
+
+.stora-login-error {
+  margin: 0 0 18px;
+  padding: 12px 14px;
+  border: 1px solid rgba(248, 113, 113, 0.35);
+  border-radius: 10px;
+  background: rgba(248, 113, 113, 0.12);
+  color: #fca5a5;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.stora-login-submit {
+  width: 100%;
+  padding: 13px 16px;
+  border: 0;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--orange-primary), var(--orange-dark)) !important;
+  color: #ffffff !important;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 14px var(--orange-glow);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.stora-login-submit:hover {
+  background: var(--orange-hover) !important;
+  box-shadow: 0 6px 20px rgba(255, 107, 0, 0.5);
+  transform: translateY(-1px);
+}
+
+.stora-login-forgot {
+  display: block;
+  margin-top: 18px;
+  color: var(--orange-hover) !important;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.stora-login-forgot:hover {
+  color: var(--text-white) !important;
+}
+
+.stora-login-footer {
+  margin: 20px 0 0;
+  color: var(--text-muted) !important;
+  font-size: 12px;
+  text-align: center;
+}
+
+@media (max-width: 480px) {
+  body.stora-login-page {
+    padding: 20px 14px;
+  }
+  .stora-login-card {
+    padding: 24px 18px;
+  }
+}

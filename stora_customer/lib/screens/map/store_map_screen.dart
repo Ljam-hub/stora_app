@@ -1,5 +1,8 @@
-import 'dart:math' as math;
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import '../../models/store_model.dart';
 import '../../providers/catalog_provider.dart';
@@ -20,21 +23,17 @@ class StoreMapScreen extends StatefulWidget {
 class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStateMixin {
   final _searchController = TextEditingController();
   late final PageController _pageController;
+  final MapController _mapController = MapController();
 
   StoreModel? _selectedStore;
   String _searchFilter = '';
-
-  // Pan and Zoom gesture state
-  Offset _panOffset = Offset.zero;
-  double _zoomLevel = 1.0;
-  double _baseZoom = 1.0;
 
   // Radar beacon pulse animation
   late final AnimationController _pulseAnim;
 
   // Customer GPS coordinates (Central Manila default)
-  final double _userLat = 14.5995;
-  final double _userLng = 120.9842;
+  double _userLat = 14.5995;
+  double _userLng = 120.9842;
 
   @override
   void initState() {
@@ -45,9 +44,52 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
       duration: const Duration(seconds: 2),
     )..repeat();
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    _acquireLocation();
+  }
+
+  Future<void> _acquireLocation() async {
+    bool serviceEnabled;
+    LocationPermission permission;
+
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      _fetchStores();
+      return;
+    }
+
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        _fetchStores();
+        return;
+      }
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      _fetchStores();
+      return;
+    }
+
+    try {
+      final position = await Geolocator.getCurrentPosition();
+      if (mounted) {
+        setState(() {
+          _userLat = position.latitude;
+          _userLng = position.longitude;
+        });
+        _mapController.move(LatLng(_userLat, _userLng), _mapController.camera.zoom);
+        _fetchStores();
+      }
+    } catch (e) {
+      _fetchStores();
+    }
+  }
+
+  void _fetchStores() {
+    if (mounted) {
       context.read<CatalogProvider>().fetchStores(lat: _userLat, lng: _userLng);
-    });
+    }
   }
 
   @override
@@ -55,26 +97,24 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
     _searchController.dispose();
     _pageController.dispose();
     _pulseAnim.dispose();
+    _mapController.dispose();
     super.dispose();
   }
 
   void _recenter() {
-    setState(() {
-      _panOffset = Offset.zero;
-      _zoomLevel = 1.0;
-    });
+    _mapController.move(LatLng(_userLat, _userLng), _mapController.camera.zoom);
   }
 
   void _zoom(double delta) {
-    setState(() {
-      _zoomLevel = (_zoomLevel + delta).clamp(0.7, 2.2);
-    });
+    final newZoom = (_mapController.camera.zoom + delta).clamp(1.0, 20.0);
+    _mapController.move(_mapController.camera.center, newZoom);
   }
 
   void _onStoreSelected(StoreModel store, int index, {bool animatePage = true}) {
     setState(() {
       _selectedStore = store;
     });
+    _mapController.move(LatLng(store.latitude, store.longitude), _mapController.camera.zoom);
     if (animatePage && _pageController.hasClients) {
       _pageController.animateToPage(
         index,
@@ -218,369 +258,325 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
           s.address.toLowerCase().contains(q);
     }).toList();
 
-    // Auto-select first store if none selected
     if (_selectedStore == null && filteredStores.isNotEmpty) {
       _selectedStore = filteredStores.first;
     }
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF0E0B14) : const Color(0xFFE2E8F0),
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          final screenW = constraints.maxWidth;
-          final screenH = constraints.maxHeight;
-
-          // Viewport Center: User GPS marker is placed right here
-          final center = Offset(screenW / 2 + _panOffset.dx, screenH * 0.42 + _panOffset.dy);
-
-          // Calculate pin positions
-          final List<Offset> pinPositions = [];
-          for (int i = 0; i < filteredStores.length; i++) {
-            final s = filteredStores[i];
-            final dLat = s.latitude - _userLat;
-            final dLng = s.longitude - _userLng;
-
-            final isCoLocated = (dLat.abs() < 0.0001 && dLng.abs() < 0.0001);
-
-            double ox;
-            double oy;
-
-            if (!isCoLocated) {
-              final kmX = dLng * 111.0 * math.cos(_userLat * math.pi / 180);
-              final kmY = dLat * 111.0;
-              ox = center.dx + (kmX * 90.0 * _zoomLevel);
-              oy = center.dy - (kmY * 90.0 * _zoomLevel);
-            } else {
-              // Radial distribution around user location
-              final angle = (i * (2 * math.pi / (filteredStores.isEmpty ? 1 : filteredStores.length))) - (math.pi / 2) + 0.3;
-              final radius = (120.0 + ((i % 3) * 35.0)) * _zoomLevel;
-              ox = center.dx + (math.cos(angle) * radius);
-              oy = center.dy + (math.sin(angle) * radius);
-            }
-            pinPositions.add(Offset(ox, oy));
-          }
-
-          return Stack(
+      body: Stack(
+        children: [
+          // 1. FlutterMap (replaces CustomPaint vector map)
+          FlutterMap(
+            mapController: _mapController,
+            options: MapOptions(
+              initialCenter: LatLng(_userLat, _userLng),
+              initialZoom: 15.0,
+              minZoom: 3.0,
+              maxZoom: 19.0,
+              interactionOptions: const InteractionOptions(
+                flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
+              ),
+            ),
             children: [
-              // 1. Gesture Detector for Panning and Pinch-to-Zoom
-              GestureDetector(
-                onScaleStart: (details) {
-                  _baseZoom = _zoomLevel;
-                },
-                onScaleUpdate: (details) {
-                  setState(() {
-                    _zoomLevel = (_baseZoom * details.scale).clamp(0.7, 2.2);
-                    _panOffset += details.focalPointDelta;
-                  });
-                },
-                child: SizedBox(
-                  width: screenW,
-                  height: screenH,
-                  child: Stack(
-                    children: [
-                      // Vector Stylized Map Graphic
-                      CustomPaint(
-                        size: Size(screenW, screenH),
-                        painter: _StylizedCityMapPainter(
-                          center: center,
-                          zoom: _zoomLevel,
-                          pinPositions: pinPositions,
-                          isDark: isDark,
-                        ),
+              TileLayer(
+                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                userAgentPackageName: 'com.example.stora_customer',
+              ),
+              MarkerLayer(
+                markers: [
+                  for (int i = 0; i < filteredStores.length; i++)
+                    Marker(
+                      point: LatLng(filteredStores[i].latitude, filteredStores[i].longitude),
+                      width: 140,
+                      height: 100,
+                      alignment: Alignment.topCenter,
+                      child: _buildStorePin(
+                        store: filteredStores[i],
+                        isSelected: _selectedStore?.id == filteredStores[i].id,
+                        index: i,
                       ),
-
-                      // User GPS Beacon in Center
-                      Positioned(
-                        left: center.dx - 40,
-                        top: center.dy - 40,
-                        child: _UserBeacon(pulseAnim: _pulseAnim),
-                      ),
-
-                      // Interactive Store Pins
-                      for (int i = 0; i < filteredStores.length; i++) ...[
-                        _buildStorePin(
-                          store: filteredStores[i],
-                          pos: pinPositions[i],
-                          isSelected: _selectedStore?.id == filteredStores[i].id,
-                          index: i,
-                        ),
-                      ],
-                    ],
+                    ),
+                ],
+              ),
+              MarkerLayer(
+                markers: [
+                  Marker(
+                    point: LatLng(_userLat, _userLng),
+                    width: 80,
+                    height: 80,
+                    child: _UserBeacon(pulseAnim: _pulseAnim),
                   ),
-                ),
+                ],
               ),
+            ],
+          ),
 
-              // 2. Top Bar: Search and Filters
-              SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Search Container
-                      Container(
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? AppColors.cardBackground.withValues(alpha: 0.94)
-                              : Colors.white.withValues(alpha: 0.96),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFCBD5E1),
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: isDark ? 0.45 : 0.08),
-                              blurRadius: 16,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: TextField(
-                          controller: _searchController,
-                          onChanged: (val) => setState(() => _searchFilter = val),
-                          style: TextStyle(
-                            color: isDark ? Colors.white : Colors.black87,
-                            fontSize: 14,
-                          ),
-                          decoration: InputDecoration(
-                            hintText: 'Search stores near you...',
-                            hintStyle: TextStyle(
-                              color: isDark ? AppColors.textMuted : const Color(0xFF94A3B8),
-                              fontSize: 13,
-                            ),
-                            prefixIcon: const Icon(Icons.search_rounded, color: AppColors.primary, size: 20),
-                            suffixIcon: _searchController.text.isNotEmpty
-                                ? IconButton(
-                                    icon: const Icon(Icons.clear_rounded, size: 18),
-                                    color: isDark ? AppColors.textMuted : Colors.grey,
-                                    onPressed: () {
-                                      _searchController.clear();
-                                      setState(() => _searchFilter = '');
-                                    },
-                                  )
-                                : IconButton(
-                                    icon: const Icon(Icons.list_alt_rounded, size: 20, color: AppColors.primary),
-                                    tooltip: 'Store list',
-                                    onPressed: () => _showAllStoresSheet(context, filteredStores),
-                                  ),
-                            border: InputBorder.none,
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(height: 10),
-
-                      // Quick Info Chips
-                      SizedBox(
-                        height: 36,
-                        child: ListView(
-                          scrollDirection: Axis.horizontal,
-                          physics: const BouncingScrollPhysics(),
-                          children: [
-                            GestureDetector(
-                              onTap: () => _showAllStoresSheet(context, filteredStores),
-                              child: _FilterBadge(
-                                icon: Icons.near_me_rounded,
-                                label: '${filteredStores.length} stores nearby',
-                                color: AppColors.primary,
-                                isDark: isDark,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            GestureDetector(
-                              onTap: () => _showAllStoresSheet(context, filteredStores),
-                              child: _FilterBadge(
-                                icon: Icons.list_rounded,
-                                label: 'List View',
-                                color: const Color(0xFF38BDF8),
-                                isDark: isDark,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            _FilterBadge(
-                              icon: Icons.storefront_rounded,
-                              label: 'Sari-Sari & Retail',
-                              color: const Color(0xFF4ADE80),
-                              isDark: isDark,
-                            ),
-                            const SizedBox(width: 8),
-                            _FilterBadge(
-                              icon: Icons.verified_rounded,
-                              label: 'Verified Stora Owners',
-                              color: const Color(0xFFFBBF24),
-                              isDark: isDark,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              // 3. Floating Map Controls (Recenter & Zoom)
-              Positioned(
-                right: 16,
-                bottom: filteredStores.isNotEmpty ? 245 : 100,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _buildFloatingButton(
-                      icon: Icons.my_location_rounded,
-                      tooltip: 'My Location',
-                      isDark: isDark,
-                      onTap: _recenter,
-                    ),
-                    const SizedBox(height: 8),
-                    _buildFloatingButton(
-                      icon: Icons.add_rounded,
-                      tooltip: 'Zoom In',
-                      isDark: isDark,
-                      onTap: () => _zoom(0.25),
-                    ),
-                    const SizedBox(height: 8),
-                    _buildFloatingButton(
-                      icon: Icons.remove_rounded,
-                      tooltip: 'Zoom Out',
-                      isDark: isDark,
-                      onTap: () => _zoom(-0.25),
-                    ),
-                  ],
-                ),
-              ),
-
-              // 4. Empty State if no stores found
-              if (filteredStores.isEmpty)
-                Positioned(
-                  left: 24,
-                  right: 24,
-                  top: 160,
-                  child: Container(
-                    padding: const EdgeInsets.all(22),
+          // 2. Top Bar: Search and Filters
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
                     decoration: BoxDecoration(
                       color: isDark
-                          ? AppColors.cardBackground.withValues(alpha: 0.96)
-                          : Colors.white.withValues(alpha: 0.98),
-                      borderRadius: BorderRadius.circular(22),
+                          ? AppColors.cardBackground.withValues(alpha: 0.94)
+                          : Colors.white.withValues(alpha: 0.96),
+                      borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                        color: isDark ? AppColors.cardBorder : const Color(0xFFE2E8F0),
+                        color: isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFCBD5E1),
                       ),
-                      boxShadow: const [
-                        BoxShadow(color: Color(0x40000000), blurRadius: 18, offset: Offset(0, 6)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: isDark ? 0.45 : 0.08),
+                          blurRadius: 16,
+                          offset: const Offset(0, 4),
+                        ),
                       ],
                     ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary.withValues(alpha: 0.15),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            _searchFilter.isNotEmpty ? Icons.search_off_rounded : Icons.explore_off_rounded,
-                            color: AppColors.primary,
-                            size: 28,
-                          ),
+                    child: TextField(
+                      controller: _searchController,
+                      onChanged: (val) => setState(() => _searchFilter = val),
+                      style: TextStyle(
+                        color: isDark ? Colors.white : Colors.black87,
+                        fontSize: 14,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: 'Search stores near you...',
+                        hintStyle: TextStyle(
+                          color: isDark ? AppColors.textMuted : const Color(0xFF94A3B8),
+                          fontSize: 13,
                         ),
-                        const SizedBox(height: 12),
-                        Text(
-                          _searchFilter.isNotEmpty
-                              ? 'No stores match "$_searchFilter"'
-                              : 'No nearby stores found in this area',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                            color: isDark ? Colors.white : Colors.black87,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          _searchFilter.isNotEmpty
-                              ? 'Try searching with another term or clear the filter.'
-                              : 'Be the first to introduce local merchants to Stora.',
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
-                        ),
-                        const SizedBox(height: 16),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            if (_searchFilter.isNotEmpty)
-                              TextButton.icon(
+                        prefixIcon: const Icon(Icons.search_rounded, color: AppColors.primary, size: 20),
+                        suffixIcon: _searchController.text.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.clear_rounded, size: 18),
+                                color: isDark ? AppColors.textMuted : Colors.grey,
                                 onPressed: () {
                                   _searchController.clear();
                                   setState(() => _searchFilter = '');
                                 },
-                                icon: const Icon(Icons.clear_all_rounded, size: 16),
-                                label: const Text('Clear Search'),
+                              )
+                            : IconButton(
+                                icon: const Icon(Icons.list_alt_rounded, size: 20, color: AppColors.primary),
+                                tooltip: 'Store list',
+                                onPressed: () => _showAllStoresSheet(context, filteredStores),
                               ),
-                            ElevatedButton.icon(
-                              onPressed: () {
-                                context.read<CatalogProvider>().fetchStores(lat: _userLat, lng: _userLng);
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.primary,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                              ),
-                              icon: const Icon(Icons.refresh_rounded, size: 16, color: Colors.white),
-                              label: const Text('Refresh Map', style: TextStyle(color: Colors.white)),
-                            ),
-                          ],
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    height: 36,
+                    child: ListView(
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      children: [
+                        GestureDetector(
+                          onTap: () => _showAllStoresSheet(context, filteredStores),
+                          child: _FilterBadge(
+                            icon: Icons.near_me_rounded,
+                            label: '${filteredStores.length} stores nearby',
+                            color: AppColors.primary,
+                            isDark: isDark,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        GestureDetector(
+                          onTap: () => _showAllStoresSheet(context, filteredStores),
+                          child: _FilterBadge(
+                            icon: Icons.list_rounded,
+                            label: 'List View',
+                            color: const Color(0xFF38BDF8),
+                            isDark: isDark,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        _FilterBadge(
+                          icon: Icons.storefront_rounded,
+                          label: 'Sari-Sari & Retail',
+                          color: const Color(0xFF4ADE80),
+                          isDark: isDark,
+                        ),
+                        const SizedBox(width: 8),
+                        _FilterBadge(
+                          icon: Icons.verified_rounded,
+                          label: 'Verified Stora Owners',
+                          color: const Color(0xFFFBBF24),
+                          isDark: isDark,
                         ),
                       ],
                     ),
                   ),
+                ],
+              ),
+            ),
+          ),
+
+          // 3. Floating Map Controls (Recenter & Zoom)
+          Positioned(
+            right: 16,
+            bottom: filteredStores.isNotEmpty ? 245 : 100,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildFloatingButton(
+                  icon: Icons.my_location_rounded,
+                  tooltip: 'My Location',
+                  isDark: isDark,
+                  onTap: _recenter,
                 ),
+                const SizedBox(height: 8),
+                _buildFloatingButton(
+                  icon: Icons.add_rounded,
+                  tooltip: 'Zoom In',
+                  isDark: isDark,
+                  onTap: () => _zoom(1.0),
+                ),
+                const SizedBox(height: 8),
+                _buildFloatingButton(
+                  icon: Icons.remove_rounded,
+                  tooltip: 'Zoom Out',
+                  isDark: isDark,
+                  onTap: () => _zoom(-1.0),
+                ),
+              ],
+            ),
+          ),
 
-              // 5. Swipable Horizontal Store Cards Carousel at Bottom
-              // Positioned at bottom: 86 to comfortably sit above MainShell floating bottom nav bar
-              if (filteredStores.isNotEmpty)
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: 86,
-                  child: SizedBox(
-                    height: 145,
-                    child: PageView.builder(
-                      controller: _pageController,
-                      itemCount: filteredStores.length,
-                      onPageChanged: (index) {
-                        setState(() {
-                          _selectedStore = filteredStores[index];
-                        });
-                      },
-                      itemBuilder: (ctx, i) {
-                        final store = filteredStores[i];
-                        final isSelected = _selectedStore?.id == store.id;
-
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                          child: _StoreCarouselCard(
-                            store: store,
-                            isSelected: isSelected,
-                            isDark: isDark,
-                            onViewStore: () => widget.onSelectStoreAndShop(store),
-                          ),
-                        );
-                      },
-                    ),
+          // 4. Empty State
+          if (filteredStores.isEmpty)
+            Positioned(
+              left: 24,
+              right: 24,
+              top: 160,
+              child: Container(
+                padding: const EdgeInsets.all(22),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? AppColors.cardBackground.withValues(alpha: 0.96)
+                      : Colors.white.withValues(alpha: 0.98),
+                  borderRadius: BorderRadius.circular(22),
+                  border: Border.all(
+                    color: isDark ? AppColors.cardBorder : const Color(0xFFE2E8F0),
                   ),
+                  boxShadow: const [
+                    BoxShadow(color: Color(0x40000000), blurRadius: 18, offset: Offset(0, 6)),
+                  ],
                 ),
-            ],
-          );
-        },
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.15),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        _searchFilter.isNotEmpty ? Icons.search_off_rounded : Icons.explore_off_rounded,
+                        color: AppColors.primary,
+                        size: 28,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      _searchFilter.isNotEmpty
+                          ? 'No stores match "$_searchFilter"'
+                          : 'No nearby stores found in this area',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: isDark ? Colors.white : Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      _searchFilter.isNotEmpty
+                          ? 'Try searching with another term or clear the filter.'
+                          : 'Be the first to introduce local merchants to Stora.',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        if (_searchFilter.isNotEmpty)
+                          TextButton.icon(
+                            onPressed: () {
+                              _searchController.clear();
+                              setState(() => _searchFilter = '');
+                            },
+                            icon: const Icon(Icons.clear_all_rounded, size: 16),
+                            label: const Text('Clear Search'),
+                          ),
+                        ElevatedButton.icon(
+                          onPressed: () {
+                            context.read<CatalogProvider>().fetchStores(lat: _userLat, lng: _userLng);
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                          ),
+                          icon: const Icon(Icons.refresh_rounded, size: 16, color: Colors.white),
+                          label: const Text('Refresh Map', style: TextStyle(color: Colors.white)),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+          // 5. Carousel
+          if (filteredStores.isNotEmpty)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 86,
+              child: SizedBox(
+                height: 145,
+                child: PageView.builder(
+                  controller: _pageController,
+                  itemCount: filteredStores.length,
+                  onPageChanged: (index) {
+                    final store = filteredStores[index];
+                    setState(() {
+                      _selectedStore = store;
+                    });
+                    _mapController.move(LatLng(store.latitude, store.longitude), _mapController.camera.zoom);
+                  },
+                  itemBuilder: (ctx, i) {
+                    final store = filteredStores[i];
+                    final isSelected = _selectedStore?.id == store.id;
+
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                      child: _StoreCarouselCard(
+                        store: store,
+                        isSelected: isSelected,
+                        isDark: isDark,
+                        onViewStore: () => widget.onSelectStoreAndShop(store),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
 
   Widget _buildStorePin({
     required StoreModel store,
-    required Offset pos,
     required bool isSelected,
     required int index,
   }) {
@@ -588,97 +584,89 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
         ? '${store.distanceKm!.toStringAsFixed(1)} km'
         : 'Nearby';
 
-    return Positioned(
-      left: pos.dx - 60,
-      top: pos.dy - 68,
-      child: GestureDetector(
-        onTap: () => _onStoreSelected(store, index),
-        child: AnimatedScale(
-          scale: isSelected ? 1.18 : 1.0,
-          duration: const Duration(milliseconds: 200),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Pin Label Pill
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: isSelected ? AppColors.primary : const Color(0xFF1E182A),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: isSelected ? Colors.white : Colors.white24,
-                    width: 1.2,
+    return GestureDetector(
+      onTap: () => _onStoreSelected(store, index),
+      child: AnimatedScale(
+        scale: isSelected ? 1.18 : 1.0,
+        duration: const Duration(milliseconds: 200),
+        alignment: Alignment.bottomCenter,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: isSelected ? AppColors.primary : const Color(0xFF1E182A),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: isSelected ? Colors.white : Colors.white24,
+                  width: 1.2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.5),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.5),
-                      blurRadius: 8,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
-                ),
-                constraints: const BoxConstraints(maxWidth: 120),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Flexible(
-                      child: Text(
-                        store.displayName,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                ],
+              ),
+              constraints: const BoxConstraints(maxWidth: 120),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    child: Text(
+                      store.displayName,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(width: 4),
-                    Text(
-                      distText,
-                      style: TextStyle(
-                        color: isSelected ? Colors.white70 : const Color(0xFF38BDF8),
-                        fontSize: 9,
-                        fontWeight: FontWeight.w700,
-                      ),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    distText,
+                    style: TextStyle(
+                      color: isSelected ? Colors.white70 : const Color(0xFF38BDF8),
+                      fontSize: 9,
+                      fontWeight: FontWeight.w700,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 3),
-
-              // Pin Icon Badge
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  gradient: isSelected
-                      ? const LinearGradient(colors: [Color(0xFFFF9E58), Color(0xFFFF6B00)])
-                      : AppColors.purpleGradient,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 2.2),
-                  boxShadow: [
-                    BoxShadow(
-                      color: (isSelected ? AppColors.primary : const Color(0xFF8B5CF6)).withValues(alpha: 0.6),
-                      blurRadius: 14,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: const Icon(
-                  Icons.storefront_rounded,
-                  color: Colors.white,
-                  size: 22,
-                ),
+            ),
+            const SizedBox(height: 3),
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                gradient: isSelected
+                    ? const LinearGradient(colors: [Color(0xFFFF9E58), Color(0xFFFF6B00)])
+                    : AppColors.purpleGradient,
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 2.2),
+                boxShadow: [
+                  BoxShadow(
+                    color: (isSelected ? AppColors.primary : const Color(0xFF8B5CF6)).withValues(alpha: 0.6),
+                    blurRadius: 14,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
-
-              // Pin Triangle Pointer
-              CustomPaint(
-                size: const Size(12, 6),
-                painter: _PinTrianglePainter(color: isSelected ? AppColors.primary : const Color(0xFFA04100)),
+              child: const Icon(
+                Icons.storefront_rounded,
+                color: Colors.white,
+                size: 22,
               ),
-            ],
-          ),
+            ),
+            CustomPaint(
+              size: const Size(12, 6),
+              painter: _PinTrianglePainter(color: isSelected ? AppColors.primary : const Color(0xFFA04100)),
+            ),
+          ],
         ),
       ),
     );
@@ -721,7 +709,7 @@ class _PinTrianglePainter extends CustomPainter {
     final paint = Paint()
       ..color = color
       ..style = PaintingStyle.fill;
-    final path = Path()
+    final path = ui.Path()
       ..moveTo(0, 0)
       ..lineTo(size.width, 0)
       ..lineTo(size.width / 2, size.height)
@@ -750,7 +738,6 @@ class _UserBeacon extends StatelessWidget {
           child: Stack(
             alignment: Alignment.center,
             children: [
-              // Outer radar pulse
               Container(
                 width: 28 + (val * 52),
                 height: 28 + (val * 52),
@@ -762,7 +749,6 @@ class _UserBeacon extends StatelessWidget {
                   ),
                 ),
               ),
-              // Glowing translucent aura
               Container(
                 width: 36,
                 height: 36,
@@ -771,7 +757,6 @@ class _UserBeacon extends StatelessWidget {
                   shape: BoxShape.circle,
                 ),
               ),
-              // Center Core Dot
               Container(
                 width: 16,
                 height: 16,
@@ -874,7 +859,6 @@ class _StoreCarouselCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // Store Avatar
           Container(
             width: 52,
             height: 52,
@@ -894,8 +878,6 @@ class _StoreCarouselCard extends StatelessWidget {
             child: const Icon(Icons.storefront_rounded, color: Colors.white, size: 28),
           ),
           const SizedBox(width: 14),
-
-          // Store Info
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -939,8 +921,6 @@ class _StoreCarouselCard extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 10),
-
-          // Action Button
           ElevatedButton(
             onPressed: onViewStore,
             style: ElevatedButton.styleFrom(
@@ -962,165 +942,5 @@ class _StoreCarouselCard extends StatelessWidget {
         ],
       ),
     );
-  }
-}
-
-/// Stylized City Map Canvas Painter with high contrast road layout, avenues,
-/// parklands, waterways, and dotted GPS guide lines connecting to nearby stores.
-class _StylizedCityMapPainter extends CustomPainter {
-  final Offset center;
-  final double zoom;
-  final List<Offset> pinPositions;
-  final bool isDark;
-
-  const _StylizedCityMapPainter({
-    required this.center,
-    required this.zoom,
-    required this.pinPositions,
-    required this.isDark,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    // 1. Base Land Color
-    final landPaint = Paint()
-      ..color = isDark ? const Color(0xFF130E20) : const Color(0xFFE8EEF5);
-    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), landPaint);
-
-    // 2. City Blocks / Neighborhood Grids
-    final blockPaint = Paint()
-      ..color = isDark ? const Color(0xFF1B142D) : Colors.white
-      ..style = PaintingStyle.fill;
-
-    final blockBorder = Paint()
-      ..color = isDark ? const Color(0xFF281E40) : const Color(0xFFCBD5E1)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.0;
-
-    const blockSize = 90.0;
-    final gridOffsetX = center.dx % blockSize;
-    final gridOffsetY = center.dy % blockSize;
-
-    for (double x = -blockSize + gridOffsetX; x < size.width + blockSize; x += blockSize) {
-      for (double y = -blockSize + gridOffsetY; y < size.height + blockSize; y += blockSize) {
-        final rect = RRect.fromRectAndRadius(
-          Rect.fromLTWH(x + 10, y + 10, blockSize - 20, blockSize - 20),
-          const Radius.circular(14),
-        );
-        canvas.drawRRect(rect, blockPaint);
-        canvas.drawRRect(rect, blockBorder);
-      }
-    }
-
-    // 3. Green Park Zones
-    final parkPaint = Paint()
-      ..color = isDark ? const Color(0xFF11301F) : const Color(0xFFDCFCE7)
-      ..style = PaintingStyle.fill;
-
-    final parkRect1 = RRect.fromRectAndRadius(
-      Rect.fromCenter(center: Offset(center.dx - 180 * zoom, center.dy - 120 * zoom), width: 180 * zoom, height: 130 * zoom),
-      const Radius.circular(24),
-    );
-    canvas.drawRRect(parkRect1, parkPaint);
-
-    final parkRect2 = RRect.fromRectAndRadius(
-      Rect.fromCenter(center: Offset(center.dx + 200 * zoom, center.dy + 150 * zoom), width: 220 * zoom, height: 140 * zoom),
-      const Radius.circular(28),
-    );
-    canvas.drawRRect(parkRect2, parkPaint);
-
-    // 4. Meandering River / Canal
-    final riverPaint = Paint()
-      ..color = isDark ? const Color(0xFF113254) : const Color(0xFFBAE6FD)
-      ..strokeWidth = 36.0 * zoom
-      ..strokeCap = StrokeCap.round
-      ..style = PaintingStyle.stroke;
-
-    final riverPath = Path()
-      ..moveTo(-50, center.dy + 220 * zoom)
-      ..quadraticBezierTo(
-        center.dx - 80 * zoom, center.dy + 160 * zoom,
-        center.dx + 80 * zoom, center.dy + 260 * zoom,
-      )
-      ..quadraticBezierTo(
-        center.dx + 240 * zoom, center.dy + 340 * zoom,
-        size.width + 50, center.dy + 280 * zoom,
-      );
-    canvas.drawPath(riverPath, riverPaint);
-
-    // 5. Major Arterial Avenues (Horizontal & Vertical)
-    final avenuePaint = Paint()
-      ..color = isDark ? const Color(0xFF261D3B) : const Color(0xFFCBD5E1)
-      ..strokeWidth = 26.0 * zoom
-      ..strokeCap = StrokeCap.round;
-
-    canvas.drawLine(Offset(-50, center.dy), Offset(size.width + 50, center.dy), avenuePaint);
-    canvas.drawLine(Offset(center.dx, -50), Offset(center.dx, size.height + 50), avenuePaint);
-
-    // Diagonal Express Highway
-    final highwayPaint = Paint()
-      ..color = isDark ? const Color(0xFF322450) : const Color(0xFF94A3B8)
-      ..strokeWidth = 32.0 * zoom
-      ..strokeCap = StrokeCap.round;
-
-    canvas.drawLine(
-      Offset(center.dx - 350 * zoom, center.dy - 350 * zoom),
-      Offset(center.dx + 350 * zoom, center.dy + 350 * zoom),
-      highwayPaint,
-    );
-
-    // Highway Center Line (Dashed)
-    final dashPaint = Paint()
-      ..color = isDark ? const Color(0xFFFBBF24).withValues(alpha: 0.6) : Colors.white
-      ..strokeWidth = 2.0 * zoom;
-
-    for (double d = -300; d < 300; d += 24) {
-      canvas.drawLine(
-        Offset(center.dx + d * zoom, center.dy + d * zoom),
-        Offset(center.dx + (d + 12) * zoom, center.dy + (d + 12) * zoom),
-        dashPaint,
-      );
-    }
-
-    // 6. Central Roundabout Plaza
-    final plazaPaint = Paint()
-      ..color = isDark ? const Color(0xFF322450) : const Color(0xFF94A3B8)
-      ..strokeWidth = 22.0 * zoom
-      ..style = PaintingStyle.stroke;
-    canvas.drawCircle(center, 55 * zoom, plazaPaint);
-
-    final islandPaint = Paint()
-      ..color = isDark ? const Color(0xFF1E1730) : Colors.white
-      ..style = PaintingStyle.fill;
-    canvas.drawCircle(center, 44 * zoom, islandPaint);
-
-    // 7. Route Guides: Dotted glowing navigation lines from user to nearby store pins
-    final routePaint = Paint()
-      ..color = const Color(0xFF38BDF8).withValues(alpha: 0.45)
-      ..strokeWidth = 2.5
-      ..style = PaintingStyle.stroke;
-
-    for (final pinPos in pinPositions) {
-      final double dist = (pinPos - center).distance;
-      if (dist > 10) {
-        final double step = 12.0;
-        final int steps = (dist / step).floor();
-        for (int i = 0; i < steps; i += 2) {
-          final t1 = i / steps;
-          final t2 = (i + 1) / steps;
-          final p1 = Offset.lerp(center, pinPos, t1)!;
-          final p2 = Offset.lerp(center, pinPos, t2)!;
-          canvas.drawLine(p1, p2, routePaint);
-        }
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _StylizedCityMapPainter oldDelegate) {
-    return oldDelegate.center != center ||
-        oldDelegate.zoom != zoom ||
-        oldDelegate.isDark != isDark ||
-        oldDelegate.pinPositions.length != pinPositions.length;
   }
 }

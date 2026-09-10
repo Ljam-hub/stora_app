@@ -227,6 +227,8 @@ class _OrderCardState extends State<_OrderCard> {
   String get notes => (widget.order['notes'] as String?) ?? '';
   String get totalAmount => widget.order['total_amount']?.toString() ?? '0.00';
   List get items => (widget.order['items'] as List?) ?? [];
+  int get totalQuantity => items.fold<int>(
+      0, (sum, i) => sum + ((i['quantity'] as num?)?.toInt() ?? 1));
 
   Color get _statusColor {
     switch (status) {
@@ -677,7 +679,7 @@ class _OrderCardState extends State<_OrderCard> {
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
-                      '${items.length} ${items.length == 1 ? 'item' : 'items'}',
+                      '$totalQuantity ${totalQuantity == 1 ? 'item' : 'items'}${items.length > 1 && totalQuantity != items.length ? ' (${items.length} products)' : ''}',
                       style: const TextStyle(color: AppColors.label, fontSize: 11, fontWeight: FontWeight.w700),
                     ),
                   ),

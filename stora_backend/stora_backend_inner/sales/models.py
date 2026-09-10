@@ -20,6 +20,12 @@ class Sale(models.Model):
         ordering = ["-created_at"]
 
     def __str__(self):
+        items = list(self.items.all())
+        if items:
+            item_summary = ", ".join(f"{it.product_name} x{it.quantity}" for it in items[:3])
+            if len(items) > 3:
+                item_summary += f" +{len(items)-3} more"
+            return f"{item_summary} (\u20b1{self.total:.2f})"
         return f"Sale #{self.pk} \u2014 {self.created_at:%Y-%m-%d %H:%M}"
 
     def recalculate_total(self):

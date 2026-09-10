@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.utils.html import format_html
 
 from stora_backend.admin_site import stora_admin_site
 
@@ -19,7 +20,8 @@ class SaleItemInline(admin.TabularInline):
 
 @admin.register(Sale, site=stora_admin_site)
 class SaleAdmin(admin.ModelAdmin):
-    list_display = ("id", "owner", "created_at", "item_count", "total")
+    list_display = ("id", "products_display", "total_quantity", "total", "owner", "created_at")
+    list_display_links = ("id", "products_display")
     date_hierarchy = "created_at"
     readonly_fields = ("total", "created_at")
     inlines = [SaleItemInline]
@@ -44,9 +46,26 @@ class SaleAdmin(admin.ModelAdmin):
         base.extend(["total", "created_at"])
         return base
 
-    @admin.display(description="Items")
-    def item_count(self, obj):
-        return obj.items.count()
+    @admin.display(description="Products Sold")
+    def products_display(self, obj):
+        items = list(obj.items.all())
+        if not items:
+            return format_html('<span style="color: #888888; font-style: italic;">No items</span>')
+        parts = [
+            f'<span style="font-weight: 700; color: #ffffff;">{it.product_name}</span> '
+            f'<span style="color: #FF6B00; font-weight: 600;">(x{it.quantity})</span>'
+            for it in items
+        ]
+        return format_html(", ".join(parts))
+
+    @admin.display(description="Total Qty")
+    def total_quantity(self, obj):
+        items = list(obj.items.all())
+        total_qty = sum(it.quantity for it in items)
+        distinct_types = len(items)
+        if distinct_types > 1 and total_qty != distinct_types:
+            return f"{total_qty} pcs ({distinct_types} products)"
+        return f"{total_qty} pc{'s' if total_qty != 1 else ''}"
 
     @admin.action(description="↻ Recalculate selected sale totals")
     def recalculate_selected_sales(self, request, queryset):
