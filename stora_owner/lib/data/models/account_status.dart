@@ -49,6 +49,7 @@ class AccountStatus {
   final double monthlyPrice;
   final String gcashNumber;
   final String gcashName;
+  final String? qrCodeUrl;
   final PaymentProofInfo? latestPaymentProof;
 
   const AccountStatus({
@@ -63,6 +64,7 @@ class AccountStatus {
     this.monthlyPrice = 70.0,
     this.gcashNumber = '0917 000 0070',
     this.gcashName = 'STORA Admin',
+    this.qrCodeUrl,
     this.latestPaymentProof,
   });
 
@@ -86,6 +88,7 @@ class AccountStatus {
       monthlyPrice: _asDouble(json['monthly_price'], 70.0),
       gcashNumber: (json['gcash_number'] as String?) ?? '0917 000 0070',
       gcashName: (json['gcash_name'] as String?) ?? 'STORA Admin',
+      qrCodeUrl: json['qr_code'] as String?,
       latestPaymentProof: proofJson != null ? PaymentProofInfo.fromJson(proofJson) : null,
     );
   }
@@ -99,6 +102,7 @@ class AccountStatus {
     monthlyPrice: 70.0,
     gcashNumber: '0917 000 0070',
     gcashName: 'STORA Admin',
+    qrCodeUrl: null,
   );
 }
 

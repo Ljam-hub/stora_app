@@ -335,9 +335,19 @@ class PaymentProofUploadSerializer(serializers.Serializer):
 
 
 class SubscriptionConfigSerializer(serializers.ModelSerializer):
+    qr_code = serializers.SerializerMethodField()
+
     class Meta:
         model = SubscriptionConfig
-        fields = ("monthly_price", "gcash_number", "gcash_name", "updated_at")
+        fields = ("monthly_price", "gcash_number", "gcash_name", "qr_code", "updated_at")
+
+    def get_qr_code(self, instance):
+        if instance.qr_code:
+            request = self.context.get("request")
+            if request:
+                return request.build_absolute_uri(instance.qr_code.url)
+            return instance.qr_code.url
+        return None
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
@@ -357,6 +367,7 @@ class AccountStatusSerializer(serializers.Serializer):
     monthly_price = serializers.DecimalField(max_digits=8, decimal_places=2)
     gcash_number = serializers.CharField()
     gcash_name = serializers.CharField()
+    qr_code = serializers.CharField(allow_null=True, required=False)
     latest_payment_proof = PaymentProofSerializer(allow_null=True, required=False)
 
 

@@ -161,6 +161,7 @@ class SubscriptionScreen extends StatelessWidget {
                           amount: price,
                           gcashNumber: AccountStatusStore.instance.gcashNumber,
                           gcashName: AccountStatusStore.instance.gcashName,
+                          qrCodeUrl: AccountStatusStore.instance.qrCodeUrl,
                         ),
                       ),
                     ),

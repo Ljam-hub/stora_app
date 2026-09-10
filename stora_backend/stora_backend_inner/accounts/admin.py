@@ -2,6 +2,7 @@ from datetime import timedelta
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 from django.utils import timezone
+from django.utils.html import format_html
 
 from stora_backend.admin_site import stora_admin_site
 
@@ -145,8 +146,19 @@ class PaymentProofAdmin(admin.ModelAdmin):
 
 @admin.register(SubscriptionConfig, site=stora_admin_site)
 class SubscriptionConfigAdmin(admin.ModelAdmin):
-    list_display = ("monthly_price", "gcash_number", "gcash_name", "updated_at")
-    fields = ("monthly_price", "gcash_number", "gcash_name")
+    list_display = ("monthly_price", "gcash_number", "gcash_name", "qr_code_display", "updated_at")
+    fields = ("monthly_price", "gcash_number", "gcash_name", "qr_code")
+
+    @admin.display(description="GCash QR Code")
+    def qr_code_display(self, obj):
+        if obj.qr_code:
+            return format_html(
+                '<a href="{0}" target="_blank">'
+                '<img src="{0}" style="height: 48px; width: 48px; object-fit: contain; border-radius: 6px; border: 1px solid #3b82f6; background: #fff; padding: 2px;" title="Click to view full QR code" />'
+                '</a>',
+                obj.qr_code.url,
+            )
+        return format_html('<span style="color: #94a3b8; font-style: italic; font-size: 12px;">Default (Bundled)</span>')
 
     def has_add_permission(self, request):
         return not SubscriptionConfig.objects.exists()

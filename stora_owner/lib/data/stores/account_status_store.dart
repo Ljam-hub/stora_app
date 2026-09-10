@@ -35,6 +35,7 @@ class AccountStatusStore extends ChangeNotifier {
   double get monthlyPrice => _status.monthlyPrice;
   String get gcashNumber => _status.gcashNumber;
   String get gcashName => _status.gcashName;
+  String? get qrCodeUrl => _status.qrCodeUrl;
 
   void clearPriceChangePrompt() {
     _priceChangePrompt = null;

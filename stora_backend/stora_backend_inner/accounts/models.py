@@ -114,6 +114,12 @@ class SubscriptionConfig(models.Model):
     monthly_price = models.DecimalField(max_digits=8, decimal_places=2, default=70.00, help_text="Monthly premium price in PHP")
     gcash_number = models.CharField(max_length=50, default="0917 000 0070", help_text="GCash receiver mobile number")
     gcash_name = models.CharField(max_length=100, default="STORA Admin", help_text="GCash receiver account name")
+    qr_code = models.ImageField(
+        upload_to="subscription_qr/",
+        null=True,
+        blank=True,
+        help_text="Upload custom GCash / InstaPay QR code image",
+    )
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:

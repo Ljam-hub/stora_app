@@ -6,7 +6,8 @@ from django.conf.urls.static import static
 from django.contrib.auth import views as auth_views
 from django.http import JsonResponse
 from django.shortcuts import redirect, render
-from django.urls import include, path, reverse_lazy
+from django.urls import include, path, re_path, reverse_lazy
+from django.views.static import serve
 from .admin_site import stora_admin_site
 
 GITHUB_RELEASE_BASE = "https://github.com/Ljam-hub/stora_app/releases/download/v1.0.0"
@@ -74,3 +75,7 @@ urlpatterns = [
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+else:
+    urlpatterns += [
+        re_path(r"^media/(?P<path>.*)$", serve, {"document_root": settings.MEDIA_ROOT}),
+    ]

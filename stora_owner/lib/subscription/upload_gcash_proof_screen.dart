@@ -11,19 +11,21 @@ import 'subscription_status.dart';
 
 // ---------------------------------------------------------------------
 // Upload GCash Proof — instructs the owner to send the plan price to
-// a GCash number or scan the QR code, then submit a screenshot + reference
-// number for review.
+// a GCash number or scan the QR code (synced from backend or bundled),
+// then submit a screenshot + reference number for review.
 // ---------------------------------------------------------------------
 class UploadGcashProofScreen extends StatefulWidget {
   final int? amount;
   final String? gcashNumber;
   final String? gcashName;
+  final String? qrCodeUrl;
 
   const UploadGcashProofScreen({
     super.key,
     this.amount,
     this.gcashNumber,
     this.gcashName,
+    this.qrCodeUrl,
   });
 
   @override
@@ -42,11 +44,13 @@ class _UploadGcashProofScreenState extends State<UploadGcashProofScreen> {
       widget.gcashNumber ?? AccountStatusStore.instance.gcashNumber;
   String get _gcashName =>
       widget.gcashName ?? AccountStatusStore.instance.gcashName;
+  String? get _qrCodeUrl =>
+      widget.qrCodeUrl ?? AccountStatusStore.instance.qrCodeUrl;
 
   @override
   void initState() {
     super.initState();
-    // Refresh latest payment configuration from backend
+    // Refresh latest payment and QR configuration from backend
     AccountStatusStore.instance.fetchStatus().then((_) {
       if (mounted) setState(() {});
     });
@@ -131,6 +135,43 @@ class _UploadGcashProofScreenState extends State<UploadGcashProofScreen> {
     }
   }
 
+  Widget _buildQrWidget({required double size}) {
+    if (_qrCodeUrl != null && _qrCodeUrl!.isNotEmpty) {
+      return Image.network(
+        _qrCodeUrl!,
+        width: size,
+        height: size,
+        fit: BoxFit.contain,
+        loadingBuilder: (context, child, progress) {
+          if (progress == null) return child;
+          return SizedBox(
+            width: size,
+            height: size,
+            child: const Center(
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Color(0xFF005CEE),
+              ),
+            ),
+          );
+        },
+        errorBuilder: (context, error, stackTrace) => Image.asset(
+          'assets/images/gcash_qr.png',
+          width: size,
+          height: size,
+          fit: BoxFit.contain,
+        ),
+      );
+    }
+
+    return Image.asset(
+      'assets/images/gcash_qr.png',
+      width: size,
+      height: size,
+      fit: BoxFit.contain,
+    );
+  }
+
   void _showEnlargedQr(BuildContext context) {
     showDialog(
       context: context,
@@ -187,12 +228,7 @@ class _UploadGcashProofScreenState extends State<UploadGcashProofScreen> {
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(12),
-                  child: Image.asset(
-                    'assets/images/gcash_qr.png',
-                    width: 250,
-                    height: 250,
-                    fit: BoxFit.contain,
-                  ),
+                  child: _buildQrWidget(size: 250),
                 ),
               ),
               const SizedBox(height: 16),
@@ -320,7 +356,7 @@ class _UploadGcashProofScreenState extends State<UploadGcashProofScreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          '₱$_amount.00',
+                          '₱.00',
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 26,
@@ -625,12 +661,7 @@ class _UploadGcashProofScreenState extends State<UploadGcashProofScreen> {
                         ),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(10),
-                          child: Image.asset(
-                            'assets/images/gcash_qr.png',
-                            width: 170,
-                            height: 170,
-                            fit: BoxFit.contain,
-                          ),
+                          child: _buildQrWidget(size: 170),
                         ),
                       ),
                     ),

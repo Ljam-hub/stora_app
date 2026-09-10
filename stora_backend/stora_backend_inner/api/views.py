@@ -139,6 +139,13 @@ def account_status(request):
 
     config = SubscriptionConfig.get_config()
     latest_proof = user.payment_proofs.first()
+    qr_code_url = None
+    if config.qr_code:
+        try:
+            qr_code_url = request.build_absolute_uri(config.qr_code.url)
+        except Exception:
+            qr_code_url = config.qr_code.url
+
     data = {
         "is_premium": user.is_premium_active,
         "premium_until": user.premium_until,
@@ -151,6 +158,7 @@ def account_status(request):
         "monthly_price": config.monthly_price,
         "gcash_number": config.gcash_number,
         "gcash_name": config.gcash_name,
+        "qr_code": qr_code_url,
         "latest_payment_proof": latest_proof,
     }
     return Response(AccountStatusSerializer(data).data)
@@ -160,7 +168,7 @@ def account_status(request):
 @permission_classes([AllowAny])
 def subscription_config(request):
     config = SubscriptionConfig.get_config()
-    return Response(SubscriptionConfigSerializer(config).data)
+    return Response(SubscriptionConfigSerializer(config, context={"request": request}).data)
 
 
 @api_view(["POST"])
