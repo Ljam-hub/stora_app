@@ -160,6 +160,7 @@ class SubscriptionScreen extends StatelessWidget {
                         builder: (_) => UploadGcashProofScreen(
                           amount: price,
                           gcashNumber: AccountStatusStore.instance.gcashNumber,
+                          gcashName: AccountStatusStore.instance.gcashName,
                         ),
                       ),
                     ),
