@@ -17,6 +17,8 @@ urlpatterns = [
 
     # Auth & Tokens
     path("auth/register/", views.register, name="register"),
+    path("auth/verify-email/", views.verify_email, name="verify_email"),
+    path("auth/resend-verification/", views.resend_verification_code, name="resend_verification_code"),
     path("auth/login/", views.login, name="login"),
     path("auth/token/", TokenObtainPairView.as_view(serializer_class=CustomTokenObtainPairSerializer), name="token_obtain_pair"),
     path("auth/refresh/", TokenRefreshView.as_view(), name="token_refresh"),

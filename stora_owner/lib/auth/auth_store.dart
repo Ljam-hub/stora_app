@@ -10,6 +10,7 @@ class AuthStore extends ChangeNotifier {
 
   String? email;
   String? businessName;
+  bool isEmailVerified = false;
   bool get isLoggedIn => email != null && email!.isNotEmpty;
 
   String get greetingName {
@@ -27,6 +28,10 @@ class AuthStore extends ChangeNotifier {
     if (session == null || session.accessToken.isEmpty) return false;
     email = session.email;
     businessName = session.businessName;
+    try {
+      final me = await ApiClient.instance.getMe();
+      isEmailVerified = me['is_email_verified'] == true;
+    } catch (_) {}
     OwnerNotificationService.instance.init();
     notifyListeners();
     return true;
@@ -82,10 +87,31 @@ class AuthStore extends ChangeNotifier {
     );
   }
 
+  Future<void> verifyEmail(String code) async {
+    final targetEmail = email;
+    if (targetEmail == null || targetEmail.isEmpty) {
+      throw ApiException('No registered email found to verify.');
+    }
+    final result = await ApiClient.instance.verifyEmail(
+      email: targetEmail,
+      code: code,
+    );
+    await _persist(result);
+  }
+
+  Future<void> resendVerification() async {
+    final targetEmail = email;
+    if (targetEmail == null || targetEmail.isEmpty) {
+      throw ApiException('No registered email found.');
+    }
+    await ApiClient.instance.resendVerification(email: targetEmail);
+  }
+
   Future<void> logout() async {
     await AppDatabase.instance.authDao.clearSession();
     email = null;
     businessName = null;
+    isEmailVerified = false;
     notifyListeners();
   }
 
@@ -101,6 +127,7 @@ class AuthStore extends ChangeNotifier {
     );
     email = result.email;
     businessName = result.businessName;
+    isEmailVerified = result.isEmailVerified;
     OwnerNotificationService.instance.init();
     notifyListeners();
   }

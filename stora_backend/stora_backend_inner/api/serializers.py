@@ -24,8 +24,8 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ("id", "email", "business_name", "role", "fcm_token", "is_premium", "premium_until", "date_joined")
-        read_only_fields = ("id", "is_premium", "premium_until", "date_joined")
+        fields = ("id", "email", "business_name", "role", "is_email_verified", "fcm_token", "is_premium", "premium_until", "date_joined")
+        read_only_fields = ("id", "is_email_verified", "is_premium", "premium_until", "date_joined")
 
 
 class UserUpdateSerializer(serializers.ModelSerializer):
@@ -45,6 +45,21 @@ class UserUpdateSerializer(serializers.ModelSerializer):
         if not val:
             raise serializers.ValidationError("Business name cannot be blank.")
         return val
+
+
+class VerifyEmailSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    code = serializers.CharField(max_length=6, min_length=6)
+
+    def validate_code(self, value):
+        val = value.strip()
+        if not val.isdigit() or len(val) != 6:
+            raise serializers.ValidationError("Verification code must be 6 digits.")
+        return val
+
+
+class ResendVerificationSerializer(serializers.Serializer):
+    email = serializers.EmailField()
 
 
 class ChangePasswordSerializer(serializers.Serializer):

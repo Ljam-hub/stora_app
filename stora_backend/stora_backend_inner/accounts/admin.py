@@ -6,19 +6,20 @@ from django.utils.html import format_html
 
 from stora_backend.admin_site import stora_admin_site
 
-from .models import User, PasswordResetToken, PaymentProof, SubscriptionConfig, StoreLocation, AIInsight
+from .models import User, PasswordResetToken, PaymentProof, SubscriptionConfig, StoreLocation, AIInsight, EmailVerificationCode
 
 
 @admin.register(User, site=stora_admin_site)
 class UserAdmin(DjangoUserAdmin):
     fieldsets = DjangoUserAdmin.fieldsets + (
-        ("Store & Role info", {"fields": ("role", "business_name", "fcm_token")}),
+        ("Store & Role info", {"fields": ("role", "business_name", "fcm_token", "is_email_verified")}),
         ("Subscription", {"fields": ("is_premium", "premium_until")}),
     )
     list_display = (
         "username",
         "email",
         "role_badge",
+        "is_email_verified",
         "business_name",
         "subscription_status",
         "subscription_expiration",
@@ -27,18 +28,28 @@ class UserAdmin(DjangoUserAdmin):
         "is_active",
     )
     search_fields = ("username", "email", "business_name")
-    list_filter = ("role", "is_premium", "is_staff", "is_active")
+    list_filter = ("role", "is_email_verified", "is_premium", "is_staff", "is_active")
 
     @admin.display(description="Role")
     def role_badge(self, obj):
         from django.utils.html import format_html
-        if obj.role == "owner":
+        if obj.role == "admin":
+            return format_html('<span class="user-badge user-badge--admin" style="background:#7c3aed;color:#fff;padding:3px 8px;border-radius:6px;font-weight:700;">Admin</span>')
+        elif obj.role == "owner":
             return format_html('<span class="user-badge user-badge--owner">Store Owner</span>')
         return format_html('<span class="user-badge user-badge--customer">Customer</span>')
 
     @admin.display(description="Subscription")
     def subscription_status(self, obj):
         from django.utils.html import format_html
+        if obj.role == "admin":
+            return format_html(
+                '<span class="user-badge" style="background:#7c3aed;color:#fff;padding:3px 8px;border-radius:6px;font-weight:600;">Admin (Full Access)</span>'
+            )
+        if obj.role == "customer":
+            return format_html(
+                '<span class="user-badge" style="background:#475569;color:#fff;padding:3px 8px;border-radius:6px;font-weight:600;">Customer (No Trial/Sub)</span>'
+            )
         if obj.is_premium_active:
             days = obj.days_left
             return format_html(
@@ -175,6 +186,18 @@ class AIInsightAdmin(admin.ModelAdmin):
     list_display = ("title", "owner", "category", "priority", "action_label", "is_dismissed", "created_at")
     list_filter = ("category", "priority", "is_dismissed", "created_at")
     search_fields = ("title", "description", "owner__email", "owner__business_name")
+
+
+@admin.register(EmailVerificationCode, site=stora_admin_site)
+class EmailVerificationCodeAdmin(admin.ModelAdmin):
+    list_display = ("user", "code", "created_at", "expires_at", "used", "is_valid_display")
+    search_fields = ("user__email", "user__username", "code")
+    list_filter = ("used", "created_at")
+
+    @admin.display(description="Valid?", boolean=True)
+    def is_valid_display(self, obj):
+        return obj.is_valid()
+
 
 
 

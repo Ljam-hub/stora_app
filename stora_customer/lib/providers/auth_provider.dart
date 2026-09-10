@@ -140,6 +140,42 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  Future<bool> verifyEmail(String code) async {
+    final email = _currentUser?.email;
+    if (email == null || email.isEmpty) return false;
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final res = await CustomerApiService.instance.verifyEmail(email, code);
+      if (res.containsKey('user') && res['user'] is Map) {
+        _currentUser = UserModel.fromJson(res['user'] as Map<String, dynamic>);
+      }
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString().replaceAll('Exception: ', '');
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> resendVerification() async {
+    final email = _currentUser?.email;
+    if (email == null || email.isEmpty) return false;
+    try {
+      await CustomerApiService.instance.resendVerification(email);
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString().replaceAll('Exception: ', '');
+      notifyListeners();
+      return false;
+    }
+  }
+
   Future<void> saveDeliveryDetails({required String phone, required String address}) async {
     _savedPhone = phone;
     _savedAddress = address;

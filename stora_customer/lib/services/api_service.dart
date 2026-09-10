@@ -258,6 +258,45 @@ class CustomerApiService {
     _throw(response);
   }
 
+  Future<Map<String, dynamic>> verifyEmail(String email, String code) async {
+    final response = await _dispatch(
+      'POST',
+      _uri('/auth/verify-email/'),
+      headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
+      body: {'email': email.trim(), 'code': code.trim()},
+    );
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      accessToken = data['access'] as String?;
+      if (data.containsKey('user') && data['user'] is Map) {
+        final user = UserModel.fromJson(data['user'] as Map<String, dynamic>);
+        final session = await SessionManager.instance.getSession();
+        await SessionManager.instance.saveSession(
+          accessToken: data['access'] as String? ?? session?.accessToken ?? '',
+          refreshToken: data['refresh'] as String? ?? session?.refreshToken ?? '',
+          user: user,
+          savedPhone: session?.savedPhone,
+          savedAddress: session?.savedAddress,
+        );
+      }
+      return data;
+    }
+    _throw(response);
+  }
+
+  Future<Map<String, dynamic>> resendVerification(String email) async {
+    final response = await _dispatch(
+      'POST',
+      _uri('/auth/resend-verification/'),
+      headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
+      body: {'email': email.trim()},
+    );
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    }
+    _throw(response);
+  }
+
   Future<UserModel> fetchProfile() async {
     final response = await _dispatch('GET', _uri('/auth/me/'));
     if (response.statusCode == 200) {

@@ -3,6 +3,7 @@ from django.db import models
 from django.utils import timezone
 from django.conf import settings
 from datetime import timedelta
+import secrets
 import uuid
 
 
@@ -11,43 +12,95 @@ class User(AbstractUser):
     name. Email is unique so the Flutter login form can authenticate with
     it (username is still stored, set equal to email on register)."""
 
+    ROLE_ADMIN = "admin"
+    ROLE_OWNER = "owner"
+    ROLE_CUSTOMER = "customer"
+    ROLE_CHOICES = (
+        (ROLE_ADMIN, "Administrator"),
+        (ROLE_OWNER, "Store Owner"),
+        (ROLE_CUSTOMER, "Customer"),
+    )
+
     email = models.EmailField(unique=True)
     business_name = models.CharField(max_length=150, blank=True)
     role = models.CharField(
         max_length=20,
-        choices=(("owner", "Store Owner"), ("customer", "Customer")),
-        default="owner",
+        choices=ROLE_CHOICES,
+        default=ROLE_OWNER,
     )
+    is_email_verified = models.BooleanField(default=False)
     fcm_token = models.CharField(max_length=255, blank=True, null=True)
     is_premium = models.BooleanField(default=False)
     premium_until = models.DateTimeField(null=True, blank=True)
 
     @property
+    def is_admin_role(self):
+        return bool(self.role == self.ROLE_ADMIN or self.is_superuser)
+
+    @property
     def trial_ends_at(self):
+        if self.role != self.ROLE_OWNER:
+            return None
         return self.date_joined + timedelta(days=settings.FREE_TRIAL_DAYS)
 
     @property
     def is_trial_active(self):
+        if self.role != self.ROLE_OWNER:
+            return False
+        if not self.trial_ends_at:
+            return False
         return timezone.now() < self.trial_ends_at
 
     @property
     def is_premium_active(self):
+        if self.role == self.ROLE_ADMIN:
+            return True
         return bool(self.is_premium and self.premium_until and timezone.now() < self.premium_until)
 
     @property
     def has_full_access(self):
+        if self.role in (self.ROLE_ADMIN, self.ROLE_CUSTOMER):
+            return True
         return self.is_premium_active or self.is_trial_active
 
     @property
     def days_left(self):
+        if self.role != self.ROLE_OWNER:
+            return 0
         if self.is_premium_active and self.premium_until:
             return max(0, (self.premium_until - timezone.now()).days)
-        elif self.is_trial_active:
+        elif self.is_trial_active and self.trial_ends_at:
             return max(0, (self.trial_ends_at - timezone.now()).days)
         return 0
 
     def __str__(self):
         return self.business_name or self.email or self.username
+
+
+class EmailVerificationCode(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='email_verifications')
+    code = models.CharField(max_length=6)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    used = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def is_valid(self):
+        if self.used:
+            return False
+        return timezone.now() < self.expires_at
+
+    @classmethod
+    def generate_code(cls, user, validity_minutes=15):
+        cls.objects.filter(user=user, used=False).update(used=True)
+        code = f"{secrets.randbelow(900000) + 100000}"
+        expires_at = timezone.now() + timedelta(minutes=validity_minutes)
+        return cls.objects.create(user=user, code=code, expires_at=expires_at)
+
+    def __str__(self):
+        return f"Verification code {self.code} for {self.user.email} (used={self.used})"
 
 
 class PasswordResetToken(models.Model):

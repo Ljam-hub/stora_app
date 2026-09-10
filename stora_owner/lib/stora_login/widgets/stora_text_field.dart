@@ -45,10 +45,11 @@ class _StoraTextFieldState extends State<StoraTextField> {
     if (widget.obscureText && suffix == null) {
       suffix = IconButton(
         icon: Icon(
-          _obscured ? Icons.visibility_off_rounded : Icons.visibility_rounded,
+          _obscured ? Icons.visibility_rounded : Icons.visibility_off_rounded,
           color: AppColors.label,
           size: 20,
         ),
+        tooltip: _obscured ? 'Show password' : 'Hide password',
         onPressed: () => setState(() => _obscured = !_obscured),
       );
     }

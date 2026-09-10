@@ -7,6 +7,7 @@ import '../utils/validators.dart';
 import '../widgets/stora_gradient_button.dart';
 import '../widgets/stora_header.dart';
 import '../widgets/stora_text_field.dart';
+import 'email_verification_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -61,7 +62,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
         businessName: _businessNameController.text.trim(),
       );
       if (!mounted) return;
-      Navigator.of(context).pushReplacementNamed('/home');
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => EmailVerificationScreen(
+            email: _emailController.text.trim(),
+          ),
+        ),
+      );
     } on ApiException catch (e) {
       if (!mounted) return;
       showStoraSnackBar(context, e.message);

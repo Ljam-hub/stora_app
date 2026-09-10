@@ -7,6 +7,7 @@ from django.test import Client, TestCase
 from rest_framework.test import APITestCase
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from accounts.models import EmailVerificationCode, PasswordResetToken
 from inventory.models import Category, Product
 from orders.models import Order, OrderItem
 
@@ -460,4 +461,222 @@ class AdminPasswordResetViewTests(TestCase):
 
         complete_res = self.client.get("/reset/done/")
         self.assertEqual(complete_res.status_code, 200)
+
+
+class RoleAndSubscriptionPermissionsTests(APITestCase):
+    def setUp(self):
+        self.admin = User.objects.create_user(
+            username="admin_test@stora.app",
+            email="admin_test@stora.app",
+            password="adminpassword123",
+            role="admin",
+        )
+        self.owner = User.objects.create_user(
+            username="owner_test@stora.app",
+            email="owner_test@stora.app",
+            password="ownerpassword123",
+            business_name="Owner Store",
+            role="owner",
+        )
+        self.customer = User.objects.create_user(
+            username="customer_test@stora.app",
+            email="customer_test@stora.app",
+            password="customerpassword123",
+            role="customer",
+        )
+        self.category = Category.objects.create(owner=self.owner, name="Snacks")
+        self.product = Product.objects.create(
+            owner=self.owner,
+            category=self.category,
+            name="Chips",
+            price="1.50",
+            stock=20,
+        )
+
+    def _auth(self, user):
+        token = RefreshToken.for_user(user).access_token
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
+
+    def test_admin_role_attributes_and_staff_access(self):
+        self.assertTrue(self.admin.is_admin_role)
+        self.assertTrue(self.admin.is_staff)
+        self.assertTrue(self.admin.has_full_access)
+        self.assertTrue(self.admin.is_premium_active)
+
+    def test_customer_has_no_subscription_trials(self):
+        self.assertIsNone(self.customer.trial_ends_at)
+        self.assertFalse(self.customer.is_trial_active)
+        self.assertEqual(self.customer.days_left, 0)
+        self.assertTrue(self.customer.has_full_access)
+
+        self._auth(self.customer)
+        res = self.client.get("/api/account/status/")
+        self.assertEqual(res.status_code, 200)
+        self.assertIsNone(res.data["trial_ends_at"])
+        self.assertFalse(res.data["is_premium"])
+
+    def test_customer_catalog_read_allowed_write_denied(self):
+        self._auth(self.customer)
+        # Reading categories and products is allowed
+        cat_res = self.client.get("/api/categories/")
+        self.assertEqual(cat_res.status_code, 200)
+
+        prod_res = self.client.get("/api/products/")
+        self.assertEqual(prod_res.status_code, 200)
+
+        # Creating category is denied for customer
+        create_cat = self.client.post("/api/categories/", {"name": "Hacked Category"})
+        self.assertEqual(create_cat.status_code, 403)
+
+        # Creating product is denied for customer
+        create_prod = self.client.post("/api/products/", {"name": "Hacked Product", "price": "10.00", "stock": 5})
+        self.assertEqual(create_prod.status_code, 403)
+
+    def test_customer_cannot_upload_payment_proof(self):
+        self._auth(self.customer)
+        res = self.client.post("/api/subscription/upload-proof/", {"reference_number": "12345", "amount": "70.00"})
+        self.assertEqual(res.status_code, 403)
+
+    def test_password_reset_request_creates_token_and_sends_mail(self):
+        from django.core import mail
+        res = self.client.post("/api/auth/forgot-password/", {"email": "customer_test@stora.app"})
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue(PasswordResetToken.objects.filter(user=self.customer, used=False).exists())
+        token_obj = PasswordResetToken.objects.filter(user=self.customer, used=False).first()
+        self.assertTrue(token_obj.is_valid())
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn(str(token_obj.token), mail.outbox[0].body)
+
+
+class EmailVerificationTests(APITestCase):
+    def test_registration_creates_verification_code_and_sends_email(self):
+        from django.core import mail
+        mail.outbox.clear()
+        payload = {
+            "email": "newowner@gmail.com",
+            "password": "strongpassword123",
+            "business_name": "New Owner Store",
+            "role": "owner",
+        }
+        res = self.client.post("/api/auth/register/", payload, format="json")
+        self.assertEqual(res.status_code, 201)
+
+        user = User.objects.get(email="newowner@gmail.com")
+        self.assertFalse(user.is_email_verified)
+        self.assertFalse(res.data["user"]["is_email_verified"])
+
+        # Verification code created
+        code_obj = EmailVerificationCode.objects.filter(user=user, used=False).first()
+        self.assertIsNotNone(code_obj)
+        self.assertEqual(len(code_obj.code), 6)
+        self.assertTrue(code_obj.is_valid())
+
+        # Email dispatched
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn(code_obj.code, mail.outbox[0].body)
+        self.assertIn("Verification Code", mail.outbox[0].subject)
+
+    def test_verify_email_with_valid_code_succeeds(self):
+        user = User.objects.create_user(
+            username="verify_test@gmail.com",
+            email="verify_test@gmail.com",
+            password="testpassword123",
+            is_email_verified=False,
+        )
+        code_obj = EmailVerificationCode.generate_code(user)
+
+        res = self.client.post(
+            "/api/auth/verify-email/",
+            {"email": "verify_test@gmail.com", "code": code_obj.code},
+            format="json",
+        )
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue(res.data["user"]["is_email_verified"])
+
+        user.refresh_from_db()
+        self.assertTrue(user.is_email_verified)
+
+        code_obj.refresh_from_db()
+        self.assertTrue(code_obj.used)
+
+    def test_verify_email_with_invalid_code_fails(self):
+        user = User.objects.create_user(
+            username="invalid_test@gmail.com",
+            email="invalid_test@gmail.com",
+            password="testpassword123",
+            is_email_verified=False,
+        )
+        EmailVerificationCode.generate_code(user)
+
+        res = self.client.post(
+            "/api/auth/verify-email/",
+            {"email": "invalid_test@gmail.com", "code": "999999"},
+            format="json",
+        )
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.data["detail"], "Invalid verification code.")
+
+        user.refresh_from_db()
+        self.assertFalse(user.is_email_verified)
+
+    def test_verify_email_with_expired_code_fails(self):
+        user = User.objects.create_user(
+            username="expired_test@gmail.com",
+            email="expired_test@gmail.com",
+            password="testpassword123",
+            is_email_verified=False,
+        )
+        code_obj = EmailVerificationCode.generate_code(user)
+        code_obj.expires_at = timezone.now() - timedelta(minutes=5)
+        code_obj.save()
+
+        res = self.client.post(
+            "/api/auth/verify-email/",
+            {"email": "expired_test@gmail.com", "code": code_obj.code},
+            format="json",
+        )
+        self.assertEqual(res.status_code, 400)
+        self.assertIn("expired", res.data["detail"].lower())
+
+    def test_resend_verification_code_cooldown_and_dispatch(self):
+        from django.core import mail
+        mail.outbox.clear()
+        user = User.objects.create_user(
+            username="resend_test@gmail.com",
+            email="resend_test@gmail.com",
+            password="testpassword123",
+            is_email_verified=False,
+        )
+        first_code = EmailVerificationCode.generate_code(user)
+
+        # Immediate resend should trigger 429 Too Many Requests cooldown
+        cooldown_res = self.client.post(
+            "/api/auth/resend-verification/",
+            {"email": "resend_test@gmail.com"},
+            format="json",
+        )
+        self.assertEqual(cooldown_res.status_code, 429)
+
+        # Push first code timestamp back by 65 seconds
+        first_code.created_at = timezone.now() - timedelta(seconds=65)
+        first_code.save()
+
+        # Resend should now succeed
+        success_res = self.client.post(
+            "/api/auth/resend-verification/",
+            {"email": "resend_test@gmail.com"},
+            format="json",
+        )
+        self.assertEqual(success_res.status_code, 200)
+
+        # Old code marked used/invalidated and new code active
+        first_code.refresh_from_db()
+        self.assertTrue(first_code.used)
+
+        new_code = EmailVerificationCode.objects.filter(user=user, used=False).first()
+        self.assertIsNotNone(new_code)
+        self.assertNotEqual(first_code.code, new_code.code)
+        self.assertEqual(len(mail.outbox), 1)
+
+
 

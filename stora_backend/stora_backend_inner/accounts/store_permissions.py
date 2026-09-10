@@ -32,3 +32,31 @@ def grant_store_permissions(user):
         delattr(user, "_perm_cache")
     if getattr(user, "_user_perm_cache", None) is not None:
         delattr(user, "_user_perm_cache")
+
+
+CUSTOMER_PERMISSION_CODENAMES = (
+    "view_category",
+    "view_product",
+    "add_order",
+    "view_order",
+    "change_order",
+)
+
+
+def customer_permission_queryset():
+    return Permission.objects.filter(
+        codename__in=CUSTOMER_PERMISSION_CODENAMES,
+        content_type__app_label__in=("inventory", "orders"),
+    )
+
+
+def grant_customer_permissions(user):
+    """Give a customer the model perms for viewing catalog and ordering."""
+    perms = list(customer_permission_queryset())
+    if perms:
+        user.user_permissions.add(*perms)
+    if getattr(user, "_perm_cache", None) is not None:
+        delattr(user, "_perm_cache")
+    if getattr(user, "_user_perm_cache", None) is not None:
+        delattr(user, "_user_perm_cache")
+

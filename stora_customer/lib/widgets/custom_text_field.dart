@@ -75,6 +75,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
                       color: AppColors.textMuted,
                       size: 20,
                     ),
+                    tooltip: _obscureText ? 'Show password' : 'Hide password',
                     onPressed: () => setState(() => _obscureText = !_obscureText),
                   )
                 : widget.suffix,

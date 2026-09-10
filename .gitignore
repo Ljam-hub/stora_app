@@ -59,6 +59,7 @@ coverage/
 
 # Android
 **/android/.gradle/
+**/android/.kotlin/
 **/android/local.properties
 **/android/app/debug
 **/android/app/profile

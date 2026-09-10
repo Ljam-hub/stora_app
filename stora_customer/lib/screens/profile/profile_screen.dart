@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
 import '../../theme/theme_controller.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../widgets/gradient_button.dart';
+import '../auth/email_verification_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -145,6 +147,139 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  void _openChangePasswordDialog() {
+    final oldPasswordController = TextEditingController();
+    final newPasswordController = TextEditingController();
+    final confirmPasswordController = TextEditingController();
+    bool isSaving = false;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: AppColors.cardBackground,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: const BorderSide(color: AppColors.cardBorder),
+          ),
+          title: const Text('Change Password', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CustomTextField(
+                  controller: oldPasswordController,
+                  label: 'Current Password',
+                  hint: '••••••••',
+                  prefixIcon: Icons.lock_outline,
+                  isPassword: true,
+                ),
+                const SizedBox(height: 14),
+                CustomTextField(
+                  controller: newPasswordController,
+                  label: 'New Password',
+                  hint: 'At least 8 characters',
+                  prefixIcon: Icons.lock_outline,
+                  isPassword: true,
+                ),
+                const SizedBox(height: 14),
+                CustomTextField(
+                  controller: confirmPasswordController,
+                  label: 'Confirm New Password',
+                  hint: 'Repeat new password',
+                  prefixIcon: Icons.lock_reset_outlined,
+                  isPassword: true,
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: isSaving ? null : () => Navigator.pop(ctx),
+              child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+            ),
+            ElevatedButton(
+              onPressed: isSaving
+                  ? null
+                  : () async {
+                      final oldPass = oldPasswordController.text;
+                      final newPass = newPasswordController.text;
+                      final confirmPass = confirmPasswordController.text;
+
+                      if (oldPass.isEmpty || newPass.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Please fill in all password fields.'),
+                            backgroundColor: AppColors.danger,
+                          ),
+                        );
+                        return;
+                      }
+
+                      if (newPass.length < 8) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('New password must be at least 8 characters.'),
+                            backgroundColor: AppColors.danger,
+                          ),
+                        );
+                        return;
+                      }
+
+                      if (newPass != confirmPass) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('New passwords do not match.'),
+                            backgroundColor: AppColors.danger,
+                          ),
+                        );
+                        return;
+                      }
+
+                      setDialogState(() => isSaving = true);
+                      final messenger = ScaffoldMessenger.of(context);
+                      final nav = Navigator.of(ctx);
+
+                      try {
+                        await CustomerApiService.instance.changePassword(
+                          oldPassword: oldPass,
+                          newPassword: newPass,
+                        );
+                        nav.pop();
+                        messenger.showSnackBar(
+                          const SnackBar(
+                            content: Text('Password changed successfully!'),
+                            backgroundColor: AppColors.successBg,
+                          ),
+                        );
+                      } catch (e) {
+                        setDialogState(() => isSaving = false);
+                        messenger.showSnackBar(
+                          SnackBar(
+                            content: Text(e.toString().replaceAll('Exception: ', '')),
+                            backgroundColor: AppColors.danger,
+                          ),
+                        );
+                      }
+                    },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.black,
+              ),
+              child: isSaving
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
+                    )
+                  : const Text('Update Password'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _handleLogout() {
     showDialog(
       context: context,
@@ -244,20 +379,76 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                         ),
                         const SizedBox(height: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: const Text(
-                            'Customer Account',
-                            style: TextStyle(
-                              color: AppColors.primaryLight,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 4,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: const Text(
+                                'Customer Account',
+                                style: TextStyle(
+                                  color: AppColors.primaryLight,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                             ),
-                          ),
+                            if (user?.isEmailVerified == true)
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: const [
+                                  Icon(Icons.verified_rounded, color: AppColors.secondaryLight, size: 14),
+                                  SizedBox(width: 2),
+                                  Text(
+                                    'Verified',
+                                    style: TextStyle(
+                                      color: AppColors.secondaryLight,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              )
+                            else
+                              InkWell(
+                                onTap: () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => EmailVerificationScreen(email: user?.email ?? ''),
+                                    ),
+                                  );
+                                },
+                                borderRadius: BorderRadius.circular(6),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.warning.withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: const [
+                                      Icon(Icons.warning_amber_rounded, color: AppColors.warning, size: 12),
+                                      SizedBox(width: 2),
+                                      Text(
+                                        'Verify',
+                                        style: TextStyle(
+                                          color: AppColors.warning,
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
                       ],
                     ),
@@ -400,8 +591,67 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
 
-            const SizedBox(height: 28),
+            const SizedBox(height: 16),
 
+            // Change Password Tile
+            InkWell(
+              onTap: _openChangePasswordDialog,
+              borderRadius: BorderRadius.circular(16),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).cardColor,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.cardBorder),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(
+                        Icons.shield_outlined,
+                        color: AppColors.primary,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Account Security',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                            ),
+                          ),
+                          SizedBox(height: 2),
+                          Text(
+                            'Change your account password',
+                            style: TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(
+                      Icons.chevron_right_rounded,
+                      color: AppColors.textMuted,
+                      size: 22,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 28),
 
             // Logout Button
             GradientButton(

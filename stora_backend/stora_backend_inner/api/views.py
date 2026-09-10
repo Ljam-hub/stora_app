@@ -1,3 +1,4 @@
+import logging
 from django.db import transaction
 from rest_framework import status, viewsets
 from rest_framework.decorators import action, api_view, parser_classes, permission_classes
@@ -15,7 +16,10 @@ from django.core.mail import send_mail
 from datetime import timedelta
 import math
 from django.utils import timezone
-from accounts.models import AIInsight, PasswordResetToken, PaymentProof, StoreLocation, SubscriptionConfig, User
+
+logger = logging.getLogger(__name__)
+
+from accounts.models import AIInsight, EmailVerificationCode, PasswordResetToken, PaymentProof, StoreLocation, SubscriptionConfig, User
 from inventory.models import MAX_STOCK, Category, Product
 from orders.models import Order, OrderItem
 from sales.models import Sale
@@ -37,12 +41,14 @@ from .serializers import (
     PaymentProofUploadSerializer,
     ProductSerializer,
     RegisterSerializer,
+    ResendVerificationSerializer,
     ResetPasswordSerializer,
     SaleSerializer,
     StoreLocationSerializer,
     SubscriptionConfigSerializer,
     UserSerializer,
     UserUpdateSerializer,
+    VerifyEmailSerializer,
 )
 
 
@@ -52,11 +58,66 @@ def _tokens_for(user):
     refresh["role"] = getattr(user, "role", "owner")
     refresh["email"] = user.email
     refresh["business_name"] = getattr(user, "business_name", "")
+    refresh["is_email_verified"] = getattr(user, "is_email_verified", False)
     return {
         "access": str(refresh.access_token),
         "refresh": str(refresh),
         "user": UserSerializer(user).data,
     }
+
+
+def send_verification_email(user, code_obj):
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <body style="font-family: Arial, sans-serif; background-color: #141018; color: #FFFFFF; padding: 24px;">
+      <div style="max-width: 480px; margin: 0 auto; background-color: #1F1A28; border-radius: 16px; padding: 28px; border: 1px solid #332A40;">
+        <div style="text-align: center; margin-bottom: 20px;">
+          <h1 style="color: #FFFFFF; font-size: 24px; font-weight: 800; margin: 0;">STORA.</h1>
+          <p style="color: #9B87F5; font-size: 13px; margin: 4px 0 0 0;">Verify your email address</p>
+        </div>
+        <h2 style="color: #FFFFFF; font-size: 18px;">Welcome to STORA!</h2>
+        <p style="color: #8E8798; font-size: 14px; line-height: 1.5;">
+          Thank you for signing up. Please enter the 6-digit verification code below in the app to confirm your account (<strong>{user.email}</strong>):
+        </p>
+        <div style="text-align: center; margin: 24px 0;">
+          <div style="display: inline-block; background-color: #141018; border: 2px solid #9B87F5; border-radius: 12px; padding: 14px 28px;">
+            <span style="font-size: 32px; font-weight: 800; letter-spacing: 6px; color: #B9A9FF;">{code_obj.code}</span>
+          </div>
+        </div>
+        <p style="color: #8E8798; font-size: 13px;">
+          This code will expire in <strong>15 minutes</strong>. If you didn't request this, please disregard this email.
+        </p>
+        <hr style="border: 0; border-top: 1px solid #332A40; margin: 20px 0;" />
+        <p style="color: #6E6678; font-size: 12px; text-align: center; margin: 0;">
+          &copy; STORA. All rights reserved.
+        </p>
+      </div>
+    </body>
+    </html>
+    """
+    from_email = django_settings.DEFAULT_FROM_EMAIL or getattr(django_settings, "EMAIL_HOST_USER", None) or "STORA <noreply@stora.app>"
+    try:
+        send_mail(
+            subject="STORA — Your Verification Code",
+            message=(
+                f"Hello,\n\n"
+                f"Thank you for signing up for STORA!\n\n"
+                f"Your 6-digit verification code is: {code_obj.code}\n\n"
+                f"This code will expire in 15 minutes.\n\n"
+                f"— The STORA Team"
+            ),
+            from_email=from_email,
+            recipient_list=[user.email],
+            html_message=html_content,
+            fail_silently=False,
+        )
+        logger.info("Verification code email dispatched successfully to %s", user.email)
+        return True
+    except Exception as mail_err:
+        logger.error("Failed to send verification code email to %s: %s", user.email, mail_err)
+        return False
+
 
 @api_view(["GET"])
 @permission_classes([AllowAny])
@@ -71,7 +132,90 @@ def register(request):
     serializer.is_valid(raise_exception=True)
     user = serializer.save()
     update_last_login(None, user)
-    return Response(_tokens_for(user), status=status.HTTP_201_CREATED)
+
+    # Generate verification code and dispatch email
+    code_obj = EmailVerificationCode.generate_code(user)
+    send_verification_email(user, code_obj)
+
+    data = _tokens_for(user)
+    data["message"] = "Account created. Please check your email for the verification code."
+    return Response(data, status=status.HTTP_201_CREATED)
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def verify_email(request):
+    serializer = VerifyEmailSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    email = serializer.validated_data["email"].strip().lower()
+    code = serializer.validated_data["code"].strip()
+
+    try:
+        user = User.objects.get(email__iexact=email)
+    except User.DoesNotExist:
+        return Response({"detail": "Account not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    if user.is_email_verified:
+        return Response({
+            "detail": "Email is already verified.",
+            "user": UserSerializer(user).data,
+        })
+
+    verification = EmailVerificationCode.objects.filter(
+        user=user,
+        code=code,
+        used=False,
+    ).first()
+
+    if not verification:
+        return Response({"detail": "Invalid verification code."}, status=status.HTTP_400_BAD_REQUEST)
+
+    if not verification.is_valid():
+        return Response({"detail": "Verification code has expired. Please request a new one."}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Mark verified
+    verification.used = True
+    verification.save(update_fields=["used"])
+
+    user.is_email_verified = True
+    user.save(update_fields=["is_email_verified"])
+
+    res_data = _tokens_for(user)
+    res_data["detail"] = "Email verified successfully."
+    return Response(res_data, status=status.HTTP_200_OK)
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def resend_verification_code(request):
+    serializer = ResendVerificationSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    email = serializer.validated_data["email"].strip().lower()
+
+    try:
+        user = User.objects.get(email__iexact=email)
+    except User.DoesNotExist:
+        return Response({"detail": "If that email exists in our system, a verification code has been sent."})
+
+    if user.is_email_verified:
+        return Response({"detail": "Email is already verified."}, status=status.HTTP_200_OK)
+
+    # Rate limiting: 60-second cooldown
+    recent_code = EmailVerificationCode.objects.filter(
+        user=user,
+        created_at__gte=timezone.now() - timedelta(seconds=60),
+    ).first()
+    if recent_code:
+        wait_seconds = max(1, 60 - int((timezone.now() - recent_code.created_at).total_seconds()))
+        return Response(
+            {"detail": f"Please wait {wait_seconds} seconds before requesting another code."},
+            status=status.HTTP_429_TOO_MANY_REQUESTS,
+        )
+
+    code_obj = EmailVerificationCode.generate_code(user)
+    send_verification_email(user, code_obj)
+
+    return Response({"detail": "A fresh verification code has been sent to your email."})
 
 
 @api_view(["POST"])
@@ -123,6 +267,53 @@ def barcode_lookup(request, code):
 @permission_classes([IsAuthenticated])
 def account_status(request):
     user = request.user
+    config = SubscriptionConfig.get_config()
+    qr_code_url = None
+    if config.qr_code:
+        try:
+            qr_code_url = request.build_absolute_uri(config.qr_code.url)
+        except Exception:
+            qr_code_url = config.qr_code.url
+
+    # Customers do not have subscription trials or product limits
+    if getattr(user, "role", "owner") == "customer":
+        data = {
+            "is_premium": False,
+            "premium_until": None,
+            "trial_started_at": user.date_joined,
+            "trial_ends_at": None,
+            "product_count": 0,
+            "product_limit": None,
+            "days_left": 0,
+            "can_add_product": False,
+            "monthly_price": config.monthly_price,
+            "gcash_number": config.gcash_number,
+            "gcash_name": config.gcash_name,
+            "qr_code": qr_code_url,
+            "latest_payment_proof": None,
+        }
+        return Response(AccountStatusSerializer(data).data)
+
+    # Admin users have full system access
+    if getattr(user, "role", "owner") == "admin" or user.is_superuser:
+        data = {
+            "is_premium": True,
+            "premium_until": None,
+            "trial_started_at": user.date_joined,
+            "trial_ends_at": None,
+            "product_count": Product.objects.count(),
+            "product_limit": None,
+            "days_left": 9999,
+            "can_add_product": True,
+            "monthly_price": config.monthly_price,
+            "gcash_number": config.gcash_number,
+            "gcash_name": config.gcash_name,
+            "qr_code": qr_code_url,
+            "latest_payment_proof": None,
+        }
+        return Response(AccountStatusSerializer(data).data)
+
+    # Store Owners have 14-day trials or premium subscriptions
     product_count = Product.objects.filter(owner=user).count()
     free_limit = django_settings.FREE_PLAN_PRODUCT_LIMIT
     limit = None if user.is_premium_active else free_limit
@@ -131,21 +322,13 @@ def account_status(request):
         days_left = (user.premium_until - timezone.now()).days if user.premium_until else 0
         can_add = True
     elif user.is_trial_active:
-        days_left = (trial_ends - timezone.now()).days
+        days_left = (trial_ends - timezone.now()).days if trial_ends else 0
         can_add = product_count < free_limit
     else:
         days_left = 0
         can_add = False
 
-    config = SubscriptionConfig.get_config()
     latest_proof = user.payment_proofs.first()
-    qr_code_url = None
-    if config.qr_code:
-        try:
-            qr_code_url = request.build_absolute_uri(config.qr_code.url)
-        except Exception:
-            qr_code_url = config.qr_code.url
-
     data = {
         "is_premium": user.is_premium_active,
         "premium_until": user.premium_until,
@@ -175,7 +358,10 @@ def subscription_config(request):
 @permission_classes([IsAuthenticated])
 @parser_classes([MultiPartParser, FormParser])
 def upload_payment_proof(request):
+    if getattr(request.user, "role", "owner") != "owner":
+        raise PermissionDenied("Only store owners can submit subscription payment proofs.")
     serializer = PaymentProofUploadSerializer(data=request.data)
+
     serializer.is_valid(raise_exception=True)
     proof = PaymentProof.objects.create(
         user=request.user,
@@ -252,23 +438,28 @@ def forgot_password_request(request):
         </html>
         """
 
-        send_mail(
-            subject="STORA — Password Reset Code",
-            message=(
-                f"Hello,\n\n"
-                f"We received a request to reset your password for your STORA account ({user.email}).\n\n"
-                f"Your reset code is: {token_obj.token}\n\n"
-                f"This code will expire in 1 hour.\n\n"
-                f"If you didn't request this, you can safely ignore this email.\n\n"
-                f"— The STORA Team"
-            ),
-            from_email=django_settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[user.email],
-            html_message=html_content,
-            fail_silently=True,
-        )
+        from_email = django_settings.DEFAULT_FROM_EMAIL or getattr(django_settings, "EMAIL_HOST_USER", None) or "STORA <noreply@stora.app>"
+        try:
+            send_mail(
+                subject="STORA — Password Reset Code",
+                message=(
+                    f"Hello,\n\n"
+                    f"We received a request to reset your password for your STORA account ({user.email}).\n\n"
+                    f"Your reset code is: {token_obj.token}\n\n"
+                    f"This code will expire in 1 hour.\n\n"
+                    f"If you didn't request this, you can safely ignore this email.\n\n"
+                    f"— The STORA Team"
+                ),
+                from_email=from_email,
+                recipient_list=[user.email],
+                html_message=html_content,
+                fail_silently=False,
+            )
+            logger.info("Password reset token dispatched successfully to %s", user.email)
+        except Exception as mail_err:
+            logger.error("Failed to send password reset email to %s: %s", user.email, mail_err)
     except User.DoesNotExist:
-        pass
+        logger.info("Forgot password requested for non-existent email: %s", email)
     return Response({"detail": "If that email is registered, a reset code has been sent."})
 
 
@@ -297,6 +488,8 @@ def forgot_password_confirm(request):
 class OwnerQuerysetMixin:
     def get_queryset(self):
         user = self.request.user
+        if getattr(user, "role", "owner") == "admin" or user.is_superuser:
+            return super().get_queryset().all()
         if getattr(user, "role", "owner") == "customer":
             owner_id = self.request.query_params.get("owner") or self.request.query_params.get("store")
             if owner_id:
@@ -313,6 +506,8 @@ class CategoryViewSet(OwnerQuerysetMixin, viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
+        if getattr(user, "role", "owner") == "admin" or user.is_superuser:
+            return super().get_queryset().all()
         if getattr(user, "role", "owner") == "customer":
             owner_id = self.request.query_params.get("owner") or self.request.query_params.get("store")
             qs = Category.objects.filter(is_archived=False, is_hidden=False)
@@ -322,7 +517,10 @@ class CategoryViewSet(OwnerQuerysetMixin, viewsets.ModelViewSet):
         return super().get_queryset().filter(is_archived=False)
 
     def perform_create(self, serializer):
-        serializer.save(owner=self.request.user)
+        user = self.request.user
+        if getattr(user, "role", "owner") == "customer":
+            raise PermissionDenied("Customer accounts cannot create categories.")
+        serializer.save(owner=user)
 
     def perform_destroy(self, instance):
         if instance.products.exists():
@@ -341,7 +539,9 @@ class ProductViewSet(OwnerQuerysetMixin, viewsets.ModelViewSet):
     def get_queryset(self):
         qs = super().get_queryset().select_related("category", "owner").order_by("created_at", "id")
         user = self.request.user
-        if getattr(user, "role", "owner") != "customer":
+        if getattr(user, "role", "owner") == "admin" or user.is_superuser:
+            return qs
+        if getattr(user, "role", "owner") == "owner":
             if not user.is_premium_active:
                 free_limit = django_settings.FREE_PLAN_PRODUCT_LIMIT
                 # Use a subquery so the result is still a filterable queryset
@@ -352,6 +552,11 @@ class ProductViewSet(OwnerQuerysetMixin, viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         user = self.request.user
+        if getattr(user, "role", "owner") == "customer":
+            raise PermissionDenied("Customer accounts cannot create products.")
+        if getattr(user, "role", "owner") == "admin" or user.is_superuser:
+            serializer.save(owner=user)
+            return
         free_limit = django_settings.FREE_PLAN_PRODUCT_LIMIT
         if not user.is_premium_active:
             if not user.is_trial_active:
@@ -364,6 +569,7 @@ class ProductViewSet(OwnerQuerysetMixin, viewsets.ModelViewSet):
                     f"Free plan limit reached ({free_limit} products). Please upgrade to premium."
                 )
         serializer.save(owner=user)
+
 
     @action(detail=True, methods=["patch"])
     def adjust_stock(self, request, pk=None):
@@ -416,7 +622,9 @@ class OrderViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        if getattr(user, "role", "owner") == "owner":
+        if getattr(user, "role", "owner") == "admin" or user.is_superuser:
+            return Order.objects.all().prefetch_related("items")
+        elif getattr(user, "role", "owner") == "owner":
             return Order.objects.filter(owner=user).prefetch_related("items")
         else:
             return Order.objects.filter(customer=user).prefetch_related("items")

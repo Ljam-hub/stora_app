@@ -13,6 +13,7 @@ import '../../subscription/subscription_screen.dart';
 import '../../subscription/subscription_status_screen.dart';
 import '../../subscription/subscription_status.dart';
 import '../theme/theme_mode_controller.dart';
+import '../../stora_login/screens/email_verification_screen.dart';
 
 // ---------------------------------------------------------------------
 // Profile — store header (name, owner, plan pill) plus a settings
@@ -120,6 +121,9 @@ class ProfileScreen extends StatelessWidget {
     final newPasswordController = TextEditingController();
     final confirmPasswordController = TextEditingController();
     bool isSaving = false;
+    bool obscureOld = true;
+    bool obscureNew = true;
+    bool obscureConfirm = true;
 
     showDialog(
       context: context,
@@ -134,7 +138,7 @@ class ProfileScreen extends StatelessWidget {
               children: [
                 TextField(
                   controller: oldPasswordController,
-                  obscureText: true,
+                  obscureText: obscureOld,
                   style: const TextStyle(color: Colors.white),
                   decoration: InputDecoration(
                     labelText: 'Current Password',
@@ -142,12 +146,21 @@ class ProfileScreen extends StatelessWidget {
                     filled: true,
                     fillColor: AppColors.fieldBackground,
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        obscureOld ? Icons.visibility_rounded : Icons.visibility_off_rounded,
+                        color: AppColors.label,
+                        size: 20,
+                      ),
+                      tooltip: obscureOld ? 'Show password' : 'Hide password',
+                      onPressed: () => setDialogState(() => obscureOld = !obscureOld),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 14),
                 TextField(
                   controller: newPasswordController,
-                  obscureText: true,
+                  obscureText: obscureNew,
                   style: const TextStyle(color: Colors.white),
                   decoration: InputDecoration(
                     labelText: 'New Password',
@@ -155,12 +168,21 @@ class ProfileScreen extends StatelessWidget {
                     filled: true,
                     fillColor: AppColors.fieldBackground,
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        obscureNew ? Icons.visibility_rounded : Icons.visibility_off_rounded,
+                        color: AppColors.label,
+                        size: 20,
+                      ),
+                      tooltip: obscureNew ? 'Show password' : 'Hide password',
+                      onPressed: () => setDialogState(() => obscureNew = !obscureNew),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 14),
                 TextField(
                   controller: confirmPasswordController,
-                  obscureText: true,
+                  obscureText: obscureConfirm,
                   style: const TextStyle(color: Colors.white),
                   decoration: InputDecoration(
                     labelText: 'Confirm New Password',
@@ -168,6 +190,15 @@ class ProfileScreen extends StatelessWidget {
                     filled: true,
                     fillColor: AppColors.fieldBackground,
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        obscureConfirm ? Icons.visibility_rounded : Icons.visibility_off_rounded,
+                        color: AppColors.label,
+                        size: 20,
+                      ),
+                      tooltip: obscureConfirm ? 'Show password' : 'Hide password',
+                      onPressed: () => setDialogState(() => obscureConfirm = !obscureConfirm),
+                    ),
                   ),
                 ),
               ],
@@ -312,6 +343,57 @@ class ProfileScreen extends StatelessWidget {
                               style: const TextStyle(color: Colors.white, fontSize: 19, fontWeight: FontWeight.w800)),
                           const SizedBox(height: 4),
                           Text(ownerEmail, style: const TextStyle(color: AppColors.label, fontSize: 13)),
+                          const SizedBox(height: 8),
+                          if (AuthStore.instance.isEmailVerified)
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: const [
+                                Icon(Icons.verified_rounded, color: AppColors.secondaryLight, size: 14),
+                                SizedBox(width: 4),
+                                Text(
+                                  'Email Verified',
+                                  style: TextStyle(
+                                    color: AppColors.secondaryLight,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            )
+                          else
+                            InkWell(
+                              onTap: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => EmailVerificationScreen(email: ownerEmail),
+                                  ),
+                                );
+                              },
+                              borderRadius: BorderRadius.circular(8),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: AppColors.warningAmber.withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: AppColors.warningAmber.withValues(alpha: 0.4)),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: const [
+                                    Icon(Icons.warning_amber_rounded, color: AppColors.warningAmber, size: 14),
+                                    SizedBox(width: 4),
+                                    Text(
+                                      'Verify Email',
+                                      style: TextStyle(
+                                        color: AppColors.warningAmber,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
                           const SizedBox(height: 12),
                           StatusChip(label: planLabel, color: planColor, background: planBg),
                         ],

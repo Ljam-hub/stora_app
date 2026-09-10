@@ -23,12 +23,14 @@ class AuthResult {
     required this.refreshToken,
     required this.email,
     required this.businessName,
+    this.isEmailVerified = false,
   });
 
   final String accessToken;
   final String refreshToken;
   final String email;
   final String businessName;
+  final bool isEmailVerified;
 }
 
 class ApiClient {
@@ -208,6 +210,37 @@ class ApiClient {
     return _parseAuth(response);
   }
 
+  Future<AuthResult> verifyEmail({
+    required String email,
+    required String code,
+  }) async {
+    final response = await _send(
+      'POST',
+      '/auth/verify-email/',
+      auth: false,
+      body: {
+        'email': email.trim(),
+        'code': code.trim(),
+      },
+    );
+    if (response.statusCode != 200) _throw(response);
+    return _parseAuth(response);
+  }
+
+  Future<void> resendVerification({
+    required String email,
+  }) async {
+    final response = await _send(
+      'POST',
+      '/auth/resend-verification/',
+      auth: false,
+      body: {
+        'email': email.trim(),
+      },
+    );
+    if (response.statusCode != 200) _throw(response);
+  }
+
   AuthResult _parseAuth(http.Response response) {
     final data = _decode(response) as Map<String, dynamic>;
     final user = data['user'] as Map<String, dynamic>? ?? {};
@@ -216,6 +249,7 @@ class ApiClient {
       refreshToken: data['refresh'] as String,
       email: (user['email'] as String?) ?? '',
       businessName: (user['business_name'] as String?) ?? '',
+      isEmailVerified: user['is_email_verified'] == true,
     );
   }
 

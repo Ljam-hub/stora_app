@@ -1,12 +1,49 @@
-from rest_framework.permissions import DjangoModelPermissions
+from rest_framework import permissions
+from rest_framework.permissions import DjangoModelPermissions, SAFE_METHODS
+
+
+class IsAdminRole(permissions.BasePermission):
+    """Allows access only to users with an administrator role."""
+    message = "Administrator access required."
+
+    def has_permission(self, request, view):
+        return bool(
+            request.user
+            and request.user.is_authenticated
+            and (getattr(request.user, "role", None) == "admin" or request.user.is_superuser or request.user.is_staff)
+        )
+
+
+class IsOwnerRole(permissions.BasePermission):
+    """Allows access only to store owners."""
+    message = "Store owner access required."
+
+    def has_permission(self, request, view):
+        return bool(
+            request.user
+            and request.user.is_authenticated
+            and getattr(request.user, "role", None) == "owner"
+        )
+
+
+class IsCustomerRole(permissions.BasePermission):
+    """Allows access only to customers."""
+    message = "Customer account access required."
+
+    def has_permission(self, request, view):
+        return bool(
+            request.user
+            and request.user.is_authenticated
+            and getattr(request.user, "role", None) == "customer"
+        )
 
 
 class HasAssignedModelPermission(DjangoModelPermissions):
     """Require the matching Django model permission for each HTTP method.
 
-    DjangoModelPermissions leaves GET/HEAD/OPTIONS with an empty perm list,
-    so a user with every permission removed could still list and retrieve.
-    Superusers continue to pass via User.has_perm.
+    Admin users have full access across all methods.
+    Customers are restricted to safe read-only methods (GET, HEAD, OPTIONS)
+    on catalog viewsets and are denied on destructive/management actions.
     """
 
     message = "You do not have permission to perform this action."
@@ -25,8 +62,24 @@ class HasAssignedModelPermission(DjangoModelPermissions):
         user = request.user
         if not user or not user.is_authenticated:
             return False
+
+        # Admins and superusers bypass granular model permission checks
+        if getattr(user, "role", None) == "admin" or user.is_superuser:
+            return True
+
+        # Customers can view catalog if safe read method, but are strictly blocked from writing
+        if getattr(user, "role", None) == "customer":
+            if request.method in SAFE_METHODS:
+                if getattr(user, "_perm_cache", None) is not None:
+                    delattr(user, "_perm_cache")
+                if getattr(user, "_user_perm_cache", None) is not None:
+                    delattr(user, "_user_perm_cache")
+                return super().has_permission(request, view)
+            return False
+
         if getattr(user, "_perm_cache", None) is not None:
             delattr(user, "_perm_cache")
         if getattr(user, "_user_perm_cache", None) is not None:
             delattr(user, "_user_perm_cache")
         return super().has_permission(request, view)
+
