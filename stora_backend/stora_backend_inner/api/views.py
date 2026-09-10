@@ -24,7 +24,9 @@ from inventory.models import MAX_STOCK, Category, Product
 from orders.models import Order, OrderItem
 from sales.models import Sale
 
-from .fcm import notify_order_status_change
+import sys
+import threading
+from .fcm import notify_admin, notify_order_status_change
 from .serializers import (
     AccountStatusSerializer,
     AIInsightSerializer,
@@ -120,6 +122,21 @@ def send_verification_email(user, code_obj):
         return False
 
 
+def dispatch_email_async(func, *args, **kwargs):
+    """
+    Executes email sending asynchronously in a background daemon thread in production
+    and development, allowing the HTTP response to return instantly to the mobile client (<100ms).
+    Executes synchronously in automated unit tests so assertions on django.core.mail.outbox remain deterministic.
+    """
+    backend = getattr(django_settings, "EMAIL_BACKEND", "")
+    if "locmem" in backend or "test" in sys.argv:
+        func(*args, **kwargs)
+        return None
+    thread = threading.Thread(target=func, args=args, kwargs=kwargs, daemon=True)
+    thread.start()
+    return thread
+
+
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def health_check(request):
@@ -145,9 +162,18 @@ def register(request):
     user = serializer.save()
     update_last_login(None, user)
 
-    # Generate verification code and dispatch email to verify real inbox ownership
+    # Generate verification code and dispatch email asynchronously so request never hangs
     code_obj = EmailVerificationCode.generate_code(user)
-    send_verification_email(user, code_obj)
+    dispatch_email_async(send_verification_email, user, code_obj)
+
+    # Notify admin of new account registration
+    user_type = "Store Owner" if getattr(user, "role", "") == "owner" else "Customer"
+    identifier = user.business_name or user.email
+    notify_admin(
+        title=f"New {user_type} Registered 👤",
+        body=f"{identifier} ({user.email}) just created an account.",
+        data={"user_id": str(user.id), "role": getattr(user, "role", ""), "action": "user_registered"},
+    )
 
     data = _tokens_for(user)
     data["message"] = "Account created. Please check your email for the verification code."
@@ -225,7 +251,7 @@ def resend_verification_code(request):
         )
 
     code_obj = EmailVerificationCode.generate_code(user)
-    send_verification_email(user, code_obj)
+    dispatch_email_async(send_verification_email, user, code_obj)
 
     return Response({"detail": "A fresh verification code has been sent to your email."})
 
@@ -383,26 +409,39 @@ def upload_payment_proof(request):
         status=PaymentProof.STATUS_PENDING,
     )
 
-    # Trigger backend notification to admin
-    admin_recipient = django_settings.DEFAULT_FROM_EMAIL or django_settings.EMAIL_HOST_USER
+    # Trigger push notification to all administrator devices
+    notify_admin(
+        title="New Payment Proof Submitted 💳",
+        body=f"₱{proof.amount:.2f} (Ref: {proof.reference_number}) from {request.user.business_name or request.user.email}",
+        data={"proof_id": str(proof.id), "action": "payment_proof_submitted", "user_id": str(request.user.id)},
+    )
+
+    # Trigger backend notification email to admin asynchronously
+    admin_recipient = getattr(django_settings, "DEFAULT_FROM_EMAIL", None) or getattr(django_settings, "EMAIL_HOST_USER", None)
     if admin_recipient:
-        send_mail(
-            subject=f"[STORA ADMIN] New Account Request: Payment Proof from {request.user.email}",
-            message=(
-                f"Hello Admin,\n\n"
-                f"A user has submitted a GCash subscription payment proof for account verification.\n\n"
-                f"User: {request.user.email} ({request.user.business_name})\n"
-                f"Reference Number: {proof.reference_number}\n"
-                f"Amount: ₱{proof.amount:.2f}\n"
-                f"Submitted At: {proof.submitted_at.strftime('%Y-%m-%d %H:%M:%S')}\n\n"
-                f"Please review and approve this request in the Stora Admin dashboard:\n"
-                f"/admin/accounts/paymentproof/\n\n"
-                f"— STORA Automated Notification"
-            ),
-            from_email=django_settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[admin_recipient],
-            fail_silently=True,
-        )
+        def _send_admin_payment_proof_email():
+            try:
+                send_mail(
+                    subject=f"[STORA ADMIN] New Account Request: Payment Proof from {request.user.email}",
+                    message=(
+                        f"Hello Admin,\n\n"
+                        f"A user has submitted a GCash subscription payment proof for account verification.\n\n"
+                        f"User: {request.user.email} ({request.user.business_name})\n"
+                        f"Reference Number: {proof.reference_number}\n"
+                        f"Amount: ₱{proof.amount:.2f}\n"
+                        f"Submitted At: {proof.submitted_at.strftime('%Y-%m-%d %H:%M:%S')}\n\n"
+                        f"Please review and approve this request in the Stora Admin dashboard:\n"
+                        f"/admin/accounts/paymentproof/\n\n"
+                        f"— STORA Automated Notification"
+                    ),
+                    from_email=django_settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[admin_recipient],
+                    fail_silently=True,
+                )
+            except Exception as e:
+                logger.warning("Failed to send admin payment notification email: %s", e)
+
+        dispatch_email_async(_send_admin_payment_proof_email)
 
     return Response(PaymentProofSerializer(proof).data, status=status.HTTP_201_CREATED)
 
@@ -451,25 +490,28 @@ def forgot_password_request(request):
         """
 
         from_email = django_settings.DEFAULT_FROM_EMAIL or getattr(django_settings, "EMAIL_HOST_USER", None) or "STORA <noreply@stora.app>"
-        try:
-            send_mail(
-                subject="STORA — Password Reset Code",
-                message=(
-                    f"Hello,\n\n"
-                    f"We received a request to reset your password for your STORA account ({user.email}).\n\n"
-                    f"Your reset code is: {token_obj.token}\n\n"
-                    f"This code will expire in 1 hour.\n\n"
-                    f"If you didn't request this, you can safely ignore this email.\n\n"
-                    f"— The STORA Team"
-                ),
-                from_email=from_email,
-                recipient_list=[user.email],
-                html_message=html_content,
-                fail_silently=False,
-            )
-            logger.info("Password reset token dispatched successfully to %s", user.email)
-        except Exception as mail_err:
-            logger.error("Failed to send password reset email to %s: %s", user.email, mail_err)
+        def _send_reset_email():
+            try:
+                send_mail(
+                    subject="STORA — Password Reset Code",
+                    message=(
+                        f"Hello,\n\n"
+                        f"We received a request to reset your password for your STORA account ({user.email}).\n\n"
+                        f"Your reset code is: {token_obj.token}\n\n"
+                        f"This code will expire in 1 hour.\n\n"
+                        f"If you didn't request this, you can safely ignore this email.\n\n"
+                        f"— The STORA Team"
+                    ),
+                    from_email=from_email,
+                    recipient_list=[user.email],
+                    html_message=html_content,
+                    fail_silently=False,
+                )
+                logger.info("Password reset token dispatched successfully to %s", user.email)
+            except Exception as mail_err:
+                logger.error("Failed to send password reset email to %s: %s", user.email, mail_err)
+
+        dispatch_email_async(_send_reset_email)
     except User.DoesNotExist:
         logger.info("Forgot password requested for non-existent email: %s", email)
     return Response({"detail": "If that email is registered, a reset code has been sent."})

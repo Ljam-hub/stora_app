@@ -811,6 +811,47 @@ class GmailCanonicalizationTests(APITestCase):
         self.assertEqual(user.email, "john.doe@yahoo.com")
 
 
+class AdminColumnsAndNotificationsTests(APITestCase):
+    def test_admin_columns_distinguish_business_and_customer_names(self):
+        from accounts.admin import UserAdmin
+        from stora_backend.admin_site import stora_admin_site
+
+        owner = User.objects.create_user(
+            username="owner_col@gmail.com",
+            email="owner_col@gmail.com",
+            password="pass",
+            role="owner",
+            business_name="Aling Nena Store",
+        )
+        customer = User.objects.create_user(
+            username="cust_col@gmail.com",
+            email="cust_col@gmail.com",
+            password="pass",
+            role="customer",
+            business_name="Juan Dela Cruz",
+        )
+
+        user_admin = UserAdmin(User, stora_admin_site)
+        self.assertEqual(user_admin.business_name_col(owner), "Aling Nena Store")
+        self.assertEqual(user_admin.customer_name_col(owner), "—")
+        self.assertEqual(user_admin.business_name_col(customer), "—")
+        self.assertEqual(user_admin.customer_name_col(customer), "Juan Dela Cruz")
+
+    def test_notify_admin_dispatches_when_admin_has_fcm_token(self):
+        from api.fcm import notify_admin
+
+        admin_user = User.objects.create_user(
+            username="sysadmin@example.com",
+            email="sysadmin@example.com",
+            password="pass",
+            role="admin",
+            fcm_token="admin_fcm_token_12345",
+        )
+        sent = notify_admin("Test Admin Alert", "Something happened")
+        self.assertEqual(sent, 1)
+
+
+
 
 
 

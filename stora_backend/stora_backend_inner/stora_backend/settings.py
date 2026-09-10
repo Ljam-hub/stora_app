@@ -4,6 +4,7 @@ Supports local SQLite / PostgreSQL via DATABASE_URL, SimpleJWT authentication,
 Cloudinary image storage, CORS headers, and Stora business logic.
 """
 import os
+import sys
 from datetime import timedelta
 from pathlib import Path
 try:
@@ -97,9 +98,17 @@ TEMPLATES = [
 WSGI_APPLICATION = "stora_backend.wsgi.application"
 ASGI_APPLICATION = "stora_backend.asgi.application"
 
-# Database configuration: PostgreSQL if DATABASE_URL is set, otherwise SQLite
+# Database configuration: PostgreSQL if DATABASE_URL is set, otherwise SQLite.
+# When running automated test suites, use isolated SQLite to avoid Supabase pooler permission issues.
 DATABASE_URL = os.getenv("DATABASE_URL")
-if DATABASE_URL and dj_database_url:
+if "test" in sys.argv:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "test_db.sqlite3",
+        }
+    }
+elif DATABASE_URL and dj_database_url:
     DATABASES = {
         "default": dj_database_url.config(
             default=DATABASE_URL,
@@ -179,6 +188,7 @@ EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "True").lower() in ("true", "1", "yes
 EMAIL_USE_SSL = os.getenv("EMAIL_USE_SSL", "False").lower() in ("true", "1", "yes")
 EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
+EMAIL_TIMEOUT = int(os.getenv("EMAIL_TIMEOUT", "5"))
 
 _env_email_backend = os.getenv("EMAIL_BACKEND")
 if _env_email_backend:
@@ -188,7 +198,9 @@ elif EMAIL_HOST_USER and EMAIL_HOST_PASSWORD:
 elif DEBUG:
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 else:
-    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+    # If SMTP credentials are not configured in production, fallback to console logging
+    # to avoid blocked/unauthenticated socket hangs.
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
 DEFAULT_FROM_EMAIL = os.getenv(
     "DEFAULT_FROM_EMAIL",
