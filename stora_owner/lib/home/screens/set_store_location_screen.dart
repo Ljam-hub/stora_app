@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
 
 import '../../data/api/api_client.dart';
@@ -190,38 +192,218 @@ class _SetStoreLocationScreenState extends State<SetStoreLocationScreen> {
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        throw Exception('Location services are disabled.');
+        setState(() => _isDetectingLocation = false);
+        if (!mounted) return;
+        _showLocationServiceDialog();
+        return;
       }
 
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
-          throw Exception('Location permissions are denied.');
+          setState(() {
+            _isDetectingLocation = false;
+            _isError = true;
+            _message = 'Location permission was denied. Please allow location access to detect your GPS.';
+          });
+          return;
         }
       }
 
       if (permission == LocationPermission.deniedForever) {
-        throw Exception('Location permissions are permanently denied.');
+        setState(() => _isDetectingLocation = false);
+        if (!mounted) return;
+        _showPermissionPermanentlyDeniedDialog();
+        return;
       }
 
-      Position position = await Geolocator.getCurrentPosition();
+      Position? position;
+      // 1. Try high/medium accuracy with 8s timeout
+      try {
+        position = await Geolocator.getCurrentPosition(
+          locationSettings: const LocationSettings(
+            accuracy: LocationAccuracy.medium,
+            timeLimit: Duration(seconds: 8),
+          ),
+        );
+      } catch (_) {
+        // 2. Fallback: cached last known position
+        position = await Geolocator.getLastKnownPosition();
+        // 3. Fallback: low accuracy with 5s timeout
+        if (position == null) {
+          try {
+            position = await Geolocator.getCurrentPosition(
+              locationSettings: const LocationSettings(
+                accuracy: LocationAccuracy.low,
+                timeLimit: Duration(seconds: 5),
+              ),
+            );
+          } catch (_) {}
+        }
+      }
+
+      if (position == null) {
+        setState(() {
+          _isDetectingLocation = false;
+          _isError = true;
+          _message = 'Could not acquire GPS signal. You can tap anywhere on the map above to place your store pin.';
+        });
+        return;
+      }
 
       final newPos = LatLng(position.latitude, position.longitude);
-      
-      setState(() {
-        _currentMapPosition = newPos;
-        _latController.text = position.latitude.toString();
-        _lngController.text = position.longitude.toString();
-        _isDetectingLocation = false;
-      });
-      _mapController.move(newPos, 15.0);
+
+      if (mounted) {
+        setState(() {
+          _currentMapPosition = newPos;
+          _latController.text = position!.latitude.toStringAsFixed(6);
+          _lngController.text = position.longitude.toStringAsFixed(6);
+          _isDetectingLocation = false;
+          _isError = false;
+          _message = 'GPS location detected! Pin updated on map.';
+        });
+        _mapController.move(newPos, 16.0);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: HomeColors.successBg,
+            content: Row(
+              children: [
+                const Icon(Icons.gps_fixed_rounded, color: HomeColors.successText, size: 20),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'GPS locked: ${position.latitude.toStringAsFixed(5)}, ${position.longitude.toStringAsFixed(5)}',
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+
+        _tryReverseGeocode(position.latitude, position.longitude);
+      }
     } catch (e) {
-      setState(() {
-        _isDetectingLocation = false;
-        _isError = true;
-        _message = e.toString().replaceAll('Exception: ', '');
-      });
+      if (mounted) {
+        setState(() {
+          _isDetectingLocation = false;
+          _isError = true;
+          _message = 'GPS detection error: ${e.toString().replaceAll('Exception: ', '')}. You can tap the map to place your pin.';
+        });
+      }
+    }
+  }
+
+  void _showLocationServiceDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: HomeColors.cardBackground,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: const BorderSide(color: HomeColors.cardBorder),
+        ),
+        title: const Row(
+          children: [
+            Icon(Icons.location_off_rounded, color: Color(0xFFFFA726), size: 24),
+            SizedBox(width: 10),
+            Text('Location Is Turned Off', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: const Text(
+          'Your device Location (GPS) is currently disabled. Please turn it on in device settings so Stora can detect your store coordinates.',
+          style: TextStyle(color: AppColors.label, fontSize: 14, height: 1.4),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel', style: TextStyle(color: AppColors.label)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.purpleLight,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            onPressed: () {
+              Navigator.pop(ctx);
+              Geolocator.openLocationSettings();
+            },
+            child: const Text('Open Settings', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showPermissionPermanentlyDeniedDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: HomeColors.cardBackground,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: const BorderSide(color: HomeColors.cardBorder),
+        ),
+        title: const Row(
+          children: [
+            Icon(Icons.security_rounded, color: Color(0xFFFFA726), size: 24),
+            SizedBox(width: 10),
+            Text('Permission Needed', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: const Text(
+          'Location permission is permanently denied for Stora. Please enable Location in Android App Settings.',
+          style: TextStyle(color: AppColors.label, fontSize: 14, height: 1.4),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel', style: TextStyle(color: AppColors.label)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.purpleLight,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            onPressed: () {
+              Navigator.pop(ctx);
+              Geolocator.openAppSettings();
+            },
+            child: const Text('Open App Settings', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _tryReverseGeocode(double lat, double lng) async {
+    try {
+      final uri = Uri.parse(
+        'https://nominatim.openstreetmap.org/reverse?format=json&lat=$lat&lon=$lng&zoom=18&addressdetails=1',
+      );
+      final response = await http.get(uri, headers: {
+        'User-Agent': 'StoraApp/1.0 (com.example.stora)',
+        'Accept': 'application/json',
+      }).timeout(const Duration(seconds: 4));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final displayName = data['display_name'] as String?;
+        if (displayName != null && mounted) {
+          if (_addressController.text.trim().isEmpty) {
+            setState(() {
+              _addressController.text = displayName;
+            });
+          }
+        }
+      }
+    } catch (_) {
+      // Non-critical, ignore
     }
   }
 

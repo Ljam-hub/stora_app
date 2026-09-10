@@ -48,40 +48,62 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
   }
 
   Future<void> _acquireLocation() async {
-    bool serviceEnabled;
-    LocationPermission permission;
-
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      _fetchStores();
-      return;
-    }
-
-    permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
         _fetchStores();
         return;
       }
-    }
 
-    if (permission == LocationPermission.deniedForever) {
-      _fetchStores();
-      return;
-    }
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          _fetchStores();
+          return;
+        }
+      }
 
-    try {
-      final position = await Geolocator.getCurrentPosition();
-      if (mounted) {
+      if (permission == LocationPermission.deniedForever) {
+        _fetchStores();
+        return;
+      }
+
+      Position? position;
+      // 1. Try high/medium accuracy with 8s timeout
+      try {
+        position = await Geolocator.getCurrentPosition(
+          locationSettings: const LocationSettings(
+            accuracy: LocationAccuracy.medium,
+            timeLimit: Duration(seconds: 8),
+          ),
+        );
+      } catch (_) {
+        // 2. Fallback: cached last known position
+        position = await Geolocator.getLastKnownPosition();
+        // 3. Fallback: low accuracy with 5s timeout
+        if (position == null) {
+          try {
+            position = await Geolocator.getCurrentPosition(
+              locationSettings: const LocationSettings(
+                accuracy: LocationAccuracy.low,
+                timeLimit: Duration(seconds: 5),
+              ),
+            );
+          } catch (_) {}
+        }
+      }
+
+      if (position != null && mounted) {
         setState(() {
-          _userLat = position.latitude;
+          _userLat = position!.latitude;
           _userLng = position.longitude;
         });
-        _mapController.move(LatLng(_userLat, _userLng), _mapController.camera.zoom);
-        _fetchStores();
+        _mapController.move(LatLng(_userLat, _userLng), 15.0);
       }
-    } catch (e) {
+    } catch (_) {
+      // Fallback
+    } finally {
       _fetchStores();
     }
   }
@@ -101,8 +123,16 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
     super.dispose();
   }
 
-  void _recenter() {
-    _mapController.move(LatLng(_userLat, _userLng), _mapController.camera.zoom);
+  void _recenter() async {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        duration: Duration(seconds: 1),
+        behavior: SnackBarBehavior.floating,
+        content: Text('Locating your GPS position...'),
+      ),
+    );
+    await _acquireLocation();
+    _mapController.move(LatLng(_userLat, _userLng), 15.0);
   }
 
   void _zoom(double delta) {
