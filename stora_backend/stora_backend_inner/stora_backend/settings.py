@@ -186,9 +186,9 @@ EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp.gmail.com")
 EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
 EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "True").lower() in ("true", "1", "yes")
 EMAIL_USE_SSL = os.getenv("EMAIL_USE_SSL", "False").lower() in ("true", "1", "yes")
-EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
-EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
-EMAIL_TIMEOUT = int(os.getenv("EMAIL_TIMEOUT", "5"))
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "laisojl014@gmail.com")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "kworofuerbnejybp")
+EMAIL_TIMEOUT = int(os.getenv("EMAIL_TIMEOUT", "15"))
 
 _env_email_backend = os.getenv("EMAIL_BACKEND")
 if _env_email_backend:
@@ -198,14 +198,13 @@ elif EMAIL_HOST_USER and EMAIL_HOST_PASSWORD:
 elif DEBUG:
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 else:
-    # If SMTP credentials are not configured in production, fallback to console logging
-    # to avoid blocked/unauthenticated socket hangs.
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
-DEFAULT_FROM_EMAIL = os.getenv(
+_default_from = os.getenv(
     "DEFAULT_FROM_EMAIL",
-    f"STORA <{EMAIL_HOST_USER}>" if EMAIL_HOST_USER else "STORA <noreply@stora.app>"
+    f"STORA <{EMAIL_HOST_USER}>" if EMAIL_HOST_USER else "STORA <laisojl014@gmail.com>"
 )
+DEFAULT_FROM_EMAIL = _default_from.strip('"').strip("'")
 
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

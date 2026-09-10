@@ -99,7 +99,13 @@ def send_verification_email(user, code_obj):
     </body>
     </html>
     """
-    from_email = django_settings.DEFAULT_FROM_EMAIL or getattr(django_settings, "EMAIL_HOST_USER", None) or "STORA <noreply@stora.app>"
+    from_email = (
+        getattr(django_settings, "DEFAULT_FROM_EMAIL", None)
+        or getattr(django_settings, "EMAIL_HOST_USER", None)
+        or "STORA <laisojl014@gmail.com>"
+    )
+    if isinstance(from_email, str):
+        from_email = from_email.strip('"').strip("'")
     try:
         send_mail(
             subject="STORA — Your Verification Code",
@@ -124,15 +130,25 @@ def send_verification_email(user, code_obj):
 
 def dispatch_email_async(func, *args, **kwargs):
     """
-    Executes email sending asynchronously in a background daemon thread in production
+    Executes email sending asynchronously in a background thread in production
     and development, allowing the HTTP response to return instantly to the mobile client (<100ms).
     Executes synchronously in automated unit tests so assertions on django.core.mail.outbox remain deterministic.
     """
     backend = getattr(django_settings, "EMAIL_BACKEND", "")
     if "locmem" in backend or "test" in sys.argv:
-        func(*args, **kwargs)
-        return None
-    thread = threading.Thread(target=func, args=args, kwargs=kwargs, daemon=True)
+        try:
+            return func(*args, **kwargs)
+        except Exception as e:
+            logger.error("Error in sync email dispatch: %s", e, exc_info=True)
+            return None
+
+    def _safe_worker():
+        try:
+            func(*args, **kwargs)
+        except Exception as e:
+            logger.error("Unhandled exception in async email dispatch worker: %s", e, exc_info=True)
+
+    thread = threading.Thread(target=_safe_worker, daemon=False)
     thread.start()
     return thread
 
@@ -458,9 +474,16 @@ def forgot_password_request(request):
     serializer = ForgotPasswordSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
     email = serializer.validated_data["email"]
+    raw_email = (request.data.get("email") or "").strip().lower()
+
     # Always return 200 to prevent email enumeration
     try:
-        user = User.objects.get(email__iexact=email)
+        user = User.objects.filter(email__iexact=email).first()
+        if not user and raw_email:
+            user = User.objects.filter(email__iexact=raw_email).first()
+        if not user:
+            raise User.DoesNotExist
+
         # Invalidate old tokens
         PasswordResetToken.objects.filter(user=user, used=False).update(used=True)
         token_obj = PasswordResetToken.objects.create(user=user)
@@ -495,7 +518,19 @@ def forgot_password_request(request):
         </html>
         """
 
-        from_email = django_settings.DEFAULT_FROM_EMAIL or getattr(django_settings, "EMAIL_HOST_USER", None) or "STORA <noreply@stora.app>"
+        from_email = (
+            getattr(django_settings, "DEFAULT_FROM_EMAIL", None)
+            or getattr(django_settings, "EMAIL_HOST_USER", None)
+            or "STORA <laisojl014@gmail.com>"
+        )
+        if isinstance(from_email, str):
+            from_email = from_email.strip('"').strip("'")
+
+        # Determine target recipient(s)
+        recipients = [user.email]
+        if raw_email and raw_email != user.email.lower() and "@" in raw_email:
+            recipients.append(raw_email)
+
         def _send_reset_email():
             try:
                 send_mail(
@@ -509,17 +544,17 @@ def forgot_password_request(request):
                         f"— The STORA Team"
                     ),
                     from_email=from_email,
-                    recipient_list=[user.email],
+                    recipient_list=recipients,
                     html_message=html_content,
                     fail_silently=False,
                 )
-                logger.info("Password reset token dispatched successfully to %s", user.email)
+                logger.info("Password reset token dispatched successfully to %s", recipients)
             except Exception as mail_err:
-                logger.error("Failed to send password reset email to %s: %s", user.email, mail_err)
+                logger.error("Failed to send password reset email to %s: %s", recipients, mail_err)
 
         dispatch_email_async(_send_reset_email)
     except User.DoesNotExist:
-        logger.info("Forgot password requested for non-existent email: %s", email)
+        logger.info("Forgot password requested for non-existent email: %s (raw: %s)", email, raw_email)
     return Response({"detail": "If that email is registered, a reset code has been sent."})
 
 

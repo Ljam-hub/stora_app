@@ -31,7 +31,10 @@ void main() async {
   if (loggedIn) {
     SyncManager.instance.syncNow();
   }
-  runApp(MyApp(initialRoute: loggedIn ? '/home' : '/login'));
+  final initialRoute = !loggedIn
+      ? '/login'
+      : (AuthStore.instance.isEmailVerified ? '/home' : '/verify-email');
+  runApp(MyApp(initialRoute: initialRoute));
 }
 
 class MyApp extends StatelessWidget {
@@ -82,6 +85,9 @@ class MyApp extends StatelessWidget {
             '/forgot-password': (context) => const ForgotPasswordScreen(),
             '/reset-password': (context) => const ResetPasswordScreen(),
             '/register': (context) => const RegisterScreen(),
+            '/verify-email': (context) => EmailVerificationScreen(
+                  email: AuthStore.instance.email ?? '',
+                ),
             '/home': (context) => const StoraShell(),
           },
         );

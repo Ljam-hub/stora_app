@@ -140,8 +140,10 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> verifyEmail(String code) async {
-    final email = _currentUser?.email;
+  Future<bool> verifyEmail(String code, {String? targetEmail}) async {
+    final email = (targetEmail != null && targetEmail.trim().isNotEmpty)
+        ? targetEmail.trim()
+        : _currentUser?.email;
     if (email == null || email.isEmpty) return false;
     _isLoading = true;
     _errorMessage = null;
@@ -163,8 +165,10 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> resendVerification() async {
-    final email = _currentUser?.email;
+  Future<bool> resendVerification({String? targetEmail}) async {
+    final email = (targetEmail != null && targetEmail.trim().isNotEmpty)
+        ? targetEmail.trim()
+        : _currentUser?.email;
     if (email == null || email.isEmpty) return false;
     try {
       await CustomerApiService.instance.resendVerification(email);

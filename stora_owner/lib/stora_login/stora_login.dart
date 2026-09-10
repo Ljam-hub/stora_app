@@ -13,6 +13,7 @@ export 'utils/snackbar.dart';
 
 export 'screens/login_screen.dart';
 export 'screens/register_screen.dart';
+export 'screens/email_verification_screen.dart';
 
 export 'screens/forgot_password_screen.dart';
 export 'screens/reset_password_screen.dart';

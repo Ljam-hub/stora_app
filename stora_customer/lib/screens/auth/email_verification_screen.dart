@@ -68,7 +68,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
 
     FocusScope.of(context).unfocus();
     final auth = context.read<AuthProvider>();
-    final success = await auth.verifyEmail(code);
+    final success = await auth.verifyEmail(code, targetEmail: widget.email);
 
     if (mounted) {
       if (success) {
@@ -95,7 +95,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
 
     setState(() => _isResending = true);
     final auth = context.read<AuthProvider>();
-    final success = await auth.resendVerification();
+    final success = await auth.resendVerification(targetEmail: widget.email);
 
     if (mounted) {
       setState(() => _isResending = false);
@@ -122,12 +122,21 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('Verify Email'),
-        backgroundColor: Colors.transparent,
-      ),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        await auth.logout();
+        if (context.mounted) {
+          Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+        }
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(
+          title: const Text('Verify Email'),
+          backgroundColor: Colors.transparent,
+        ),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -267,13 +276,17 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                       ),
                       const Divider(color: AppColors.cardBorder, height: 32),
 
-                      // Skip for now
-                      TextButton(
-                        onPressed: () {
-                          Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
+                      // Back to Login
+                      TextButton.icon(
+                        onPressed: () async {
+                          await auth.logout();
+                          if (context.mounted) {
+                            Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+                          }
                         },
-                        child: const Text(
-                          'Skip for now, go to Home',
+                        icon: const Icon(Icons.arrow_back, size: 16, color: AppColors.textSecondary),
+                        label: const Text(
+                          'Back to Login',
                           style: TextStyle(
                             color: AppColors.textSecondary,
                             fontSize: 13,
@@ -288,6 +301,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
           ),
         ),
       ),
-    );
+    ),
+  );
   }
 }

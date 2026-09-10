@@ -8,6 +8,7 @@ import '../utils/validators.dart';
 import '../widgets/stora_gradient_button.dart';
 import '../widgets/stora_header.dart';
 import '../widgets/stora_text_field.dart';
+import 'email_verification_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -44,7 +45,17 @@ class _LoginScreenState extends State<LoginScreen> {
         password: _passwordController.text,
       );
       if (!mounted) return;
-      Navigator.of(context).pushReplacementNamed('/home');
+      if (!AuthStore.instance.isEmailVerified) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => EmailVerificationScreen(
+              email: _emailController.text.trim(),
+            ),
+          ),
+        );
+      } else {
+        Navigator.of(context).pushReplacementNamed('/home');
+      }
     } on ApiException catch (e) {
       if (!mounted) return;
       showStoraSnackBar(context, e.message);

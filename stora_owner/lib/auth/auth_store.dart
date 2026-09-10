@@ -87,24 +87,28 @@ class AuthStore extends ChangeNotifier {
     );
   }
 
-  Future<void> verifyEmail(String code) async {
-    final targetEmail = email;
-    if (targetEmail == null || targetEmail.isEmpty) {
+  Future<void> verifyEmail(String code, {String? targetEmail}) async {
+    final mail = (targetEmail != null && targetEmail.trim().isNotEmpty)
+        ? targetEmail.trim()
+        : email;
+    if (mail == null || mail.isEmpty) {
       throw ApiException('No registered email found to verify.');
     }
     final result = await ApiClient.instance.verifyEmail(
-      email: targetEmail,
+      email: mail,
       code: code,
     );
     await _persist(result);
   }
 
-  Future<void> resendVerification() async {
-    final targetEmail = email;
-    if (targetEmail == null || targetEmail.isEmpty) {
+  Future<void> resendVerification({String? targetEmail}) async {
+    final mail = (targetEmail != null && targetEmail.trim().isNotEmpty)
+        ? targetEmail.trim()
+        : email;
+    if (mail == null || mail.isEmpty) {
       throw ApiException('No registered email found.');
     }
-    await ApiClient.instance.resendVerification(email: targetEmail);
+    await ApiClient.instance.resendVerification(email: mail);
   }
 
   Future<void> logout() async {

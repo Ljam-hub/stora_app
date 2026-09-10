@@ -65,7 +65,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
 
     setState(() => _isSubmitting = true);
     try {
-      await AuthStore.instance.verifyEmail(code);
+      await AuthStore.instance.verifyEmail(code, targetEmail: widget.email);
       if (!mounted) return;
       showStoraSnackBar(context, 'Email verified successfully! Welcome to STORA.');
       Navigator.of(context).pushReplacementNamed('/home');
@@ -85,7 +85,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
 
     setState(() => _isResending = true);
     try {
-      await AuthStore.instance.resendVerification();
+      await AuthStore.instance.resendVerification(targetEmail: widget.email);
       if (!mounted) return;
       showStoraSnackBar(context, 'A new verification code has been sent to your email.');
       _startCooldownTimer();
@@ -102,7 +102,16 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        await AuthStore.instance.logout();
+        if (context.mounted) {
+          Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+        }
+      },
+      child: Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: Center(
@@ -251,15 +260,19 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                       ),
                       const Divider(color: Color(0xFF332A40), height: 32),
 
-                      // Skip for now
-                      TextButton(
-                        onPressed: () {
-                          Navigator.of(context).pushReplacementNamed('/home');
+                      // Back to Login
+                      TextButton.icon(
+                        onPressed: () async {
+                          await AuthStore.instance.logout();
+                          if (context.mounted) {
+                            Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+                          }
                         },
-                        child: const Text(
-                          'Skip for now, go to Dashboard',
+                        icon: const Icon(Icons.arrow_back, size: 16, color: AppColors.hint),
+                        label: const Text(
+                          'Back to Login',
                           style: TextStyle(
-                            color: AppColors.label,
+                            color: AppColors.hint,
                             fontSize: 13,
                           ),
                         ),
@@ -272,6 +285,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
           ),
         ),
       ),
-    );
+    ),
+  );
   }
 }

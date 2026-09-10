@@ -34,6 +34,7 @@ env/
 *.key
 *firebase-adminsdk*.json
 firebase-service-account.json
+*.env.txt
 
 # Django & SQLite
 db.sqlite3
