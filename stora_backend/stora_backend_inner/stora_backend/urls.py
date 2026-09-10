@@ -12,7 +12,7 @@ from .admin_site import stora_admin_site
 GITHUB_RELEASE_BASE = "https://github.com/Ljam-hub/stora_app/releases/download/v1.0.0"
 
 def download_customer(request):
-    return redirect(f"{GITHUB_RELEASE_BASE}/Stora.Customer.apk")
+    return redirect(f"{GITHUB_RELEASE_BASE}/Stora-Customer.apk")
 
 def download_owner(request):
     return redirect(f"{GITHUB_RELEASE_BASE}/Stora.apk")
