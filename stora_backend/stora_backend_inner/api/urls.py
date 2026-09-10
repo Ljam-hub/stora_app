@@ -14,6 +14,7 @@ router.register("orders", views.OrderViewSet, basename="order")
 urlpatterns = [
     # Health Check
     path("health/", views.health_check, name="health_check"),
+    path("debug/smtp/", views.debug_smtp, name="debug_smtp"),
 
     # Auth & Tokens
     path("auth/register/", views.register, name="register"),
