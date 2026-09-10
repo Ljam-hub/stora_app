@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class AppColors {
   static const background = Color(0xFF0E0B14);
@@ -77,7 +78,7 @@ class AppTheme {
         surface: AppColors.cardBackground,
       ),
       useMaterial3: true,
-      fontFamily: null,
+      fontFamily: GoogleFonts.inter().fontFamily,
       appBarTheme: const AppBarTheme(
         backgroundColor: AppColors.background,
         elevation: 0,
@@ -155,6 +156,7 @@ class AppTheme {
         surface: Colors.white,
       ),
       useMaterial3: true,
+      fontFamily: GoogleFonts.inter().fontFamily,
       appBarTheme: const AppBarTheme(
         backgroundColor: Colors.white,
         elevation: 0,

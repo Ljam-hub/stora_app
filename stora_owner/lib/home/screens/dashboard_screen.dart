@@ -16,7 +16,7 @@ import 'profile_screen.dart';
 import 'sales_analytics_screen.dart';
 import 'sales_history_screen.dart';
 import 'set_store_location_screen.dart';
-
+import '../widgets/fade_slide_in.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -112,246 +112,267 @@ class DashboardScreen extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 18),
-                _IncomingOrdersCard(
-                  pendingCount: orders.pendingCount,
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const PendingOrdersScreen()),
+                FadeSlideIn(
+                  delay: const Duration(milliseconds: 0),
+                  child: _IncomingOrdersCard(
+                    pendingCount: orders.pendingCount,
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const PendingOrdersScreen()),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 14),
-                _EarningsCard(
-                  amount: '₱${sales.todaysTotal.toStringAsFixed(2)}',
-                  subtitle:
-                      '${sales.todaysSalesCount} sales · Avg. ₱${sales.todaysAverage.toStringAsFixed(2)}',
-                  badge: sales.changeBadge,
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const SalesHistoryScreen()),
+                FadeSlideIn(
+                  delay: const Duration(milliseconds: 100),
+                  child: _EarningsCard(
+                    amount: '₱${sales.todaysTotal.toStringAsFixed(2)}',
+                    subtitle:
+                        '${sales.todaysSalesCount} sales · Avg. ₱${sales.todaysAverage.toStringAsFixed(2)}',
+                    badge: sales.changeBadge,
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const SalesHistoryScreen()),
+                    ),
                   ),
                 ),
                 // AI Insights & Map Row
-                Row(
-                  children: [
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () => Navigator.of(context).push(
-                          MaterialPageRoute(builder: (_) => const AiInsightsScreen()),
-                        ),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                          decoration: BoxDecoration(
-                            color: HomeColors.cardBackground,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: AppColors.purpleLight.withValues(alpha: 0.4), width: 1),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors.purple.withValues(alpha: 0.18),
-                                blurRadius: 10,
-                                offset: const Offset(0, 3),
-                              ),
-                            ],
+                FadeSlideIn(
+                  delay: const Duration(milliseconds: 200),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => const AiInsightsScreen()),
                           ),
-                          child: Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  gradient: HomeColors.purpleGradient,
-                                  borderRadius: BorderRadius.circular(10),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                            decoration: BoxDecoration(
+                              color: HomeColors.cardBackground,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: AppColors.purpleLight.withValues(alpha: 0.4), width: 1),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.purple.withValues(alpha: 0.18),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 3),
                                 ),
-                                child: const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 16),
-                              ),
-                              const SizedBox(width: 10),
-                              const Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Text('AI Insights',
-                                            style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700)),
-                                      ],
-                                    ),
-                                    Text('Smart store tips',
-                                        style: TextStyle(color: AppColors.label, fontSize: 11)),
-                                  ],
+                              ],
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    gradient: HomeColors.purpleGradient,
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 16),
                                 ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () => Navigator.of(context).push(
-                          MaterialPageRoute(builder: (_) => const SetStoreLocationScreen()),
-                        ),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                          decoration: BoxDecoration(
-                            color: HomeColors.cardBackground,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: HomeColors.cardBorder),
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF38BDF8).withValues(alpha: 0.15),
-                                  borderRadius: BorderRadius.circular(10),
+                                const SizedBox(width: 10),
+                                const Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Text('AI Insights',
+                                              style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700)),
+                                        ],
+                                      ),
+                                      Text('Smart store tips',
+                                          style: TextStyle(color: AppColors.label, fontSize: 11)),
+                                    ],
+                                  ),
                                 ),
-                                child: const Icon(Icons.location_on_rounded, color: Color(0xFF38BDF8), size: 16),
-                              ),
-                              const SizedBox(width: 10),
-                              const Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text('Store Map',
-                                        style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700)),
-                                    Text('Pin your location',
-                                        style: TextStyle(color: AppColors.label, fontSize: 11)),
-                                  ],
-                                ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => const SetStoreLocationScreen()),
+                          ),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                            decoration: BoxDecoration(
+                              color: HomeColors.cardBackground,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: HomeColors.cardBorder),
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF38BDF8).withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: const Icon(Icons.location_on_rounded, color: Color(0xFF38BDF8), size: 16),
+                                ),
+                                const SizedBox(width: 10),
+                                const Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text('Store Map',
+                                          style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700)),
+                                      Text('Pin your location',
+                                          style: TextStyle(color: AppColors.label, fontSize: 11)),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 10),
                 // Analytics Shortcut Bar
-                GestureDetector(
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const SalesAnalyticsScreen()),
-                  ),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    decoration: BoxDecoration(
-                      color: HomeColors.cardBackground,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: HomeColors.cardBorder),
+                FadeSlideIn(
+                  delay: const Duration(milliseconds: 300),
+                  child: GestureDetector(
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const SalesAnalyticsScreen()),
                     ),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            color: AppColors.purple.withValues(alpha: 0.18),
-                            borderRadius: BorderRadius.circular(8),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: HomeColors.cardBackground,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: HomeColors.cardBorder),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: AppColors.purple.withValues(alpha: 0.18),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(Icons.insights_rounded, color: AppColors.purpleLight, size: 18),
                           ),
-                          child: const Icon(Icons.insights_rounded, color: AppColors.purpleLight, size: 18),
-                        ),
-                        const SizedBox(width: 12),
-                        const Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Sales Analytics & Reports',
-                                  style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700)),
-                              Text('View 7-day revenue charts & top sellers',
-                                  style: TextStyle(color: AppColors.label, fontSize: 11)),
-                            ],
+                          const SizedBox(width: 12),
+                          const Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Sales Analytics & Reports',
+                                    style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700)),
+                                Text('View 7-day revenue charts & top sellers',
+                                    style: TextStyle(color: AppColors.label, fontSize: 11)),
+                              ],
+                            ),
                           ),
-                        ),
-                        const Icon(Icons.chevron_right_rounded, color: AppColors.label, size: 20),
-                      ],
+                          const Icon(Icons.chevron_right_rounded, color: AppColors.label, size: 20),
+                        ],
+                      ),
                     ),
                   ),
                 ),
                 const SizedBox(height: 14),
 
-                Row(
-                  children: [
-                    Expanded(
-                      child: _StatCard(
-                        title: 'In stock',
-                        icon: Icons.inventory_2_rounded,
-                        badge: 'Healthy',
-                        badgeColor: HomeColors.successText,
-                        badgeBg: HomeColors.successBg,
-                        value: '${store.totalStock}',
+                FadeSlideIn(
+                  delay: const Duration(milliseconds: 400),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _StatCard(
+                          title: 'In stock',
+                          icon: Icons.inventory_2_rounded,
+                          badge: 'Healthy',
+                          badgeColor: HomeColors.successText,
+                          badgeBg: HomeColors.successBg,
+                          value: '${store.totalStock}',
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _StatCard(
-                        title: 'Low stock',
-                        icon: Icons.local_fire_department_rounded,
-                        badge: 'Action',
-                        badgeColor: AppColors.error,
-                        badgeBg: HomeColors.dangerBg,
-                        value: '$lowStockCount',
-                        valueColor: lowStockCount > 0 ? AppColors.error : Colors.white,
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _StatCard(
+                          title: 'Low stock',
+                          icon: Icons.local_fire_department_rounded,
+                          badge: 'Action',
+                          badgeColor: AppColors.error,
+                          badgeBg: HomeColors.dangerBg,
+                          value: '$lowStockCount',
+                          valueColor: lowStockCount > 0 ? AppColors.error : Colors.white,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
                 if (!AccountStatusStore.instance.isPremium) ...[
                   const SizedBox(height: 14),
-                  _FreePlanCard(
-                    current: AccountStatusStore.instance.productCount,
-                    limit: AccountStatusStore.instance.productLimit,
-                    daysLeft: AccountStatusStore.instance.daysLeft,
+                  FadeSlideIn(
+                    delay: const Duration(milliseconds: 500),
+                    child: _FreePlanCard(
+                      current: AccountStatusStore.instance.productCount,
+                      limit: AccountStatusStore.instance.productLimit,
+                      daysLeft: AccountStatusStore.instance.daysLeft,
+                    ),
                   ),
                 ],
                 const SizedBox(height: 22),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        height: 52,
-                        decoration: BoxDecoration(
-                          gradient: HomeColors.purpleGradient,
-                          borderRadius: BorderRadius.circular(14),
-                          boxShadow: HomeColors.glowShadow(AppColors.purple, opacity: 0.3),
-                        ),
-                        child: ElevatedButton.icon(
-                          onPressed: () => Navigator.of(context).push(
-                            MaterialPageRoute(builder: (_) => const PosScreen(isStandalone: true)),
+                FadeSlideIn(
+                  delay: const Duration(milliseconds: 600),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          height: 52,
+                          decoration: BoxDecoration(
+                            gradient: HomeColors.purpleGradient,
+                            borderRadius: BorderRadius.circular(14),
+                            boxShadow: HomeColors.glowShadow(AppColors.purple, opacity: 0.3),
                           ),
-                          icon: const Icon(Icons.point_of_sale_rounded, color: Colors.white, size: 20),
-                          label: const FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Text('New Sale',
-                                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14)),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.transparent,
-                            shadowColor: Colors.transparent,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          child: ElevatedButton.icon(
+                            onPressed: () => Navigator.of(context).push(
+                              MaterialPageRoute(builder: (_) => const PosScreen(isStandalone: true)),
+                            ),
+                            icon: const Icon(Icons.point_of_sale_rounded, color: Colors.white, size: 20),
+                            label: const FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text('New Sale',
+                                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14)),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.transparent,
+                              shadowColor: Colors.transparent,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _OutlinedAction(
-                        label: 'Add Product',
-                        icon: Icons.add_circle_outline_rounded,
-                        onPressed: () {
-                          if (!AccountStatusStore.instance.canAddProduct) {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => SubscriptionScreen(
-                                  productsUsed: AccountStatusStore.instance.productCount,
-                                  productsLimit: AccountStatusStore.instance.productLimit,
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _OutlinedAction(
+                          label: 'Add Product',
+                          icon: Icons.add_circle_outline_rounded,
+                          onPressed: () {
+                            if (!AccountStatusStore.instance.canAddProduct) {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => SubscriptionScreen(
+                                    productsUsed: AccountStatusStore.instance.productCount,
+                                    productsLimit: AccountStatusStore.instance.productLimit,
+                                  ),
                                 ),
-                              ),
-                            );
-                          } else {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(builder: (_) => const AddEditProductScreen()),
-                            );
-                          }
-                        },
+                              );
+                            } else {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(builder: (_) => const AddEditProductScreen()),
+                              );
+                            }
+                          },
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ],
             ),

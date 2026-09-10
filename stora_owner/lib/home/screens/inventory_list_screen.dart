@@ -11,6 +11,8 @@ import '../widgets/category_filter_row.dart';
 import '../widgets/product_image_widget.dart';
 import '../widgets/stock_step_button.dart';
 import '../../subscription/subscription_screen.dart';
+import '../widgets/shimmer_product_card.dart';
+import '../widgets/fade_slide_in.dart';
 import 'add_edit_product_screen.dart';
 
 class InventoryListScreen extends StatefulWidget {
@@ -135,8 +137,21 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
                     color: AppColors.purpleLight,
                     backgroundColor: HomeColors.cardBackground,
                     onRefresh: () => InventoryStore.instance.loadProducts(),
-                    child: products.isEmpty
-                        ? LayoutBuilder(
+                    child: InventoryStore.instance.loading
+                        ? GridView.builder(
+                            physics: const NeverScrollableScrollPhysics(),
+                            padding: const EdgeInsets.all(16),
+                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              childAspectRatio: 0.75,
+                              crossAxisSpacing: 14,
+                              mainAxisSpacing: 14,
+                            ),
+                            itemCount: 6,
+                            itemBuilder: (_, index) => const ShimmerProductCard(),
+                          )
+                        : products.isEmpty
+                            ? LayoutBuilder(
                             builder: (context, constraints) => SingleChildScrollView(
                               physics: const AlwaysScrollableScrollPhysics(),
                               child: ConstrainedBox(
@@ -222,9 +237,12 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
                                   : 20;
                               final allIdx = InventoryStore.instance.products.indexOf(products[i]);
                               final isLocked = !isPremium && (allIdx >= freeLimit || (allIdx == -1 && i >= freeLimit));
-                              return ProductCard(
-                                product: products[i],
-                                isLocked: isLocked,
+                              return FadeSlideIn(
+                                delay: Duration(milliseconds: 50 * (i % 6)),
+                                child: ProductCard(
+                                  product: products[i],
+                                  isLocked: isLocked,
+                                ),
                               );
                             },
                           ),

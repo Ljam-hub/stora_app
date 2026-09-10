@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'dart:ui';
 import '../../data/services/notification_service.dart';
 import '../../data/stores/account_status_store.dart';
 import '../../stora_login/stora_login.dart';
@@ -245,26 +247,30 @@ class _StoraNavBar extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
       child: SafeArea(
         top: false,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 6),
-          decoration: BoxDecoration(
-            color: HomeColors.navBackground.withValues(alpha: 0.94),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: HomeColors.cardBorderLight.withValues(alpha: 0.5), width: 1),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.45),
-                blurRadius: 20,
-                offset: const Offset(0, 8),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 6),
+              decoration: BoxDecoration(
+                color: HomeColors.navBackground.withValues(alpha: 0.72),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: HomeColors.cardBorderLight.withValues(alpha: 0.5), width: 1),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.45),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
+                  ),
+                  BoxShadow(
+                    color: AppColors.purple.withValues(alpha: 0.08),
+                    blurRadius: 14,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
-              BoxShadow(
-                color: AppColors.purple.withValues(alpha: 0.08),
-                blurRadius: 14,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Row(
+              child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: List.generate(_items.length, (i) {
               final selected = i == currentIndex;
@@ -272,7 +278,10 @@ class _StoraNavBar extends StatelessWidget {
               return Expanded(
                 child: GestureDetector(
                   behavior: HitTestBehavior.opaque,
-                  onTap: () => onTap(i),
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    onTap(i);
+                  },
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
                     curve: Curves.easeInOut,
@@ -311,6 +320,8 @@ class _StoraNavBar extends StatelessWidget {
             }),
           ),
         ),
+      ),
+    ),
       ),
     );
   }

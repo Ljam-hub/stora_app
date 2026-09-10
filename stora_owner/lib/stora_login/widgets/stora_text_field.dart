@@ -56,13 +56,17 @@ class _StoraTextFieldState extends State<StoraTextField> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          widget.label.toUpperCase(),
-          style: const TextStyle(
-            color: AppColors.label,
-            fontSize: 11,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 0.6,
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Text(
+            widget.label.toUpperCase(),
+            style: const TextStyle(
+              color: AppColors.label,
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.6,
+            ),
           ),
         ),
         const SizedBox(height: 8),
@@ -71,11 +75,11 @@ class _StoraTextFieldState extends State<StoraTextField> {
           controller: widget.controller,
           obscureText: _obscured,
           keyboardType: widget.keyboardType,
-          style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w500),
+          style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500),
           validator: widget.validator,
           decoration: InputDecoration(
             hintText: widget.hint,
-            hintStyle: const TextStyle(color: AppColors.hint, fontSize: 14),
+            hintStyle: const TextStyle(color: AppColors.hint, fontSize: 13.5),
             filled: true,
             fillColor: AppColors.fieldBackground,
             contentPadding:

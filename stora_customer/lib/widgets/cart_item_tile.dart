@@ -1,7 +1,7 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../models/cart_item_model.dart';
 import '../theme/app_theme.dart';
+import 'product_image.dart';
 
 class CartItemTile extends StatelessWidget {
   final CartItemModel item;
@@ -17,51 +17,6 @@ class CartItemTile extends StatelessWidget {
     required this.onRemove,
   });
 
-  Widget _buildThumbnail() {
-    if (item.product.image != null && item.product.image!.isNotEmpty) {
-      try {
-        if (item.product.image!.startsWith('data:image') || item.product.image!.length > 100) {
-          final cleanBase64 = item.product.image!.contains(',')
-              ? item.product.image!.split(',').last
-              : item.product.image!;
-          final bytes = base64Decode(cleanBase64);
-          return Image.memory(
-            bytes,
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) => _buildFallbackThumbnail(),
-          );
-        } else if (item.product.image!.startsWith('http')) {
-          return Image.network(
-            item.product.image!,
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) => _buildFallbackThumbnail(),
-          );
-        }
-      } catch (_) {}
-    }
-    return _buildFallbackThumbnail();
-  }
-
-  Widget _buildFallbackThumbnail() {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.cardElevated,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Center(
-        child: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: AppColors.cardBackground,
-            shape: BoxShape.circle,
-            border: Border.all(color: AppColors.primary.withValues(alpha: 0.25), width: 1),
-          ),
-          child: const Icon(Icons.inventory_2_rounded, size: 20, color: AppColors.primaryLight),
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -75,13 +30,13 @@ class CartItemTile extends StatelessWidget {
       child: Row(
         children: [
           // Product Thumbnail
-          ClipRRect(
+          ProductImage(
+            imageData: item.product.image,
+            categoryName: item.product.categoryName,
+            width: 60,
+            height: 60,
+            iconSize: 18,
             borderRadius: BorderRadius.circular(10),
-            child: SizedBox(
-              width: 60,
-              height: 60,
-              child: _buildThumbnail(),
-            ),
           ),
           const SizedBox(width: 12),
 

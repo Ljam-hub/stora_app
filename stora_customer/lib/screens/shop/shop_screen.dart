@@ -7,6 +7,8 @@ import '../../providers/catalog_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/product_card.dart';
+import '../../widgets/shimmer_product_card.dart';
+import '../../widgets/fade_slide_in.dart';
 import 'product_detail_sheet.dart';
 
 class ShopScreen extends StatefulWidget {
@@ -284,8 +286,17 @@ class _ShopScreenState extends State<ShopScreen> {
             // Product Grid or Empty/Loading State
             Expanded(
               child: catalog.isLoading && catalog.products.isEmpty
-                  ? const Center(
-                      child: CircularProgressIndicator(color: AppColors.primary),
+                  ? GridView.builder(
+                      physics: const NeverScrollableScrollPhysics(),
+                      padding: const EdgeInsets.all(16),
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        childAspectRatio: 0.72,
+                        crossAxisSpacing: 14,
+                        mainAxisSpacing: 14,
+                      ),
+                      itemCount: 6,
+                      itemBuilder: (_, index) => const ShimmerProductCard(),
                     )
                   : catalog.products.isEmpty
                       ? LayoutBuilder(
@@ -322,9 +333,12 @@ class _ShopScreenState extends State<ShopScreen> {
                           itemCount: catalog.products.length,
                           itemBuilder: (context, index) {
                             final product = catalog.products[index];
-                            return ProductCard(
-                              product: product,
-                              onTap: () => _openProductDetail(product),
+                            return FadeSlideIn(
+                              delay: Duration(milliseconds: 50 * (index % 6)),
+                              child: ProductCard(
+                                product: product,
+                                onTap: () => _openProductDetail(product),
+                              ),
                             );
                           },
                         ),

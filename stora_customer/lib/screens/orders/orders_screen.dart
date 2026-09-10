@@ -4,6 +4,8 @@ import '../../providers/order_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/order_card.dart';
+import '../../widgets/shimmer_order_card.dart';
+import '../../widgets/fade_slide_in.dart';
 
 class OrdersScreen extends StatefulWidget {
   final VoidCallback? onStartShopping;
@@ -83,7 +85,12 @@ class _OrdersScreenState extends State<OrdersScreen> {
               backgroundColor: AppColors.cardElevated,
               onRefresh: () => orderProvider.refresh(),
               child: orderProvider.isLoading && orderProvider.rawOrders.isEmpty
-                  ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+                  ? ListView.builder(
+                      physics: const NeverScrollableScrollPhysics(),
+                      padding: const EdgeInsets.all(16),
+                      itemCount: 4,
+                      itemBuilder: (_, index) => const ShimmerOrderCard(),
+                    )
                   : orderProvider.orders.isEmpty
                       ? LayoutBuilder(
                           builder: (context, constraints) => SingleChildScrollView(
@@ -108,7 +115,10 @@ class _OrdersScreenState extends State<OrdersScreen> {
                           itemCount: orderProvider.orders.length,
                           itemBuilder: (context, index) {
                             final order = orderProvider.orders[index];
-                            return OrderCard(order: order);
+                            return FadeSlideIn(
+                              delay: Duration(milliseconds: 60 * (index % 8)),
+                              child: OrderCard(order: order),
+                            );
                           },
                         ),
             ),

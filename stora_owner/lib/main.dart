@@ -11,6 +11,7 @@ import 'package:stora/home/shell/stora_shell.dart';
 import 'package:timezone/data/latest.dart' as tzdata;
 import 'home/theme/theme_mode_controller.dart';
 import 'stora_login/stora_login.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 Future<void> _initSqlite() async {
   if (Platform.isAndroid) {
@@ -63,6 +64,7 @@ class MyApp extends StatelessWidget {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             ),
             useMaterial3: true,
+            fontFamily: GoogleFonts.inter().fontFamily,
           ),
           darkTheme: ThemeData(
             brightness: Brightness.dark,
@@ -72,6 +74,7 @@ class MyApp extends StatelessWidget {
               brightness: Brightness.dark,
             ),
             useMaterial3: true,
+            fontFamily: GoogleFonts.inter().fontFamily,
           ),
           initialRoute: initialRoute,
           routes: {

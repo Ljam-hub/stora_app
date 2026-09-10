@@ -430,18 +430,44 @@ class _BarcodeField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('BARCODE',
-            style: TextStyle(color: AppColors.label, fontSize: 12, fontWeight: FontWeight.w600, letterSpacing: 0.5)),
+        const FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'BARCODE',
+                style: TextStyle(
+                  color: AppColors.label,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.6,
+                ),
+              ),
+              SizedBox(width: 6),
+              Text(
+                '(OPTIONAL)',
+                style: TextStyle(
+                  color: AppColors.label,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ],
+          ),
+        ),
         const SizedBox(height: 8),
         TextFormField(
           controller: controller,
-          style: const TextStyle(color: Colors.white, fontSize: 15),
+          style: const TextStyle(color: Colors.white, fontSize: 14),
           decoration: InputDecoration(
-            hintText: 'Enter or scan barcode',
-            hintStyle: const TextStyle(color: AppColors.hint),
+            hintText: 'Enter or scan barcode (optional)',
+            hintStyle: const TextStyle(color: AppColors.hint, fontSize: 13),
             filled: true,
             fillColor: AppColors.fieldBackground,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             suffixIcon: IconButton(
               icon: const Icon(Icons.qr_code_scanner_rounded, color: AppColors.purpleLight),
               onPressed: onScan,
@@ -516,8 +542,34 @@ class _ImagePickerFieldState extends State<_ImagePickerField> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('IMAGE',
-            style: TextStyle(color: AppColors.label, fontSize: 12, fontWeight: FontWeight.w600, letterSpacing: 0.5)),
+        const FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'IMAGE',
+                style: TextStyle(
+                  color: AppColors.label,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.6,
+                ),
+              ),
+              SizedBox(width: 6),
+              Text(
+                '(OPTIONAL)',
+                style: TextStyle(
+                  color: AppColors.label,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ],
+          ),
+        ),
         const SizedBox(height: 8),
         InkWell(
           borderRadius: BorderRadius.circular(14),
@@ -541,8 +593,17 @@ class _ImagePickerFieldState extends State<_ImagePickerField> {
                         children: [
                           Icon(Icons.upload_rounded, color: AppColors.purpleLight, size: 24),
                           SizedBox(height: 6),
-                          Text('+ Select Image',
-                              style: TextStyle(color: AppColors.purpleLight, fontSize: 13, fontWeight: FontWeight.w600)),
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              '+ Select Image (optional)',
+                              style: TextStyle(
+                                color: AppColors.purpleLight,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
                         ],
                       )
                     : Align(

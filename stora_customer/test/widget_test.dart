@@ -5,12 +5,14 @@ import 'package:stora_customer/providers/auth_provider.dart';
 import 'package:stora_customer/providers/cart_provider.dart';
 import 'package:stora_customer/providers/catalog_provider.dart';
 import 'package:stora_customer/providers/order_provider.dart';
+import 'package:stora_customer/theme/theme_controller.dart';
 
 void main() {
   testWidgets('Stora Customer App smoke test', (WidgetTester tester) async {
     await tester.pumpWidget(
       MultiProvider(
         providers: [
+          ChangeNotifierProvider<CustomerThemeController>.value(value: CustomerThemeController.instance),
           ChangeNotifierProvider<AuthProvider>(create: (_) => AuthProvider()),
           ChangeNotifierProvider<CatalogProvider>(create: (_) => CatalogProvider()),
           ChangeNotifierProvider<CartProvider>(create: (_) => CartProvider()),

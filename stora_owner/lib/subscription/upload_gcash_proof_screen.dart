@@ -88,15 +88,12 @@ class _UploadGcashProofScreenState extends State<UploadGcashProofScreen> {
       return;
     }
     final ref = _referenceController.text.trim();
-    if (ref.isEmpty) {
-      showStoraSnackBar(context, 'Please enter the reference number');
-      return;
-    }
+    final refToSend = ref.isEmpty ? 'N/A' : ref;
 
     setState(() => _submitting = true);
     try {
       final res = await ApiClient.instance.uploadPaymentProof(
-        referenceNumber: ref,
+        referenceNumber: refToSend,
         amount: _amount.toDouble(),
         screenshotBytes: _screenshotBytes!,
       );
@@ -794,13 +791,32 @@ class _UploadGcashProofScreenState extends State<UploadGcashProofScreen> {
               const SizedBox(height: 20),
 
               // Step 3: Reference Number
-              const Text(
-                'REFERENCE NUMBER',
-                style: TextStyle(
-                  color: AppColors.label,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.6,
+              const FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'REFERENCE NUMBER',
+                      style: TextStyle(
+                        color: AppColors.label,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.6,
+                      ),
+                    ),
+                    SizedBox(width: 6),
+                    Text(
+                      '(OPTIONAL)',
+                      style: TextStyle(
+                        color: AppColors.label,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 8),
@@ -809,13 +825,13 @@ class _UploadGcashProofScreenState extends State<UploadGcashProofScreen> {
                 keyboardType: TextInputType.number,
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 15,
+                  fontSize: 14,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 0.5,
                 ),
                 decoration: InputDecoration(
-                  hintText: 'e.g. 0002 104 552 991',
-                  hintStyle: const TextStyle(color: AppColors.hint),
+                  hintText: 'e.g. 0002 104 552 991 (optional)',
+                  hintStyle: const TextStyle(color: AppColors.hint, fontSize: 13),
                   prefixIcon: const Icon(
                     Icons.tag_rounded,
                     color: AppColors.label,
@@ -825,7 +841,7 @@ class _UploadGcashProofScreenState extends State<UploadGcashProofScreen> {
                   fillColor: AppColors.fieldBackground,
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: 16,
-                    vertical: 16,
+                    vertical: 14,
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
