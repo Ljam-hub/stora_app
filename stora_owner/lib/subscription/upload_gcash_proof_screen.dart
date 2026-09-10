@@ -11,8 +11,8 @@ import 'subscription_status.dart';
 
 // ---------------------------------------------------------------------
 // Upload GCash Proof — instructs the owner to send the plan price to
-// a GCash number or scan the QR code (synced from backend or bundled),
-// then submit a screenshot + reference number for review.
+// a GCash number or scan the dynamic QR code from backend, then submit
+// a screenshot + reference number for review.
 // ---------------------------------------------------------------------
 class UploadGcashProofScreen extends StatefulWidget {
   final int? amount;
@@ -50,7 +50,7 @@ class _UploadGcashProofScreenState extends State<UploadGcashProofScreen> {
   @override
   void initState() {
     super.initState();
-    // Refresh latest payment and QR configuration from backend
+    // Refresh latest payment and dynamic QR code configuration from backend
     AccountStatusStore.instance.fetchStatus().then((_) {
       if (mounted) setState(() {});
     });
@@ -135,44 +135,7 @@ class _UploadGcashProofScreenState extends State<UploadGcashProofScreen> {
     }
   }
 
-  Widget _buildQrWidget({required double size}) {
-    if (_qrCodeUrl != null && _qrCodeUrl!.isNotEmpty) {
-      return Image.network(
-        _qrCodeUrl!,
-        width: size,
-        height: size,
-        fit: BoxFit.contain,
-        loadingBuilder: (context, child, progress) {
-          if (progress == null) return child;
-          return SizedBox(
-            width: size,
-            height: size,
-            child: const Center(
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: Color(0xFF005CEE),
-              ),
-            ),
-          );
-        },
-        errorBuilder: (context, error, stackTrace) => Image.asset(
-          'assets/images/gcash_qr.png',
-          width: size,
-          height: size,
-          fit: BoxFit.contain,
-        ),
-      );
-    }
-
-    return Image.asset(
-      'assets/images/gcash_qr.png',
-      width: size,
-      height: size,
-      fit: BoxFit.contain,
-    );
-  }
-
-  void _showEnlargedQr(BuildContext context) {
+  void _showEnlargedQr(BuildContext context, String qrUrl) {
     showDialog(
       context: context,
       builder: (ctx) => Dialog(
@@ -228,7 +191,33 @@ class _UploadGcashProofScreenState extends State<UploadGcashProofScreen> {
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(12),
-                  child: _buildQrWidget(size: 250),
+                  child: Image.network(
+                    qrUrl,
+                    width: 250,
+                    height: 250,
+                    fit: BoxFit.contain,
+                    loadingBuilder: (context, child, progress) {
+                      if (progress == null) return child;
+                      return const SizedBox(
+                        width: 250,
+                        height: 250,
+                        child: Center(
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Color(0xFF005CEE),
+                          ),
+                        ),
+                      );
+                    },
+                    errorBuilder: (context, error, stackTrace) => const SizedBox(
+                      width: 250,
+                      height: 250,
+                      child: Center(
+                        child: Icon(Icons.broken_image_rounded,
+                            size: 48, color: Colors.grey),
+                      ),
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(height: 16),
@@ -286,6 +275,7 @@ class _UploadGcashProofScreenState extends State<UploadGcashProofScreen> {
   @override
   Widget build(BuildContext context) {
     final displayName = _gcashName.isNotEmpty ? _gcashName : 'STORA Admin';
+    final hasQrCode = _qrCodeUrl != null && _qrCodeUrl!.isNotEmpty;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -356,7 +346,7 @@ class _UploadGcashProofScreenState extends State<UploadGcashProofScreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          '₱.00',
+                          '₱$_amount.00',
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 26,
@@ -584,101 +574,130 @@ class _UploadGcashProofScreenState extends State<UploadGcashProofScreen> {
               ),
               const SizedBox(height: 20),
 
-              // QR Code Card
-              Container(
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: HomeColors.cardBackground,
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: AppColors.fieldBorder),
-                ),
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Row(
-                          children: [
-                            Icon(
-                              Icons.qr_code_2_rounded,
-                              color: Color(0xFF00B0FF),
-                              size: 20,
+              // Dynamic QR Code Card (only displayed when uploaded in Django backend)
+              if (hasQrCode) ...[
+                Container(
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: HomeColors.cardBackground,
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: AppColors.fieldBorder),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Row(
+                            children: [
+                              Icon(
+                                Icons.qr_code_2_rounded,
+                                color: Color(0xFF00B0FF),
+                                size: 20,
+                              ),
+                              SizedBox(width: 8),
+                              Text(
+                                'OR SCAN QR CODE',
+                                style: TextStyle(
+                                  color: AppColors.label,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.6,
+                                ),
+                              ),
+                            ],
+                          ),
+                          TextButton.icon(
+                            onPressed: () => _showEnlargedQr(context, _qrCodeUrl!),
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              visualDensity: VisualDensity.compact,
                             ),
-                            SizedBox(width: 8),
-                            Text(
-                              'OR SCAN QR CODE',
+                            icon: const Icon(
+                              Icons.fullscreen_rounded,
+                              size: 16,
+                              color: Color(0xFF00B0FF),
+                            ),
+                            label: const Text(
+                              'Enlarge',
                               style: TextStyle(
-                                color: AppColors.label,
-                                fontSize: 11,
+                                color: Color(0xFF00B0FF),
+                                fontSize: 12,
                                 fontWeight: FontWeight.w700,
-                                letterSpacing: 0.6,
                               ),
                             ),
-                          ],
-                        ),
-                        TextButton.icon(
-                          onPressed: () => _showEnlargedQr(context),
-                          style: TextButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            visualDensity: VisualDensity.compact,
                           ),
-                          icon: const Icon(
-                            Icons.fullscreen_rounded,
-                            size: 16,
-                            color: Color(0xFF00B0FF),
-                          ),
-                          label: const Text(
-                            'Enlarge',
-                            style: TextStyle(
-                              color: Color(0xFF00B0FF),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
 
-                    // QR Image container
-                    GestureDetector(
-                      onTap: () => _showEnlargedQr(context),
-                      child: Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.25),
-                              blurRadius: 12,
-                              offset: const Offset(0, 4),
+                      // Dynamic QR Image container
+                      GestureDetector(
+                        onTap: () => _showEnlargedQr(context, _qrCodeUrl!),
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.25),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: Image.network(
+                              _qrCodeUrl!,
+                              width: 170,
+                              height: 170,
+                              fit: BoxFit.contain,
+                              loadingBuilder: (context, child, progress) {
+                                if (progress == null) return child;
+                                return const SizedBox(
+                                  width: 170,
+                                  height: 170,
+                                  child: Center(
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Color(0xFF005CEE),
+                                    ),
+                                  ),
+                                );
+                              },
+                              errorBuilder: (context, error, stackTrace) =>
+                                  const SizedBox(
+                                width: 170,
+                                height: 170,
+                                child: Center(
+                                  child: Icon(Icons.broken_image_rounded,
+                                      size: 36, color: Colors.grey),
+                                ),
+                              ),
                             ),
-                          ],
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(10),
-                          child: _buildQrWidget(size: 170),
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    const Text(
-                      'Tap QR to enlarge • Accepts GCash, Maya & InstaPay',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: AppColors.hint,
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w500,
+                      const SizedBox(height: 12),
+                      const Text(
+                        'Tap QR to enlarge • Accepts GCash, Maya & InstaPay',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: AppColors.hint,
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 24),
+                const SizedBox(height: 24),
+              ],
 
               // Step 2: Upload Screenshot
               const Text(
