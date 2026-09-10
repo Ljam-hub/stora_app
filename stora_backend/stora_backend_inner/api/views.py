@@ -180,23 +180,24 @@ def register(request):
     user = serializer.save()
     update_last_login(None, user)
 
-    # Generate verification code and dispatch email + admin notification in background
+    # Generate verification code and dispatch email
     code_obj = EmailVerificationCode.generate_code(user)
 
-    def _async_post_register():
+    try:
         send_verification_email(user, code_obj)
-        try:
-            user_type = "Store Owner" if getattr(user, "role", "") == "owner" else "Customer"
-            identifier = user.business_name or user.email
-            notify_admin(
-                title=f"New {user_type} Registered 👤",
-                body=f"{identifier} ({user.email}) just created an account.",
-                data={"user_id": str(user.id), "role": getattr(user, "role", ""), "action": "user_registered"},
-            )
-        except Exception as err:
-            logger.warning("Failed to dispatch admin registration alert: %s", err)
+    except Exception as e:
+        logger.error("Failed to send verification email on register: %s", e)
 
-    dispatch_email_async(_async_post_register)
+    try:
+        user_type = "Store Owner" if getattr(user, "role", "") == "owner" else "Customer"
+        identifier = user.business_name or user.email
+        notify_admin(
+            title=f"New {user_type} Registered 👤",
+            body=f"{identifier} ({user.email}) just created an account.",
+            data={"user_id": str(user.id), "role": getattr(user, "role", ""), "action": "user_registered"},
+        )
+    except Exception as err:
+        logger.warning("Failed to dispatch admin registration alert: %s", err)
 
     data = _tokens_for(user)
     data["message"] = "Account created. Please check your email for the verification code."
@@ -274,7 +275,10 @@ def resend_verification_code(request):
         )
 
     code_obj = EmailVerificationCode.generate_code(user)
-    dispatch_email_async(send_verification_email, user, code_obj)
+    try:
+        send_verification_email(user, code_obj)
+    except Exception as e:
+        logger.error("Failed to send verification email on resend: %s", e)
 
     return Response({"detail": "A fresh verification code has been sent to your email."})
 
