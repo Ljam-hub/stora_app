@@ -162,7 +162,9 @@ def health_check(request):
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def debug_smtp(request):
+    import os
     import socket
+    import traceback
     from django.core.mail import send_mail
     from django.conf import settings
 
@@ -187,7 +189,7 @@ def debug_smtp(request):
         )
         send_result = f"SUCCESS (return code: {res})"
     except Exception as e:
-        send_result = f"FAILED: {type(e).__name__} -> {e}"
+        send_result = f"FAILED: {type(e).__name__} -> {e}\n{traceback.format_exc()}"
 
     return Response({
         "network_ports": ports,
