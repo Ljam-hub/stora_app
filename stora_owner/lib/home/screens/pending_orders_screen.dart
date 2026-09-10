@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../data/services/notification_service.dart';
 import '../../stora_login/theme/app_colors.dart';
 import '../stores/orders_store.dart';
 import '../theme/home_colors.dart';
@@ -263,26 +264,87 @@ class _OrderCardState extends State<_OrderCard> {
     }
   }
 
+  void _showFeedback(
+    String message, {
+    bool isSuccess = true,
+    bool isWarning = false,
+    IconData? icon,
+  }) {
+    if (!mounted) return;
+    final primaryColor = isSuccess
+        ? const Color(0xFF00E676)
+        : (isWarning ? const Color(0xFFFFA726) : const Color(0xFFEF4444));
+    final bgColor = isSuccess
+        ? const Color(0xFF13251C)
+        : (isWarning ? const Color(0xFF2B1F10) : const Color(0xFF2C1318));
+    final borderColor = isSuccess
+        ? const Color(0xFF00E676).withValues(alpha: 0.4)
+        : (isWarning ? const Color(0xFFFFA726).withValues(alpha: 0.4) : const Color(0xFFEF4444).withValues(alpha: 0.4));
+
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+        backgroundColor: bgColor,
+        elevation: 8,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+          side: BorderSide(color: borderColor, width: 1.2),
+        ),
+        duration: const Duration(seconds: 4),
+        content: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: primaryColor.withValues(alpha: 0.15),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                icon ?? (isSuccess ? Icons.check_circle_rounded : (isWarning ? Icons.info_outline_rounded : Icons.error_outline_rounded)),
+                color: primaryColor,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                message,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w600,
+                  height: 1.3,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _handleAccept() async {
     setState(() => _isProcessing = true);
     try {
       await OrdersStore.instance.acceptOrder(orderId);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            backgroundColor: HomeColors.successBg,
-            content: Text('Order #$orderId accepted! Stock deducted and recorded in sales.'),
-          ),
+        _showFeedback(
+          'Order #$orderId accepted! Stock deducted and recorded in sales.',
+          isSuccess: true,
+          icon: Icons.check_circle_rounded,
         );
       }
+      // Show Android heads-up notification in notification shade
+      OwnerNotificationService.instance.showNotification(
+        title: 'Order #$orderId Accepted',
+        body: 'Stock deducted and recorded in sales. Order is now preparing.',
+      );
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            backgroundColor: HomeColors.dangerBg,
-            content: Text('Failed to accept order: $e'),
-          ),
-        );
+        _showFeedback('Failed to accept order: $e', isSuccess: false);
       }
     } finally {
       if (mounted) setState(() => _isProcessing = false);
@@ -294,21 +356,20 @@ class _OrderCardState extends State<_OrderCard> {
     try {
       await OrdersStore.instance.markOrderReady(orderId);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            backgroundColor: HomeColors.successBg,
-            content: Text('Order #$orderId marked as ready! Customer notified for pickup.'),
-          ),
+        _showFeedback(
+          'Order #$orderId marked as ready! Customer notified for pickup.',
+          isSuccess: true,
+          icon: Icons.storefront_rounded,
         );
       }
+      // Show Android heads-up notification in notification shade
+      OwnerNotificationService.instance.showNotification(
+        title: 'Order #$orderId Ready for Pickup',
+        body: 'Customer has been notified that Order #$orderId is ready for pickup.',
+      );
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            backgroundColor: HomeColors.dangerBg,
-            content: Text('Failed to mark order as ready: $e'),
-          ),
-        );
+        _showFeedback('Failed to mark order as ready: $e', isSuccess: false);
       }
     } finally {
       if (mounted) setState(() => _isProcessing = false);
@@ -376,18 +437,20 @@ class _OrderCardState extends State<_OrderCard> {
                 try {
                   await OrdersStore.instance.declineOrder(orderId, reason: reason);
                   if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        backgroundColor: HomeColors.cardElevated,
-                        content: Text('Order #$orderId declined.'),
-                      ),
+                    _showFeedback(
+                      'Order #$orderId declined.',
+                      isSuccess: false,
+                      isWarning: true,
+                      icon: Icons.cancel_outlined,
                     );
                   }
+                  OwnerNotificationService.instance.showNotification(
+                    title: 'Order #$orderId Declined',
+                    body: 'Order #$orderId declined: $reason',
+                  );
                 } catch (e) {
                   if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Error: $e')),
-                    );
+                    _showFeedback('Failed to decline order: $e', isSuccess: false);
                   }
                 } finally {
                   if (mounted) setState(() => _isProcessing = false);
@@ -473,18 +536,19 @@ class _OrderCardState extends State<_OrderCard> {
                   counterPrice: price,
                 );
                 if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      backgroundColor: HomeColors.cardElevated,
-                      content: Text('Counter-offer sent for Order #$orderId.'),
-                    ),
+                  _showFeedback(
+                    'Counter-offer sent for Order #$orderId.',
+                    isSuccess: true,
+                    icon: Icons.handshake_outlined,
                   );
                 }
+                OwnerNotificationService.instance.showNotification(
+                  title: 'Counter-Offer Sent',
+                  body: 'Sent counter-offer for Order #$orderId${price != null ? ' (₱$price)' : ''}',
+                );
               } catch (e) {
                 if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error: $e')),
-                  );
+                  _showFeedback('Failed to send counter-offer: $e', isSuccess: false);
                 }
               } finally {
                 if (mounted) setState(() => _isProcessing = false);
@@ -559,6 +623,8 @@ class _OrderCardState extends State<_OrderCard> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           Text(
                             'Order #$orderId',
@@ -569,44 +635,53 @@ class _OrderCardState extends State<_OrderCard> {
                               letterSpacing: -0.2,
                             ),
                           ),
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: _statusColor.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: _statusColor.withValues(alpha: 0.3),
-                                width: 0.8,
-                              ),
-                            ),
-                            child: Text(
-                              _statusLabel,
-                              style: TextStyle(
-                                color: _statusColor,
-                                fontSize: 10,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 0.5,
-                              ),
+                          Text(
+                            '₱$totalAmount',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -0.3,
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 3),
+                      const SizedBox(height: 4),
                       Text(
                         customerName,
-                        style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.85),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 6),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: _statusColor.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: _statusColor.withValues(alpha: 0.3),
+                              width: 0.8,
+                            ),
+                          ),
+                          child: Text(
+                            _statusLabel,
+                            style: TextStyle(
+                              color: _statusColor,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
                       ),
                     ],
-                  ),
-                ),
-                Text(
-                  '₱$totalAmount',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.3,
                   ),
                 ),
               ],

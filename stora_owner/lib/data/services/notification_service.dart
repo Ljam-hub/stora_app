@@ -27,7 +27,7 @@ class OwnerNotificationService {
     'stora_owner_orders',
     'Store Orders',
     description: 'New incoming customer orders and updates',
-    importance: Importance.high,
+    importance: Importance.max,
     playSound: true,
     enableVibration: true,
     showBadge: true,
@@ -56,6 +56,8 @@ class OwnerNotificationService {
               AndroidFlutterLocalNotificationsPlugin>();
       if (androidPlugin != null) {
         await androidPlugin.createNotificationChannel(_orderChannel);
+        // Explicitly request notification permission for Android 13+ (API 33+)
+        await androidPlugin.requestNotificationsPermission();
       }
 
       // ── Firebase Messaging setup ──
@@ -81,7 +83,7 @@ class OwnerNotificationService {
         // ── Foreground message handler ──
         FirebaseMessaging.onMessage.listen((RemoteMessage message) {
           debugPrint(
-              'Foreground owner notification received: ${message.notification?.title}');
+              'Foreground owner notification received: ${message.notification?.title ?? message.data['title']}');
 
           final action = message.data['action'];
           if (action == 'created') {
@@ -106,26 +108,56 @@ class OwnerNotificationService {
     }
   }
 
-  /// Displays a local heads-up notification banner with sound and vibration.
+  /// Explicitly displays a local heads-up notification banner.
+  Future<void> showNotification({
+    required String title,
+    required String body,
+    String? payload,
+  }) async {
+    try {
+      const androidDetails = AndroidNotificationDetails(
+        'stora_owner_orders',
+        'Store Orders',
+        channelDescription: 'New incoming customer orders and updates',
+        importance: Importance.max,
+        priority: Priority.max,
+        playSound: true,
+        enableVibration: true,
+        icon: '@mipmap/ic_launcher',
+      );
+
+      await _localNotifications.show(
+        DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        title,
+        body,
+        const NotificationDetails(android: androidDetails),
+        payload: payload,
+      );
+    } catch (e) {
+      debugPrint('Error showing owner local notification: $e');
+    }
+  }
+
+  /// Displays a local heads-up notification banner with sound and vibration from RemoteMessage.
   void _showLocalNotification(RemoteMessage message) {
-    final notification = message.notification;
-    if (notification == null) return;
+    final title = message.notification?.title ?? message.data['title'] ?? 'Store Order Update';
+    final body = message.notification?.body ?? message.data['body'] ?? 'New order update received';
 
     final androidDetails = AndroidNotificationDetails(
       _orderChannel.id,
       _orderChannel.name,
       channelDescription: _orderChannel.description,
-      importance: Importance.high,
-      priority: Priority.high,
+      importance: Importance.max,
+      priority: Priority.max,
       playSound: true,
       enableVibration: true,
       icon: '@mipmap/ic_launcher',
     );
 
     _localNotifications.show(
-      notification.hashCode,
-      notification.title,
-      notification.body,
+      message.hashCode,
+      title,
+      body,
       NotificationDetails(android: androidDetails),
     );
   }

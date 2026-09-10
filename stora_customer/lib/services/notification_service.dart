@@ -25,7 +25,7 @@ class NotificationService {
     'stora_customer_orders',
     'Order Updates',
     description: 'Important order status updates from stores',
-    importance: Importance.high,
+    importance: Importance.max,
     playSound: true,
     enableVibration: true,
     showBadge: true,
@@ -54,6 +54,8 @@ class NotificationService {
               AndroidFlutterLocalNotificationsPlugin>();
       if (androidPlugin != null) {
         await androidPlugin.createNotificationChannel(_orderChannel);
+        // Explicitly request notification permission for Android 13+ (API 33+)
+        await androidPlugin.requestNotificationsPermission();
       }
 
       // ── Firebase Messaging setup ──
@@ -68,7 +70,7 @@ class NotificationService {
           settings.authorizationStatus == AuthorizationStatus.provisional) {
         final token = await messaging.getToken();
         if (token != null) {
-          debugPrint('FCM Token: $token');
+          debugPrint('Customer FCM Token: $token');
           await CustomerApiService.instance.updateFcmToken(token);
         }
 
@@ -79,7 +81,7 @@ class NotificationService {
         // ── Foreground message handler ──
         FirebaseMessaging.onMessage.listen((RemoteMessage message) {
           debugPrint(
-              'Foreground notification received: ${message.notification?.title}');
+              'Foreground customer notification received: ${message.notification?.title ?? message.data['title']}');
 
           // Show a system heads-up banner with sound even while the app is open
           _showLocalNotification(message);
@@ -98,26 +100,56 @@ class NotificationService {
     }
   }
 
+  /// Explicitly displays a local heads-up notification banner.
+  Future<void> showNotification({
+    required String title,
+    required String body,
+    String? payload,
+  }) async {
+    try {
+      const androidDetails = AndroidNotificationDetails(
+        'stora_customer_orders',
+        'Order Updates',
+        channelDescription: 'Important order status updates from stores',
+        importance: Importance.max,
+        priority: Priority.max,
+        playSound: true,
+        enableVibration: true,
+        icon: '@mipmap/ic_launcher',
+      );
+
+      await _localNotifications.show(
+        DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        title,
+        body,
+        const NotificationDetails(android: androidDetails),
+        payload: payload,
+      );
+    } catch (e) {
+      debugPrint('Error showing customer local notification: $e');
+    }
+  }
+
   /// Displays a local heads-up notification banner with sound and vibration.
   void _showLocalNotification(RemoteMessage message) {
-    final notification = message.notification;
-    if (notification == null) return;
+    final title = message.notification?.title ?? message.data['title'] ?? 'Order Update';
+    final body = message.notification?.body ?? message.data['body'] ?? 'Your order status has changed';
 
     final androidDetails = AndroidNotificationDetails(
       _orderChannel.id,
       _orderChannel.name,
       channelDescription: _orderChannel.description,
-      importance: Importance.high,
-      priority: Priority.high,
+      importance: Importance.max,
+      priority: Priority.max,
       playSound: true,
       enableVibration: true,
       icon: '@mipmap/ic_launcher',
     );
 
     _localNotifications.show(
-      notification.hashCode,
-      notification.title,
-      notification.body,
+      message.hashCode,
+      title,
+      body,
       NotificationDetails(android: androidDetails),
     );
   }

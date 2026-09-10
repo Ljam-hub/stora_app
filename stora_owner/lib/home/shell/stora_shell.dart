@@ -41,6 +41,7 @@ class _StoraShellState extends State<StoraShell> {
     CategoryStore.instance.loadCategories();
     SalesStore.instance.loadSales();
     OrdersStore.instance.fetchOrders();
+    OwnerNotificationService.instance.init();
 
     OwnerNotificationService.instance.onForegroundMessageReceived = (message) {
       if (!mounted) return;

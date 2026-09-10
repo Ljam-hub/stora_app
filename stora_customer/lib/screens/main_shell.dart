@@ -29,6 +29,7 @@ class _MainShellState extends State<MainShell> {
   void initState() {
     super.initState();
     _currentIndex = widget.initialTab;
+    NotificationService.instance.init();
 
     NotificationService.instance.onForegroundMessageReceived = (message) {
       if (!mounted) return;
