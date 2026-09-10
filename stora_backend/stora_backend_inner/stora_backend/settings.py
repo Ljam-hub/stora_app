@@ -193,8 +193,10 @@ EMAIL_TIMEOUT = int(os.getenv("EMAIL_TIMEOUT", "15"))
 _env_email_backend = os.getenv("EMAIL_BACKEND")
 if _env_email_backend:
     EMAIL_BACKEND = _env_email_backend
+elif os.getenv("BREVO_API_KEY") or os.getenv("RESEND_API_KEY"):
+    EMAIL_BACKEND = "api.email_backend.UniversalEmailBackend"
 elif EMAIL_HOST_USER and EMAIL_HOST_PASSWORD:
-    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+    EMAIL_BACKEND = "api.email_backend.UniversalEmailBackend"
 elif DEBUG:
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 else:

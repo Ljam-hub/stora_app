@@ -193,6 +193,8 @@ def debug_smtp(request):
         "network_ports": ports,
         "send_result": send_result,
         "backend": getattr(settings, "EMAIL_BACKEND", None),
+        "brevo_configured": bool(os.getenv("BREVO_API_KEY")),
+        "resend_configured": bool(os.getenv("RESEND_API_KEY")),
         "host": getattr(settings, "EMAIL_HOST", None),
         "port": getattr(settings, "EMAIL_PORT", None),
         "user": getattr(settings, "EMAIL_HOST_USER", None),

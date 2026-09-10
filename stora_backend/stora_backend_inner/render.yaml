@@ -38,7 +38,9 @@ services:
       - key: DEFAULT_FROM_EMAIL
         value: "STORA <laisojl014@gmail.com>"
       # Set these manually in the Render dashboard:
-      # - DATABASE_URL             (your Supabase connection string)
-      # - CLOUDINARY_URL           (from your Cloudinary account)
+      # - DATABASE_URL              (your Supabase connection string)
+      # - CLOUDINARY_URL            (from your Cloudinary account)
       # - FIREBASE_CREDENTIALS_JSON (minified service account JSON for FCM push notifications)
-      # - CORS_ALLOWED_ORIGINS     (if Flutter web is used)
+      # - BREVO_API_KEY             (Free API key from brevo.com to send emails over HTTPS Port 443 — bypasses Render Free SMTP block)
+      # - RESEND_API_KEY            (Alternative API key from resend.com)
+      # - CORS_ALLOWED_ORIGINS      (if Flutter web is used)
