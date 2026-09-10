@@ -13,7 +13,6 @@ import '../../subscription/subscription_screen.dart';
 import '../../subscription/subscription_status_screen.dart';
 import '../../subscription/subscription_status.dart';
 import '../theme/theme_mode_controller.dart';
-import '../../stora_login/screens/email_verification_screen.dart';
 
 // ---------------------------------------------------------------------
 // Profile — store header (name, owner, plan pill) plus a settings

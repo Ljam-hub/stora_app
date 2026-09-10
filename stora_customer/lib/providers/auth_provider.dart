@@ -153,6 +153,7 @@ class AuthProvider extends ChangeNotifier {
       final res = await CustomerApiService.instance.verifyEmail(email, code);
       if (res.containsKey('user') && res['user'] is Map) {
         _currentUser = UserModel.fromJson(res['user'] as Map<String, dynamic>);
+        await SessionManager.instance.updateUser(_currentUser!);
       }
       _isLoading = false;
       notifyListeners();

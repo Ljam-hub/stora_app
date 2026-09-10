@@ -19,7 +19,8 @@ class EmailVerificationScreen extends StatefulWidget {
   State<EmailVerificationScreen> createState() => _EmailVerificationScreenState();
 }
 
-class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
+class _EmailVerificationScreenState extends State<EmailVerificationScreen>
+    with WidgetsBindingObserver {
   final _codeController = TextEditingController();
   bool _isSubmitting = false;
   bool _isResending = false;
@@ -29,14 +30,88 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _startCooldownTimer();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _timer?.cancel();
     _codeController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _checkClipboardForCode();
+    }
+  }
+
+  Future<void> _checkClipboardForCode() async {
+    try {
+      final data = await Clipboard.getData('text/plain');
+      final text = data?.text?.trim() ?? '';
+      final digits = text.replaceAll(RegExp(r'\D'), '');
+      if (digits.length == 6 && _codeController.text != digits) {
+        setState(() {
+          _codeController.text = digits;
+        });
+        _handleVerify();
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _pasteFromClipboard() async {
+    try {
+      final data = await Clipboard.getData('text/plain');
+      final text = data?.text?.trim() ?? '';
+      final digits = text.replaceAll(RegExp(r'\D'), '');
+      if (digits.isNotEmpty) {
+        final code = digits.length > 6 ? digits.substring(0, 6) : digits;
+        setState(() {
+          _codeController.text = code;
+        });
+        if (code.length == 6) {
+          _handleVerify();
+        }
+      } else {
+        if (mounted) {
+          showStoraSnackBar(context, 'No verification code found in clipboard.');
+        }
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _confirmLeave() async {
+    final shouldLeave = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1827),
+        title: const Text('Leave Verification?', style: TextStyle(color: Colors.white)),
+        content: const Text(
+          'Your verification is in progress. If you go back to login, you will need to sign in again.',
+          style: TextStyle(color: AppColors.label),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Stay Here', style: TextStyle(color: AppColors.primaryLight)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Log Out', style: TextStyle(color: Colors.redAccent)),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldLeave == true && mounted) {
+      await AuthStore.instance.logout();
+      if (!mounted) return;
+      Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+    }
   }
 
   void _startCooldownTimer() {
@@ -104,12 +179,9 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
   Widget build(BuildContext context) {
     return PopScope(
       canPop: false,
-      onPopInvokedWithResult: (didPop, result) async {
+      onPopInvokedWithResult: (didPop, result) {
         if (didPop) return;
-        await AuthStore.instance.logout();
-        if (context.mounted) {
-          Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
-        }
+        _confirmLeave();
       },
       child: Scaffold(
       backgroundColor: AppColors.background,
@@ -203,16 +275,26 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                           ),
                           maxLength: 6,
                           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                          decoration: const InputDecoration(
+                          onChanged: (val) {
+                            if (val.trim().length == 6) {
+                              _handleVerify();
+                            }
+                          },
+                          decoration: InputDecoration(
                             counterText: '',
                             hintText: '••••••',
-                            hintStyle: TextStyle(
+                            hintStyle: const TextStyle(
                               color: AppColors.hint,
                               fontSize: 28,
                               letterSpacing: 10,
                             ),
                             border: InputBorder.none,
-                            contentPadding: EdgeInsets.symmetric(vertical: 16),
+                            contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                            suffixIcon: IconButton(
+                              icon: const Icon(Icons.content_paste_rounded, color: AppColors.primaryLight),
+                              tooltip: 'Paste from clipboard',
+                              onPressed: _pasteFromClipboard,
+                            ),
                           ),
                         ),
                       ),
@@ -262,12 +344,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
 
                       // Back to Login
                       TextButton.icon(
-                        onPressed: () async {
-                          await AuthStore.instance.logout();
-                          if (context.mounted) {
-                            Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
-                          }
-                        },
+                        onPressed: _confirmLeave,
                         icon: const Icon(Icons.arrow_back, size: 16, color: AppColors.hint),
                         label: const Text(
                           'Back to Login',

@@ -86,6 +86,22 @@ class SessionManager {
     }
   }
 
+  Future<void> updateUser(UserModel user) async {
+    try {
+      final db = await database;
+      await db.update(
+        'session',
+        {
+          'user_json': jsonEncode(user.toJson()),
+          'updated_at': DateTime.now().toIso8601String(),
+        },
+        where: 'id = 1',
+      );
+    } catch (e) {
+      debugPrint('Error updating user in session: $e');
+    }
+  }
+
   Future<CustomerSession?> getSession() async {
     try {
       final db = await database;
