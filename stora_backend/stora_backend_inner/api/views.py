@@ -159,51 +159,6 @@ def health_check(request):
     return Response({"status": "ok", "message": "Stora backend is reachable"})
 
 
-@api_view(["GET"])
-@permission_classes([AllowAny])
-def debug_smtp(request):
-    import os
-    import socket
-    import traceback
-    from django.core.mail import send_mail
-    from django.conf import settings
-
-    target = request.GET.get("to", "laisojl014@gmail.com")
-    ports = {}
-    for p in [587, 465, 25]:
-        try:
-            s = socket.create_connection(("smtp.gmail.com", p), timeout=3)
-            s.close()
-            ports[f"smtp.gmail.com:{p}"] = "OPEN"
-        except Exception as e:
-            ports[f"smtp.gmail.com:{p}"] = f"BLOCKED: {e}"
-
-    send_result = ""
-    try:
-        res = send_mail(
-            "Render Diagnostic Test",
-            "This is a diagnostic email directly from Render live server.",
-            getattr(settings, "DEFAULT_FROM_EMAIL", "STORA <laisojl014@gmail.com>"),
-            [target],
-            fail_silently=False,
-        )
-        send_result = f"SUCCESS (return code: {res})"
-    except Exception as e:
-        send_result = f"FAILED: {type(e).__name__} -> {e}\n{traceback.format_exc()}"
-
-    return Response({
-        "network_ports": ports,
-        "send_result": send_result,
-        "backend": getattr(settings, "EMAIL_BACKEND", None),
-        "brevo_configured": bool(os.getenv("BREVO_API_KEY")),
-        "resend_configured": bool(os.getenv("RESEND_API_KEY")),
-        "host": getattr(settings, "EMAIL_HOST", None),
-        "port": getattr(settings, "EMAIL_PORT", None),
-        "user": getattr(settings, "EMAIL_HOST_USER", None),
-        "use_tls": getattr(settings, "EMAIL_USE_TLS", None),
-        "default_from": getattr(settings, "DEFAULT_FROM_EMAIL", None),
-    })
-
 
 TRUSTED_EMAIL_DOMAINS = {"gmail.com", "googlemail.com"}
 
