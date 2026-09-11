@@ -73,8 +73,65 @@ class User(AbstractUser):
             return max(0, (self.trial_ends_at - timezone.now()).days)
         return 0
 
+    def save(self, *args, **kwargs):
+        if self.is_superuser or self.is_staff:
+            self.role = self.ROLE_ADMIN
+        elif self.role == self.ROLE_ADMIN:
+            self.is_staff = True
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return self.business_name or self.email or self.username
+
+
+class PendingRegistration(models.Model):
+    """Holds unverified registrations. The User account is ONLY created
+    once the 6-digit email verification code is confirmed."""
+    email = models.EmailField(unique=True)
+    password = models.CharField(max_length=255)
+    role = models.CharField(max_length=20, choices=User.ROLE_CHOICES, default=User.ROLE_CUSTOMER)
+    business_name = models.CharField(max_length=150, blank=True, default="")
+    first_name = models.CharField(max_length=150, blank=True, default="")
+    last_name = models.CharField(max_length=150, blank=True, default="")
+    code = models.CharField(max_length=6)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def is_valid(self):
+        return timezone.now() < self.expires_at
+
+    @classmethod
+    def create_or_update_pending(cls, email, password, role, business_name="", first_name="", last_name="", validity_minutes=15):
+        from django.contrib.auth.hashers import make_password
+        cls.purge_expired()
+        hashed = make_password(password) if not password.startswith(('pbkdf2_', 'argon2', 'bcrypt')) else password
+        code = f"{secrets.randbelow(900000) + 100000}"
+        expires_at = timezone.now() + timedelta(minutes=validity_minutes)
+        obj, _ = cls.objects.update_or_create(
+            email=email.strip().lower(),
+            defaults={
+                "password": hashed,
+                "role": role,
+                "business_name": business_name.strip(),
+                "first_name": first_name.strip(),
+                "last_name": last_name.strip(),
+                "code": code,
+                "expires_at": expires_at,
+            }
+        )
+        return obj
+
+    @classmethod
+    def purge_expired(cls):
+        # Auto-purge pending registrations older than 24 hours
+        threshold = timezone.now() - timedelta(hours=24)
+        cls.objects.filter(created_at__lt=threshold).delete()
+
+    def __str__(self):
+        return f"Pending {self.role}: {self.email} (code: {self.code})"
 
 
 class EmailVerificationCode(models.Model):

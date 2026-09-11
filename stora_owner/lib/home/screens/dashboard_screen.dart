@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../auth/auth_store.dart';
 import '../../stora_login/stora_login.dart';
+import '../../data/models/account_status.dart';
 import '../../data/stores/account_status_store.dart';
 import '../stores/inventory_store.dart';
 import '../stores/orders_store.dart';
@@ -10,6 +11,7 @@ import '../utils/date_utils.dart';
 import '../../subscription/subscription_screen.dart';
 import 'add_edit_product_screen.dart';
 import 'ai_insights_screen.dart';
+import 'owner_chat_screen.dart';
 import 'pending_orders_screen.dart';
 import 'pos_screen.dart';
 import 'profile_screen.dart';
@@ -102,6 +104,13 @@ class DashboardScreen extends StatelessWidget {
                       ),
                     ),
                     IconButton(
+                      icon: const Icon(Icons.chat_bubble_outline_rounded, color: Colors.white, size: 22),
+                      tooltip: 'Customer Messages',
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const OwnerChatScreen()),
+                      ),
+                    ),
+                    IconButton(
                       onPressed: () => Navigator.of(context).push(
                         MaterialPageRoute(
                           builder: (_) => const ProfileScreen(),
@@ -111,7 +120,9 @@ class DashboardScreen extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 18),
+                const SizedBox(height: 14),
+                _TopStatusBadge(status: AccountStatusStore.instance.status),
+                const SizedBox(height: 16),
                 FadeSlideIn(
                   delay: const Duration(milliseconds: 0),
                   child: _IncomingOrdersCard(
@@ -134,6 +145,7 @@ class DashboardScreen extends StatelessWidget {
                     ),
                   ),
                 ),
+                const SizedBox(height: 14),
                 // AI Insights & Map Row
                 FadeSlideIn(
                   delay: const Duration(milliseconds: 200),
@@ -785,6 +797,112 @@ class _IncomingOrdersCard extends StatelessWidget {
                 size: 14,
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TopStatusBadge extends StatelessWidget {
+  final AccountStatus status;
+  const _TopStatusBadge({required this.status});
+
+  @override
+  Widget build(BuildContext context) {
+    final isPremium = status.isPremium;
+    final daysLeft = status.daysLeft;
+    final isExpiringSoon = !isPremium && daysLeft <= 3;
+
+    final bgColor = isPremium
+        ? const Color(0xFF2A1C3C)
+        : isExpiringSoon
+            ? HomeColors.warningBg
+            : HomeColors.cardElevated;
+    final borderColor = isPremium
+        ? const Color(0xFF9D4EDD)
+        : isExpiringSoon
+            ? HomeColors.warningText.withValues(alpha: 0.5)
+            : HomeColors.cardBorder;
+    final textColor = isPremium
+        ? const Color(0xFFE0AAFF)
+        : isExpiringSoon
+            ? HomeColors.warningText
+            : Colors.white;
+
+    return GestureDetector(
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => SubscriptionScreen()),
+      ),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: borderColor, width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: (isPremium ? const Color(0xFF9D4EDD) : Colors.black).withValues(alpha: 0.12),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Text(
+              isPremium ? '⭐' : isExpiringSoon ? '⚠️' : '⏳',
+              style: const TextStyle(fontSize: 18),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        isPremium
+                            ? 'Premium Plan'
+                            : 'Free Trial: $daysLeft days left',
+                        style: TextStyle(
+                          color: textColor,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                      if (isExpiringSoon) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: HomeColors.dangerBg,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: const Text(
+                            'Expiring Soon',
+                            style: TextStyle(color: HomeColors.dangerText, fontSize: 10, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    isPremium
+                        ? 'Active · Unlimited products & full features unlocked'
+                        : isExpiringSoon
+                            ? 'Upgrade to Premium now to keep your store active'
+                            : 'Tap to view plan details & upgrade to Premium',
+                    style: TextStyle(
+                      color: isPremium ? const Color(0xFFC77DFF) : AppColors.label,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.arrow_forward_ios_rounded, color: AppColors.label, size: 12),
           ],
         ),
       ),

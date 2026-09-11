@@ -7,11 +7,12 @@ class StoraTextField extends StatefulWidget {
   final String hint;
   final bool obscureText;
   final TextEditingController controller;
-  final String? Function(String?) validator;
+  final String? Function(String?)? validator;
   final Key? fieldKey;
   final TextInputType? keyboardType;
   final Widget? prefixIcon;
   final Widget? suffixIcon;
+  final int maxLines;
 
   const StoraTextField({
     super.key,
@@ -19,11 +20,12 @@ class StoraTextField extends StatefulWidget {
     required this.label,
     required this.hint,
     required this.controller,
-    required this.validator,
+    this.validator,
     this.obscureText = false,
     this.keyboardType,
     this.prefixIcon,
     this.suffixIcon,
+    this.maxLines = 1,
   });
 
   @override
@@ -75,6 +77,7 @@ class _StoraTextFieldState extends State<StoraTextField> {
           key: widget.fieldKey,
           controller: widget.controller,
           obscureText: _obscured,
+          maxLines: _obscured ? 1 : widget.maxLines,
           keyboardType: widget.keyboardType,
           style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500),
           validator: widget.validator,

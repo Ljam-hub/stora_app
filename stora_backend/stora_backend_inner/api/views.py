@@ -3,7 +3,7 @@ from django.db import transaction
 from rest_framework import status, viewsets
 from rest_framework.decorators import action, api_view, parser_classes, permission_classes
 from rest_framework.exceptions import PermissionDenied
-from rest_framework.parsers import FormParser, MultiPartParser
+from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -19,19 +19,31 @@ from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
-from accounts.models import AIInsight, EmailVerificationCode, PasswordResetToken, PaymentProof, StoreLocation, SubscriptionConfig, User
-from inventory.models import MAX_STOCK, Category, Product
+from accounts.models import (
+    AIInsight,
+    EmailVerificationCode,
+    PasswordResetToken,
+    PaymentProof,
+    PendingRegistration,
+    StoreLocation,
+    SubscriptionConfig,
+    User,
+)
+from inventory.models import DEFAULT_CATEGORIES, MAX_STOCK, Category, Product
 from orders.models import Order, OrderItem
 from sales.models import Sale
+from api.models import ChatMessage, BlockedCustomer, UserReport
 
 import sys
 import threading
-from .fcm import notify_admin, notify_order_status_change
+from .fcm import notify_admin, notify_new_chat_message, notify_order_status_change
 from .serializers import (
     AccountStatusSerializer,
     AIInsightSerializer,
+    BlockedCustomerSerializer,
     CategorySerializer,
     ChangePasswordSerializer,
+    ChatMessageSerializer,
     FCMTokenSerializer,
     ForgotPasswordSerializer,
     LoginSerializer,
@@ -48,6 +60,7 @@ from .serializers import (
     SaleSerializer,
     StoreLocationSerializer,
     SubscriptionConfigSerializer,
+    UserReportSerializer,
     UserSerializer,
     UserUpdateSerializer,
     VerifyEmailSerializer,
@@ -177,31 +190,32 @@ def is_trusted_email(email: str) -> bool:
 def register(request):
     serializer = RegisterSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
-    user = serializer.save()
-    update_last_login(None, user)
+    data = serializer.validated_data
 
-    # Generate verification code and dispatch email
-    code_obj = EmailVerificationCode.generate_code(user)
+    # Strict requirement: Do NOT create User account until email is verified.
+    pending = PendingRegistration.create_or_update_pending(
+        email=data["email"],
+        password=data["password"],
+        role=data.get("role", "owner"),
+        business_name=data.get("business_name", ""),
+        first_name=data.get("first_name", ""),
+        last_name=data.get("last_name", ""),
+        validity_minutes=15,
+    )
 
     try:
-        send_verification_email(user, code_obj)
+        send_verification_email(pending, pending)
     except Exception as e:
         logger.error("Failed to send verification email on register: %s", e)
 
-    try:
-        user_type = "Store Owner" if getattr(user, "role", "") == "owner" else "Customer"
-        identifier = user.business_name or user.email
-        notify_admin(
-            title=f"New {user_type} Registered 👤",
-            body=f"{identifier} ({user.email}) just created an account.",
-            data={"user_id": str(user.id), "role": getattr(user, "role", ""), "action": "user_registered"},
-        )
-    except Exception as err:
-        logger.warning("Failed to dispatch admin registration alert: %s", err)
-
-    data = _tokens_for(user)
-    data["message"] = "Account created. Please check your email for the verification code."
-    return Response(data, status=status.HTTP_201_CREATED)
+    return Response(
+        {
+            "message": "Verification code sent to your email. Please verify to complete account registration.",
+            "email": pending.email,
+            "is_email_verified": False,
+        },
+        status=status.HTTP_201_CREATED,
+    )
 
 
 @api_view(["POST"])
@@ -212,16 +226,65 @@ def verify_email(request):
     email = serializer.validated_data["email"].strip().lower()
     code = serializer.validated_data["code"].strip()
 
+    # 1. Check PendingRegistration first
+    pending = PendingRegistration.objects.filter(email__iexact=email).first()
+    if pending:
+        if pending.code != code:
+            return Response({"detail": "Invalid verification code."}, status=status.HTTP_400_BAD_REQUEST)
+        if not pending.is_valid():
+            return Response(
+                {"detail": "Verification code has expired. Please request a new one."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Create the verified User account
+        user = User(
+            username=pending.email,
+            email=pending.email,
+            role=pending.role,
+            business_name=pending.business_name,
+            first_name=pending.first_name,
+            last_name=pending.last_name,
+            is_email_verified=True,
+        )
+        user.password = pending.password  # Already hashed with make_password
+        user.save()
+
+        # Create default categories for store owner
+        if user.role == User.ROLE_OWNER:
+            Category.objects.bulk_create(
+                [Category(owner=user, name=name) for name in DEFAULT_CATEGORIES]
+            )
+
+        # Cleanup pending record
+        pending.delete()
+
+        try:
+            user_type = "Store Owner" if user.role == User.ROLE_OWNER else "Customer"
+            identifier = user.business_name or user.email
+            notify_admin(
+                title=f"New {user_type} Verified & Registered 👤",
+                body=f"{identifier} ({user.email}) just verified email and joined.",
+                data={"user_id": str(user.id), "role": user.role, "action": "user_registered"},
+            )
+        except Exception as err:
+            logger.warning("Failed to dispatch admin registration alert: %s", err)
+
+        update_last_login(None, user)
+        res_data = _tokens_for(user)
+        res_data["detail"] = "Email verified and account created successfully."
+        return Response(res_data, status=status.HTTP_200_OK)
+
+    # 2. Fallback to existing User for backwards-compatibility / already created accounts
     try:
         user = User.objects.get(email__iexact=email)
     except User.DoesNotExist:
-        return Response({"detail": "Account not found."}, status=status.HTTP_404_NOT_FOUND)
+        return Response({"detail": "Account or pending registration not found."}, status=status.HTTP_404_NOT_FOUND)
 
     if user.is_email_verified:
-        return Response({
-            "detail": "Email is already verified.",
-            "user": UserSerializer(user).data,
-        })
+        res_data = _tokens_for(user)
+        res_data["detail"] = "Email is already verified."
+        return Response(res_data)
 
     verification = EmailVerificationCode.objects.filter(
         user=user,
@@ -233,7 +296,10 @@ def verify_email(request):
         return Response({"detail": "Invalid verification code."}, status=status.HTTP_400_BAD_REQUEST)
 
     if not verification.is_valid():
-        return Response({"detail": "Verification code has expired. Please request a new one."}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            {"detail": "Verification code has expired. Please request a new one."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
     # Mark verified
     verification.used = True
@@ -254,6 +320,27 @@ def resend_verification_code(request):
     serializer.is_valid(raise_exception=True)
     email = serializer.validated_data["email"].strip().lower()
 
+    # Check pending registration first
+    pending = PendingRegistration.objects.filter(email__iexact=email).first()
+    if pending:
+        # Rate limiting: 60s cooldown based on created_at
+        if pending.created_at >= timezone.now() - timedelta(seconds=60):
+            wait_seconds = max(1, 60 - int((timezone.now() - pending.created_at).total_seconds()))
+            return Response(
+                {"detail": f"Please wait {wait_seconds} seconds before requesting another code."},
+                status=status.HTTP_429_TOO_MANY_REQUESTS,
+            )
+        import secrets
+        pending.code = f"{secrets.randbelow(900000) + 100000}"
+        pending.expires_at = timezone.now() + timedelta(minutes=15)
+        pending.save(update_fields=["code", "expires_at"])
+        try:
+            send_verification_email(pending, pending)
+        except Exception as e:
+            logger.error("Failed to resend verification email for pending registration: %s", e)
+        return Response({"detail": "A fresh verification code has been sent to your email."})
+
+    # Check existing User
     try:
         user = User.objects.get(email__iexact=email)
     except User.DoesNotExist:
@@ -262,7 +349,6 @@ def resend_verification_code(request):
     if user.is_email_verified:
         return Response({"detail": "Email is already verified."}, status=status.HTTP_200_OK)
 
-    # Rate limiting: 60-second cooldown
     recent_code = EmailVerificationCode.objects.filter(
         user=user,
         created_at__gte=timezone.now() - timedelta(seconds=60),
@@ -281,6 +367,7 @@ def resend_verification_code(request):
         logger.error("Failed to send verification email on resend: %s", e)
 
     return Response({"detail": "A fresh verification code has been sent to your email."})
+
 
 
 @api_view(["POST"])
@@ -1039,5 +1126,246 @@ def ai_store_insights(request):
 def dismiss_ai_insight(request, pk):
     """Mark an AI insight as dismissed."""
     return Response({"status": "dismissed", "id": pk})
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def clear_fcm_token(request):
+    """Clears FCM token on logout to prevent cross-account notifications."""
+    request.user.fcm_token = None
+    request.user.save(update_fields=["fcm_token"])
+    return Response({"status": "cleared"})
+
+
+@api_view(["GET", "POST"])
+@permission_classes([IsAuthenticated])
+@parser_classes([MultiPartParser, FormParser, JSONParser])
+def chat_messages(request):
+    """
+    GET: List chat messages between request.user and another user (?with_user=<id>)
+    POST: Send a message (text and/or image) to another user
+    """
+    user = request.user
+
+    if request.method == "GET":
+        with_user_id = request.query_params.get("with_user")
+        if not with_user_id:
+            return Response({"error": "Query parameter 'with_user' is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        from django.db.models import Q
+        messages = ChatMessage.objects.filter(
+            (Q(sender=user) & Q(recipient_id=with_user_id)) |
+            (Q(sender_id=with_user_id) & Q(recipient=user))
+        ).order_by("created_at")
+
+        # Automatically mark incoming messages as read
+        ChatMessage.objects.filter(
+            sender_id=with_user_id,
+            recipient=user,
+            is_read=False,
+        ).update(is_read=True)
+
+        serializer = ChatMessageSerializer(messages, many=True, context={"request": request})
+        return Response(serializer.data)
+
+    elif request.method == "POST":
+        recipient_id = request.data.get("recipient")
+        if not recipient_id:
+            return Response({"error": "Field 'recipient' is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            recipient = User.objects.get(pk=recipient_id)
+        except User.DoesNotExist:
+            return Response({"error": "Recipient user not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Check if customer is blocked by store owner
+        if user.role == User.ROLE_CUSTOMER and recipient.role in (User.ROLE_OWNER, User.ROLE_ADMIN):
+            if BlockedCustomer.objects.filter(owner=recipient, customer=user).exists():
+                return Response(
+                    {"error": "You have been blocked by this store and cannot send messages."},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+        elif user.role in (User.ROLE_OWNER, User.ROLE_ADMIN) and recipient.role == User.ROLE_CUSTOMER:
+            if BlockedCustomer.objects.filter(owner=user, customer=recipient).exists():
+                return Response(
+                    {"error": "You have blocked this customer. Unblock them first to send a message."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+        msg_text = (request.data.get("message") or "").strip()
+        image = request.FILES.get("image")
+        order_id = request.data.get("order")
+
+        if not msg_text and not image:
+            return Response(
+                {"error": "Message cannot be empty. Send text or an image."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        chat_msg = ChatMessage(
+            sender=user,
+            recipient=recipient,
+            message=msg_text,
+            image=image,
+            order_id=order_id if order_id else None,
+        )
+        chat_msg.save()
+
+        try:
+            notify_new_chat_message(chat_msg)
+        except Exception as exc:
+            logger.warning("Failed to notify chat message: %s", exc)
+
+        serializer = ChatMessageSerializer(chat_msg, context={"request": request})
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def list_conversations(request):
+    """
+    Returns list of active chat conversations for request.user with last message, unread count,
+    and blocked status.
+    """
+    user = request.user
+    from django.db.models import Q
+
+    sent_to = ChatMessage.objects.filter(sender=user).values_list("recipient_id", flat=True).distinct()
+    received_from = ChatMessage.objects.filter(recipient=user).values_list("sender_id", flat=True).distinct()
+    partner_ids = set(sent_to) | set(received_from)
+
+    conversations = []
+    for pid in partner_ids:
+        try:
+            partner = User.objects.get(pk=pid)
+        except User.DoesNotExist:
+            continue
+
+        last_msg = ChatMessage.objects.filter(
+            (Q(sender=user) & Q(recipient=partner)) |
+            (Q(sender=partner) & Q(recipient=user))
+        ).order_by("-created_at").first()
+
+        unread_count = ChatMessage.objects.filter(
+            sender=partner,
+            recipient=user,
+            is_read=False,
+        ).count()
+
+        is_blocked = False
+        if user.role in (User.ROLE_OWNER, User.ROLE_ADMIN):
+            is_blocked = BlockedCustomer.objects.filter(owner=user, customer=partner).exists()
+        elif partner.role in (User.ROLE_OWNER, User.ROLE_ADMIN):
+            is_blocked = BlockedCustomer.objects.filter(owner=partner, customer=user).exists()
+
+        conversations.append({
+            "user_id": partner.id,
+            "name": partner.business_name if partner.role in (User.ROLE_OWNER, User.ROLE_ADMIN) and partner.business_name else (
+                f"{partner.first_name} {partner.last_name}".strip() or partner.username
+            ),
+            "email": partner.email,
+            "role": partner.role,
+            "last_message": last_msg.message if last_msg and last_msg.message else ("📷 Image" if last_msg and last_msg.image else ""),
+            "last_message_at": last_msg.created_at.isoformat() if last_msg else None,
+            "unread_count": unread_count,
+            "is_blocked": is_blocked,
+        })
+
+    conversations.sort(key=lambda x: x["last_message_at"] or "", reverse=True)
+    return Response(conversations)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def block_customer(request):
+    """Block a customer (store owners only)."""
+    user = request.user
+    if user.role not in (User.ROLE_OWNER, User.ROLE_ADMIN) and not user.is_superuser:
+        raise PermissionDenied("Only store owners can block customers.")
+
+    customer_id = request.data.get("customer_id")
+    if not customer_id:
+        return Response({"error": "customer_id is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        customer = User.objects.get(pk=customer_id)
+    except User.DoesNotExist:
+        return Response({"error": "Customer not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    BlockedCustomer.objects.get_or_create(owner=user, customer=customer)
+    return Response({
+        "status": "blocked",
+        "customer_id": customer.id,
+        "customer_name": f"{customer.first_name} {customer.last_name}".strip() or customer.username,
+    })
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def unblock_customer(request):
+    """Unblock a customer (store owners only)."""
+    user = request.user
+    if user.role not in (User.ROLE_OWNER, User.ROLE_ADMIN) and not user.is_superuser:
+        raise PermissionDenied("Only store owners can unblock customers.")
+
+    customer_id = request.data.get("customer_id")
+    if not customer_id:
+        return Response({"error": "customer_id is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+    BlockedCustomer.objects.filter(owner=user, customer_id=customer_id).delete()
+    return Response({"status": "unblocked", "customer_id": int(customer_id)})
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def block_status(request):
+    """Check if customer is blocked by the owner."""
+    user = request.user
+    customer_id = request.query_params.get("customer_id")
+    owner_id = request.query_params.get("owner_id")
+
+    if user.role in (User.ROLE_OWNER, User.ROLE_ADMIN) and customer_id:
+        is_blocked = BlockedCustomer.objects.filter(owner=user, customer_id=customer_id).exists()
+    elif user.role == User.ROLE_CUSTOMER and owner_id:
+        is_blocked = BlockedCustomer.objects.filter(owner_id=owner_id, customer=user).exists()
+    elif customer_id and owner_id:
+        is_blocked = BlockedCustomer.objects.filter(owner_id=owner_id, customer_id=customer_id).exists()
+    else:
+        return Response({"error": "Specify customer_id or owner_id."}, status=status.HTTP_400_BAD_REQUEST)
+
+    return Response({"is_blocked": is_blocked})
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+@parser_classes([MultiPartParser, FormParser, JSONParser])
+def submit_report(request):
+    """Allows authenticated customers or store owners to submit a violation report."""
+    serializer = UserReportSerializer(data=request.data, context={"request": request})
+    serializer.is_valid(raise_exception=True)
+    report = serializer.save(reporter=request.user)
+
+    # Notify administrators about newly filed violation report
+    try:
+        notify_admin(
+            title="New User Report Submitted",
+            body=f"{request.user.username} reported {report.reported_user.username} for {report.get_reason_display()}.",
+            data={
+                "type": "user_report",
+                "report_id": str(report.id),
+                "reason": report.reason,
+            },
+        )
+    except Exception:
+        pass
+
+    return Response(
+        {
+            "detail": "Report submitted successfully. Our admin team will review it shortly.",
+            "report": UserReportSerializer(report, context={"request": request}).data,
+        },
+        status=status.HTTP_201_CREATED,
+    )
+
 
 

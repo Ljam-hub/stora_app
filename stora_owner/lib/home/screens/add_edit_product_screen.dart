@@ -40,6 +40,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
   late final TextEditingController _priceController;
   late final TextEditingController _stockController;
   late final TextEditingController _barcodeController;
+  late final TextEditingController _bioController;
   String? _category;
   Uint8List? _imageBytes;
   bool _saving = false;
@@ -52,6 +53,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
     _priceController = TextEditingController(text: p != null ? p.price.toStringAsFixed(2) : '');
     _stockController = TextEditingController(text: p?.stock.toString() ?? '');
     _barcodeController = TextEditingController(text: p?.barcode ?? '');
+    _bioController = TextEditingController(text: p?.bio ?? '');
     _category = p?.category;
     _imageBytes = p?.imageBytes;
   }
@@ -62,6 +64,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
     _priceController.dispose();
     _stockController.dispose();
     _barcodeController.dispose();
+    _bioController.dispose();
     super.dispose();
   }
 
@@ -111,6 +114,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
     final price = double.parse(_priceController.text.trim());
     final stock = int.parse(_stockController.text.trim()).clamp(0, kMaxStock);
     final barcode = _barcodeController.text.trim().isEmpty ? null : _barcodeController.text.trim();
+    final bio = _bioController.text.trim();
 
     setState(() => _saving = true);
     try {
@@ -122,7 +126,8 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
           ..price = price
           ..stock = stock
           ..barcode = barcode
-          ..imageBytes = _imageBytes;
+          ..imageBytes = _imageBytes
+          ..bio = bio;
       }
       final ok = widget.existing != null
           ? await store.updateProduct(widget.existing!)
@@ -134,6 +139,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
               stock: stock,
               barcode: barcode,
               imageBytes: _imageBytes,
+              bio: bio,
             ));
 
       if (!mounted) return;
@@ -272,6 +278,13 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                         }
                       },
                     ),
+                const SizedBox(height: 18),
+                StoraTextField(
+                  label: 'Product Bio / Description (Optional)',
+                  hint: 'Describe ingredients, size, flavor, or details for customers...',
+                  controller: _bioController,
+                  maxLines: 3,
+                ),
                 const SizedBox(height: 18),
                 _ImagePickerField(
                   initialBytes: _imageBytes,

@@ -7,11 +7,12 @@ from django.core.files.base import ContentFile
 from django.db import transaction
 from rest_framework import serializers
 
-from accounts.models import PaymentProof, SubscriptionConfig, StoreLocation, AIInsight
+from accounts.models import PaymentProof, SubscriptionConfig, StoreLocation, AIInsight, PendingRegistration
 from inventory.models import DEFAULT_CATEGORIES, MAX_STOCK, Category, Product
 from orders.models import Order, OrderItem
 from sales.models import Sale, SaleItem
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from .models import BlockedCustomer, ChatMessage, UserReport
 
 from .fields import UTCDateTimeField
 
@@ -110,39 +111,48 @@ class RegisterSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True, min_length=6)
     business_name = serializers.CharField(max_length=150, required=False, allow_blank=True, default="")
+    first_name = serializers.CharField(max_length=150, required=False, allow_blank=True, default="")
+    last_name = serializers.CharField(max_length=150, required=False, allow_blank=True, default="")
     role = serializers.ChoiceField(choices=(("owner", "Store Owner"), ("customer", "Customer")), default="owner")
 
-    def validate_email(self, value):
-        email = canonicalize_email(value)
-        if User.objects.filter(email__iexact=email).exists():
-            raise serializers.ValidationError("An account with this email already exists.")
-        return email
+    def validate(self, attrs):
+        email = canonicalize_email(attrs["email"])
+        attrs["email"] = email
+        role = attrs.get("role", "owner")
 
-    def create(self, validated_data):
-        email = validated_data["email"]
-        role = validated_data.get("role", "owner")
-        business_name = validated_data.get("business_name", "").strip()
-        user = User.objects.create_user(
-            username=email,
-            email=email,
-            password=validated_data["password"],
-            business_name=business_name,
-            role=role,
-        )
-        if role == "owner":
-            Category.objects.bulk_create(
-                [Category(owner=user, name=name) for name in DEFAULT_CATEGORIES]
-            )
-        return user
+        # Check existing user accounts
+        existing_user = User.objects.filter(email__iexact=email).first()
+        if existing_user:
+            if existing_user.role == "customer" and role == "owner":
+                raise serializers.ValidationError({"email": "This email is registered as a Customer account and cannot be used in the Store Owner app."})
+            elif existing_user.role in ("owner", "admin") and role == "customer":
+                raise serializers.ValidationError({"email": "This email is registered as a Store Owner account and cannot be used in the Customer app."})
+            else:
+                raise serializers.ValidationError({"email": "An account with this email already exists."})
+
+        # Check pending unverified registrations
+        pending = PendingRegistration.objects.filter(email__iexact=email).first()
+        if pending and pending.is_valid():
+            if pending.role != role:
+                other_role = "Customer" if pending.role == "customer" else "Store Owner"
+                app_target = "Store Owner" if role == "owner" else "Customer"
+                raise serializers.ValidationError({"email": f"This email has a pending {other_role} registration and cannot be used in the {app_target} app."})
+            else:
+                raise serializers.ValidationError({"email": "An account with this email already exists."})
+
+        return attrs
 
 
 class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True)
+    app_role = serializers.CharField(required=False, allow_blank=True, default="")
 
     def validate(self, attrs):
         email = canonicalize_email(attrs["email"])
         password = attrs["password"]
+        app_role = (attrs.get("app_role") or "").strip().lower()
+
         try:
             user = User.objects.get(email__iexact=email)
         except User.DoesNotExist:
@@ -151,6 +161,15 @@ class LoginSerializer(serializers.Serializer):
         authed = authenticate(username=user.username, password=password)
         if authed is None or not authed.is_active:
             raise serializers.ValidationError("Invalid email or password.")
+
+        # Enforce role exclusivity for apps
+        if app_role == "owner":
+            if authed.role == "customer":
+                raise serializers.ValidationError("This email is registered as a Customer. Please log in using the Stora Customer app.")
+        elif app_role == "customer":
+            if authed.role in ("owner", "admin"):
+                raise serializers.ValidationError("This email is registered as a Store Owner. Please log in using the Stora Owner app.")
+
         attrs["user"] = authed
         return attrs
 
@@ -189,6 +208,7 @@ class ProductSerializer(serializers.ModelSerializer):
             "stock",
             "barcode",
             "image",
+            "bio",
             "owner",
             "store_name",
         )
@@ -196,12 +216,14 @@ class ProductSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             "category": {"required": False},
             "barcode": {"required": False, "allow_null": True, "allow_blank": True},
+            "bio": {"required": False, "allow_blank": True},
         }
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
         data["category_name"] = instance.category.name if instance.category else ""
         data["store_name"] = (instance.owner.business_name if instance.owner and instance.owner.business_name else (instance.owner.username if instance.owner else ""))
+        data["bio"] = instance.bio or ""
         data["owner"] = instance.owner_id
         data["price"] = f"{instance.price:.2f}"
         data["image"] = self._encode_image(instance)
@@ -478,12 +500,14 @@ class OrderSerializer(serializers.ModelSerializer):
     created_at = UTCDateTimeField(read_only=True)
     expires_at = UTCDateTimeField(read_only=True)
     total_amount = serializers.SerializerMethodField()
+    store_name = serializers.CharField(source="owner.business_name", read_only=True, default="")
 
     class Meta:
         model = Order
         fields = (
             "id",
             "owner",
+            "store_name",
             "customer",
             "customer_name",
             "customer_phone",
@@ -501,6 +525,7 @@ class OrderSerializer(serializers.ModelSerializer):
         )
         read_only_fields = (
             "id",
+            "store_name",
             "customer",
             "status",
             "decline_reason",
@@ -562,4 +587,170 @@ class AIInsightSerializer(serializers.ModelSerializer):
             "created_at",
         )
         read_only_fields = ("id", "created_at")
+
+
+class ChatMessageSerializer(serializers.ModelSerializer):
+    sender_name = serializers.SerializerMethodField()
+    sender_role = serializers.CharField(source="sender.role", read_only=True)
+    recipient_name = serializers.SerializerMethodField()
+    order_title = serializers.SerializerMethodField()
+    image_url = serializers.SerializerMethodField()
+    created_at = UTCDateTimeField(read_only=True)
+
+    class Meta:
+        model = ChatMessage
+        fields = (
+            "id",
+            "sender",
+            "sender_name",
+            "sender_role",
+            "recipient",
+            "recipient_name",
+            "order",
+            "order_title",
+            "message",
+            "image",
+            "image_url",
+            "is_read",
+            "created_at",
+        )
+        read_only_fields = ("id", "sender", "is_read", "created_at", "image_url")
+        extra_kwargs = {
+            "image": {"required": False, "allow_null": True},
+            "message": {"required": False, "allow_blank": True},
+            "order": {"required": False, "allow_null": True},
+        }
+
+    def get_sender_name(self, obj):
+        if obj.sender.role == "owner":
+            return obj.sender.business_name or f"{obj.sender.first_name} {obj.sender.last_name}".strip() or obj.sender.username
+        return f"{obj.sender.first_name} {obj.sender.last_name}".strip() or obj.sender.username
+
+    def get_recipient_name(self, obj):
+        if obj.recipient.role == "owner":
+            return obj.recipient.business_name or f"{obj.recipient.first_name} {obj.recipient.last_name}".strip() or obj.recipient.username
+        return f"{obj.recipient.first_name} {obj.recipient.last_name}".strip() or obj.recipient.username
+
+    def get_order_title(self, obj):
+        if obj.order_id:
+            return f"Order #{obj.order_id}"
+        return None
+
+    def get_image_url(self, obj):
+        if obj.image:
+            request = self.context.get("request")
+            if request:
+                return request.build_absolute_uri(obj.image.url)
+            return obj.image.url
+        return None
+
+
+class BlockedCustomerSerializer(serializers.ModelSerializer):
+    customer_email = serializers.CharField(source="customer.email", read_only=True)
+    customer_name = serializers.SerializerMethodField()
+    created_at = UTCDateTimeField(read_only=True)
+
+    class Meta:
+        model = BlockedCustomer
+        fields = ("id", "owner", "customer", "customer_email", "customer_name", "created_at")
+        read_only_fields = ("id", "owner", "created_at")
+
+    def get_customer_name(self, obj):
+        return f"{obj.customer.first_name} {obj.customer.last_name}".strip() or obj.customer.username
+
+
+class UserReportSerializer(serializers.ModelSerializer):
+    reporter = serializers.PrimaryKeyRelatedField(read_only=True)
+    reporter_email = serializers.CharField(source="reporter.email", read_only=True)
+    reporter_name = serializers.SerializerMethodField()
+    reporter_role = serializers.CharField(source="reporter.role", read_only=True)
+
+    reported_user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
+    reported_user_email = serializers.CharField(source="reported_user.email", read_only=True)
+    reported_user_name = serializers.SerializerMethodField()
+    reported_user_role = serializers.CharField(source="reported_user.role", read_only=True)
+
+    reason_display = serializers.CharField(source="get_reason_display", read_only=True)
+    status_display = serializers.CharField(source="get_status_display", read_only=True)
+    attachment_url = serializers.SerializerMethodField()
+    created_at = UTCDateTimeField(read_only=True)
+
+    class Meta:
+        model = UserReport
+        fields = (
+            "id",
+            "reporter",
+            "reporter_email",
+            "reporter_name",
+            "reporter_role",
+            "reported_user",
+            "reported_user_email",
+            "reported_user_name",
+            "reported_user_role",
+            "reason",
+            "reason_display",
+            "description",
+            "order",
+            "attachment",
+            "attachment_url",
+            "status",
+            "status_display",
+            "created_at",
+        )
+        read_only_fields = (
+            "id",
+            "reporter",
+            "status",
+            "created_at",
+        )
+
+    def get_reporter_name(self, obj):
+        if obj.reporter.role == "owner":
+            return obj.reporter.business_name or f"{obj.reporter.first_name} {obj.reporter.last_name}".strip() or obj.reporter.username
+        return f"{obj.reporter.first_name} {obj.reporter.last_name}".strip() or obj.reporter.username
+
+    def get_reported_user_name(self, obj):
+        if obj.reported_user.role == "owner":
+            return obj.reported_user.business_name or f"{obj.reported_user.first_name} {obj.reported_user.last_name}".strip() or obj.reported_user.username
+        return f"{obj.reported_user.first_name} {obj.reported_user.last_name}".strip() or obj.reported_user.username
+
+    def get_attachment_url(self, obj):
+        if obj.attachment:
+            request = self.context.get("request")
+            if request:
+                return request.build_absolute_uri(obj.attachment.url)
+            return obj.attachment.url
+        return None
+
+    def validate(self, attrs):
+        request = self.context.get("request")
+        reporter = getattr(request, "user", None)
+        reported_user = attrs.get("reported_user")
+
+        if reported_user and (reported_user.is_staff or reported_user.is_superuser or getattr(reported_user, "role", None) == "admin"):
+            raise serializers.ValidationError({"reported_user": "Administrative accounts cannot be reported."})
+
+        if reporter and reported_user and reporter == reported_user:
+            raise serializers.ValidationError({"reported_user": "You cannot file a report against yourself."})
+
+        if reporter and getattr(reporter, "is_authenticated", False) and reported_user:
+            # Check for existing pending report against the same user
+            existing = UserReport.objects.filter(
+                reporter=reporter,
+                reported_user=reported_user,
+                status=UserReport.STATUS_PENDING,
+            ).exists()
+            if existing:
+                raise serializers.ValidationError({
+                    "detail": "You already have a pending report against this user under review by our admin team."
+                })
+
+        order = attrs.get("order")
+        if order and reporter and getattr(reporter, "is_authenticated", False):
+            if reporter.id not in (order.owner_id, order.customer_id) or (reported_user and reported_user.id not in (order.owner_id, order.customer_id)):
+                raise serializers.ValidationError({"order": "The specified order is not associated with this report."})
+
+        return attrs
+
+
 

@@ -9,6 +9,7 @@ class Product {
   int stock;
   String? barcode;
   Uint8List? imageBytes;
+  String bio;
 
   Product({
     required this.id,
@@ -18,6 +19,7 @@ class Product {
     required this.stock,
     this.barcode,
     this.imageBytes,
+    this.bio = '',
   });
 
   /// Create a [Product] from a JSON map returned by the Django API.
@@ -40,6 +42,7 @@ class Product {
       stock: int.parse(json['stock'].toString()),
       barcode: json['barcode'] as String?,
       imageBytes: imageBytes,
+      bio: (json['bio'] as String?) ?? '',
     );
   }
 
@@ -51,6 +54,7 @@ class Product {
       'price': price.toStringAsFixed(2),
       'stock': stock,
       'barcode': barcode,
+      'bio': bio,
     };
     if (imageBytes != null) {
       map['image'] = base64Encode(imageBytes!);

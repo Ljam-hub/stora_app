@@ -113,22 +113,35 @@ class AuthProvider extends ChangeNotifier {
         password: password,
         name: name,
       );
-      final accessToken = res['access'] as String;
-      final refreshToken = (res['refresh'] as String?) ?? '';
-      final userJson = res['user'] as Map<String, dynamic>;
-      final user = UserModel.fromJson(userJson);
 
-      _token = accessToken;
-      _currentUser = user;
-      CustomerApiService.instance.accessToken = accessToken;
+      if (res.containsKey('access') && res['access'] != null && (res['access'] as String).isNotEmpty) {
+        final accessToken = res['access'] as String;
+        final refreshToken = (res['refresh'] as String?) ?? '';
+        final userJson = res['user'] as Map<String, dynamic>;
+        final user = UserModel.fromJson(userJson);
 
-      await SessionManager.instance.saveSession(
-        accessToken: accessToken,
-        refreshToken: refreshToken,
-        user: user,
-      );
+        _token = accessToken;
+        _currentUser = user;
+        CustomerApiService.instance.accessToken = accessToken;
 
-      NotificationService.instance.init();
+        await SessionManager.instance.saveSession(
+          accessToken: accessToken,
+          refreshToken: refreshToken,
+          user: user,
+        );
+
+        NotificationService.instance.init();
+      } else {
+        // Pending email OTP verification - user not created until verified
+        _token = null;
+        _currentUser = UserModel(
+          id: 0,
+          email: email.trim(),
+          name: name.trim(),
+          isEmailVerified: false,
+        );
+      }
+
       _isLoading = false;
       notifyListeners();
       return true;
@@ -219,6 +232,9 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> logout() async {
+    try {
+      await CustomerApiService.instance.clearFcmToken();
+    } catch (_) {}
     await SessionManager.instance.clearSession();
     _token = null;
     _currentUser = null;

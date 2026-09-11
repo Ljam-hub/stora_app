@@ -71,7 +71,7 @@ class ProductAdmin(OwnerAdminMixin, admin.ModelAdmin):
 
     def get_fields(self, request, obj=None):
         """Show the owner field only to superusers."""
-        base = ["name", "category", "price", "stock", "barcode", "image"]
+        base = ["name", "category", "price", "stock", "barcode", "image", "bio"]
         if request.user.is_superuser:
             base.insert(0, "owner")
         return base

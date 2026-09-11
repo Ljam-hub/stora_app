@@ -46,9 +46,9 @@
           <h2 style="margin: 0 0 8px; font-family: var(--font-display); font-size: 28px; letter-spacing: -.025em; color: var(--text-white);">Get the Official Stora Apps</h2>
           <p style="margin: 0; color: var(--text-muted); font-size: 15px;">Download and install the latest Stora release builds directly onto your Android smartphone.</p>
         </div>
-        <span style="display: inline-flex; align-items: center; gap: 8px; padding: 6px 16px; background: var(--orange-badge-bg); color: #FF9E58; border-radius: 99px; font-size: 13px; font-weight: 700; border: 1px solid var(--orange-badge-border);">
+        <span id="release-badge" style="display: inline-flex; align-items: center; gap: 8px; padding: 6px 16px; background: var(--orange-badge-bg); color: #FF9E58; border-radius: 99px; font-size: 13px; font-weight: 700; border: 1px solid var(--orange-badge-border);">
           <span class="status__dot" style="background: #FF6B00; box-shadow: 0 0 0 4px rgba(255,107,0,0.25);" aria-hidden="true"></span>
-          Release v1.0.0
+          <span id="release-tag-text">Release {{ release_tag|default:"v1.0.0" }}</span>
         </span>
       </div>
 
@@ -69,14 +69,15 @@
             Explore nearby sari-sari stores and groceries on the interactive map, browse live product catalogs, check available stock in real-time, and place orders directly for pickup.
           </p>
           <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
-            <a href="https://github.com/Ljam-hub/stora_app/releases/download/v1.0.0/Stora-Customer.apk"
+            <a id="customer-apk-download"
+               href="{{ customer_download_url|default:'https://github.com/Ljam-hub/stora_app/releases/latest/download/Stora-Customer.apk' }}"
                download="Stora-Customer.apk"
                class="button button--primary"
                style="flex: 1; padding: 13px 20px; border-radius: 12px; font-size: 14px;">
               <span>Download Customer APK</span>
               <span aria-hidden="true">&#8595;</span>
             </a>
-            <span style="color: #9CA3AF; font-size: 12px; font-weight: 600; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 6px;">50 MB</span>
+            <span id="customer-apk-size" style="color: #9CA3AF; font-size: 12px; font-weight: 600; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 6px;">{{ customer_apk_size|default:"50 MB" }}</span>
           </div>
         </div>
 
@@ -96,14 +97,15 @@
             High-speed POS cash register with camera barcode scanning, offline-first SQLite database synchronization, automated stock alerts, and AI business growth insights.
           </p>
           <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
-            <a href="https://github.com/Ljam-hub/stora_app/releases/download/v1.0.0/Stora.apk"
+            <a id="owner-apk-download"
+               href="{{ owner_download_url|default:'https://github.com/Ljam-hub/stora_app/releases/latest/download/Stora.apk' }}"
                download="Stora.apk"
                class="button button--quiet"
                style="flex: 1; padding: 13px 20px; border-radius: 12px; font-size: 14px; border-color: rgba(255, 107, 0, 0.6); color: #ffffff; background: #1C1527;">
               <span>Download Owner APK</span>
               <span aria-hidden="true">&#8595;</span>
             </a>
-            <span style="color: #9CA3AF; font-size: 12px; font-weight: 600; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 6px;">75 MB</span>
+            <span id="owner-apk-size" style="color: #9CA3AF; font-size: 12px; font-weight: 600; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 6px;">{{ owner_apk_size|default:"75 MB" }}</span>
           </div>
         </div>
       </div>
@@ -147,5 +149,74 @@
     <span>&copy; STORA Platform &bull; Retail Operations &amp; Mobile Commerce</span>
     <span>Production Cloud Services</span>
   </footer>
+
+  <script>
+    (function() {
+      function formatMb(bytes) {
+        if (!bytes || isNaN(bytes)) return null;
+        var mb = bytes / (1024 * 1024);
+        return (mb >= 10 ? mb.toFixed(1) : mb.toFixed(2)) + ' MB';
+      }
+
+      function applyReleaseData(data) {
+        if (!data) return;
+        if (data.tag_name) {
+          var tagEl = document.getElementById('release-tag-text');
+          if (tagEl) tagEl.textContent = 'Release ' + data.tag_name;
+        }
+        var assets = data.assets || [];
+        assets.forEach(function(asset) {
+          var name = (asset.name || '').toLowerCase();
+          if (name.indexOf('customer') !== -1) {
+            var custSizeEl = document.getElementById('customer-apk-size');
+            if (custSizeEl && asset.size) custSizeEl.textContent = formatMb(asset.size);
+            var custLinkEl = document.getElementById('customer-apk-download');
+            if (custLinkEl && asset.browser_download_url) custLinkEl.href = asset.browser_download_url;
+          } else if (name.indexOf('stora') !== -1 || name.indexOf('owner') !== -1) {
+            var ownerSizeEl = document.getElementById('owner-apk-size');
+            if (ownerSizeEl && asset.size) ownerSizeEl.textContent = formatMb(asset.size);
+            var ownerLinkEl = document.getElementById('owner-apk-download');
+            if (ownerLinkEl && asset.browser_download_url) ownerLinkEl.href = asset.browser_download_url;
+          }
+        });
+      }
+
+      // Query local cached backend endpoint first (fast, reliable, no GitHub rate-limits)
+      fetch('/api/release-info/')
+        .then(function(res) { return res.ok ? res.json() : Promise.reject(); })
+        .then(function(info) {
+          if (!info) return;
+          if (info.customer_apk_size) {
+            var custSize = document.getElementById('customer-apk-size');
+            if (custSize) custSize.textContent = info.customer_apk_size;
+          }
+          if (info.customer_download_url) {
+            var custLink = document.getElementById('customer-apk-download');
+            if (custLink) custLink.href = info.customer_download_url;
+          }
+          if (info.owner_apk_size) {
+            var ownerSize = document.getElementById('owner-apk-size');
+            if (ownerSize) ownerSize.textContent = info.owner_apk_size;
+          }
+          if (info.owner_download_url) {
+            var ownerLink = document.getElementById('owner-apk-download');
+            if (ownerLink) ownerLink.href = info.owner_download_url;
+          }
+          if (info.tag_name) {
+            var tagEl = document.getElementById('release-tag-text');
+            if (tagEl) tagEl.textContent = 'Release ' + info.tag_name;
+          }
+        })
+        .catch(function() {
+          // Fallback directly to public GitHub Releases API
+          fetch('https://api.github.com/repos/Ljam-hub/stora_app/releases/latest', {
+            headers: { 'Accept': 'application/vnd.github.v3+json' }
+          })
+          .then(function(res) { return res.ok ? res.json() : null; })
+          .then(applyReleaseData)
+          .catch(function() { /* Keep defaults */ });
+        });
+    })();
+  </script>
 </body>
 </html>

@@ -224,7 +224,7 @@ class CustomerApiService {
       'POST',
       _uri('/auth/login/'),
       headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
-      body: {'email': email.trim(), 'password': password},
+      body: {'email': email.trim(), 'password': password, 'app_role': 'customer'},
     );
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body) as Map<String, dynamic>;
@@ -470,6 +470,162 @@ class CustomerApiService {
       );
     } catch (e) {
       debugPrint('Failed to update FCM token: $e');
+    }
+  }
+
+  Future<void> clearFcmToken() async {
+    try {
+      await _dispatch('POST', _uri('/auth/clear-fcm-token/'));
+    } catch (_) {}
+  }
+
+  // ---------- Chat & Messaging ----------
+
+  Future<List<Map<String, dynamic>>> fetchMessages(int storeOwnerId) async {
+    final response = await _dispatch('GET', _uri('/messages/', {'with_user': storeOwnerId.toString()}));
+    if (response.statusCode == 200) {
+      final list = jsonDecode(response.body) as List;
+      return list.cast<Map<String, dynamic>>();
+    }
+    _throw(response);
+  }
+
+  Future<Map<String, dynamic>> sendChatMessage({
+    required int recipientId,
+    String? message,
+    List<int>? imageBytes,
+    int? orderId,
+    String filename = 'chat_image.jpg',
+  }) async {
+    if (imageBytes != null && imageBytes.isNotEmpty) {
+      final uri = _uri('/messages/');
+      final req = http.MultipartRequest('POST', uri);
+      if (accessToken != null && accessToken!.isNotEmpty) {
+        req.headers['Authorization'] = 'Bearer $accessToken';
+      }
+      req.headers['Accept'] = 'application/json';
+      req.fields['recipient'] = recipientId.toString();
+      if (message != null && message.trim().isNotEmpty) {
+        req.fields['message'] = message.trim();
+      }
+      if (orderId != null) {
+        req.fields['order'] = orderId.toString();
+      }
+      req.files.add(
+        http.MultipartFile.fromBytes(
+          'image',
+          imageBytes,
+          filename: filename,
+        ),
+      );
+
+      try {
+        final streamedResponse = await req.send().timeout(const Duration(seconds: 25));
+        final response = await http.Response.fromStream(streamedResponse);
+        if (response.statusCode == 401 && await _refreshAccessToken()) {
+          final retryReq = http.MultipartRequest('POST', uri);
+          if (accessToken != null && accessToken!.isNotEmpty) {
+            retryReq.headers['Authorization'] = 'Bearer $accessToken';
+          }
+          retryReq.headers['Accept'] = 'application/json';
+          retryReq.fields['recipient'] = recipientId.toString();
+          if (message != null && message.trim().isNotEmpty) {
+            retryReq.fields['message'] = message.trim();
+          }
+          if (orderId != null) {
+            retryReq.fields['order'] = orderId.toString();
+          }
+          retryReq.files.add(
+            http.MultipartFile.fromBytes('image', imageBytes, filename: filename),
+          );
+          final retryStream = await retryReq.send().timeout(const Duration(seconds: 25));
+          final retryResponse = await http.Response.fromStream(retryStream);
+          if (retryResponse.statusCode != 201) _throw(retryResponse);
+          return jsonDecode(retryResponse.body) as Map<String, dynamic>;
+        }
+        if (response.statusCode != 201) _throw(response);
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      } catch (e) {
+        if (e is ApiException) rethrow;
+        throw ApiException('Failed to send image message: $e');
+      }
+    } else {
+      final body = <String, dynamic>{
+        'recipient': recipientId,
+        'message': message ?? '',
+      };
+      if (orderId != null) body['order'] = orderId;
+      final response = await _dispatch('POST', _uri('/messages/'), body: body);
+      if (response.statusCode == 201) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      }
+      _throw(response);
+    }
+  }
+
+  Future<bool> checkBlockStatus(int storeOwnerId) async {
+    try {
+      final response = await _dispatch('GET', _uri('/messages/block-status/', {'customer_id': storeOwnerId.toString()}));
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        return data['is_blocked'] == true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  Future<Map<String, dynamic>> submitReport({
+    required int reportedUserId,
+    required String reason,
+    required String description,
+    int? orderId,
+    List<int>? attachmentBytes,
+    String filename = 'report_attachment.jpg',
+  }) async {
+    if (attachmentBytes != null && attachmentBytes.isNotEmpty) {
+      final uri = _uri('/reports/');
+      http.MultipartRequest buildRequest(String? token) {
+        final req = http.MultipartRequest('POST', uri);
+        if (token != null && token.isNotEmpty) {
+          req.headers['Authorization'] = 'Bearer $token';
+        }
+        req.headers['Accept'] = 'application/json';
+        req.fields['reported_user'] = reportedUserId.toString();
+        req.fields['reason'] = reason;
+        req.fields['description'] = description.trim();
+        if (orderId != null) req.fields['order'] = orderId.toString();
+        req.files.add(
+          http.MultipartFile.fromBytes('attachment', attachmentBytes, filename: filename),
+        );
+        return req;
+      }
+
+      try {
+        var streamed = await buildRequest(accessToken).send().timeout(const Duration(seconds: 25));
+        var response = await http.Response.fromStream(streamed);
+        if (response.statusCode == 401 && await _refreshAccessToken()) {
+          streamed = await buildRequest(accessToken).send().timeout(const Duration(seconds: 25));
+          response = await http.Response.fromStream(streamed);
+        }
+        if (response.statusCode != 201) _throw(response);
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      } on TimeoutException {
+        throw ApiException('Server timed out while submitting report.');
+      } on SocketException {
+        throw ApiException('Could not reach the server.');
+      }
+    } else {
+      final body = <String, dynamic>{
+        'reported_user': reportedUserId,
+        'reason': reason,
+        'description': description.trim(),
+      };
+      if (orderId != null) body['order'] = orderId;
+      final response = await _dispatch('POST', _uri('/reports/'), body: body);
+      if (response.statusCode == 201) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      }
+      _throw(response);
     }
   }
 }

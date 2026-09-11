@@ -76,6 +76,7 @@ class Product(models.Model):
     )
     barcode = models.CharField(max_length=64, blank=True, null=True)
     image = models.ImageField(upload_to=product_image_upload_path, blank=True, null=True)
+    bio = models.TextField(blank=True, default="", help_text="Product description/bio")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

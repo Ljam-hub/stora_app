@@ -117,7 +117,9 @@ class FreePlanAndTimezoneTests(APITestCase):
 
 class AuthAndPaymentProofTests(APITestCase):
     def test_register_and_login_update_last_login(self):
-        # Register
+        from accounts.models import PendingRegistration
+
+        # Register - creates PendingRegistration, does NOT create User yet
         reg_resp = self.client.post(
             "/api/auth/register/",
             {
@@ -128,7 +130,19 @@ class AuthAndPaymentProofTests(APITestCase):
             format="json",
         )
         self.assertEqual(reg_resp.status_code, 201)
+        self.assertFalse(User.objects.filter(email="newowner@example.com").exists())
+        pending = PendingRegistration.objects.get(email="newowner@example.com")
+        self.assertEqual(len(pending.code), 6)
+
+        # Verify email - creates User and updates last login
+        ver_resp = self.client.post(
+            "/api/auth/verify-email/",
+            {"email": "newowner@example.com", "code": pending.code},
+            format="json",
+        )
+        self.assertEqual(ver_resp.status_code, 200)
         user = User.objects.get(email="newowner@example.com")
+        self.assertTrue(user.is_email_verified)
         self.assertIsNotNone(user.last_login)
         reg_last_login = user.last_login
 
@@ -551,6 +565,7 @@ class RoleAndSubscriptionPermissionsTests(APITestCase):
 class EmailVerificationTests(APITestCase):
     def test_registration_with_gmail_sends_verification_code(self):
         from django.core import mail
+        from accounts.models import PendingRegistration
         mail.outbox.clear()
         payload = {
             "email": "newowner@gmail.com",
@@ -561,24 +576,35 @@ class EmailVerificationTests(APITestCase):
         res = self.client.post("/api/auth/register/", payload, format="json")
         self.assertEqual(res.status_code, 201)
 
-        user = User.objects.get(email="newowner@gmail.com")
-        self.assertFalse(user.is_email_verified)
-        self.assertFalse(res.data["user"]["is_email_verified"])
-        self.assertIn("verification code", res.data["message"])
+        # User is NOT created yet
+        self.assertFalse(User.objects.filter(email="newowner@gmail.com").exists())
+        self.assertFalse(res.data["is_email_verified"])
+        self.assertIn("verification code", res.data["message"].lower())
 
-        # Verification code created
-        code_obj = EmailVerificationCode.objects.filter(user=user, used=False).first()
-        self.assertIsNotNone(code_obj)
-        self.assertEqual(len(code_obj.code), 6)
-        self.assertTrue(code_obj.is_valid())
+        # PendingRegistration record created
+        pending = PendingRegistration.objects.get(email="newowner@gmail.com")
+        self.assertEqual(len(pending.code), 6)
+        self.assertTrue(pending.is_valid())
 
         # Email dispatched to Gmail inbox
         self.assertEqual(len(mail.outbox), 1)
-        self.assertIn(code_obj.code, mail.outbox[0].body)
+        self.assertIn(pending.code, mail.outbox[0].body)
         self.assertIn("Verification Code", mail.outbox[0].subject)
+
+        # Now verify the code -> User is created
+        ver_res = self.client.post(
+            "/api/auth/verify-email/",
+            {"email": "newowner@gmail.com", "code": pending.code},
+            format="json",
+        )
+        self.assertEqual(ver_res.status_code, 200)
+        user = User.objects.get(email="newowner@gmail.com")
+        self.assertTrue(user.is_email_verified)
+        self.assertIn("access", ver_res.data)
 
     def test_registration_with_non_gmail_creates_verification_code_and_sends_email(self):
         from django.core import mail
+        from accounts.models import PendingRegistration
         mail.outbox.clear()
         payload = {
             "email": "newowner@yahoo.com",
@@ -589,19 +615,18 @@ class EmailVerificationTests(APITestCase):
         res = self.client.post("/api/auth/register/", payload, format="json")
         self.assertEqual(res.status_code, 201)
 
-        user = User.objects.get(email="newowner@yahoo.com")
-        self.assertFalse(user.is_email_verified)
-        self.assertFalse(res.data["user"]["is_email_verified"])
+        # User is NOT created yet
+        self.assertFalse(User.objects.filter(email="newowner@yahoo.com").exists())
+        self.assertFalse(res.data["is_email_verified"])
 
-        # Verification code created
-        code_obj = EmailVerificationCode.objects.filter(user=user, used=False).first()
-        self.assertIsNotNone(code_obj)
-        self.assertEqual(len(code_obj.code), 6)
-        self.assertTrue(code_obj.is_valid())
+        # PendingRegistration created
+        pending = PendingRegistration.objects.get(email="newowner@yahoo.com")
+        self.assertEqual(len(pending.code), 6)
+        self.assertTrue(pending.is_valid())
 
         # Email dispatched
         self.assertEqual(len(mail.outbox), 1)
-        self.assertIn(code_obj.code, mail.outbox[0].body)
+        self.assertIn(pending.code, mail.outbox[0].body)
         self.assertIn("Verification Code", mail.outbox[0].subject)
 
     def test_verify_email_with_valid_code_succeeds(self):
@@ -730,7 +755,9 @@ class EmailVerificationTests(APITestCase):
 
 class GmailCanonicalizationTests(APITestCase):
     def test_gmail_dots_and_plus_collapse_to_single_account(self):
-        # Register with dots in username
+        from accounts.models import PendingRegistration
+
+        # Register with dots in username -> stored canonically in PendingRegistration
         res = self.client.post(
             "/api/auth/register/",
             {
@@ -742,12 +769,11 @@ class GmailCanonicalizationTests(APITestCase):
             format="json",
         )
         self.assertEqual(res.status_code, 201)
-        # Should be stored canonically without dots and lowercase
-        user = User.objects.get(email="juandelacruz@gmail.com")
-        self.assertEqual(user.email, "juandelacruz@gmail.com")
-        self.assertFalse(user.is_email_verified)
+        self.assertFalse(User.objects.filter(email="juandelacruz@gmail.com").exists())
+        pending = PendingRegistration.objects.get(email="juandelacruz@gmail.com")
+        self.assertEqual(pending.email, "juandelacruz@gmail.com")
 
-        # Attempting to register with plus-alias should be REJECTED (already exists)
+        # Attempting to register with plus-alias should be REJECTED (already exists in Pending)
         res_plus = self.client.post(
             "/api/auth/register/",
             {
@@ -796,6 +822,7 @@ class GmailCanonicalizationTests(APITestCase):
         self.assertEqual(res.data["user"]["email"], "mariaclara@gmail.com")
 
     def test_non_gmail_preserves_dots_and_pluses(self):
+        from accounts.models import PendingRegistration
         res = self.client.post(
             "/api/auth/register/",
             {
@@ -807,8 +834,8 @@ class GmailCanonicalizationTests(APITestCase):
             format="json",
         )
         self.assertEqual(res.status_code, 201)
-        user = User.objects.get(email="john.doe@yahoo.com")
-        self.assertEqual(user.email, "john.doe@yahoo.com")
+        pending = PendingRegistration.objects.get(email="john.doe@yahoo.com")
+        self.assertEqual(pending.email, "john.doe@yahoo.com")
 
 
 class AdminColumnsAndNotificationsTests(APITestCase):
@@ -832,10 +859,8 @@ class AdminColumnsAndNotificationsTests(APITestCase):
         )
 
         user_admin = UserAdmin(User, stora_admin_site)
-        self.assertEqual(user_admin.business_name_col(owner), "Aling Nena Store")
-        self.assertEqual(user_admin.customer_name_col(owner), "—")
-        self.assertEqual(user_admin.business_name_col(customer), "—")
-        self.assertEqual(user_admin.customer_name_col(customer), "Juan Dela Cruz")
+        self.assertIn("Aling Nena Store", str(user_admin.owner_customer_name(owner)))
+        self.assertIn("Juan Dela Cruz", str(user_admin.owner_customer_name(customer)))
 
     def test_notify_admin_dispatches_when_admin_has_fcm_token(self):
         from api.fcm import notify_admin
@@ -849,6 +874,357 @@ class AdminColumnsAndNotificationsTests(APITestCase):
         )
         sent = notify_admin("Test Admin Alert", "Something happened")
         self.assertEqual(sent, 1)
+
+
+class EmailRoleExclusivityTests(APITestCase):
+    def test_customer_email_cannot_register_or_login_as_owner(self):
+        # Create an existing customer account
+        User.objects.create_user(
+            username="customer1@example.com",
+            email="customer1@example.com",
+            password="password123",
+            role="customer",
+            business_name="Cust Name",
+            is_email_verified=True,
+        )
+
+        # Attempt to register the same email in owner app
+        res = self.client.post(
+            "/api/auth/register/",
+            {
+                "email": "customer1@example.com",
+                "password": "password123",
+                "business_name": "Store Attempt",
+                "role": "owner",
+            },
+            format="json",
+        )
+        self.assertEqual(res.status_code, 400)
+        self.assertIn("registered as a Customer account", str(res.data))
+
+        # Attempt to log into owner app with customer credentials
+        res_login = self.client.post(
+            "/api/auth/login/",
+            {
+                "email": "customer1@example.com",
+                "password": "password123",
+                "app_role": "owner",
+            },
+            format="json",
+        )
+        self.assertEqual(res_login.status_code, 400)
+        self.assertIn("registered as a Customer", str(res_login.data))
+
+    def test_owner_email_cannot_register_or_login_as_customer(self):
+        # Create an existing store owner account
+        User.objects.create_user(
+            username="owner1@example.com",
+            email="owner1@example.com",
+            password="password123",
+            role="owner",
+            business_name="Owner Store",
+            is_email_verified=True,
+        )
+
+        # Attempt to register the same email in customer app
+        res = self.client.post(
+            "/api/auth/register/",
+            {
+                "email": "owner1@example.com",
+                "password": "password123",
+                "business_name": "Customer Attempt",
+                "role": "customer",
+            },
+            format="json",
+        )
+        self.assertEqual(res.status_code, 400)
+        self.assertIn("registered as a Store Owner account", str(res.data))
+
+        # Attempt to log into customer app with owner credentials
+        res_login = self.client.post(
+            "/api/auth/login/",
+            {
+                "email": "owner1@example.com",
+                "password": "password123",
+                "app_role": "customer",
+            },
+            format="json",
+        )
+        self.assertEqual(res_login.status_code, 400)
+        self.assertIn("registered as a Store Owner", str(res_login.data))
+
+
+class ChatAndMessagingTests(APITestCase):
+    def setUp(self):
+        self.owner = User.objects.create_user(
+            username="store_owner@example.com",
+            email="store_owner@example.com",
+            password="password123",
+            role="owner",
+            business_name="My Sari-Sari Store",
+            fcm_token="owner_fcm_token_999",
+            is_email_verified=True,
+        )
+        self.customer = User.objects.create_user(
+            username="shopper@example.com",
+            email="shopper@example.com",
+            password="password123",
+            role="customer",
+            business_name="Juan Buyer",
+            fcm_token="customer_fcm_token_888",
+            is_email_verified=True,
+        )
+
+    def test_send_and_receive_messages(self):
+        self.client.force_authenticate(user=self.customer)
+
+        # Customer sends message to owner
+        res = self.client.post(
+            "/api/messages/",
+            {"recipient": self.owner.id, "message": "Hi, do you have fresh eggs?"},
+            format="json",
+        )
+        self.assertEqual(res.status_code, 201)
+        self.assertEqual(res.data["message"], "Hi, do you have fresh eggs?")
+
+        # Owner checks conversation list and messages
+        self.client.force_authenticate(user=self.owner)
+        conv_res = self.client.get("/api/messages/conversations/")
+        self.assertEqual(conv_res.status_code, 200)
+        self.assertEqual(len(conv_res.data), 1)
+        self.assertEqual(conv_res.data[0]["user_id"], self.customer.id)
+        self.assertEqual(conv_res.data[0]["unread_count"], 1)
+
+        # Owner views message thread -> marks unread as read
+        msg_res = self.client.get(f"/api/messages/?with_user={self.customer.id}")
+        self.assertEqual(msg_res.status_code, 200)
+        self.assertEqual(len(msg_res.data), 1)
+        self.assertTrue(msg_res.data[0]["is_read"])
+
+    def test_block_and_unblock_customer(self):
+        self.client.force_authenticate(user=self.owner)
+
+        # Owner blocks customer
+        block_res = self.client.post(
+            "/api/messages/block/",
+            {"customer_id": self.customer.id},
+            format="json",
+        )
+        self.assertEqual(block_res.status_code, 200)
+        self.assertEqual(block_res.data["status"], "blocked")
+
+        # Blocked customer tries to send message -> 403 Forbidden
+        self.client.force_authenticate(user=self.customer)
+        blocked_send = self.client.post(
+            "/api/messages/",
+            {"recipient": self.owner.id, "message": "Can I order?"},
+            format="json",
+        )
+        self.assertEqual(blocked_send.status_code, 403)
+        self.assertIn("blocked", str(blocked_send.data))
+
+        # Owner unblocks customer
+        self.client.force_authenticate(user=self.owner)
+        unblock_res = self.client.post(
+            "/api/messages/unblock/",
+            {"customer_id": self.customer.id},
+            format="json",
+        )
+        self.assertEqual(unblock_res.status_code, 200)
+        self.assertEqual(unblock_res.data["status"], "unblocked")
+
+        # Now customer can send message
+        self.client.force_authenticate(user=self.customer)
+        allowed_send = self.client.post(
+            "/api/messages/",
+            {"recipient": self.owner.id, "message": "Thank you for unblocking!"},
+            format="json",
+        )
+        self.assertEqual(allowed_send.status_code, 201)
+
+
+class PendingOrderWallTests(APITestCase):
+    def test_store_owners_only_see_their_own_orders(self):
+        owner_a = User.objects.create_user(
+            username="shop_a@example.com",
+            email="shop_a@example.com",
+            password="pass",
+            role="owner",
+            business_name="Shop A",
+            is_email_verified=True,
+        )
+        owner_b = User.objects.create_user(
+            username="shop_b@example.com",
+            email="shop_b@example.com",
+            password="pass",
+            role="owner",
+            business_name="Shop B",
+            is_email_verified=True,
+        )
+        customer = User.objects.create_user(
+            username="buyer@example.com",
+            email="buyer@example.com",
+            password="pass",
+            role="customer",
+            business_name="Buyer Juan",
+            is_email_verified=True,
+        )
+
+        from orders.models import Order
+        order_a = Order.objects.create(owner=owner_a, customer=customer, customer_name="Buyer Juan")
+        order_b = Order.objects.create(owner=owner_b, customer=customer, customer_name="Buyer Juan")
+
+        # Authenticate as Shop A -> only sees order_a
+        self.client.force_authenticate(user=owner_a)
+        res_a = self.client.get("/api/orders/")
+        self.assertEqual(res_a.status_code, 200)
+        order_ids_a = [o["id"] for o in res_a.data]
+        self.assertIn(order_a.id, order_ids_a)
+        self.assertNotIn(order_b.id, order_ids_a)
+
+        # Authenticate as Shop B -> only sees order_b
+        self.client.force_authenticate(user=owner_b)
+        res_b = self.client.get("/api/orders/")
+        self.assertEqual(res_b.status_code, 200)
+        order_ids_b = [o["id"] for o in res_b.data]
+        self.assertIn(order_b.id, order_ids_b)
+        self.assertNotIn(order_a.id, order_ids_b)
+
+
+class UserReportingTests(APITestCase):
+    def setUp(self):
+        self.owner = User.objects.create_user(
+            username="shopowner_rep@gmail.com",
+            email="shopowner_rep@gmail.com",
+            password="testpassword123",
+            role=User.ROLE_OWNER,
+            business_name="Reporting Test Shop",
+            is_email_verified=True,
+        )
+        self.customer = User.objects.create_user(
+            username="customer_rep@gmail.com",
+            email="customer_rep@gmail.com",
+            password="testpassword123",
+            role=User.ROLE_CUSTOMER,
+            first_name="Reported",
+            last_name="Buyer",
+            is_email_verified=True,
+        )
+
+    def test_owner_can_report_customer(self):
+        self.client.force_authenticate(user=self.owner)
+        res = self.client.post(
+            "/api/reports/",
+            {
+                "reported_user": self.customer.id,
+                "reason": "fake_order",
+                "description": "Customer placed multiple fake orders and refused to receive.",
+            },
+            format="json",
+        )
+        self.assertEqual(res.status_code, 201)
+        self.assertIn("detail", res.data)
+        self.assertEqual(res.data["report"]["reason"], "fake_order")
+        self.assertEqual(res.data["report"]["status"], "pending")
+        self.assertEqual(res.data["report"]["reporter_email"], self.owner.email)
+        self.assertEqual(res.data["report"]["reported_user_email"], self.customer.email)
+
+    def test_customer_can_report_store_owner(self):
+        self.client.force_authenticate(user=self.customer)
+        res = self.client.post(
+            "/api/reports/",
+            {
+                "reported_user": self.owner.id,
+                "reason": "fraud",
+                "description": "Store owner did not deliver items after counter offer.",
+            },
+            format="json",
+        )
+        self.assertEqual(res.status_code, 201)
+        self.assertEqual(res.data["report"]["reason"], "fraud")
+
+    def test_cannot_report_oneself(self):
+        self.client.force_authenticate(user=self.customer)
+        res = self.client.post(
+            "/api/reports/",
+            {
+                "reported_user": self.customer.id,
+                "reason": "other",
+                "description": "Reporting myself should fail.",
+            },
+            format="json",
+        )
+        self.assertEqual(res.status_code, 400)
+
+    def test_duplicate_pending_report_prevented(self):
+        from api.models import UserReport
+        UserReport.objects.create(
+            reporter=self.owner,
+            reported_user=self.customer,
+            reason="harassment",
+            description="First report",
+            status=UserReport.STATUS_PENDING,
+        )
+
+        self.client.force_authenticate(user=self.owner)
+        res = self.client.post(
+            "/api/reports/",
+            {
+                "reported_user": self.customer.id,
+                "reason": "harassment",
+                "description": "Duplicate second report",
+            },
+            format="json",
+        )
+        self.assertEqual(res.status_code, 400)
+        self.assertIn("already have a pending report", str(res.data))
+
+    def test_admin_block_and_unblock_actions(self):
+        from api.models import UserReport
+        from api.admin import UserReportAdmin
+        from django.contrib.admin.sites import AdminSite
+
+        report = UserReport.objects.create(
+            reporter=self.owner,
+            reported_user=self.customer,
+            reason="harassment",
+            description="Harassing store staff",
+            status=UserReport.STATUS_PENDING,
+        )
+
+        admin = User.objects.create_superuser(
+            username="admin_mod@gmail.com",
+            email="admin_mod@gmail.com",
+            password="adminpassword123",
+            role=User.ROLE_ADMIN,
+        )
+
+        admin_instance = UserReportAdmin(model=UserReport, admin_site=AdminSite())
+
+        # Mock request
+        class MockRequest:
+            user = admin
+            def __init__(self):
+                self._messages = []
+            def message_user(self, req, msg, **kwargs):
+                self._messages.append(msg)
+
+        req = MockRequest()
+        admin_instance.message_user = req.message_user
+
+        # Trigger block action
+        admin_instance.block_reported_users(req, UserReport.objects.filter(id=report.id))
+        self.customer.refresh_from_db()
+        report.refresh_from_db()
+
+        self.assertFalse(self.customer.is_active)
+        self.assertEqual(report.status, UserReport.STATUS_ACTION_TAKEN)
+
+        # Trigger unblock action
+        admin_instance.unblock_reported_users(req, UserReport.objects.filter(id=report.id))
+        self.customer.refresh_from_db()
+        self.assertTrue(self.customer.is_active)
+
 
 
 

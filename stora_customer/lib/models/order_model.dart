@@ -43,6 +43,7 @@ class CustomerOrderItem {
 class CustomerOrder {
   final int id;
   final int ownerId;
+  final String storeName;
   final String customerName;
   final String customerPhone;
   final String customerAddress;
@@ -59,6 +60,7 @@ class CustomerOrder {
   CustomerOrder({
     required this.id,
     required this.ownerId,
+    this.storeName = '',
     required this.customerName,
     required this.customerPhone,
     required this.customerAddress,
@@ -161,6 +163,7 @@ class CustomerOrder {
     return CustomerOrder(
       id: json['id'] is int ? json['id'] as int : (int.tryParse(json['id']?.toString() ?? '0') ?? 0),
       ownerId: json['owner'] is int ? json['owner'] as int : (int.tryParse(json['owner']?.toString() ?? '0') ?? 0),
+      storeName: (json['store_name'] as String?) ?? '',
       customerName: (json['customer_name'] as String?) ?? '',
       customerPhone: (json['customer_phone'] as String?) ?? '',
       customerAddress: (json['customer_address'] as String?) ?? '',

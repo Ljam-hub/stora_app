@@ -9,6 +9,7 @@ class ProductModel {
   final String? image;
   final int? ownerId;
   final String? storeName;
+  final String bio;
 
   ProductModel({
     required this.id,
@@ -21,6 +22,7 @@ class ProductModel {
     this.image,
     this.ownerId,
     this.storeName,
+    this.bio = '',
   });
 
   bool get isOutOfStock => stock <= 0;
@@ -39,6 +41,7 @@ class ProductModel {
       image: json['image'] as String?,
       ownerId: json['owner'] as int?,
       storeName: (json['store_name'] as String?) ?? '',
+      bio: (json['bio'] as String?) ?? '',
     );
   }
 
@@ -54,6 +57,7 @@ class ProductModel {
       'image': image,
       'owner': ownerId,
       'store_name': storeName,
+      'bio': bio,
     };
   }
 }

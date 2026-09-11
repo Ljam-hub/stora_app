@@ -114,4 +114,14 @@ class OrdersStore extends ChangeNotifier {
     );
     await fetchOrders();
   }
+
+  void clear() {
+    stopPolling();
+    _orders.clear();
+    _knownOrderIds.clear();
+    _hasInitialFetch = false;
+    _error = null;
+    _isLoading = false;
+    notifyListeners();
+  }
 }

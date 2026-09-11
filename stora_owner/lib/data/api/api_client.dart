@@ -204,7 +204,7 @@ class ApiClient {
       'POST',
       '/auth/login/',
       auth: false,
-      body: {'email': email, 'password': password},
+      body: {'email': email, 'password': password, 'app_role': 'owner'},
     );
     if (response.statusCode != 200) _throw(response);
     return _parseAuth(response);
@@ -245,11 +245,11 @@ class ApiClient {
     final data = _decode(response) as Map<String, dynamic>;
     final user = data['user'] as Map<String, dynamic>? ?? {};
     return AuthResult(
-      accessToken: data['access'] as String,
-      refreshToken: data['refresh'] as String,
-      email: (user['email'] as String?) ?? '',
-      businessName: (user['business_name'] as String?) ?? '',
-      isEmailVerified: user['is_email_verified'] == true,
+      accessToken: (data['access'] as String?) ?? '',
+      refreshToken: (data['refresh'] as String?) ?? '',
+      email: (user['email'] as String?) ?? (data['email'] as String?) ?? '',
+      businessName: (user['business_name'] as String?) ?? (data['business_name'] as String?) ?? '',
+      isEmailVerified: user['is_email_verified'] == true || data['is_email_verified'] == true,
     );
   }
 
@@ -577,6 +577,170 @@ class ApiClient {
   Future<void> dismissAiInsight(int insightId) async {
     final response = await _send('POST', '/ai/insights/$insightId/dismiss/');
     if (response.statusCode != 200) _throw(response);
+  }
+
+  Future<void> clearFcmToken() async {
+    try {
+      await _send('POST', '/auth/clear-fcm-token/');
+    } catch (_) {}
+  }
+
+  // ---------- Chat & Messaging ----------
+
+  Future<List<Map<String, dynamic>>> fetchConversations() async {
+    final response = await _send('GET', '/messages/conversations/');
+    if (response.statusCode != 200) _throw(response);
+    final decoded = _decode(response);
+    if (decoded is List) {
+      return decoded.cast<Map<String, dynamic>>();
+    }
+    return [];
+  }
+
+  Future<List<Map<String, dynamic>>> fetchMessages(int withUserId) async {
+    final response = await _send('GET', '/messages/?with_user=$withUserId');
+    if (response.statusCode != 200) _throw(response);
+    final decoded = _decode(response);
+    if (decoded is List) {
+      return decoded.cast<Map<String, dynamic>>();
+    }
+    return [];
+  }
+
+  Future<Map<String, dynamic>> sendChatMessage({
+    required int recipientId,
+    String? message,
+    List<int>? imageBytes,
+    int? orderId,
+    String filename = 'chat_image.jpg',
+  }) async {
+    if (imageBytes != null && imageBytes.isNotEmpty) {
+      final uri = _uri('/messages/');
+      final token = await AppDatabase.instance.authDao.readAccessToken();
+
+      http.MultipartRequest buildRequest(String? bearerToken) {
+        final req = http.MultipartRequest('POST', uri);
+        if (bearerToken != null && bearerToken.isNotEmpty) {
+          req.headers['Authorization'] = 'Bearer $bearerToken';
+        }
+        req.headers['Accept'] = 'application/json';
+        req.fields['recipient'] = recipientId.toString();
+        if (message != null && message.trim().isNotEmpty) {
+          req.fields['message'] = message.trim();
+        }
+        if (orderId != null) {
+          req.fields['order'] = orderId.toString();
+        }
+        req.files.add(
+          http.MultipartFile.fromBytes(
+            'image',
+            imageBytes,
+            filename: filename,
+          ),
+        );
+        return req;
+      }
+
+      try {
+        var streamedResponse = await buildRequest(token).send().timeout(const Duration(seconds: 25));
+        var response = await http.Response.fromStream(streamedResponse);
+        if (response.statusCode == 401 && await _refreshAccessToken()) {
+          final newToken = await AppDatabase.instance.authDao.readAccessToken();
+          streamedResponse = await buildRequest(newToken).send().timeout(const Duration(seconds: 25));
+          response = await http.Response.fromStream(streamedResponse);
+        }
+        if (response.statusCode != 201) _throw(response);
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      } on TimeoutException {
+        throw ApiException('Server timed out. Please check your connection.');
+      } on SocketException {
+        throw ApiException('Could not reach the server at ${ApiConfig.baseUrl}');
+      }
+    } else {
+      final body = <String, dynamic>{
+        'recipient': recipientId,
+        'message': message ?? '',
+      };
+      if (orderId != null) body['order'] = orderId;
+      final response = await _send('POST', '/messages/', body: body);
+      if (response.statusCode != 201) _throw(response);
+      return _decode(response) as Map<String, dynamic>;
+    }
+  }
+
+  Future<void> blockCustomer(int customerId) async {
+    final response = await _send('POST', '/messages/block/', body: {'customer_id': customerId});
+    if (response.statusCode != 200) _throw(response);
+  }
+
+  Future<void> unblockCustomer(int customerId) async {
+    final response = await _send('POST', '/messages/unblock/', body: {'customer_id': customerId});
+    if (response.statusCode != 200) _throw(response);
+  }
+
+  Future<bool> checkBlockStatus(int customerId) async {
+    final response = await _send('GET', '/messages/block-status/?customer_id=$customerId');
+    if (response.statusCode != 200) _throw(response);
+    final data = _decode(response) as Map<String, dynamic>;
+    return data['is_blocked'] == true;
+  }
+
+  // ---------- User Reporting ----------
+
+  Future<Map<String, dynamic>> submitReport({
+    required int reportedUserId,
+    required String reason,
+    required String description,
+    int? orderId,
+    List<int>? attachmentBytes,
+    String filename = 'report_evidence.jpg',
+  }) async {
+    if (attachmentBytes != null && attachmentBytes.isNotEmpty) {
+      final uri = _uri('/reports/');
+      final token = await AppDatabase.instance.authDao.readAccessToken();
+
+      http.MultipartRequest buildRequest(String? bearerToken) {
+        final req = http.MultipartRequest('POST', uri);
+        if (bearerToken != null && bearerToken.isNotEmpty) {
+          req.headers['Authorization'] = 'Bearer $bearerToken';
+        }
+        req.headers['Accept'] = 'application/json';
+        req.fields['reported_user'] = reportedUserId.toString();
+        req.fields['reason'] = reason;
+        req.fields['description'] = description.trim();
+        if (orderId != null) req.fields['order'] = orderId.toString();
+        req.files.add(
+          http.MultipartFile.fromBytes('attachment', attachmentBytes, filename: filename),
+        );
+        return req;
+      }
+
+      try {
+        var streamedResponse = await buildRequest(token).send().timeout(const Duration(seconds: 25));
+        var response = await http.Response.fromStream(streamedResponse);
+        if (response.statusCode == 401 && await _refreshAccessToken()) {
+          final newToken = await AppDatabase.instance.authDao.readAccessToken();
+          streamedResponse = await buildRequest(newToken).send().timeout(const Duration(seconds: 25));
+          response = await http.Response.fromStream(streamedResponse);
+        }
+        if (response.statusCode != 201) _throw(response);
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      } on TimeoutException {
+        throw ApiException('Server timed out while submitting report.');
+      } on SocketException {
+        throw ApiException('Could not reach the server.');
+      }
+    } else {
+      final body = <String, dynamic>{
+        'reported_user': reportedUserId,
+        'reason': reason,
+        'description': description.trim(),
+      };
+      if (orderId != null) body['order'] = orderId;
+      final response = await _send('POST', '/reports/', body: body);
+      if (response.statusCode != 201) _throw(response);
+      return _decode(response) as Map<String, dynamic>;
+    }
   }
 }
 

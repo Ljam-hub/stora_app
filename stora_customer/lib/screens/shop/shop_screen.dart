@@ -9,6 +9,7 @@ import '../../widgets/empty_state.dart';
 import '../../widgets/product_card.dart';
 import '../../widgets/shimmer_product_card.dart';
 import '../../widgets/fade_slide_in.dart';
+import '../chat/customer_chat_screen.dart';
 import 'product_detail_sheet.dart';
 
 class ShopScreen extends StatefulWidget {
@@ -68,6 +69,22 @@ class _ShopScreenState extends State<ShopScreen> {
           ],
         ),
         actions: [
+          if (catalog.selectedStore != null)
+            IconButton(
+              icon: const Icon(Icons.chat_bubble_outline_rounded, color: Colors.white),
+              tooltip: 'Message Store',
+              onPressed: () {
+                final store = catalog.selectedStore!;
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => CustomerChatScreen(
+                      storeOwnerId: store.id,
+                      storeName: store.displayName,
+                    ),
+                  ),
+                );
+              },
+            ),
           // Cart action with badge
           Stack(
             alignment: Alignment.center,

@@ -117,7 +117,7 @@ def send_push_notification(fcm_token: str, title: str, body: str, data: dict = N
                     priority="high",
                     default_sound=True,
                     default_vibrate_timings=True,
-                    icon="ic_launcher",
+                    icon="ic_notification",
                 ),
             )
 
@@ -244,3 +244,50 @@ def notify_admin(title: str, body: str, data: dict = None) -> int:
     except Exception as e:
         logger.warning("Failed to notify admin: %s", e)
         return 0
+
+
+def notify_new_chat_message(chat_msg):
+    """
+    Notifies the recipient of a new chat message, suppressing notification
+    if the sender is blocked by the recipient.
+    """
+    try:
+        from api.models import BlockedCustomer
+        recipient = chat_msg.recipient
+        sender = chat_msg.sender
+
+        if not recipient or not getattr(recipient, "fcm_token", None):
+            return False
+
+        # Check if customer is blocked by owner
+        if recipient.role == recipient.ROLE_OWNER:
+            if BlockedCustomer.objects.filter(owner=recipient, customer=sender).exists():
+                logger.info("Notification suppressed: customer %s is blocked by owner %s", sender.id, recipient.id)
+                return False
+        elif sender.role == sender.ROLE_OWNER:
+            if BlockedCustomer.objects.filter(owner=sender, customer=recipient).exists():
+                logger.info("Notification suppressed: recipient %s is blocked by owner %s", recipient.id, sender.id)
+                return False
+
+        sender_name = (
+            getattr(sender, "business_name", "")
+            or getattr(sender, "full_name", "")
+            or getattr(sender, "username", "Someone")
+        )
+
+        body = chat_msg.message if chat_msg.message else "📷 Sent a photo"
+        title = f"New message from {sender_name}"
+
+        data_payload = {
+            "type": "chat_message",
+            "message_id": str(chat_msg.id),
+            "sender_id": str(sender.id),
+            "sender_name": sender_name,
+            "order_id": str(chat_msg.order_id or ""),
+            "channel_id": "stora_chat",
+        }
+
+        return send_push_notification(recipient.fcm_token, title, body, data_payload)
+    except Exception as e:
+        logger.warning("Failed to dispatch chat message notification: %s", e)
+        return False

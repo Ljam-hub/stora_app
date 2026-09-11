@@ -554,11 +554,16 @@ div.breadcrumbs a:hover {
 
 .stora-page-title,
 #content h1 {
-  font-size: 28px !important;
+  display: block !important;
+  clear: both !important;
+  font-size: 26px !important;
   font-weight: 800 !important;
   color: var(--stora-text-strong) !important;
   letter-spacing: -.025em;
-  margin: 0 0 24px 0;
+  margin: 0 0 20px 0 !important;
+  padding-top: 6px !important;
+  position: relative !important;
+  z-index: 2 !important;
 }
 
 #content h2 {

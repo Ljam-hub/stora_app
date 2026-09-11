@@ -6,7 +6,7 @@ from django.utils.html import format_html
 
 from stora_backend.admin_site import stora_admin_site
 
-from .models import User, PasswordResetToken, PaymentProof, SubscriptionConfig, StoreLocation, AIInsight, EmailVerificationCode
+from .models import User, PasswordResetToken, PaymentProof, SubscriptionConfig, StoreLocation, AIInsight, EmailVerificationCode, PendingRegistration
 
 
 @admin.register(User, site=stora_admin_site)
@@ -16,37 +16,32 @@ class UserAdmin(DjangoUserAdmin):
         ("Subscription", {"fields": ("is_premium", "premium_until")}),
     )
     list_display = (
-        "username",
         "email",
+        "owner_customer_name",
         "role_badge",
-        "business_name_col",
-        "customer_name_col",
         "is_email_verified",
         "subscription_status",
         "subscription_expiration",
         "last_login",
-        "is_staff",
         "is_active",
     )
     search_fields = ("username", "email", "business_name", "first_name", "last_name")
     list_filter = ("role", "is_email_verified", "is_premium", "is_staff", "is_active")
 
-    @admin.display(description="Business Name", ordering="business_name")
-    def business_name_col(self, obj):
+    @admin.display(description="Owner/Customer Name", ordering="business_name")
+    def owner_customer_name(self, obj):
         if obj.role == "owner":
-            return obj.business_name or "—"
-        return "—"
+            return obj.business_name or f"{obj.first_name} {obj.last_name}".strip() or obj.username
+        elif obj.role == "customer":
+            return f"{obj.first_name} {obj.last_name}".strip() or obj.business_name or obj.username
+        else:
+            name = f"{obj.first_name} {obj.last_name}".strip()
+            return f"{name} (Admin)" if name else "Administrator"
 
-    @admin.display(description="Customer Name")
-    def customer_name_col(self, obj):
-        if obj.role == "customer":
-            return obj.business_name or (f"{obj.first_name} {obj.last_name}".strip() or obj.username)
-        return "—"
-
-    @admin.display(description="Role")
+    @admin.display(description="Role", ordering="role")
     def role_badge(self, obj):
         from django.utils.html import format_html
-        if obj.role == "admin":
+        if obj.is_superuser or obj.is_staff or obj.role == "admin":
             return format_html('<span class="user-badge user-badge--admin" style="background:#7c3aed;color:#fff;padding:3px 8px;border-radius:6px;font-weight:700;">Admin</span>')
         elif obj.role == "owner":
             return format_html('<span class="user-badge user-badge--owner">Store Owner</span>')
@@ -124,22 +119,21 @@ class UserAdmin(DjangoUserAdmin):
 
 @admin.register(PasswordResetToken, site=stora_admin_site)
 class PasswordResetTokenAdmin(admin.ModelAdmin):
-    list_display = ("user", "business_name_col", "customer_name_col", "token", "token_status", "created_at", "used")
+    list_display = ("user", "owner_customer_name", "token", "token_status", "created_at", "used")
     list_filter = ("used", "created_at")
     search_fields = ("user__email", "user__username", "user__business_name", "token")
     readonly_fields = ("token", "created_at")
 
-    @admin.display(description="Business Name")
-    def business_name_col(self, obj):
-        if getattr(obj.user, "role", "") == "owner":
-            return obj.user.business_name or "—"
-        return "—"
-
-    @admin.display(description="Customer Name")
-    def customer_name_col(self, obj):
-        if getattr(obj.user, "role", "") == "customer":
-            return obj.user.business_name or (f"{obj.user.first_name} {obj.user.last_name}".strip() or obj.user.username)
-        return "—"
+    @admin.display(description="Owner/Customer Name")
+    def owner_customer_name(self, obj):
+        user = obj.user
+        if not user:
+            return "—"
+        if getattr(user, "role", "") == "owner":
+            return user.business_name or f"{user.first_name} {user.last_name}".strip() or user.username
+        elif getattr(user, "role", "") == "customer":
+            return f"{user.first_name} {user.last_name}".strip() or user.business_name or user.username
+        return f"{user.first_name} {user.last_name}".strip() or user.username or "Admin"
 
     @admin.display(description="Status")
     def token_status(self, obj):
@@ -153,22 +147,21 @@ class PasswordResetTokenAdmin(admin.ModelAdmin):
 
 @admin.register(PaymentProof, site=stora_admin_site)
 class PaymentProofAdmin(admin.ModelAdmin):
-    list_display = ("user", "business_name_col", "customer_name_col", "reference_number", "amount", "status", "submitted_at", "reviewed_at")
+    list_display = ("user", "owner_customer_name", "reference_number", "amount", "status", "submitted_at", "reviewed_at")
     list_filter = ("status", "submitted_at")
     search_fields = ("reference_number", "user__email", "user__business_name", "user__username")
     actions = ["approve_selected", "reject_selected"]
 
-    @admin.display(description="Business Name")
-    def business_name_col(self, obj):
-        if getattr(obj.user, "role", "") == "owner":
-            return obj.user.business_name or "—"
-        return "—"
-
-    @admin.display(description="Customer Name")
-    def customer_name_col(self, obj):
-        if getattr(obj.user, "role", "") == "customer":
-            return obj.user.business_name or (f"{obj.user.first_name} {obj.user.last_name}".strip() or obj.user.username)
-        return "—"
+    @admin.display(description="Owner/Customer Name")
+    def owner_customer_name(self, obj):
+        user = obj.user
+        if not user:
+            return "—"
+        if getattr(user, "role", "") == "owner":
+            return user.business_name or f"{user.first_name} {user.last_name}".strip() or user.username
+        elif getattr(user, "role", "") == "customer":
+            return f"{user.first_name} {user.last_name}".strip() or user.business_name or user.username
+        return f"{user.first_name} {user.last_name}".strip() or user.username or "Admin"
 
     @admin.action(description="Approve selected payment proofs (Grants 31 Days Premium)")
     def approve_selected(self, request, queryset):
@@ -231,21 +224,44 @@ class AIInsightAdmin(admin.ModelAdmin):
 
 @admin.register(EmailVerificationCode, site=stora_admin_site)
 class EmailVerificationCodeAdmin(admin.ModelAdmin):
-    list_display = ("user", "business_name_col", "customer_name_col", "code", "created_at", "expires_at", "used", "is_valid_display")
+    list_display = ("user", "owner_customer_name", "code", "created_at", "expires_at", "used", "is_valid_display")
     search_fields = ("user__email", "user__username", "user__business_name", "code")
     list_filter = ("used", "created_at")
 
-    @admin.display(description="Business Name")
-    def business_name_col(self, obj):
-        if getattr(obj.user, "role", "") == "owner":
-            return obj.user.business_name or "—"
-        return "—"
+    @admin.display(description="Owner/Customer Name")
+    def owner_customer_name(self, obj):
+        user = obj.user
+        if not user:
+            return "—"
+        if getattr(user, "role", "") == "owner":
+            return user.business_name or f"{user.first_name} {user.last_name}".strip() or user.username
+        elif getattr(user, "role", "") == "customer":
+            return f"{user.first_name} {user.last_name}".strip() or user.business_name or user.username
+        return f"{user.first_name} {user.last_name}".strip() or user.username or "Admin"
 
-    @admin.display(description="Customer Name")
-    def customer_name_col(self, obj):
-        if getattr(obj.user, "role", "") == "customer":
-            return obj.user.business_name or (f"{obj.user.first_name} {obj.user.last_name}".strip() or obj.user.username)
-        return "—"
+    @admin.display(description="Valid?", boolean=True)
+    def is_valid_display(self, obj):
+        return obj.is_valid()
+
+
+@admin.register(PendingRegistration, site=stora_admin_site)
+class PendingRegistrationAdmin(admin.ModelAdmin):
+    list_display = ("email", "role_badge", "owner_customer_name", "code", "created_at", "expires_at", "is_valid_display")
+    search_fields = ("email", "business_name", "first_name", "last_name", "code")
+    list_filter = ("role", "created_at")
+
+    @admin.display(description="Role")
+    def role_badge(self, obj):
+        from django.utils.html import format_html
+        if obj.role == "owner":
+            return format_html('<span class="user-badge user-badge--owner">Store Owner (Pending)</span>')
+        return format_html('<span class="user-badge user-badge--customer">Customer (Pending)</span>')
+
+    @admin.display(description="Owner/Customer Name")
+    def owner_customer_name(self, obj):
+        if obj.role == "owner":
+            return obj.business_name or f"{obj.first_name} {obj.last_name}".strip() or "—"
+        return f"{obj.first_name} {obj.last_name}".strip() or "—"
 
     @admin.display(description="Valid?", boolean=True)
     def is_valid_display(self, obj):

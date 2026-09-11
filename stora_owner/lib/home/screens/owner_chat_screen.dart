@@ -1,0 +1,1139 @@
+import 'dart:async';
+import 'dart:typed_data';
+import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
+import '../../data/api/api_client.dart';
+import '../../data/api/api_config.dart';
+import '../../stora_login/theme/app_colors.dart';
+import '../theme/home_colors.dart';
+import '../utils/date_utils.dart';
+
+class OwnerChatScreen extends StatefulWidget {
+  const OwnerChatScreen({super.key});
+
+  @override
+  State<OwnerChatScreen> createState() => _OwnerChatScreenState();
+}
+
+class _OwnerChatScreenState extends State<OwnerChatScreen> {
+  List<Map<String, dynamic>> _conversations = [];
+  bool _loading = true;
+  String? _error;
+  String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
+  Timer? _pollTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadConversations();
+    _pollTimer = Timer.periodic(const Duration(seconds: 6), (_) {
+      if (mounted) _loadConversations(silent: true);
+    });
+  }
+
+  @override
+  void dispose() {
+    _pollTimer?.cancel();
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadConversations({bool silent = false}) async {
+    if (!silent) setState(() => _loading = true);
+    try {
+      final data = await ApiClient.instance.fetchConversations();
+      if (mounted) {
+        setState(() {
+          _conversations = data;
+          _error = null;
+          _loading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted && !silent) {
+        setState(() {
+          _error = e.toString();
+          _loading = false;
+        });
+      }
+    }
+  }
+
+  List<Map<String, dynamic>> get _filteredConversations {
+    if (_searchQuery.trim().isEmpty) return _conversations;
+    final q = _searchQuery.toLowerCase();
+    return _conversations.where((c) {
+      final name = (c['name'] ?? '').toString().toLowerCase();
+      final lastMsg = (c['last_message'] ?? '').toString().toLowerCase();
+      final email = (c['email'] ?? '').toString().toLowerCase();
+      return name.contains(q) || lastMsg.contains(q) || email.contains(q);
+    }).toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.primary,
+      appBar: AppBar(
+        backgroundColor: HomeColors.cardBackground,
+        elevation: 0,
+        title: const Text(
+          'Customer Messages',
+          style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ),
+      body: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+            color: HomeColors.cardBackground,
+            child: TextField(
+              controller: _searchController,
+              onChanged: (val) => setState(() => _searchQuery = val),
+              style: const TextStyle(color: Colors.white, fontSize: 14),
+              decoration: InputDecoration(
+                hintText: 'Search conversations...',
+                hintStyle: const TextStyle(color: AppColors.label, fontSize: 14),
+                prefixIcon: const Icon(Icons.search_rounded, color: AppColors.label, size: 20),
+                suffixIcon: _searchQuery.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear_rounded, color: AppColors.label, size: 18),
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() => _searchQuery = '');
+                        },
+                      )
+                    : null,
+                filled: true,
+                fillColor: HomeColors.cardElevated,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: _loading && _conversations.isEmpty
+                ? const Center(child: CircularProgressIndicator(color: AppColors.purpleLight))
+                : _error != null && _conversations.isEmpty
+                    ? Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(24.0),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.error_outline_rounded, color: HomeColors.dangerText, size: 48),
+                              const SizedBox(height: 12),
+                              Text(_error!, style: const TextStyle(color: Colors.white70), textAlign: TextAlign.center),
+                              const SizedBox(height: 16),
+                              ElevatedButton(
+                                onPressed: () => _loadConversations(),
+                                style: ElevatedButton.styleFrom(backgroundColor: AppColors.purpleLight),
+                                child: const Text('Retry', style: TextStyle(color: Colors.white)),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    : _filteredConversations.isEmpty
+                        ? RefreshIndicator(
+                            onRefresh: _loadConversations,
+                            color: AppColors.purpleLight,
+                            child: ListView(
+                              children: [
+                                SizedBox(height: MediaQuery.of(context).size.height * 0.2),
+                                Center(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.all(20),
+                                        decoration: BoxDecoration(
+                                          color: HomeColors.cardElevated,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(Icons.chat_bubble_outline_rounded, color: AppColors.label, size: 48),
+                                      ),
+                                      const SizedBox(height: 16),
+                                      const Text(
+                                        'No conversations yet',
+                                        style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      const Padding(
+                                        padding: EdgeInsets.symmetric(horizontal: 40),
+                                        child: Text(
+                                          'When customers reach out with inquiries or order questions, they will appear here.',
+                                          style: TextStyle(color: AppColors.label, fontSize: 14),
+                                          textAlign: TextAlign.center,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        : RefreshIndicator(
+                            onRefresh: _loadConversations,
+                            color: AppColors.purpleLight,
+                            child: ListView.separated(
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              itemCount: _filteredConversations.length,
+                              separatorBuilder: (_, __) => const Divider(color: HomeColors.cardBorder, height: 1),
+                              itemBuilder: (context, index) {
+                                final conv = _filteredConversations[index];
+                                final customerId = conv['id'] as int;
+                                final customerName = (conv['name'] as String?)?.isNotEmpty == true
+                                    ? conv['name'] as String
+                                    : 'Customer #$customerId';
+                                final lastMessage = conv['last_message'] as String? ?? '';
+                                final unreadCount = (conv['unread_count'] as int?) ?? 0;
+                                final lastMessageAt = conv['last_message_at'] as String?;
+
+                                String timeDisplay = '';
+                                if (lastMessageAt != null && lastMessageAt.isNotEmpty) {
+                                  try {
+                                    final dt = parseApiDateTime(lastMessageAt).toLocal();
+                                    final now = DateTime.now();
+                                    if (dt.day == now.day && dt.month == now.month && dt.year == now.year) {
+                                      timeDisplay = DateFormat('h:mm a').format(dt);
+                                    } else {
+                                      timeDisplay = DateFormat('MMM d').format(dt);
+                                    }
+                                  } catch (_) {
+                                    timeDisplay = '';
+                                  }
+                                }
+
+                                return ListTile(
+                                  onTap: () async {
+                                    await Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (_) => OwnerChatThreadScreen(
+                                          customerId: customerId,
+                                          customerName: customerName,
+                                        ),
+                                      ),
+                                    );
+                                    _loadConversations(silent: true);
+                                  },
+                                  leading: CircleAvatar(
+                                    radius: 24,
+                                    backgroundColor: HomeColors.cardElevated,
+                                    child: Text(
+                                      customerName.isNotEmpty ? customerName[0].toUpperCase() : 'C',
+                                      style: const TextStyle(color: AppColors.purpleLight, fontWeight: FontWeight.bold, fontSize: 18),
+                                    ),
+                                  ),
+                                  title: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          customerName,
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: unreadCount > 0 ? FontWeight.bold : FontWeight.w600,
+                                            fontSize: 15,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      if (timeDisplay.isNotEmpty)
+                                        Text(
+                                          timeDisplay,
+                                          style: TextStyle(
+                                            color: unreadCount > 0 ? AppColors.purpleLight : AppColors.label,
+                                            fontSize: 12,
+                                            fontWeight: unreadCount > 0 ? FontWeight.bold : FontWeight.normal,
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                  subtitle: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          lastMessage.isNotEmpty ? lastMessage : 'Photo sent',
+                                          style: TextStyle(
+                                            color: unreadCount > 0 ? Colors.white70 : AppColors.label,
+                                            fontSize: 13,
+                                            fontStyle: lastMessage.isEmpty ? FontStyle.italic : FontStyle.normal,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      if (unreadCount > 0)
+                                        Container(
+                                          margin: const EdgeInsets.only(left: 8),
+                                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: AppColors.purpleLight,
+                                            borderRadius: BorderRadius.circular(10),
+                                          ),
+                                          child: Text(
+                                            '$unreadCount',
+                                            style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class OwnerChatThreadScreen extends StatefulWidget {
+  final int customerId;
+  final String customerName;
+  final int? orderId;
+
+  const OwnerChatThreadScreen({
+    super.key,
+    required this.customerId,
+    required this.customerName,
+    this.orderId,
+  });
+
+  @override
+  State<OwnerChatThreadScreen> createState() => _OwnerChatThreadScreenState();
+}
+
+class _OwnerChatThreadScreenState extends State<OwnerChatThreadScreen> {
+  final TextEditingController _textController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+  final ImagePicker _picker = ImagePicker();
+
+  List<Map<String, dynamic>> _messages = [];
+  bool _loading = true;
+  bool _sending = false;
+  bool _isBlocked = false;
+  String? _error;
+  Timer? _pollTimer;
+
+  Uint8List? _selectedImageBytes;
+  String? _selectedImageName;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchBlockStatus();
+    _fetchMessages();
+    _pollTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+      if (mounted) _fetchMessages(silent: true);
+    });
+  }
+
+  @override
+  void dispose() {
+    _pollTimer?.cancel();
+    _textController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _fetchBlockStatus() async {
+    try {
+      final blocked = await ApiClient.instance.checkBlockStatus(widget.customerId);
+      if (mounted) setState(() => _isBlocked = blocked);
+    } catch (_) {}
+  }
+
+  Future<void> _fetchMessages({bool silent = false}) async {
+    if (!silent) setState(() => _loading = true);
+    try {
+      final msgs = await ApiClient.instance.fetchMessages(widget.customerId);
+      if (mounted) {
+        setState(() {
+          _messages = msgs;
+          _error = null;
+          _loading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted && !silent) {
+        setState(() {
+          _error = e.toString();
+          _loading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _toggleBlock() async {
+    final willBlock = !_isBlocked;
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: HomeColors.cardBackground,
+        title: Text(willBlock ? 'Block Customer?' : 'Unblock Customer?', style: const TextStyle(color: Colors.white)),
+        content: Text(
+          willBlock
+              ? 'Blocking ${widget.customerName} will prevent them from sending you messages and suppress notifications.'
+              : 'Unblock ${widget.customerName} so they can message you again?',
+          style: const TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel', style: TextStyle(color: AppColors.label)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: willBlock ? HomeColors.dangerText : AppColors.purpleLight,
+            ),
+            child: Text(willBlock ? 'Block' : 'Unblock', style: const TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    try {
+      if (willBlock) {
+        await ApiClient.instance.blockCustomer(widget.customerId);
+      } else {
+        await ApiClient.instance.unblockCustomer(widget.customerId);
+      }
+      if (mounted) {
+        setState(() => _isBlocked = willBlock);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(willBlock ? '${widget.customerName} has been blocked' : '${widget.customerName} has been unblocked'),
+            backgroundColor: willBlock ? HomeColors.dangerText : HomeColors.successText,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to update block status: $e'), backgroundColor: HomeColors.dangerText),
+        );
+      }
+    }
+  }
+
+  Future<void> _showReportDialog() async {
+    String selectedReason = 'harassment';
+    final descriptionController = TextEditingController();
+    bool alsoBlock = !_isBlocked;
+    bool isSubmitting = false;
+
+    final reasons = [
+      {'value': 'harassment', 'label': 'Harassment / Abusive Behavior'},
+      {'value': 'fraud', 'label': 'Fraud / Scam / Non-payment'},
+      {'value': 'fake_order', 'label': 'Fake / Suspicious Order'},
+      {'value': 'inappropriate_content', 'label': 'Inappropriate Photos or Content'},
+      {'value': 'spam', 'label': 'Spam / Unsolicited Promotion'},
+      {'value': 'other', 'label': 'Other Violation'},
+    ];
+
+    try {
+      await showModalBottomSheet(
+        context: context,
+        backgroundColor: HomeColors.cardBackground,
+        isScrollControlled: true,
+        isDismissible: !isSubmitting,
+        enableDrag: !isSubmitting,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        builder: (ctx) {
+          return StatefulBuilder(
+            builder: (sheetCtx, setSheetState) {
+              return Padding(
+                padding: EdgeInsets.only(
+                  left: 20,
+                  right: 20,
+                  top: 16,
+                  bottom: MediaQuery.of(sheetCtx).viewInsets.bottom + 20,
+                ),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Center(
+                        child: Container(
+                          width: 40,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: AppColors.fieldBorder,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.amber.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(Icons.report_problem_rounded, color: Colors.amber, size: 22),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  widget.customerName.isNotEmpty ? 'Report ${widget.customerName}' : 'Report Customer',
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                const Text(
+                                  'Reports are investigated by Stora platform admins.',
+                                  style: TextStyle(fontSize: 12, color: AppColors.label),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      const Text(
+                        'Reason for Report',
+                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.label),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AppColors.background,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppColors.fieldBorder),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: selectedReason,
+                            isExpanded: true,
+                            dropdownColor: HomeColors.cardElevated,
+                            style: const TextStyle(color: Colors.white, fontSize: 14),
+                            items: reasons.map((r) {
+                              return DropdownMenuItem<String>(
+                                value: r['value'],
+                                child: Text(r['label']!),
+                              );
+                            }).toList(),
+                            onChanged: isSubmitting
+                                ? null
+                                : (val) {
+                                    if (val != null) setSheetState(() => selectedReason = val);
+                                  },
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Details / Description',
+                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.label),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: descriptionController,
+                        maxLines: 3,
+                        enabled: !isSubmitting,
+                        style: const TextStyle(color: Colors.white, fontSize: 14),
+                        decoration: InputDecoration(
+                          hintText: 'Describe what happened (e.g. offensive messages, bogus orders)...',
+                          hintStyle: const TextStyle(color: AppColors.hint, fontSize: 13),
+                          filled: true,
+                          fillColor: AppColors.background,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: AppColors.fieldBorder),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: AppColors.fieldBorder),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: AppColors.primary),
+                          ),
+                          contentPadding: const EdgeInsets.all(12),
+                        ),
+                      ),
+                      if (!_isBlocked) ...[
+                        const SizedBox(height: 12),
+                        InkWell(
+                          onTap: isSubmitting ? null : () => setSheetState(() => alsoBlock = !alsoBlock),
+                          borderRadius: BorderRadius.circular(8),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 4),
+                            child: Row(
+                              children: [
+                                SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: Checkbox(
+                                    value: alsoBlock,
+                                    activeColor: AppColors.primary,
+                                    onChanged: isSubmitting ? null : (val) => setSheetState(() => alsoBlock = val ?? false),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                const Expanded(
+                                  child: Text(
+                                    'Also block this customer from messaging me',
+                                    style: TextStyle(color: Colors.white, fontSize: 13),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 20),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: isSubmitting ? null : () => Navigator.of(ctx).pop(),
+                              style: OutlinedButton.styleFrom(
+                                side: const BorderSide(color: AppColors.fieldBorder),
+                                padding: const EdgeInsets.symmetric(vertical: 13),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                              child: const Text('Cancel', style: TextStyle(color: AppColors.label)),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            flex: 2,
+                            child: ElevatedButton(
+                              onPressed: isSubmitting
+                                  ? null
+                                  : () async {
+                                      final messenger = ScaffoldMessenger.of(context);
+                                      setSheetState(() => isSubmitting = true);
+                                      try {
+                                        await ApiClient.instance.submitReport(
+                                          reportedUserId: widget.customerId,
+                                          reason: selectedReason,
+                                          description: descriptionController.text.trim(),
+                                          orderId: widget.orderId,
+                                        );
+
+                                        if (alsoBlock && !_isBlocked) {
+                                          try {
+                                            await ApiClient.instance.blockCustomer(widget.customerId);
+                                            if (mounted) setState(() => _isBlocked = true);
+                                          } catch (_) {}
+                                        }
+
+                                        if (ctx.mounted) Navigator.of(ctx).pop();
+
+                                        messenger.showSnackBar(
+                                          const SnackBar(
+                                            content: Text('Report submitted. Our administrators will review this user.'),
+                                            backgroundColor: HomeColors.successText,
+                                          ),
+                                        );
+                                      } catch (e) {
+                                        if (ctx.mounted) setSheetState(() => isSubmitting = false);
+                                        final eStr = e.toString().toLowerCase();
+                                        final msg = eStr.contains('pending report') || eStr.contains('already have')
+                                            ? 'You already have an active pending report for this user.'
+                                            : 'Failed to submit report: $e';
+                                        messenger.showSnackBar(
+                                          SnackBar(content: Text(msg), backgroundColor: HomeColors.dangerText),
+                                        );
+                                      }
+                                    },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.amber[700],
+                                padding: const EdgeInsets.symmetric(vertical: 13),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                              child: isSubmitting
+                                  ? const SizedBox(
+                                      width: 18,
+                                      height: 18,
+                                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                                    )
+                                  : const Text('Submit Report', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          );
+        },
+      );
+    } finally {
+      descriptionController.dispose();
+    }
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final picked = await _picker.pickImage(source: source, imageQuality: 70, maxWidth: 1200);
+      if (picked != null) {
+        final bytes = await picked.readAsBytes();
+        setState(() {
+          _selectedImageBytes = bytes;
+          _selectedImageName = picked.name;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to pick image: $e'), backgroundColor: HomeColors.dangerText),
+        );
+      }
+    }
+  }
+
+  Future<void> _sendMessage() async {
+    final text = _textController.text.trim();
+    if (text.isEmpty && _selectedImageBytes == null) return;
+    if (_sending) return;
+
+    setState(() => _sending = true);
+
+    try {
+      await ApiClient.instance.sendChatMessage(
+        recipientId: widget.customerId,
+        message: text.isNotEmpty ? text : null,
+        imageBytes: _selectedImageBytes,
+        filename: _selectedImageName ?? 'chat_image.jpg',
+        orderId: widget.orderId,
+      );
+
+      _textController.clear();
+      setState(() {
+        _selectedImageBytes = null;
+        _selectedImageName = null;
+      });
+
+      await _fetchMessages(silent: true);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to send message: $e'), backgroundColor: HomeColors.dangerText),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _sending = false);
+    }
+  }
+
+  String _resolveImageUrl(String? url) {
+    if (url == null || url.isEmpty) return '';
+    if (url.startsWith('http://') || url.startsWith('https://')) return url;
+    final base = ApiConfig.baseUrl.replaceAll(RegExp(r'/api/?$'), '');
+    return url.startsWith('/') ? '$base$url' : '$base/$url';
+  }
+
+  void _showImageFullscreen(String imageUrl) {
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(8),
+        child: Stack(
+          alignment: Alignment.topRight,
+          children: [
+            InteractiveViewer(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.network(
+                  imageUrl,
+                  fit: BoxFit.contain,
+                  loadingBuilder: (_, child, progress) {
+                    if (progress == null) return child;
+                    return const Center(child: CircularProgressIndicator(color: AppColors.purpleLight));
+                  },
+                ),
+              ),
+            ),
+            IconButton(
+              icon: const CircleAvatar(
+                backgroundColor: Colors.black54,
+                child: Icon(Icons.close_rounded, color: Colors.white, size: 20),
+              ),
+              onPressed: () => Navigator.of(ctx).pop(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.primary,
+      appBar: AppBar(
+        backgroundColor: HomeColors.cardBackground,
+        elevation: 0,
+        titleSpacing: 0,
+        title: Row(
+          children: [
+            CircleAvatar(
+              radius: 18,
+              backgroundColor: HomeColors.cardElevated,
+              child: Text(
+                widget.customerName.isNotEmpty ? widget.customerName[0].toUpperCase() : 'C',
+                style: const TextStyle(color: AppColors.purpleLight, fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.customerName,
+                    style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Text(
+                    _isBlocked ? 'Blocked' : 'Customer',
+                    style: TextStyle(
+                      color: _isBlocked ? HomeColors.dangerText : HomeColors.successText,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert_rounded, color: Colors.white70),
+            color: HomeColors.cardElevated,
+            onSelected: (val) {
+              if (val == 'report') _showReportDialog();
+              if (val == 'block') _toggleBlock();
+            },
+            itemBuilder: (ctx) => [
+              const PopupMenuItem(
+                value: 'report',
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.flag_rounded,
+                      color: Colors.amber,
+                      size: 20,
+                    ),
+                    SizedBox(width: 10),
+                    Text(
+                      'Report Customer',
+                      style: TextStyle(color: Colors.amber),
+                    ),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'block',
+                child: Row(
+                  children: [
+                    Icon(
+                      _isBlocked ? Icons.lock_open_rounded : Icons.block_rounded,
+                      color: _isBlocked ? HomeColors.successText : HomeColors.dangerText,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      _isBlocked ? 'Unblock Customer' : 'Block Customer',
+                      style: TextStyle(color: _isBlocked ? HomeColors.successText : HomeColors.dangerText),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          if (_isBlocked)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              color: HomeColors.dangerBg,
+              child: Row(
+                children: [
+                  const Icon(Icons.block_rounded, color: HomeColors.dangerText, size: 18),
+                  const SizedBox(width: 10),
+                  const Expanded(
+                    child: Text(
+                      'This customer is blocked. They cannot message you.',
+                      style: TextStyle(color: HomeColors.dangerText, fontSize: 12),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: _toggleBlock,
+                    child: const Text('Unblock', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                  ),
+                ],
+              ),
+            ),
+          Expanded(
+            child: _loading && _messages.isEmpty
+                ? const Center(child: CircularProgressIndicator(color: AppColors.purpleLight))
+                : _error != null && _messages.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.error_outline_rounded, color: HomeColors.dangerText, size: 40),
+                            const SizedBox(height: 8),
+                            Text(_error!, style: const TextStyle(color: Colors.white70)),
+                            const SizedBox(height: 12),
+                            ElevatedButton(
+                              onPressed: () => _fetchMessages(),
+                              style: ElevatedButton.styleFrom(backgroundColor: AppColors.purpleLight),
+                              child: const Text('Retry', style: TextStyle(color: Colors.white)),
+                            ),
+                          ],
+                        ),
+                      )
+                    : _messages.isEmpty
+                        ? Center(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.forum_outlined, color: AppColors.label, size: 48),
+                                const SizedBox(height: 12),
+                                Text('Conversation with ${widget.customerName}', style: const TextStyle(color: Colors.white70, fontSize: 15)),
+                                const SizedBox(height: 4),
+                                const Text('Send a message or reply below', style: TextStyle(color: AppColors.label, fontSize: 13)),
+                              ],
+                            ),
+                          )
+                        : ListView.builder(
+                        controller: _scrollController,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        itemCount: _messages.length,
+                        itemBuilder: (context, index) {
+                          final msg = _messages[index];
+                          final isMe = msg['sender_id'] != widget.customerId;
+                          final text = msg['message'] as String? ?? '';
+                          final rawImg = msg['image'] as String?;
+                          final orderId = msg['order'] as int?;
+                          final createdAt = msg['created_at'] as String?;
+
+                          String timeDisplay = '';
+                          if (createdAt != null) {
+                            try {
+                              final dt = parseApiDateTime(createdAt).toLocal();
+                              timeDisplay = DateFormat('h:mm a').format(dt);
+                            } catch (_) {}
+                          }
+
+                          return Align(
+                            alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+                            child: Container(
+                              margin: const EdgeInsets.only(bottom: 10),
+                              constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.78),
+                              decoration: BoxDecoration(
+                                gradient: isMe ? HomeColors.purpleGradient : null,
+                                color: isMe ? null : HomeColors.cardElevated,
+                                borderRadius: BorderRadius.only(
+                                  topLeft: const Radius.circular(16),
+                                  topRight: const Radius.circular(16),
+                                  bottomLeft: isMe ? const Radius.circular(16) : const Radius.circular(4),
+                                  bottomRight: isMe ? const Radius.circular(4) : const Radius.circular(16),
+                                ),
+                                boxShadow: [
+                                  BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 4, offset: const Offset(0, 2)),
+                                ],
+                              ),
+                              padding: const EdgeInsets.all(12),
+                              child: Column(
+                                crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                                children: [
+                                  if (orderId != null)
+                                    Container(
+                                      margin: const EdgeInsets.only(bottom: 6),
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                      decoration: BoxDecoration(
+                                        color: Colors.black26,
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Icon(Icons.receipt_long_rounded, color: Colors.white70, size: 13),
+                                          const SizedBox(width: 4),
+                                          Text('Order #$orderId', style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                                        ],
+                                      ),
+                                    ),
+                                  if (rawImg != null && rawImg.isNotEmpty) ...[
+                                    GestureDetector(
+                                      onTap: () => _showImageFullscreen(_resolveImageUrl(rawImg)),
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(10),
+                                        child: Image.network(
+                                          _resolveImageUrl(rawImg),
+                                          fit: BoxFit.cover,
+                                          width: double.infinity,
+                                          height: 180,
+                                          loadingBuilder: (_, child, progress) {
+                                            if (progress == null) return child;
+                                            return Container(
+                                              height: 180,
+                                              color: Colors.black12,
+                                              child: const Center(child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)),
+                                            );
+                                          },
+                                          errorBuilder: (_, __, ___) => Container(
+                                            height: 100,
+                                            color: Colors.black12,
+                                            child: const Center(child: Icon(Icons.broken_image_rounded, color: Colors.white54)),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    if (text.isNotEmpty) const SizedBox(height: 6),
+                                  ],
+                                  if (text.isNotEmpty)
+                                    Text(
+                                      text,
+                                      style: const TextStyle(color: Colors.white, fontSize: 14, height: 1.3),
+                                    ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    timeDisplay,
+                                    style: TextStyle(
+                                      color: isMe ? Colors.white70 : AppColors.label,
+                                      fontSize: 10,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+          ),
+          if (_selectedImageBytes != null)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              color: HomeColors.cardBackground,
+              child: Row(
+                children: [
+                  Stack(
+                    alignment: Alignment.topRight,
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.memory(_selectedImageBytes!, width: 60, height: 60, fit: BoxFit.cover),
+                      ),
+                      GestureDetector(
+                        onTap: () => setState(() {
+                          _selectedImageBytes = null;
+                          _selectedImageName = null;
+                        }),
+                        child: const CircleAvatar(
+                          radius: 10,
+                          backgroundColor: Colors.black87,
+                          child: Icon(Icons.close_rounded, size: 12, color: Colors.white),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(width: 12),
+                  const Text('Photo ready to send', style: TextStyle(color: Colors.white70, fontSize: 13)),
+                ],
+              ),
+            ),
+          if (!_isBlocked)
+            Container(
+              padding: EdgeInsets.fromLTRB(12, 8, 12, 8 + MediaQuery.of(context).viewInsets.bottom),
+              decoration: const BoxDecoration(
+                color: HomeColors.cardBackground,
+                border: Border(top: BorderSide(color: HomeColors.cardBorder, width: 1)),
+              ),
+              child: SafeArea(
+                top: false,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.camera_alt_outlined, color: AppColors.label, size: 22),
+                      onPressed: _sending ? null : () => _pickImage(ImageSource.camera),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.photo_library_outlined, color: AppColors.label, size: 22),
+                      onPressed: _sending ? null : () => _pickImage(ImageSource.gallery),
+                    ),
+                    Expanded(
+                      child: TextField(
+                        controller: _textController,
+                        style: const TextStyle(color: Colors.white, fontSize: 14),
+                        minLines: 1,
+                        maxLines: 4,
+                        decoration: InputDecoration(
+                          hintText: 'Type a message...',
+                          hintStyle: const TextStyle(color: AppColors.label, fontSize: 14),
+                          filled: true,
+                          fillColor: HomeColors.cardElevated,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(20),
+                            borderSide: BorderSide.none,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      decoration: const BoxDecoration(
+                        gradient: HomeColors.purpleGradient,
+                        shape: BoxShape.circle,
+                      ),
+                      child: IconButton(
+                        icon: _sending
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                              )
+                            : const Icon(Icons.send_rounded, color: Colors.white, size: 20),
+                        onPressed: _sending ? null : _sendMessage,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}

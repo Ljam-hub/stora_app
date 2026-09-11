@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/order_model.dart';
+import '../screens/chat/customer_chat_screen.dart';
+import '../services/api_service.dart';
 import '../theme/app_theme.dart';
 import 'order_status_stepper.dart';
 
@@ -17,6 +19,237 @@ class OrderCard extends StatefulWidget {
 
 class _OrderCardState extends State<OrderCard> {
   bool _expanded = false;
+
+  Future<void> _showReportDialog(BuildContext context) async {
+    String selectedReason = 'fraud';
+    final descriptionController = TextEditingController();
+    bool isSubmitting = false;
+
+    final reasons = [
+      {'value': 'fraud', 'label': 'Fraud, Scam, or Undelivered Items'},
+      {'value': 'fake_order', 'label': 'Misleading Pricing or Order Issues'},
+      {'value': 'harassment', 'label': 'Harassment / Abusive Behavior'},
+      {'value': 'inappropriate_content', 'label': 'Inappropriate Photos or Content'},
+      {'value': 'spam', 'label': 'Spam / Unsolicited Promotion'},
+      {'value': 'other', 'label': 'Other Violation'},
+    ];
+
+    if (widget.order.ownerId <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Cannot report this store: Store information is incomplete.'), backgroundColor: AppColors.danger),
+      );
+      return;
+    }
+
+    try {
+      await showModalBottomSheet(
+        context: context,
+        backgroundColor: AppColors.cardBackground,
+        isScrollControlled: true,
+        isDismissible: !isSubmitting,
+        enableDrag: !isSubmitting,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        builder: (ctx) {
+          return StatefulBuilder(
+            builder: (sheetCtx, setSheetState) {
+              return Padding(
+                padding: EdgeInsets.only(
+                  left: 20,
+                  right: 20,
+                  top: 16,
+                  bottom: MediaQuery.of(sheetCtx).viewInsets.bottom + 20,
+                ),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Center(
+                        child: Container(
+                          width: 40,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: AppColors.cardBorder,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.amber.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(Icons.flag_rounded, color: Colors.amber, size: 22),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Report ${widget.order.storeName}',
+                                  style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Report order #${widget.order.id} for investigation by Stora administrators.',
+                                  style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      const Text(
+                        'Violation Reason',
+                        style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14),
+                        decoration: BoxDecoration(
+                          color: AppColors.cardElevated,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppColors.cardBorder),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: selectedReason,
+                            dropdownColor: AppColors.cardElevated,
+                            isExpanded: true,
+                            style: const TextStyle(color: Colors.white, fontSize: 14),
+                            icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.textMuted),
+                            items: reasons.map((r) {
+                              return DropdownMenuItem<String>(
+                                value: r['value'],
+                                child: Text(r['label']!),
+                              );
+                            }).toList(),
+                            onChanged: isSubmitting
+                                ? null
+                                : (val) {
+                                    if (val != null) {
+                                      setSheetState(() => selectedReason = val);
+                                    }
+                                  },
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Explanation / Details (Optional)',
+                        style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: descriptionController,
+                        maxLines: 3,
+                        enabled: !isSubmitting,
+                        style: const TextStyle(color: Colors.white, fontSize: 14),
+                        decoration: InputDecoration(
+                          hintText: 'Please describe the incident in detail for administrators...',
+                          hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+                          filled: true,
+                          fillColor: AppColors.cardElevated,
+                          contentPadding: const EdgeInsets.all(12),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: AppColors.cardBorder),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: AppColors.cardBorder),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: AppColors.primary),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: isSubmitting ? null : () => Navigator.of(ctx).pop(),
+                              style: OutlinedButton.styleFrom(
+                                side: const BorderSide(color: AppColors.cardBorder),
+                                padding: const EdgeInsets.symmetric(vertical: 13),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                              child: const Text('Cancel', style: TextStyle(color: AppColors.textMuted)),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: isSubmitting
+                                  ? null
+                                  : () async {
+                                      final messenger = ScaffoldMessenger.of(context);
+                                      setSheetState(() => isSubmitting = true);
+                                      try {
+                                        await CustomerApiService.instance.submitReport(
+                                          reportedUserId: widget.order.ownerId,
+                                          reason: selectedReason,
+                                          description: descriptionController.text.trim(),
+                                          orderId: widget.order.id,
+                                        );
+
+                                        if (ctx.mounted) Navigator.of(ctx).pop();
+
+                                        messenger.showSnackBar(
+                                          const SnackBar(
+                                            content: Text('Report submitted. Our administrators will review this store.'),
+                                            backgroundColor: AppColors.success,
+                                          ),
+                                        );
+                                      } catch (e) {
+                                        if (ctx.mounted) setSheetState(() => isSubmitting = false);
+                                        final eStr = e.toString().toLowerCase();
+                                        final msg = eStr.contains('pending report') || eStr.contains('already have')
+                                            ? 'You already have an active pending report for this store.'
+                                            : 'Failed to submit report: $e';
+                                        messenger.showSnackBar(
+                                          SnackBar(content: Text(msg), backgroundColor: AppColors.danger),
+                                        );
+                                      }
+                                    },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.amber[700],
+                                padding: const EdgeInsets.symmetric(vertical: 13),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                              child: isSubmitting
+                                  ? const SizedBox(
+                                      width: 18,
+                                      height: 18,
+                                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                                    )
+                                  : const Text('Submit Report', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          );
+        },
+      );
+    } finally {
+      descriptionController.dispose();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -347,6 +580,52 @@ class _OrderCardState extends State<OrderCard> {
                     color: Colors.white,
                     fontSize: 17,
                     fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+            child: Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => CustomerChatScreen(
+                            storeOwnerId: order.ownerId,
+                            storeName: order.storeName.isNotEmpty ? order.storeName : 'Store Owner',
+                            initialOrderId: order.id,
+                          ),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.chat_bubble_outline_rounded, size: 16, color: AppColors.primaryLight),
+                    label: const Text(
+                      'Inquire / Message Store',
+                      style: TextStyle(color: AppColors.primaryLight, fontSize: 13, fontWeight: FontWeight.w600),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: AppColors.primary),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  tooltip: 'Report Store',
+                  onPressed: () => _showReportDialog(context),
+                  icon: const Icon(Icons.flag_outlined, color: Colors.amber, size: 20),
+                  style: IconButton.styleFrom(
+                    backgroundColor: Colors.amber.withValues(alpha: 0.1),
+                    padding: const EdgeInsets.all(10),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      side: BorderSide(color: Colors.amber.withValues(alpha: 0.3)),
+                    ),
                   ),
                 ),
               ],

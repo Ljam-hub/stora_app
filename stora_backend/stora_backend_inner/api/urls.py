@@ -27,7 +27,16 @@ urlpatterns = [
     path("auth/forgot-password/", views.forgot_password_request, name="forgot_password_request"),
     path("auth/reset-password/", views.forgot_password_confirm, name="forgot_password_confirm"),
     path("auth/fcm-token/", views.update_fcm_token, name="update_fcm_token"),
+    path("auth/clear-fcm-token/", views.clear_fcm_token, name="clear_fcm_token"),
     path("users/me/fcm/", views.update_fcm_token, name="user_fcm_token"),
+
+    # Chat & Messaging
+    path("messages/", views.chat_messages, name="chat_messages"),
+    path("messages/conversations/", views.list_conversations, name="chat_conversations"),
+    path("messages/block/", views.block_customer, name="block_customer"),
+    path("messages/unblock/", views.unblock_customer, name="unblock_customer"),
+    path("messages/block-status/", views.block_status, name="block_status"),
+    path("reports/", views.submit_report, name="submit_report"),
 
     # Account & Subscription
     path("account/status/", views.account_status, name="account_status"),
