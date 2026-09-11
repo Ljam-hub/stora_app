@@ -5,6 +5,7 @@ import '../../providers/cart_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/gradient_button.dart';
 import '../../widgets/product_image.dart';
+import '../chat/customer_chat_screen.dart';
 
 class ProductDetailSheet extends StatefulWidget {
   final ProductModel product;
@@ -286,9 +287,12 @@ class _ProductDetailSheetState extends State<ProductDetailSheet> {
                               SnackBar(
                                 content: const Text(
                                   'Your cart contains items from another store. Clear cart first?',
+                                  style: TextStyle(color: Colors.white),
                                 ),
+                                backgroundColor: AppColors.cardElevated,
                                 action: SnackBarAction(
                                   label: 'Clear & Add',
+                                  textColor: AppColors.primaryLight,
                                   onPressed: () {
                                     cart.clear();
                                     cart.addItem(product, _quantity);
@@ -301,8 +305,24 @@ class _ProductDetailSheetState extends State<ProductDetailSheet> {
                             Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('Added $_quantity "${product.name}" to cart'),
+                                content: Row(
+                                  children: [
+                                    const Icon(Icons.check_circle_rounded, color: AppColors.secondaryLight, size: 20),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Text(
+                                        'Added $_quantity "${product.name}" to cart',
+                                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                                 backgroundColor: AppColors.successBg,
+                                behavior: SnackBarBehavior.floating,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  side: BorderSide(color: AppColors.secondary.withValues(alpha: 0.4)),
+                                ),
                                 duration: const Duration(seconds: 2),
                               ),
                             );
@@ -327,6 +347,35 @@ class _ProductDetailSheetState extends State<ProductDetailSheet> {
                           ),
                         ),
                       ),
+
+                    // Chat with Store Button
+                    if (product.ownerId != null) ...[
+                      const SizedBox(height: 12),
+                      OutlinedButton.icon(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => CustomerChatScreen(
+                                storeOwnerId: product.ownerId!,
+                                storeName: product.storeName ?? 'Store Owner',
+                                storeAvatarUrl: product.storeAvatarUrl,
+                              ),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.chat_bubble_outline_rounded, size: 16, color: AppColors.primaryLight),
+                        label: Text(
+                          'Chat with ${product.storeName ?? "Store"}',
+                          style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(color: AppColors.primary.withValues(alpha: 0.4)),
+                          padding: const EdgeInsets.symmetric(vertical: 13),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),

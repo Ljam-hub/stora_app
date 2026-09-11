@@ -69,7 +69,7 @@ from .serializers import (
 
 
 
-def _tokens_for(user):
+def _tokens_for(user, request=None):
     refresh = RefreshToken.for_user(user)
     refresh["role"] = getattr(user, "role", "owner")
     refresh["email"] = user.email
@@ -78,7 +78,7 @@ def _tokens_for(user):
     return {
         "access": str(refresh.access_token),
         "refresh": str(refresh),
-        "user": UserSerializer(user).data,
+        "user": UserSerializer(user, context={"request": request} if request else {}).data,
     }
 
 
@@ -377,17 +377,18 @@ def login(request):
     serializer.is_valid(raise_exception=True)
     user = serializer.validated_data["user"]
     update_last_login(None, user)
-    return Response(_tokens_for(user))
+    return Response(_tokens_for(user, request=request))
 
 
 @api_view(["GET", "PATCH", "PUT"])
 @permission_classes([IsAuthenticated])
+@parser_classes([MultiPartParser, FormParser, JSONParser])
 def me(request):
     if request.method in ["PATCH", "PUT"]:
         serializer = UserUpdateSerializer(request.user, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-    return Response(UserSerializer(request.user).data)
+    return Response(UserSerializer(request.user, context={"request": request}).data)
 
 
 @api_view(["POST"])
@@ -945,10 +946,12 @@ def list_stores(request):
         if user_lat is not None and user_lng is not None:
             distance_km = round(_haversine_km(user_lat, user_lng, lat, lng), 2)
 
+        avatar_url = request.build_absolute_uri(owner.avatar.url) if owner.avatar else None
         stores_data.append({
             "id": owner.id,
             "business_name": owner.business_name,
             "email": owner.email,
+            "avatar_url": avatar_url,
             "latitude": lat,
             "longitude": lng,
             "address": address,
@@ -1258,14 +1261,30 @@ def list_conversations(request):
         elif partner.role in (User.ROLE_OWNER, User.ROLE_ADMIN):
             is_blocked = BlockedCustomer.objects.filter(owner=partner, customer=user).exists()
 
+        last_msg_is_me = (last_msg.sender_id == user.id) if last_msg else False
+        last_message_text = ""
+        if last_msg:
+            if last_msg.image and not last_msg.message:
+                last_message_text = "You sent a photo." if last_msg_is_me else "Sent a photo."
+            elif last_msg.image and last_msg.message:
+                prefix = "You: " if last_msg_is_me else ""
+                last_message_text = f"{prefix}📷 {last_msg.message}"
+            elif last_msg.message:
+                prefix = "You: " if last_msg_is_me else ""
+                last_message_text = f"{prefix}{last_msg.message}"
+
+        avatar_url = request.build_absolute_uri(partner.avatar.url) if partner.avatar else None
         conversations.append({
+            "id": partner.id,
             "user_id": partner.id,
             "name": partner.business_name if partner.role in (User.ROLE_OWNER, User.ROLE_ADMIN) and partner.business_name else (
                 f"{partner.first_name} {partner.last_name}".strip() or partner.username
             ),
             "email": partner.email,
             "role": partner.role,
-            "last_message": last_msg.message if last_msg and last_msg.message else ("📷 Image" if last_msg and last_msg.image else ""),
+            "avatar_url": avatar_url,
+            "last_message": last_message_text,
+            "last_message_is_me": last_msg_is_me,
             "last_message_at": last_msg.created_at.isoformat() if last_msg else None,
             "unread_count": unread_count,
             "is_blocked": is_blocked,
@@ -1366,6 +1385,51 @@ def submit_report(request):
         },
         status=status.HTTP_201_CREATED,
     )
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def list_store_customers(request):
+    """
+    Returns a list of customers who have placed orders or chatted with this store,
+    allowing store owners to initiate new messages.
+    """
+    user = request.user
+    if user.role not in (User.ROLE_OWNER, User.ROLE_ADMIN) and not user.is_superuser:
+        raise PermissionDenied("Only store owners can access customer lists.")
+
+    from django.db.models import Q
+    customer_ids = set(Order.objects.filter(owner=user).values_list("customer_id", flat=True).distinct())
+
+    chat_customer_ids = ChatMessage.objects.filter(
+        Q(sender=user, recipient__role=User.ROLE_CUSTOMER) |
+        Q(recipient=user, sender__role=User.ROLE_CUSTOMER)
+    ).values_list("sender_id", "recipient_id")
+    for s_id, r_id in chat_customer_ids:
+        if s_id != user.id:
+            customer_ids.add(s_id)
+        if r_id != user.id:
+            customer_ids.add(r_id)
+
+    all_cust_ids = customer_ids - {None, user.id}
+
+    customers = User.objects.filter(id__in=all_cust_ids, role=User.ROLE_CUSTOMER)
+    result = []
+    for c in customers:
+        name = f"{c.first_name} {c.last_name}".strip() or c.business_name or c.username or c.email
+        order_count = Order.objects.filter(owner=user, customer=c).count()
+        avatar_url = request.build_absolute_uri(c.avatar.url) if c.avatar else None
+        result.append({
+            "id": c.id,
+            "name": name,
+            "email": c.email,
+            "avatar_url": avatar_url,
+            "order_count": order_count,
+        })
+
+    result.sort(key=lambda x: x["order_count"], reverse=True)
+    return Response(result)
+
 
 
 

@@ -3,6 +3,7 @@ import '../../data/services/notification_service.dart';
 import '../../stora_login/theme/app_colors.dart';
 import '../stores/orders_store.dart';
 import '../theme/home_colors.dart';
+import 'owner_chat_screen.dart';
 
 class PendingOrdersScreen extends StatefulWidget {
   const PendingOrdersScreen({super.key});
@@ -223,6 +224,14 @@ class _OrderCardState extends State<_OrderCard> {
   int get orderId => widget.order['id'] as int;
   String get status => (widget.order['status'] as String?) ?? 'pending';
   String get customerName => (widget.order['customer_name'] as String?) ?? 'Customer';
+  String? get customerAvatarUrl => widget.order['customer_avatar_url'] as String?;
+  int? get customerId {
+    final val = widget.order['customer'] ?? widget.order['customer_id'];
+    if (val is int) return val;
+    if (val is Map) return val['id'] as int?;
+    if (val is String) return int.tryParse(val);
+    return null;
+  }
   String get customerPhone => (widget.order['customer_phone'] as String?) ?? '';
   String get customerAddress => (widget.order['customer_address'] as String?) ?? '';
   String get notes => (widget.order['notes'] as String?) ?? '';
@@ -585,37 +594,15 @@ class _OrderCardState extends State<_OrderCard> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Customer Avatar Circle
-                Container(
-                  width: 42,
-                  height: 42,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: LinearGradient(
-                      colors: [
-                        AppColors.purpleLight.withValues(alpha: 0.8),
-                        const Color(0xFF6366F1),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.purpleLight.withValues(alpha: 0.25),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Center(
-                    child: Text(
-                      customerName.isNotEmpty ? customerName[0].toUpperCase() : 'C',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ),
+                CircleAvatar(
+                  radius: 21,
+                  backgroundColor: const Color(0xFF3A3B3C),
+                  backgroundImage: (customerAvatarUrl != null && customerAvatarUrl!.isNotEmpty)
+                      ? NetworkImage(customerAvatarUrl!)
+                      : null,
+                  child: (customerAvatarUrl == null || customerAvatarUrl!.isEmpty)
+                      ? const Icon(Icons.person, color: Colors.white, size: 24)
+                      : null,
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -675,21 +662,67 @@ class _OrderCardState extends State<_OrderCard> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                Text(
-                  '₱$totalAmount',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 17,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.3,
-                  ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      '₱$totalAmount',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.3,
+                      ),
+                    ),
+                    if (customerId != null) ...[
+                      const SizedBox(height: 4),
+                      InkWell(
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => OwnerChatThreadScreen(
+                                customerId: customerId!,
+                                customerName: customerName,
+                                customerAvatarUrl: customerAvatarUrl,
+                                orderId: orderId,
+                              ),
+                            ),
+                          );
+                        },
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: AppColors.purpleLight.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: AppColors.purpleLight.withValues(alpha: 0.3)),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.chat_bubble_outline_rounded, color: AppColors.purpleLight, size: 12),
+                              SizedBox(width: 4),
+                              Text(
+                                'Chat',
+                                style: TextStyle(
+                                  color: AppColors.purpleLight,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ],
             ),
           ),
 
-          // Contact Details
-          if (customerPhone.isNotEmpty || customerAddress.isNotEmpty || notes.isNotEmpty)
+          // Contact Details & Message Customer Option
+          if (customerPhone.isNotEmpty || customerAddress.isNotEmpty || notes.isNotEmpty || customerId != null)
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               padding: const EdgeInsets.all(12),
@@ -733,6 +766,47 @@ class _OrderCardState extends State<_OrderCard> {
                           child: Text('Note: "$notes"', style: const TextStyle(color: Colors.white70, fontSize: 12, fontStyle: FontStyle.italic)),
                         ),
                       ],
+                    ),
+                  ],
+                  if (customerId != null) ...[
+                    const SizedBox(height: 8),
+                    InkWell(
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => OwnerChatThreadScreen(
+                              customerId: customerId!,
+                              customerName: customerName,
+                              customerAvatarUrl: customerAvatarUrl,
+                              orderId: orderId,
+                            ),
+                          ),
+                        );
+                      },
+                      borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: AppColors.purpleLight.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: AppColors.purpleLight.withValues(alpha: 0.25)),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.chat_bubble_outline_rounded, color: AppColors.purpleLight, size: 14),
+                            SizedBox(width: 6),
+                            Text(
+                              'Message customer about this order',
+                              style: TextStyle(
+                                color: AppColors.purpleLight,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ],
                 ],

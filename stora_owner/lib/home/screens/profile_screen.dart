@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../data/api/api_client.dart';
 import '../../data/stores/account_status_store.dart';
 import '../../auth/auth_store.dart';
@@ -19,8 +20,62 @@ import '../theme/theme_mode_controller.dart';
 // menu. Reached from the Dashboard's avatar icon in its header row
 // (see dashboard_screen.dart).
 // ---------------------------------------------------------------------
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  bool _isUploadingAvatar = false;
+
+  Future<void> _pickAndUploadAvatar() async {
+    final picker = ImagePicker();
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      backgroundColor: HomeColors.cardBackground,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_camera_rounded, color: AppColors.primary),
+              title: const Text('Take a photo', style: TextStyle(color: Colors.white)),
+              onTap: () => Navigator.pop(ctx, ImageSource.camera),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library_rounded, color: AppColors.primary),
+              title: const Text('Choose from gallery', style: TextStyle(color: Colors.white)),
+              onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (source == null) return;
+
+    try {
+      final picked = await picker.pickImage(source: source, maxWidth: 800, maxHeight: 800, imageQuality: 85);
+      if (picked == null) return;
+
+      setState(() => _isUploadingAvatar = true);
+      final bytes = await picked.readAsBytes();
+      await AuthStore.instance.uploadAvatar(bytes, picked.name);
+      if (mounted) {
+        setState(() => _isUploadingAvatar = false);
+        showStoraSnackBar(context, 'Store profile photo updated successfully!', isError: false);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isUploadingAvatar = false);
+        showStoraSnackBar(context, 'Failed to upload photo: $e');
+      }
+    }
+  }
 
   void _showEditProfileDialog(BuildContext context) {
     final businessController = TextEditingController(text: AuthStore.instance.businessName ?? '');
@@ -325,17 +380,49 @@ class ProfileScreen extends StatelessWidget {
                     child: Center(
                       child: Column(
                         children: [
-                          Container(
-                            padding: const EdgeInsets.all(3),
-                            decoration: const BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: HomeColors.purpleGradient,
-                            ),
-                            child: const CircleAvatar(
-                              radius: 34,
-                              backgroundColor: HomeColors.cardElevated,
-                              child: Icon(Icons.storefront_rounded, color: AppColors.purpleLight, size: 36),
-                            ),
+                          Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(3),
+                                decoration: const BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  gradient: HomeColors.purpleGradient,
+                                ),
+                                child: CircleAvatar(
+                                  radius: 38,
+                                  backgroundColor: HomeColors.cardElevated,
+                                  backgroundImage: (auth.avatarUrl != null && auth.avatarUrl!.isNotEmpty)
+                                      ? NetworkImage(auth.avatarUrl!)
+                                      : null,
+                                  child: (auth.avatarUrl == null || auth.avatarUrl!.isEmpty)
+                                      ? const Icon(Icons.storefront_rounded, color: AppColors.purpleLight, size: 38)
+                                      : null,
+                                ),
+                              ),
+                              Positioned(
+                                bottom: 0,
+                                right: 0,
+                                child: GestureDetector(
+                                  onTap: _isUploadingAvatar ? null : _pickAndUploadAvatar,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(7),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primary,
+                                      shape: BoxShape.circle,
+                                      border: Border.all(color: HomeColors.cardBackground, width: 2),
+                                    ),
+                                    child: _isUploadingAvatar
+                                        ? const SizedBox(
+                                            width: 14,
+                                            height: 14,
+                                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                          )
+                                        : const Icon(Icons.camera_alt_rounded, color: Colors.white, size: 14),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                           const SizedBox(height: 14),
                           Text(storeName,

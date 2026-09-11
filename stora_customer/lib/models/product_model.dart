@@ -9,6 +9,7 @@ class ProductModel {
   final String? image;
   final int? ownerId;
   final String? storeName;
+  final String? storeAvatarUrl;
   final String bio;
 
   ProductModel({
@@ -22,6 +23,7 @@ class ProductModel {
     this.image,
     this.ownerId,
     this.storeName,
+    this.storeAvatarUrl,
     this.bio = '',
   });
 
@@ -41,6 +43,7 @@ class ProductModel {
       image: json['image'] as String?,
       ownerId: json['owner'] as int?,
       storeName: (json['store_name'] as String?) ?? '',
+      storeAvatarUrl: json['store_avatar_url'] as String?,
       bio: (json['bio'] as String?) ?? '',
     );
   }
@@ -57,6 +60,7 @@ class ProductModel {
       'image': image,
       'owner': ownerId,
       'store_name': storeName,
+      'store_avatar_url': storeAvatarUrl,
       'bio': bio,
     };
   }

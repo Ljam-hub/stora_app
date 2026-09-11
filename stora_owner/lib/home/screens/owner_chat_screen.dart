@@ -72,10 +72,143 @@ class _OwnerChatScreenState extends State<OwnerChatScreen> {
     }).toList();
   }
 
+  Future<void> _openNewMessagePicker() async {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: HomeColors.cardBackground,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return FutureBuilder<List<Map<String, dynamic>>>(
+          future: ApiClient.instance.getStoreCustomers(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const SizedBox(
+                height: 200,
+                child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+              );
+            }
+            if (snapshot.hasError) {
+              return Container(
+                padding: const EdgeInsets.all(24),
+                child: Center(
+                  child: Text(
+                    'Failed to load customers: ${snapshot.error}',
+                    style: const TextStyle(color: AppColors.label),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              );
+            }
+            final customers = snapshot.data ?? [];
+            if (customers.isEmpty) {
+              return Container(
+                padding: const EdgeInsets.all(32),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.people_outline_rounded, size: 48, color: AppColors.label),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'No Customers Yet',
+                      style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 6),
+                    const Text(
+                      'Customers who order from or message your store will appear here so you can chat with them directly.',
+                      style: TextStyle(color: AppColors.label, fontSize: 13),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                ),
+              );
+            }
+
+            return SafeArea(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                    child: Row(
+                      children: [
+                        const Text(
+                          'Select Customer to Message',
+                          style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
+                        const Spacer(),
+                        IconButton(
+                          icon: const Icon(Icons.close, color: Colors.white70, size: 20),
+                          onPressed: () => Navigator.pop(ctx),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Divider(color: HomeColors.cardBorder, height: 1),
+                  Flexible(
+                    child: ListView.separated(
+                      shrinkWrap: true,
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      itemCount: customers.length,
+                      separatorBuilder: (context, index) => const Divider(color: HomeColors.cardBorder, height: 1),
+                      itemBuilder: (context, i) {
+                        final c = customers[i];
+                        final id = c['id'] as int;
+                        final name = (c['name'] as String?)?.isNotEmpty == true
+                            ? c['name'] as String
+                            : 'Customer #$id';
+                        final avatar = c['avatar_url'] as String?;
+                        final orderCount = c['order_count'] as int? ?? 0;
+
+                        return ListTile(
+                          leading: CircleAvatar(
+                            radius: 22,
+                            backgroundColor: const Color(0xFF3A3B3C),
+                            backgroundImage: (avatar != null && avatar.isNotEmpty)
+                                ? NetworkImage(avatar)
+                                : null,
+                            child: (avatar == null || avatar.isEmpty)
+                                ? const Icon(Icons.person, color: Colors.white, size: 26)
+                                : null,
+                          ),
+                          title: Text(name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                          subtitle: Text(
+                            '$orderCount order${orderCount == 1 ? "" : "s"} placed',
+                            style: const TextStyle(color: AppColors.label, fontSize: 12),
+                          ),
+                          trailing: const Icon(Icons.chat_bubble_outline_rounded, color: AppColors.primary, size: 20),
+                          onTap: () {
+                            Navigator.pop(ctx);
+                            Navigator.of(this.context).push(
+                              MaterialPageRoute(
+                                builder: (_) => OwnerChatThreadScreen(
+                                  customerId: id,
+                                  customerName: name,
+                                  customerAvatarUrl: avatar,
+                                ),
+                              ),
+                            ).then((_) => _loadConversations(silent: true));
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.primary,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: HomeColors.cardBackground,
         elevation: 0,
@@ -87,6 +220,14 @@ class _OwnerChatScreenState extends State<OwnerChatScreen> {
           icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
           onPressed: () => Navigator.of(context).pop(),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.edit_square, color: AppColors.primary, size: 22),
+            tooltip: 'New Message',
+            onPressed: _openNewMessagePicker,
+          ),
+          const SizedBox(width: 4),
+        ],
       ),
       body: Column(
         children: [
@@ -188,16 +329,17 @@ class _OwnerChatScreenState extends State<OwnerChatScreen> {
                             child: ListView.separated(
                               padding: const EdgeInsets.symmetric(vertical: 8),
                               itemCount: _filteredConversations.length,
-                              separatorBuilder: (_, __) => const Divider(color: HomeColors.cardBorder, height: 1),
+                              separatorBuilder: (context, index) => const Divider(color: HomeColors.cardBorder, height: 1),
                               itemBuilder: (context, index) {
                                 final conv = _filteredConversations[index];
-                                final customerId = conv['id'] as int;
+                                final customerId = (conv['id'] ?? conv['user_id']) as int? ?? 0;
                                 final customerName = (conv['name'] as String?)?.isNotEmpty == true
                                     ? conv['name'] as String
                                     : 'Customer #$customerId';
                                 final lastMessage = conv['last_message'] as String? ?? '';
                                 final unreadCount = (conv['unread_count'] as int?) ?? 0;
                                 final lastMessageAt = conv['last_message_at'] as String?;
+                                final avatarUrl = conv['avatar_url'] as String?;
 
                                 String timeDisplay = '';
                                 if (lastMessageAt != null && lastMessageAt.isNotEmpty) {
@@ -215,24 +357,28 @@ class _OwnerChatScreenState extends State<OwnerChatScreen> {
                                 }
 
                                 return ListTile(
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                                   onTap: () async {
                                     await Navigator.of(context).push(
                                       MaterialPageRoute(
                                         builder: (_) => OwnerChatThreadScreen(
                                           customerId: customerId,
                                           customerName: customerName,
+                                          customerAvatarUrl: avatarUrl,
                                         ),
                                       ),
                                     );
                                     _loadConversations(silent: true);
                                   },
                                   leading: CircleAvatar(
-                                    radius: 24,
-                                    backgroundColor: HomeColors.cardElevated,
-                                    child: Text(
-                                      customerName.isNotEmpty ? customerName[0].toUpperCase() : 'C',
-                                      style: const TextStyle(color: AppColors.purpleLight, fontWeight: FontWeight.bold, fontSize: 18),
-                                    ),
+                                    radius: 28,
+                                    backgroundColor: const Color(0xFF3A3B3C),
+                                    backgroundImage: (avatarUrl != null && avatarUrl.isNotEmpty)
+                                        ? NetworkImage(avatarUrl)
+                                        : null,
+                                    child: (avatarUrl == null || avatarUrl.isEmpty)
+                                        ? const Icon(Icons.person, color: Colors.white, size: 34)
+                                        : null,
                                   ),
                                   title: Row(
                                     children: [
@@ -242,7 +388,7 @@ class _OwnerChatScreenState extends State<OwnerChatScreen> {
                                           style: TextStyle(
                                             color: Colors.white,
                                             fontWeight: unreadCount > 0 ? FontWeight.bold : FontWeight.w600,
-                                            fontSize: 15,
+                                            fontSize: 16,
                                           ),
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
@@ -259,34 +405,37 @@ class _OwnerChatScreenState extends State<OwnerChatScreen> {
                                         ),
                                     ],
                                   ),
-                                  subtitle: Row(
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          lastMessage.isNotEmpty ? lastMessage : 'Photo sent',
-                                          style: TextStyle(
-                                            color: unreadCount > 0 ? Colors.white70 : AppColors.label,
-                                            fontSize: 13,
-                                            fontStyle: lastMessage.isEmpty ? FontStyle.italic : FontStyle.normal,
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                      if (unreadCount > 0)
-                                        Container(
-                                          margin: const EdgeInsets.only(left: 8),
-                                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                                          decoration: BoxDecoration(
-                                            color: AppColors.purpleLight,
-                                            borderRadius: BorderRadius.circular(10),
-                                          ),
+                                  subtitle: Padding(
+                                    padding: const EdgeInsets.only(top: 4),
+                                    child: Row(
+                                      children: [
+                                        Expanded(
                                           child: Text(
-                                            '$unreadCount',
-                                            style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                                            lastMessage.isNotEmpty ? lastMessage : 'You sent a photo.',
+                                            style: TextStyle(
+                                              color: unreadCount > 0 ? Colors.white : AppColors.label,
+                                              fontSize: 13.5,
+                                              fontWeight: unreadCount > 0 ? FontWeight.w600 : FontWeight.normal,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
                                           ),
                                         ),
-                                    ],
+                                        if (unreadCount > 0)
+                                          Container(
+                                            margin: const EdgeInsets.only(left: 8),
+                                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: AppColors.purpleLight,
+                                              borderRadius: BorderRadius.circular(10),
+                                            ),
+                                            child: Text(
+                                              '$unreadCount',
+                                              style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                                            ),
+                                          ),
+                                      ],
+                                    ),
                                   ),
                                 );
                               },
@@ -302,12 +451,14 @@ class _OwnerChatScreenState extends State<OwnerChatScreen> {
 class OwnerChatThreadScreen extends StatefulWidget {
   final int customerId;
   final String customerName;
+  final String? customerAvatarUrl;
   final int? orderId;
 
   const OwnerChatThreadScreen({
     super.key,
     required this.customerId,
     required this.customerName,
+    this.customerAvatarUrl,
     this.orderId,
   });
 
@@ -792,7 +943,7 @@ class _OwnerChatThreadScreenState extends State<OwnerChatThreadScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.primary,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: HomeColors.cardBackground,
         elevation: 0,
@@ -800,12 +951,14 @@ class _OwnerChatThreadScreenState extends State<OwnerChatThreadScreen> {
         title: Row(
           children: [
             CircleAvatar(
-              radius: 18,
-              backgroundColor: HomeColors.cardElevated,
-              child: Text(
-                widget.customerName.isNotEmpty ? widget.customerName[0].toUpperCase() : 'C',
-                style: const TextStyle(color: AppColors.purpleLight, fontWeight: FontWeight.bold, fontSize: 16),
-              ),
+              radius: 19,
+              backgroundColor: const Color(0xFF3A3B3C),
+              backgroundImage: (widget.customerAvatarUrl != null && widget.customerAvatarUrl!.isNotEmpty)
+                  ? NetworkImage(widget.customerAvatarUrl!)
+                  : null,
+              child: (widget.customerAvatarUrl == null || widget.customerAvatarUrl!.isEmpty)
+                  ? const Icon(Icons.person, color: Colors.white, size: 22)
+                  : null,
             ),
             const SizedBox(width: 10),
             Expanded(
@@ -926,11 +1079,20 @@ class _OwnerChatThreadScreenState extends State<OwnerChatThreadScreen> {
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Icon(Icons.forum_outlined, color: AppColors.label, size: 48),
-                                const SizedBox(height: 12),
-                                Text('Conversation with ${widget.customerName}', style: const TextStyle(color: Colors.white70, fontSize: 15)),
+                                CircleAvatar(
+                                  radius: 38,
+                                  backgroundColor: const Color(0xFF3A3B3C),
+                                  backgroundImage: (widget.customerAvatarUrl != null && widget.customerAvatarUrl!.isNotEmpty)
+                                      ? NetworkImage(widget.customerAvatarUrl!)
+                                      : null,
+                                  child: (widget.customerAvatarUrl == null || widget.customerAvatarUrl!.isEmpty)
+                                      ? const Icon(Icons.person, color: Colors.white, size: 44)
+                                      : null,
+                                ),
+                                const SizedBox(height: 14),
+                                Text(widget.customerName, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
                                 const SizedBox(height: 4),
-                                const Text('Send a message or reply below', style: TextStyle(color: AppColors.label, fontSize: 13)),
+                                const Text('You\'re connected on Stora', style: TextStyle(color: AppColors.label, fontSize: 13)),
                               ],
                             ),
                           )
@@ -954,88 +1116,108 @@ class _OwnerChatThreadScreenState extends State<OwnerChatThreadScreen> {
                             } catch (_) {}
                           }
 
-                          return Align(
-                            alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-                            child: Container(
-                              margin: const EdgeInsets.only(bottom: 10),
-                              constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.78),
-                              decoration: BoxDecoration(
-                                gradient: isMe ? HomeColors.purpleGradient : null,
-                                color: isMe ? null : HomeColors.cardElevated,
-                                borderRadius: BorderRadius.only(
-                                  topLeft: const Radius.circular(16),
-                                  topRight: const Radius.circular(16),
-                                  bottomLeft: isMe ? const Radius.circular(16) : const Radius.circular(4),
-                                  bottomRight: isMe ? const Radius.circular(4) : const Radius.circular(16),
-                                ),
-                                boxShadow: [
-                                  BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 4, offset: const Offset(0, 2)),
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+                              children: [
+                                if (!isMe) ...[
+                                  CircleAvatar(
+                                    radius: 14,
+                                    backgroundColor: const Color(0xFF3A3B3C),
+                                    backgroundImage: (widget.customerAvatarUrl != null && widget.customerAvatarUrl!.isNotEmpty)
+                                        ? NetworkImage(widget.customerAvatarUrl!)
+                                        : null,
+                                    child: (widget.customerAvatarUrl == null || widget.customerAvatarUrl!.isEmpty)
+                                        ? const Icon(Icons.person, color: Colors.white, size: 16)
+                                        : null,
+                                  ),
+                                  const SizedBox(width: 8),
                                 ],
-                              ),
-                              padding: const EdgeInsets.all(12),
-                              child: Column(
-                                crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-                                children: [
-                                  if (orderId != null)
-                                    Container(
-                                      margin: const EdgeInsets.only(bottom: 6),
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                      decoration: BoxDecoration(
-                                        color: Colors.black26,
-                                        borderRadius: BorderRadius.circular(6),
+                                Flexible(
+                                  child: Container(
+                                    constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.74),
+                                    decoration: BoxDecoration(
+                                      gradient: isMe ? HomeColors.purpleGradient : null,
+                                      color: isMe ? null : HomeColors.cardElevated,
+                                      borderRadius: BorderRadius.only(
+                                        topLeft: const Radius.circular(16),
+                                        topRight: const Radius.circular(16),
+                                        bottomLeft: isMe ? const Radius.circular(16) : const Radius.circular(4),
+                                        bottomRight: isMe ? const Radius.circular(4) : const Radius.circular(16),
                                       ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          const Icon(Icons.receipt_long_rounded, color: Colors.white70, size: 13),
-                                          const SizedBox(width: 4),
-                                          Text('Order #$orderId', style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
-                                        ],
-                                      ),
+                                      boxShadow: [
+                                        BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 4, offset: const Offset(0, 2)),
+                                      ],
                                     ),
-                                  if (rawImg != null && rawImg.isNotEmpty) ...[
-                                    GestureDetector(
-                                      onTap: () => _showImageFullscreen(_resolveImageUrl(rawImg)),
-                                      child: ClipRRect(
-                                        borderRadius: BorderRadius.circular(10),
-                                        child: Image.network(
-                                          _resolveImageUrl(rawImg),
-                                          fit: BoxFit.cover,
-                                          width: double.infinity,
-                                          height: 180,
-                                          loadingBuilder: (_, child, progress) {
-                                            if (progress == null) return child;
-                                            return Container(
-                                              height: 180,
-                                              color: Colors.black12,
-                                              child: const Center(child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)),
-                                            );
-                                          },
-                                          errorBuilder: (_, __, ___) => Container(
-                                            height: 100,
-                                            color: Colors.black12,
-                                            child: const Center(child: Icon(Icons.broken_image_rounded, color: Colors.white54)),
+                                    padding: const EdgeInsets.all(12),
+                                    child: Column(
+                                      crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                                      children: [
+                                        if (orderId != null)
+                                          Container(
+                                            margin: const EdgeInsets.only(bottom: 6),
+                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                            decoration: BoxDecoration(
+                                              color: Colors.black26,
+                                              borderRadius: BorderRadius.circular(6),
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                const Icon(Icons.receipt_long_rounded, color: Colors.white70, size: 13),
+                                                const SizedBox(width: 4),
+                                                Text('Order #$orderId', style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                                              ],
+                                            ),
+                                          ),
+                                        if (rawImg != null && rawImg.isNotEmpty) ...[
+                                          GestureDetector(
+                                            onTap: () => _showImageFullscreen(_resolveImageUrl(rawImg)),
+                                            child: ClipRRect(
+                                              borderRadius: BorderRadius.circular(10),
+                                              child: Image.network(
+                                                _resolveImageUrl(rawImg),
+                                                fit: BoxFit.cover,
+                                                width: double.infinity,
+                                                height: 180,
+                                                loadingBuilder: (_, child, progress) {
+                                                  if (progress == null) return child;
+                                                  return Container(
+                                                    height: 180,
+                                                    color: Colors.black12,
+                                                    child: const Center(child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)),
+                                                  );
+                                                },
+                                                errorBuilder: (context, error, stackTrace) => Container(
+                                                  height: 100,
+                                                  color: Colors.black12,
+                                                  child: const Center(child: Icon(Icons.broken_image_rounded, color: Colors.white54)),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          if (text.isNotEmpty) const SizedBox(height: 6),
+                                        ],
+                                        if (text.isNotEmpty)
+                                          Text(
+                                            text,
+                                            style: const TextStyle(color: Colors.white, fontSize: 14, height: 1.3),
+                                          ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          timeDisplay,
+                                          style: TextStyle(
+                                            color: isMe ? Colors.white70 : AppColors.label,
+                                            fontSize: 10,
                                           ),
                                         ),
-                                      ),
-                                    ),
-                                    if (text.isNotEmpty) const SizedBox(height: 6),
-                                  ],
-                                  if (text.isNotEmpty)
-                                    Text(
-                                      text,
-                                      style: const TextStyle(color: Colors.white, fontSize: 14, height: 1.3),
-                                    ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    timeDisplay,
-                                    style: TextStyle(
-                                      color: isMe ? Colors.white70 : AppColors.label,
-                                      fontSize: 10,
+                                      ],
                                     ),
                                   ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
                           );
                         },
@@ -1074,7 +1256,7 @@ class _OwnerChatThreadScreenState extends State<OwnerChatThreadScreen> {
             ),
           if (!_isBlocked)
             Container(
-              padding: EdgeInsets.fromLTRB(12, 8, 12, 8 + MediaQuery.of(context).viewInsets.bottom),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: const BoxDecoration(
                 color: HomeColors.cardBackground,
                 border: Border(top: BorderSide(color: HomeColors.cardBorder, width: 1)),

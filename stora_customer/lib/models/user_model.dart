@@ -5,6 +5,7 @@ class UserModel {
   final String role;
   final bool isPremium;
   final bool isEmailVerified;
+  final String? avatarUrl;
 
   UserModel({
     required this.id,
@@ -13,6 +14,7 @@ class UserModel {
     this.role = 'customer',
     this.isPremium = false,
     this.isEmailVerified = false,
+    this.avatarUrl,
   });
 
   String get displayName {
@@ -29,6 +31,7 @@ class UserModel {
       role: (json['role'] as String?) ?? 'customer',
       isPremium: json['is_premium'] == true,
       isEmailVerified: json['is_email_verified'] == true,
+      avatarUrl: (json['avatar_url'] as String?),
     );
   }
 
@@ -40,6 +43,7 @@ class UserModel {
       'role': role,
       'is_premium': isPremium,
       'is_email_verified': isEmailVerified,
+      'avatar_url': avatarUrl,
     };
   }
 }

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 
@@ -24,6 +25,7 @@ class AuthResult {
     required this.email,
     required this.businessName,
     this.isEmailVerified = false,
+    this.avatarUrl,
   });
 
   final String accessToken;
@@ -31,6 +33,7 @@ class AuthResult {
   final String email;
   final String businessName;
   final bool isEmailVerified;
+  final String? avatarUrl;
 }
 
 class ApiClient {
@@ -250,6 +253,7 @@ class ApiClient {
       email: (user['email'] as String?) ?? (data['email'] as String?) ?? '',
       businessName: (user['business_name'] as String?) ?? (data['business_name'] as String?) ?? '',
       isEmailVerified: user['is_email_verified'] == true || data['is_email_verified'] == true,
+      avatarUrl: (user['avatar_url'] as String?) ?? (data['avatar_url'] as String?),
     );
   }
 
@@ -269,6 +273,34 @@ class ApiClient {
     final response = await _send('PATCH', '/auth/me/', body: body);
     if (response.statusCode != 200) _throw(response);
     return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> uploadAvatar(Uint8List imageBytes, String filename) async {
+    final token = await AppDatabase.instance.authDao.readAccessToken();
+    final request = http.MultipartRequest('PATCH', _uri('/auth/me/'));
+    if (token != null && token.isNotEmpty) {
+      request.headers['Authorization'] = 'Bearer $token';
+    }
+    request.headers['Accept'] = 'application/json';
+    request.files.add(
+      http.MultipartFile.fromBytes(
+        'avatar',
+        imageBytes,
+        filename: filename,
+      ),
+    );
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+    if (response.statusCode != 200) _throw(response);
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
+  Future<List<Map<String, dynamic>>> getStoreCustomers() async {
+    final response = await _send('GET', '/messages/customers/');
+    if (response.statusCode != 200) _throw(response);
+    return (jsonDecode(response.body) as List)
+        .map((e) => Map<String, dynamic>.from(e as Map))
+        .toList();
   }
 
   Future<String> changePassword({

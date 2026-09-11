@@ -27,6 +27,7 @@ class DashboardScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: Listenable.merge([
+        AuthStore.instance,
         InventoryStore.instance,
         SalesStore.instance,
         AccountStatusStore.instance,
@@ -64,16 +65,22 @@ class DashboardScreen extends StatelessWidget {
                         shape: BoxShape.circle,
                         gradient: HomeColors.purpleGradient,
                       ),
-                      child: GestureDetector(
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(20),
                         onTap: () => Navigator.of(context).push(
                           MaterialPageRoute(
                             builder: (_) => const ProfileScreen(),
                           ),
                         ),
-                        child: const CircleAvatar(
+                        child: CircleAvatar(
                           radius: 20,
                           backgroundColor: HomeColors.cardElevated,
-                          child: Icon(Icons.storefront_rounded, color: AppColors.purpleLight, size: 20),
+                          backgroundImage: (AuthStore.instance.avatarUrl != null && AuthStore.instance.avatarUrl!.isNotEmpty)
+                              ? NetworkImage(AuthStore.instance.avatarUrl!)
+                              : null,
+                          child: (AuthStore.instance.avatarUrl == null || AuthStore.instance.avatarUrl!.isEmpty)
+                              ? const Icon(Icons.storefront_rounded, color: AppColors.purpleLight, size: 20)
+                              : null,
                         ),
                       ),
                     ),

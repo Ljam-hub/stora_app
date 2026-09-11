@@ -6,6 +6,7 @@ import '../../theme/app_theme.dart';
 import '../../theme/theme_controller.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../widgets/gradient_button.dart';
+import 'package:image_picker/image_picker.dart';
 import '../auth/email_verification_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -16,6 +17,75 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  bool _uploadingAvatar = false;
+
+  Future<void> _pickAndUploadAvatar() async {
+    final picker = ImagePicker();
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      backgroundColor: AppColors.cardBackground,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_camera_rounded, color: AppColors.primary),
+              title: const Text('Take a photo', style: TextStyle(color: Colors.white)),
+              onTap: () => Navigator.pop(ctx, ImageSource.camera),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library_rounded, color: AppColors.primary),
+              title: const Text('Choose from gallery', style: TextStyle(color: Colors.white)),
+              onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (source == null) return;
+
+    try {
+      final picked = await picker.pickImage(source: source, maxWidth: 800, maxHeight: 800, imageQuality: 85);
+      if (picked == null) return;
+
+      setState(() => _uploadingAvatar = true);
+      final bytes = await picked.readAsBytes();
+      if (!mounted) return;
+      final ok = await context.read<AuthProvider>().uploadAvatar(bytes, picked.name);
+      if (mounted) {
+        setState(() => _uploadingAvatar = false);
+        if (ok) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Profile photo updated!'),
+              backgroundColor: AppColors.successBg,
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Failed to upload profile photo.'),
+              backgroundColor: AppColors.danger,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _uploadingAvatar = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+      }
+    }
+  }
+
   void _openEditProfileDialog() {
     final auth = context.read<AuthProvider>();
     final nameController = TextEditingController(text: auth.currentUser?.name ?? '');
@@ -338,24 +408,70 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               child: Row(
                 children: [
-                  Container(
-                    width: 64,
-                    height: 64,
-                    decoration: BoxDecoration(
-                      gradient: AppColors.heroGradient,
-                      shape: BoxShape.circle,
-                      boxShadow: AppColors.glowShadow(AppColors.primary, opacity: 0.3),
-                    ),
-                    child: Center(
-                      child: Text(
-                        (user?.displayName.isNotEmpty == true ? user!.displayName[0] : 'C').toUpperCase(),
-                        style: const TextStyle(
-                          fontSize: 26,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                  Stack(
+                    children: [
+                      Container(
+                        width: 68,
+                        height: 68,
+                        decoration: BoxDecoration(
+                          gradient: AppColors.heroGradient,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: AppColors.primary.withValues(alpha: 0.5), width: 2),
+                          boxShadow: AppColors.glowShadow(AppColors.primary, opacity: 0.3),
+                        ),
+                        child: ClipOval(
+                          child: user?.avatarUrl != null && user!.avatarUrl!.isNotEmpty
+                              ? Image.network(
+                                  user.avatarUrl!,
+                                  width: 68,
+                                  height: 68,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) => Center(
+                                    child: Text(
+                                      (user.displayName.isNotEmpty ? user.displayName[0] : 'C').toUpperCase(),
+                                      style: const TextStyle(
+                                        fontSize: 26,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                )
+                              : Center(
+                                  child: Text(
+                                    (user?.displayName.isNotEmpty == true ? user!.displayName[0] : 'C').toUpperCase(),
+                                    style: const TextStyle(
+                                      fontSize: 26,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
                         ),
                       ),
-                    ),
+                      Positioned(
+                        bottom: 0,
+                        right: 0,
+                        child: GestureDetector(
+                          onTap: _uploadingAvatar ? null : _pickAndUploadAvatar,
+                          child: Container(
+                            padding: const EdgeInsets.all(5),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: AppColors.cardBackground, width: 2),
+                            ),
+                            child: _uploadingAvatar
+                                ? const SizedBox(
+                                    width: 12,
+                                    height: 12,
+                                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                  )
+                                : const Icon(Icons.camera_alt_rounded, size: 13, color: Colors.white),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(width: 16),
                   Expanded(

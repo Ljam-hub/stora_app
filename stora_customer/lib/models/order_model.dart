@@ -44,6 +44,7 @@ class CustomerOrder {
   final int id;
   final int ownerId;
   final String storeName;
+  final String? storeAvatarUrl;
   final String customerName;
   final String customerPhone;
   final String customerAddress;
@@ -61,6 +62,7 @@ class CustomerOrder {
     required this.id,
     required this.ownerId,
     this.storeName = '',
+    this.storeAvatarUrl,
     required this.customerName,
     required this.customerPhone,
     required this.customerAddress,
@@ -164,6 +166,7 @@ class CustomerOrder {
       id: json['id'] is int ? json['id'] as int : (int.tryParse(json['id']?.toString() ?? '0') ?? 0),
       ownerId: json['owner'] is int ? json['owner'] as int : (int.tryParse(json['owner']?.toString() ?? '0') ?? 0),
       storeName: (json['store_name'] as String?) ?? '',
+      storeAvatarUrl: json['store_avatar_url'] as String?,
       customerName: (json['customer_name'] as String?) ?? '',
       customerPhone: (json['customer_phone'] as String?) ?? '',
       customerAddress: (json['customer_address'] as String?) ?? '',

@@ -10,12 +10,14 @@ import '../../theme/app_theme.dart';
 class CustomerChatScreen extends StatefulWidget {
   final int storeOwnerId;
   final String storeName;
+  final String? storeAvatarUrl;
   final int? initialOrderId;
 
   const CustomerChatScreen({
     super.key,
     required this.storeOwnerId,
     required this.storeName,
+    this.storeAvatarUrl,
     this.initialOrderId,
   });
 
@@ -423,9 +425,14 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
         title: Row(
           children: [
             CircleAvatar(
-              radius: 18,
+              radius: 19,
               backgroundColor: AppColors.cardElevated,
-              child: const Icon(Icons.storefront_rounded, color: AppColors.primary, size: 18),
+              backgroundImage: (widget.storeAvatarUrl != null && widget.storeAvatarUrl!.isNotEmpty)
+                  ? NetworkImage(widget.storeAvatarUrl!)
+                  : null,
+              child: (widget.storeAvatarUrl == null || widget.storeAvatarUrl!.isEmpty)
+                  ? const Icon(Icons.storefront_rounded, color: AppColors.primary, size: 20)
+                  : null,
             ),
             const SizedBox(width: 10),
             Expanded(
@@ -540,9 +547,18 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Icon(Icons.forum_outlined, color: AppColors.textSecondary, size: 48),
-                                const SizedBox(height: 12),
-                                Text('Message ${widget.storeName}', style: const TextStyle(color: Colors.white70, fontSize: 15)),
+                                CircleAvatar(
+                                  radius: 38,
+                                  backgroundColor: AppColors.cardElevated,
+                                  backgroundImage: (widget.storeAvatarUrl != null && widget.storeAvatarUrl!.isNotEmpty)
+                                      ? NetworkImage(widget.storeAvatarUrl!)
+                                      : null,
+                                  child: (widget.storeAvatarUrl == null || widget.storeAvatarUrl!.isEmpty)
+                                      ? const Icon(Icons.storefront_rounded, color: AppColors.primary, size: 44)
+                                      : null,
+                                ),
+                                const SizedBox(height: 14),
+                                Text('Message ${widget.storeName}', style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
                                 const SizedBox(height: 4),
                                 const Text('Ask questions about products, orders, or delivery', style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
                               ],
@@ -568,88 +584,108 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
                                 } catch (_) {}
                               }
 
-                              return Align(
-                                alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-                                child: Container(
-                                  margin: const EdgeInsets.only(bottom: 10),
-                                  constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.78),
-                                  decoration: BoxDecoration(
-                                    gradient: isMe ? AppColors.purpleGradient : null,
-                                    color: isMe ? null : AppColors.cardElevated,
-                                    borderRadius: BorderRadius.only(
-                                      topLeft: const Radius.circular(16),
-                                      topRight: const Radius.circular(16),
-                                      bottomLeft: isMe ? const Radius.circular(16) : const Radius.circular(4),
-                                      bottomRight: isMe ? const Radius.circular(4) : const Radius.circular(16),
-                                    ),
-                                    boxShadow: [
-                                      BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 4, offset: const Offset(0, 2)),
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 8),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+                                  children: [
+                                    if (!isMe) ...[
+                                      CircleAvatar(
+                                        radius: 14,
+                                        backgroundColor: AppColors.cardElevated,
+                                        backgroundImage: (widget.storeAvatarUrl != null && widget.storeAvatarUrl!.isNotEmpty)
+                                            ? NetworkImage(widget.storeAvatarUrl!)
+                                            : null,
+                                        child: (widget.storeAvatarUrl == null || widget.storeAvatarUrl!.isEmpty)
+                                            ? const Icon(Icons.storefront_rounded, color: AppColors.primary, size: 14)
+                                            : null,
+                                      ),
+                                      const SizedBox(width: 8),
                                     ],
-                                  ),
-                                  padding: const EdgeInsets.all(12),
-                                  child: Column(
-                                    crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-                                    children: [
-                                      if (orderId != null)
-                                        Container(
-                                          margin: const EdgeInsets.only(bottom: 6),
-                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                          decoration: BoxDecoration(
-                                            color: Colors.black26,
-                                            borderRadius: BorderRadius.circular(6),
+                                    Flexible(
+                                      child: Container(
+                                        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.74),
+                                        decoration: BoxDecoration(
+                                          gradient: isMe ? AppColors.purpleGradient : null,
+                                          color: isMe ? null : AppColors.cardElevated,
+                                          borderRadius: BorderRadius.only(
+                                            topLeft: const Radius.circular(16),
+                                            topRight: const Radius.circular(16),
+                                            bottomLeft: isMe ? const Radius.circular(16) : const Radius.circular(4),
+                                            bottomRight: isMe ? const Radius.circular(4) : const Radius.circular(16),
                                           ),
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              const Icon(Icons.receipt_long_rounded, color: Colors.white70, size: 13),
-                                              const SizedBox(width: 4),
-                                              Text('Order #$orderId', style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
-                                            ],
-                                          ),
+                                          boxShadow: [
+                                            BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 4, offset: const Offset(0, 2)),
+                                          ],
                                         ),
-                                      if (rawImg != null && rawImg.isNotEmpty) ...[
-                                        GestureDetector(
-                                          onTap: () => _showImageFullscreen(_resolveImageUrl(rawImg)),
-                                          child: ClipRRect(
-                                            borderRadius: BorderRadius.circular(10),
-                                            child: Image.network(
-                                              _resolveImageUrl(rawImg),
-                                              fit: BoxFit.cover,
-                                              width: double.infinity,
-                                              height: 180,
-                                              loadingBuilder: (_, child, progress) {
-                                                if (progress == null) return child;
-                                                return Container(
-                                                  height: 180,
-                                                  color: Colors.black12,
-                                                  child: const Center(child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)),
-                                                );
-                                              },
-                                              errorBuilder: (_, error, stackTrace) => Container(
-                                                height: 100,
-                                                color: Colors.black12,
-                                                child: const Center(child: Icon(Icons.broken_image_rounded, color: Colors.white54)),
+                                        padding: const EdgeInsets.all(12),
+                                        child: Column(
+                                          crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                                          children: [
+                                            if (orderId != null)
+                                              Container(
+                                                margin: const EdgeInsets.only(bottom: 6),
+                                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.black26,
+                                                  borderRadius: BorderRadius.circular(6),
+                                                ),
+                                                child: Row(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    const Icon(Icons.receipt_long_rounded, color: Colors.white70, size: 13),
+                                                    const SizedBox(width: 4),
+                                                    Text('Order #$orderId', style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                                                  ],
+                                                ),
+                                              ),
+                                            if (rawImg != null && rawImg.isNotEmpty) ...[
+                                              GestureDetector(
+                                                onTap: () => _showImageFullscreen(_resolveImageUrl(rawImg)),
+                                                child: ClipRRect(
+                                                  borderRadius: BorderRadius.circular(10),
+                                                  child: Image.network(
+                                                    _resolveImageUrl(rawImg),
+                                                    fit: BoxFit.cover,
+                                                    width: double.infinity,
+                                                    height: 180,
+                                                    loadingBuilder: (_, child, progress) {
+                                                      if (progress == null) return child;
+                                                      return Container(
+                                                        height: 180,
+                                                        color: Colors.black12,
+                                                        child: const Center(child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)),
+                                                      );
+                                                    },
+                                                    errorBuilder: (_, error, stackTrace) => Container(
+                                                      height: 100,
+                                                      color: Colors.black12,
+                                                      child: const Center(child: Icon(Icons.broken_image_rounded, color: Colors.white54)),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                              if (text.isNotEmpty) const SizedBox(height: 6),
+                                            ],
+                                            if (text.isNotEmpty)
+                                              Text(
+                                                text,
+                                                style: const TextStyle(color: Colors.white, fontSize: 14, height: 1.3),
+                                              ),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              timeDisplay,
+                                              style: TextStyle(
+                                                color: isMe ? Colors.white70 : AppColors.textSecondary,
+                                                fontSize: 10,
                                               ),
                                             ),
-                                          ),
-                                        ),
-                                        if (text.isNotEmpty) const SizedBox(height: 6),
-                                      ],
-                                      if (text.isNotEmpty)
-                                        Text(
-                                          text,
-                                          style: const TextStyle(color: Colors.white, fontSize: 14, height: 1.3),
-                                        ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        timeDisplay,
-                                        style: TextStyle(
-                                          color: isMe ? Colors.white70 : AppColors.textSecondary,
-                                          fontSize: 10,
+                                          ],
                                         ),
                                       ),
-                                    ],
-                                  ),
+                                    ),
+                                  ],
                                 ),
                               );
                             },
@@ -688,7 +724,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
             ),
           if (!_isBlocked)
             Container(
-              padding: EdgeInsets.fromLTRB(12, 8, 12, 8 + MediaQuery.of(context).viewInsets.bottom),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: const BoxDecoration(
                 color: AppColors.cardBackground,
                 border: Border(top: BorderSide(color: AppColors.cardBorder, width: 1)),

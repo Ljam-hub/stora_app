@@ -6,6 +6,7 @@ class StoreModel {
   final double longitude;
   final String address;
   final double? distanceKm;
+  final String? avatarUrl;
 
   StoreModel({
     required this.id,
@@ -15,6 +16,7 @@ class StoreModel {
     this.longitude = 120.9842,
     this.address = '',
     this.distanceKm,
+    this.avatarUrl,
   });
 
   String get displayName {
@@ -32,6 +34,7 @@ class StoreModel {
       longitude: json['longitude'] is num ? (json['longitude'] as num).toDouble() : 120.9842,
       address: (json['address'] as String?) ?? '',
       distanceKm: json['distance_km'] is num ? (json['distance_km'] as num).toDouble() : null,
+      avatarUrl: (json['avatar_url'] as String?),
     );
   }
 
@@ -44,6 +47,7 @@ class StoreModel {
       'longitude': longitude,
       'address': address,
       'distance_km': distanceKm,
+      'avatar_url': avatarUrl,
     };
   }
 }

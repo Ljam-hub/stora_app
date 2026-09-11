@@ -9,8 +9,8 @@ class HomeColors {
   static const cardBorder = Color(0xFF352B46);
   static const cardBorderLight = Color(0xFF4C3E63);
   
-  static const successText = Color(0xFF4ADE80);
-  static const successBg = Color(0xFF132D1B);
+  static const successText = Color(0xFF34D399);
+  static const successBg = Color(0xFF0E3824);
   
   static const warningText = Color(0xFFFBBF24);
   static const warningBg = Color(0xFF332408);
@@ -22,13 +22,13 @@ class HomeColors {
   static const infoBg = Color(0xFF102A3D);
 
   static const purpleGradient = LinearGradient(
-    colors: [Color(0xFFFF6B00), Color(0xFFA04100)],
+    colors: [Color(0xFFF56A10), Color(0xFFC2410C)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   static const heroGradient = LinearGradient(
-    colors: [Color(0xFFFF6B00), Color(0xFFA04100), Color(0xFF261812)],
+    colors: [Color(0xFFF56A10), Color(0xFFC2410C), Color(0xFF261812)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );

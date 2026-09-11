@@ -12,7 +12,7 @@ from .models import User, PasswordResetToken, PaymentProof, SubscriptionConfig, 
 @admin.register(User, site=stora_admin_site)
 class UserAdmin(DjangoUserAdmin):
     fieldsets = DjangoUserAdmin.fieldsets + (
-        ("Store & Role info", {"fields": ("role", "business_name", "fcm_token", "is_email_verified")}),
+        ("Store & Role info", {"fields": ("role", "business_name", "avatar", "fcm_token", "is_email_verified")}),
         ("Subscription", {"fields": ("is_premium", "premium_until")}),
     )
     list_display = (
@@ -42,9 +42,9 @@ class UserAdmin(DjangoUserAdmin):
     def role_badge(self, obj):
         from django.utils.html import format_html
         if obj.is_superuser or obj.is_staff or obj.role == "admin":
-            return format_html('<span class="user-badge user-badge--admin" style="background:#7c3aed;color:#fff;padding:3px 8px;border-radius:6px;font-weight:700;">Admin</span>')
+            return format_html('<span class="user-badge user-badge--admin">Admin</span>')
         elif obj.role == "owner":
-            return format_html('<span class="user-badge user-badge--owner">Store Owner</span>')
+            return format_html('<span class="user-badge user-badge--owner">Owner</span>')
         return format_html('<span class="user-badge user-badge--customer">Customer</span>')
 
     @admin.display(description="Subscription")
@@ -52,22 +52,22 @@ class UserAdmin(DjangoUserAdmin):
         from django.utils.html import format_html
         if obj.role == "admin":
             return format_html(
-                '<span class="user-badge" style="background:#7c3aed;color:#fff;padding:3px 8px;border-radius:6px;font-weight:600;">Admin (Full Access)</span>'
+                '<span class="user-badge user-badge--admin">Admin</span>'
             )
         if obj.role == "customer":
             return format_html(
-                '<span class="user-badge" style="background:#475569;color:#fff;padding:3px 8px;border-radius:6px;font-weight:600;">Customer (No Trial/Sub)</span>'
+                '<span class="user-badge user-badge--customer">Customer</span>'
             )
         if obj.is_premium_active:
             days = obj.days_left
             return format_html(
-                '<span class="user-badge user-badge--premium">Premium ({}d left)</span>',
+                '<span class="user-badge user-badge--premium">Premium ({}d)</span>',
                 days,
             )
         elif obj.is_trial_active:
             days = obj.days_left
             return format_html(
-                '<span class="user-badge user-badge--trial">Trial ({}d left)</span>',
+                '<span class="user-badge user-badge--trial">Trial ({}d)</span>',
                 days,
             )
         elif obj.is_premium:
@@ -76,7 +76,7 @@ class UserAdmin(DjangoUserAdmin):
             )
         else:
             return format_html(
-                '<span class="user-badge user-badge--free">Free Plan</span>'
+                '<span class="user-badge user-badge--free">Free</span>'
             )
 
     @admin.display(description="Expires On")

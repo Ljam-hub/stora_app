@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 
 import '../data/api/api_client.dart';
@@ -11,6 +12,7 @@ class AuthStore extends ChangeNotifier {
 
   String? email;
   String? businessName;
+  String? avatarUrl;
   bool isEmailVerified = false;
   bool get isLoggedIn => email != null && email!.isNotEmpty;
 
@@ -32,6 +34,7 @@ class AuthStore extends ChangeNotifier {
     try {
       final me = await ApiClient.instance.getMe();
       isEmailVerified = me['is_email_verified'] == true;
+      avatarUrl = me['avatar_url'] as String?;
     } catch (_) {}
     OwnerNotificationService.instance.init();
     notifyListeners();
@@ -121,6 +124,12 @@ class AuthStore extends ChangeNotifier {
     await ApiClient.instance.resendVerification(email: mail);
   }
 
+  Future<void> uploadAvatar(Uint8List imageBytes, String filename) async {
+    final res = await ApiClient.instance.uploadAvatar(imageBytes, filename);
+    avatarUrl = res['avatar_url'] as String?;
+    notifyListeners();
+  }
+
   Future<void> logout() async {
     try {
       await ApiClient.instance.clearFcmToken();
@@ -129,6 +138,7 @@ class AuthStore extends ChangeNotifier {
     await AppDatabase.instance.authDao.clearSession();
     email = null;
     businessName = null;
+    avatarUrl = null;
     isEmailVerified = false;
     notifyListeners();
   }
@@ -145,6 +155,7 @@ class AuthStore extends ChangeNotifier {
     );
     email = result.email;
     businessName = result.businessName;
+    avatarUrl = result.avatarUrl;
     isEmailVerified = result.isEmailVerified;
     OwnerNotificationService.instance.init();
     notifyListeners();

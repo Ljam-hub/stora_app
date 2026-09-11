@@ -1724,9 +1724,9 @@ a.selector-clearall:hover {
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: .06em;
-  padding: 14px 18px !important;
+  padding: 10px 12px !important;
   border-bottom: 1px solid var(--stora-border) !important;
-  white-space: nowrap;
+  white-space: nowrap !important;
   text-align: left;
 }
 
@@ -1761,11 +1761,12 @@ a.selector-clearall:hover {
 
 #result_list tbody td,
 #result_list tbody th {
-  padding: 12px 18px !important;
+  padding: 8px 12px !important;
   color: var(--stora-text) !important;
-  font-size: 14px;
+  font-size: 12px !important;
   border-bottom: 1px solid var(--stora-border) !important;
   vertical-align: middle;
+  white-space: nowrap !important;
 }
 
 #result_list tbody th a,
@@ -1779,6 +1780,55 @@ a.selector-clearall:hover {
 #result_list tbody td a:hover {
   color: var(--stora-accent-strong) !important;
   text-decoration: underline;
+}
+
+/* User Status Badges */
+.user-badge {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  white-space: nowrap !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  padding: 2px 8px !important;
+  border-radius: 6px !important;
+  line-height: 1.3 !important;
+  letter-spacing: 0.02em !important;
+}
+
+.user-badge--admin {
+  background: #7c3aed !important;
+  color: #ffffff !important;
+}
+
+.user-badge--owner {
+  background: #f56a10 !important;
+  color: #ffffff !important;
+}
+
+.user-badge--customer {
+  background: #334155 !important;
+  color: #cbd5e1 !important;
+}
+
+.user-badge--premium {
+  background: #059669 !important;
+  color: #ffffff !important;
+}
+
+.user-badge--trial {
+  background: #d97706 !important;
+  color: #ffffff !important;
+}
+
+.user-badge--expired {
+  background: #dc2626 !important;
+  color: #ffffff !important;
+}
+
+.user-badge--free {
+  background: #475569 !important;
+  color: #e2e8f0 !important;
 }
 
 /* Search Bar */

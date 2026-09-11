@@ -44,17 +44,26 @@ def canonicalize_email(email: str) -> str:
 class UserSerializer(serializers.ModelSerializer):
     premium_until = UTCDateTimeField(read_only=True, allow_null=True)
     date_joined = UTCDateTimeField(read_only=True)
+    avatar_url = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ("id", "email", "business_name", "role", "is_email_verified", "fcm_token", "is_premium", "premium_until", "date_joined")
-        read_only_fields = ("id", "is_email_verified", "is_premium", "premium_until", "date_joined")
+        fields = ("id", "email", "business_name", "role", "is_email_verified", "fcm_token", "is_premium", "premium_until", "date_joined", "avatar", "avatar_url")
+        read_only_fields = ("id", "is_email_verified", "is_premium", "premium_until", "date_joined", "avatar_url")
+
+    def get_avatar_url(self, obj):
+        if obj.avatar:
+            request = self.context.get("request")
+            if request:
+                return request.build_absolute_uri(obj.avatar.url)
+            return obj.avatar.url
+        return None
 
 
 class UserUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ("business_name", "email")
+        fields = ("business_name", "email", "avatar")
 
     def validate_email(self, value):
         email = canonicalize_email(value)
@@ -77,6 +86,8 @@ class UserUpdateSerializer(serializers.ModelSerializer):
             instance.is_email_verified = False
         if "business_name" in validated_data:
             instance.business_name = validated_data["business_name"]
+        if "avatar" in validated_data:
+            instance.avatar = validated_data["avatar"]
         instance.save()
         return instance
 
@@ -196,6 +207,7 @@ class ProductSerializer(serializers.ModelSerializer):
     category_name = serializers.CharField(required=False, allow_blank=False)
     image = serializers.CharField(required=False, allow_null=True, allow_blank=True, write_only=True)
     store_name = serializers.CharField(source="owner.business_name", read_only=True)
+    store_avatar_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
@@ -211,13 +223,22 @@ class ProductSerializer(serializers.ModelSerializer):
             "bio",
             "owner",
             "store_name",
+            "store_avatar_url",
         )
-        read_only_fields = ("id", "owner", "store_name")
+        read_only_fields = ("id", "owner", "store_name", "store_avatar_url")
         extra_kwargs = {
             "category": {"required": False},
             "barcode": {"required": False, "allow_null": True, "allow_blank": True},
             "bio": {"required": False, "allow_blank": True},
         }
+
+    def get_store_avatar_url(self, obj):
+        if obj.owner and obj.owner.avatar:
+            request = self.context.get("request")
+            if request:
+                return request.build_absolute_uri(obj.owner.avatar.url)
+            return obj.owner.avatar.url
+        return None
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
@@ -500,6 +521,8 @@ class OrderSerializer(serializers.ModelSerializer):
     created_at = UTCDateTimeField(read_only=True)
     expires_at = UTCDateTimeField(read_only=True)
     total_amount = serializers.SerializerMethodField()
+    customer_avatar_url = serializers.SerializerMethodField()
+    store_avatar_url = serializers.SerializerMethodField()
     store_name = serializers.CharField(source="owner.business_name", read_only=True, default="")
 
     class Meta:
@@ -508,8 +531,10 @@ class OrderSerializer(serializers.ModelSerializer):
             "id",
             "owner",
             "store_name",
+            "store_avatar_url",
             "customer",
             "customer_name",
+            "customer_avatar_url",
             "customer_phone",
             "customer_address",
             "notes",
@@ -526,6 +551,7 @@ class OrderSerializer(serializers.ModelSerializer):
         read_only_fields = (
             "id",
             "store_name",
+            "store_avatar_url",
             "customer",
             "status",
             "decline_reason",
@@ -539,6 +565,22 @@ class OrderSerializer(serializers.ModelSerializer):
 
     def get_total_amount(self, obj):
         return f"{obj.total_amount():.2f}"
+
+    def get_customer_avatar_url(self, obj):
+        if obj.customer and obj.customer.avatar:
+            request = self.context.get("request")
+            if request:
+                return request.build_absolute_uri(obj.customer.avatar.url)
+            return obj.customer.avatar.url
+        return None
+
+    def get_store_avatar_url(self, obj):
+        if obj.owner and obj.owner.avatar:
+            request = self.context.get("request")
+            if request:
+                return request.build_absolute_uri(obj.owner.avatar.url)
+            return obj.owner.avatar.url
+        return None
 
     def create(self, validated_data):
         items_data = validated_data.pop("items_data", [])

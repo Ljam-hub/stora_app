@@ -33,6 +33,7 @@ urlpatterns = [
     # Chat & Messaging
     path("messages/", views.chat_messages, name="chat_messages"),
     path("messages/conversations/", views.list_conversations, name="chat_conversations"),
+    path("messages/customers/", views.list_store_customers, name="list_store_customers"),
     path("messages/block/", views.block_customer, name="block_customer"),
     path("messages/unblock/", views.unblock_customer, name="unblock_customer"),
     path("messages/block-status/", views.block_status, name="block_status"),

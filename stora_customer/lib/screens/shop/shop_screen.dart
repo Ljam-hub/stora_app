@@ -80,6 +80,7 @@ class _ShopScreenState extends State<ShopScreen> {
                     builder: (_) => CustomerChatScreen(
                       storeOwnerId: store.id,
                       storeName: store.displayName,
+                      storeAvatarUrl: store.avatarUrl,
                     ),
                   ),
                 );
@@ -297,7 +298,89 @@ class _ShopScreenState extends State<ShopScreen> {
                   },
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 8),
+            ],
+
+            // Store Info & Chat Card in Shop Inventory Column
+            if (catalog.selectedStore != null) ...[
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: AppColors.cardBackground,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppColors.cardBorder),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 38,
+                        height: 38,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: AppColors.cardElevated,
+                          border: Border.all(color: AppColors.primary.withValues(alpha: 0.5), width: 1.5),
+                        ),
+                        child: ClipOval(
+                          child: catalog.selectedStore!.avatarUrl != null && catalog.selectedStore!.avatarUrl!.isNotEmpty
+                              ? Image.network(
+                                  catalog.selectedStore!.avatarUrl!,
+                                  width: 38,
+                                  height: 38,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) => const Icon(Icons.storefront_rounded, color: AppColors.primary, size: 20),
+                                )
+                              : const Icon(Icons.storefront_rounded, color: AppColors.primary, size: 20),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              catalog.selectedStore!.displayName,
+                              style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Have questions about inventory?',
+                              style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 11),
+                            ),
+                          ],
+                        ),
+                      ),
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          final store = catalog.selectedStore!;
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => CustomerChatScreen(
+                                storeOwnerId: store.id,
+                                storeName: store.displayName,
+                                storeAvatarUrl: store.avatarUrl,
+                              ),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.chat_bubble_rounded, size: 14, color: Colors.white),
+                        label: const Text('Chat', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 6),
             ],
 
             // Product Grid or Empty/Loading State

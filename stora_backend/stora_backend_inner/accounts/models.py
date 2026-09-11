@@ -32,6 +32,7 @@ class User(AbstractUser):
     fcm_token = models.CharField(max_length=255, blank=True, null=True)
     is_premium = models.BooleanField(default=False)
     premium_until = models.DateTimeField(null=True, blank=True)
+    avatar = models.ImageField(upload_to="avatars/", null=True, blank=True)
 
     @property
     def is_admin_role(self):

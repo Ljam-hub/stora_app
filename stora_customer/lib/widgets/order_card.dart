@@ -597,6 +597,7 @@ class _OrderCardState extends State<OrderCard> {
                           builder: (_) => CustomerChatScreen(
                             storeOwnerId: order.ownerId,
                             storeName: order.storeName.isNotEmpty ? order.storeName : 'Store Owner',
+                            storeAvatarUrl: order.storeAvatarUrl,
                             initialOrderId: order.id,
                           ),
                         ),

@@ -674,27 +674,41 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
               height: 42,
               decoration: BoxDecoration(
                 gradient: isSelected
-                    ? const LinearGradient(colors: [Color(0xFFFF9E58), Color(0xFFFF6B00)])
+                    ? const LinearGradient(colors: [Color(0xFFFB923C), Color(0xFFF56A10)])
                     : AppColors.purpleGradient,
                 shape: BoxShape.circle,
                 border: Border.all(color: Colors.white, width: 2.2),
                 boxShadow: [
                   BoxShadow(
-                    color: (isSelected ? AppColors.primary : const Color(0xFF8B5CF6)).withValues(alpha: 0.6),
+                    color: (isSelected ? AppColors.primary : const Color(0xFFC2410C)).withValues(alpha: 0.6),
                     blurRadius: 14,
                     offset: const Offset(0, 4),
                   ),
                 ],
               ),
-              child: const Icon(
-                Icons.storefront_rounded,
-                color: Colors.white,
-                size: 22,
+              child: ClipOval(
+                child: store.avatarUrl != null && store.avatarUrl!.isNotEmpty
+                    ? Image.network(
+                        store.avatarUrl!,
+                        width: 42,
+                        height: 42,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => const Icon(
+                          Icons.storefront_rounded,
+                          color: Colors.white,
+                          size: 22,
+                        ),
+                      )
+                    : const Icon(
+                        Icons.storefront_rounded,
+                        color: Colors.white,
+                        size: 22,
+                      ),
               ),
             ),
             CustomPaint(
               size: const Size(12, 6),
-              painter: _PinTrianglePainter(color: isSelected ? AppColors.primary : const Color(0xFFA04100)),
+              painter: _PinTrianglePainter(color: isSelected ? AppColors.primary : const Color(0xFFC2410C)),
             ),
           ],
         ),
@@ -894,7 +908,7 @@ class _StoreCarouselCard extends StatelessWidget {
             height: 52,
             decoration: BoxDecoration(
               gradient: isSelected
-                  ? const LinearGradient(colors: [Color(0xFFFF9E58), Color(0xFFFF6B00)])
+                  ? const LinearGradient(colors: [Color(0xFFFB923C), Color(0xFFF56A10)])
                   : AppColors.purpleGradient,
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
@@ -905,7 +919,18 @@ class _StoreCarouselCard extends StatelessWidget {
                 ),
               ],
             ),
-            child: const Icon(Icons.storefront_rounded, color: Colors.white, size: 28),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: store.avatarUrl != null && store.avatarUrl!.isNotEmpty
+                  ? Image.network(
+                      store.avatarUrl!,
+                      width: 52,
+                      height: 52,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => const Icon(Icons.storefront_rounded, color: Colors.white, size: 28),
+                    )
+                  : const Icon(Icons.storefront_rounded, color: Colors.white, size: 28),
+            ),
           ),
           const SizedBox(width: 14),
           Expanded(

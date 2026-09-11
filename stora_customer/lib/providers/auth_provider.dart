@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import '../models/user_model.dart';
 import '../services/api_service.dart';
@@ -220,6 +221,25 @@ class AuthProvider extends ChangeNotifier {
           savedAddress: _savedAddress,
         );
       }
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString().replaceAll('Exception: ', '');
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> uploadAvatar(Uint8List imageBytes, String filename) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final updated = await CustomerApiService.instance.uploadAvatar(imageBytes, filename);
+      _currentUser = updated;
       _isLoading = false;
       notifyListeners();
       return true;

@@ -319,6 +319,45 @@ class CustomerApiService {
     _throw(response);
   }
 
+  Future<UserModel> uploadAvatar(Uint8List imageBytes, String filename) async {
+    if (accessToken == null || accessToken!.isEmpty) {
+      final session = await SessionManager.instance.getSession();
+      if (session != null && session.accessToken.isNotEmpty) {
+        accessToken = session.accessToken;
+      }
+    }
+    final request = http.MultipartRequest('PATCH', _uri('/auth/me/'));
+    if (accessToken != null && accessToken!.isNotEmpty) {
+      request.headers['Authorization'] = 'Bearer $accessToken';
+    }
+    request.headers['Accept'] = 'application/json';
+    request.files.add(
+      http.MultipartFile.fromBytes(
+        'avatar',
+        imageBytes,
+        filename: filename,
+      ),
+    );
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      final user = UserModel.fromJson(data);
+      final session = await SessionManager.instance.getSession();
+      if (session != null) {
+        await SessionManager.instance.saveSession(
+          accessToken: session.accessToken,
+          refreshToken: session.refreshToken,
+          user: user,
+          savedPhone: session.savedPhone,
+          savedAddress: session.savedAddress,
+        );
+      }
+      return user;
+    }
+    _throw(response);
+  }
+
   Future<void> changePassword({
     required String oldPassword,
     required String newPassword,
