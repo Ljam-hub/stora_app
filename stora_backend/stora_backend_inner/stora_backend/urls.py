@@ -19,8 +19,8 @@ logger = logging.getLogger(__name__)
 
 GITHUB_REPO = "Ljam-hub/stora_app"
 DEFAULT_RELEASE_TAG = "v1.0.0"
-DEFAULT_CUSTOMER_SIZE = "50 MB"
-DEFAULT_OWNER_SIZE = "75 MB"
+DEFAULT_CUSTOMER_SIZE = "51.7 MB"
+DEFAULT_OWNER_SIZE = "76.8 MB"
 DEFAULT_CUSTOMER_URL = f"https://github.com/{GITHUB_REPO}/releases/latest/download/Stora-Customer.apk"
 DEFAULT_OWNER_URL = f"https://github.com/{GITHUB_REPO}/releases/latest/download/Stora.apk"
 CACHE_KEY = "stora_github_release_info"
