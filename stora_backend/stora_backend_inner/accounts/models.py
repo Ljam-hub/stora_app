@@ -33,6 +33,16 @@ class User(AbstractUser):
     is_premium = models.BooleanField(default=False)
     premium_until = models.DateTimeField(null=True, blank=True)
     avatar = models.ImageField(upload_to="avatars/", null=True, blank=True)
+    is_blocked = models.BooleanField(
+        default=False,
+        help_text="Designates whether this user (customer or owner) is blocked from using the app.",
+    )
+    block_reason = models.CharField(
+        max_length=255,
+        blank=True,
+        default="",
+        help_text="Reason why the user was blocked.",
+    )
 
     @property
     def is_admin_role(self):

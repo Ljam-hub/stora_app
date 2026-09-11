@@ -130,6 +130,12 @@ class AuthStore extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> removeAvatar() async {
+    final res = await ApiClient.instance.removeAvatar();
+    avatarUrl = res['avatar_url'] as String?;
+    notifyListeners();
+  }
+
   Future<void> logout() async {
     try {
       await ApiClient.instance.clearFcmToken();
@@ -141,6 +147,11 @@ class AuthStore extends ChangeNotifier {
     avatarUrl = null;
     isEmailVerified = false;
     notifyListeners();
+  }
+
+  Future<void> deleteAccount() async {
+    await ApiClient.instance.deleteAccount();
+    await logout();
   }
 
   Future<void> _persist(AuthResult result) async {

@@ -20,8 +20,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _uploadingAvatar = false;
 
   Future<void> _pickAndUploadAvatar() async {
-    final picker = ImagePicker();
-    final source = await showModalBottomSheet<ImageSource>(
+    final auth = context.read<AuthProvider>();
+    final hasAvatar = auth.currentUser?.avatarUrl != null && auth.currentUser!.avatarUrl!.isNotEmpty;
+    final action = await showModalBottomSheet<String>(
       context: context,
       backgroundColor: AppColors.cardBackground,
       shape: const RoundedRectangleBorder(
@@ -33,56 +34,128 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ListTile(
               leading: const Icon(Icons.photo_camera_rounded, color: AppColors.primary),
               title: const Text('Take a photo', style: TextStyle(color: Colors.white)),
-              onTap: () => Navigator.pop(ctx, ImageSource.camera),
+              onTap: () => Navigator.pop(ctx, 'camera'),
             ),
             ListTile(
               leading: const Icon(Icons.photo_library_rounded, color: AppColors.primary),
               title: const Text('Choose from gallery', style: TextStyle(color: Colors.white)),
-              onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+              onTap: () => Navigator.pop(ctx, 'gallery'),
             ),
+            if (hasAvatar) ...[
+              const Divider(color: AppColors.cardBorder, height: 1),
+              ListTile(
+                leading: const Icon(Icons.delete_outline_rounded, color: AppColors.danger),
+                title: const Text('Remove profile photo', style: TextStyle(color: AppColors.danger, fontWeight: FontWeight.w600)),
+                onTap: () => Navigator.pop(ctx, 'remove'),
+              ),
+            ],
           ],
         ),
       ),
     );
 
-    if (source == null) return;
+    if (action == null || !mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
 
-    try {
-      final picked = await picker.pickImage(source: source, maxWidth: 800, maxHeight: 800, imageQuality: 85);
-      if (picked == null) return;
+    if (action == 'remove') {
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: AppColors.cardBackground,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: const BorderSide(color: AppColors.cardBorder),
+          ),
+          title: const Text('Remove Profile Photo', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
+          content: const Text(
+            'Are you sure you want to remove your profile photo and restore the default avatar?',
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 14, height: 1.45),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary, fontSize: 14)),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.danger,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              child: const Text('Remove', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+      );
+
+      if (confirm != true || !mounted) return;
 
       setState(() => _uploadingAvatar = true);
-      final bytes = await picked.readAsBytes();
-      if (!mounted) return;
-      final ok = await context.read<AuthProvider>().uploadAvatar(bytes, picked.name);
-      if (mounted) {
-        setState(() => _uploadingAvatar = false);
+      try {
+        final ok = await auth.removeAvatar();
+        if (mounted) setState(() => _uploadingAvatar = false);
         if (ok) {
-          ScaffoldMessenger.of(context).showSnackBar(
+          messenger.showSnackBar(
             const SnackBar(
-              content: Text('Profile photo updated!'),
+              content: Text('Profile photo removed. Classic avatar restored.'),
               backgroundColor: AppColors.successBg,
             ),
           );
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
+          messenger.showSnackBar(
             const SnackBar(
-              content: Text('Failed to upload profile photo.'),
+              content: Text('Failed to remove profile photo.'),
               backgroundColor: AppColors.danger,
             ),
           );
         }
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _uploadingAvatar = false);
-        ScaffoldMessenger.of(context).showSnackBar(
+      } catch (e) {
+        if (mounted) setState(() => _uploadingAvatar = false);
+        messenger.showSnackBar(
           SnackBar(
             content: Text('Error: $e'),
             backgroundColor: AppColors.danger,
           ),
         );
       }
+      return;
+    }
+
+    final source = action == 'camera' ? ImageSource.camera : ImageSource.gallery;
+    final picker = ImagePicker();
+
+    try {
+      final picked = await picker.pickImage(source: source, maxWidth: 800, maxHeight: 800, imageQuality: 85);
+      if (picked == null || !mounted) return;
+
+      setState(() => _uploadingAvatar = true);
+      final bytes = await picked.readAsBytes();
+      final ok = await auth.uploadAvatar(bytes, picked.name);
+      if (mounted) setState(() => _uploadingAvatar = false);
+      if (ok) {
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text('Profile photo updated!'),
+            backgroundColor: AppColors.successBg,
+          ),
+        );
+      } else {
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text('Failed to upload profile photo.'),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) setState(() => _uploadingAvatar = false);
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('Error: $e'),
+          backgroundColor: AppColors.danger,
+        ),
+      );
     }
   }
 
@@ -359,15 +432,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
           borderRadius: BorderRadius.circular(16),
           side: const BorderSide(color: AppColors.cardBorder),
         ),
-        title: const Text('Sign Out', style: TextStyle(color: Colors.white)),
+        title: const Text('Log Out', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
         content: const Text(
-          'Are you sure you want to sign out from Stora Customer?',
-          style: TextStyle(color: AppColors.textSecondary),
+          'Are you sure you want to log out?',
+          style: TextStyle(color: AppColors.textSecondary, fontSize: 14, height: 1.45),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+            child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary, fontSize: 14)),
           ),
           TextButton(
             onPressed: () async {
@@ -377,9 +450,82 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
               }
             },
-            child: const Text('Sign Out', style: TextStyle(color: AppColors.danger)),
+            child: const Text('Log Out', style: TextStyle(color: AppColors.danger, fontSize: 14, fontWeight: FontWeight.bold)),
           ),
         ],
+      ),
+    );
+  }
+
+  void _handleDeleteAccount() {
+    bool isDeleting = false;
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: AppColors.cardBackground,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: const BorderSide(color: AppColors.cardBorder),
+          ),
+          title: const Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: AppColors.danger, size: 22),
+              SizedBox(width: 8),
+              Text('Delete Account', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          content: const Text(
+            'Are you sure you want to delete your account? This action is permanent and cannot be undone. All your orders, messages, and profile data will be permanently deleted.',
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 14, height: 1.45),
+          ),
+          actions: [
+            TextButton(
+              onPressed: isDeleting ? null : () => Navigator.pop(ctx),
+              child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary, fontSize: 14)),
+            ),
+            ElevatedButton(
+              onPressed: isDeleting
+                  ? null
+                  : () async {
+                      setDialogState(() => isDeleting = true);
+                      final messenger = ScaffoldMessenger.of(context);
+                      final nav = Navigator.of(context);
+                      try {
+                        await context.read<AuthProvider>().deleteAccount();
+                        if (ctx.mounted) Navigator.pop(ctx);
+                        messenger.showSnackBar(
+                          const SnackBar(
+                            content: Text('Your account has been deleted.'),
+                            backgroundColor: AppColors.danger,
+                          ),
+                        );
+                        nav.pushNamedAndRemoveUntil('/login', (route) => false);
+                      } catch (e) {
+                        setDialogState(() => isDeleting = false);
+                        messenger.showSnackBar(
+                          SnackBar(
+                            content: Text(e.toString().replaceAll('Exception: ', '')),
+                            backgroundColor: AppColors.danger,
+                          ),
+                        );
+                      }
+                    },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.danger,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              child: isDeleting
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    )
+                  : const Text('Delete Account', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -771,13 +917,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
             // Logout Button
             GradientButton(
-              text: 'Sign Out',
+              text: 'Log Out',
               icon: Icons.logout_rounded,
               gradient: const LinearGradient(
                 colors: [Color(0xFFE53935), Color(0xFFC62828)],
               ),
               onPressed: _handleLogout,
             ),
+            const SizedBox(height: 14),
+
+            // Delete Account Button
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: _handleDeleteAccount,
+                icon: const Icon(Icons.delete_forever_rounded, size: 18, color: AppColors.danger),
+                label: const Text('Delete Account', style: TextStyle(color: AppColors.danger, fontWeight: FontWeight.w600)),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  side: BorderSide(color: AppColors.danger.withValues(alpha: 0.35)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
           ],
         ),
       ),

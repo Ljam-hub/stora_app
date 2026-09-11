@@ -2,6 +2,20 @@ from rest_framework import permissions
 from rest_framework.permissions import DjangoModelPermissions, SAFE_METHODS
 
 
+class IsNotBlocked(permissions.BasePermission):
+    """Denies access if user is blocked or inactive."""
+    message = "Your account has been suspended or blocked. Please contact support."
+
+    def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated:
+            return True
+        if getattr(request.user, "is_blocked", False) or not request.user.is_active:
+            if getattr(request.user, "block_reason", None):
+                self.message = f"Your account has been suspended or blocked. Reason: {request.user.block_reason}. Please contact support."
+            return False
+        return True
+
+
 class IsAdminRole(permissions.BasePermission):
     """Allows access only to users with an administrator role."""
     message = "Administrator access required."
@@ -10,6 +24,8 @@ class IsAdminRole(permissions.BasePermission):
         return bool(
             request.user
             and request.user.is_authenticated
+            and not getattr(request.user, "is_blocked", False)
+            and request.user.is_active
             and (getattr(request.user, "role", None) == "admin" or request.user.is_superuser or request.user.is_staff)
         )
 
@@ -22,6 +38,8 @@ class IsOwnerRole(permissions.BasePermission):
         return bool(
             request.user
             and request.user.is_authenticated
+            and not getattr(request.user, "is_blocked", False)
+            and request.user.is_active
             and getattr(request.user, "role", None) == "owner"
         )
 
@@ -34,6 +52,8 @@ class IsCustomerRole(permissions.BasePermission):
         return bool(
             request.user
             and request.user.is_authenticated
+            and not getattr(request.user, "is_blocked", False)
+            and request.user.is_active
             and getattr(request.user, "role", None) == "customer"
         )
 

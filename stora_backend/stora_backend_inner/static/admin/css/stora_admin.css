@@ -126,7 +126,7 @@ a:hover {
   justify-content: space-between;
   gap: 20px;
   max-width: 100%;
-  padding: 14px max(24px, calc((100vw - 1340px) / 2));
+  padding: 14px max(24px, calc((100vw - 1640px) / 2));
 }
 
 .stora-header-right {
@@ -291,7 +291,7 @@ div.breadcrumbs,
 }
 
 .stora-breadcrumbs-container {
-  padding: 12px max(24px, calc((100vw - 1340px) / 2));
+  padding: 12px max(24px, calc((100vw - 1640px) / 2));
 }
 
 div.breadcrumbs {
@@ -539,8 +539,11 @@ div.breadcrumbs a:hover {
 
 .stora-content-area {
   flex: 1;
-  min-width: 0;
-  padding: 28px max(24px, calc((100vw - 1340px) / 2));
+  padding: 28px max(24px, calc((100vw - 1640px) / 2));
+}
+
+body.change-list .stora-content-area {
+  padding: 28px max(24px, calc((100vw - 1720px) / 2)) !important;
 }
 
 #content {
@@ -1715,38 +1718,95 @@ a.selector-clearall:hover {
 #result_list {
   width: 100% !important;
   border-collapse: collapse !important;
+  table-layout: auto !important;
 }
 
+/* Base header th styling */
 #result_list thead th {
   background: var(--stora-surface-raised) !important;
   color: #aab8bb !important;
   font-size: 11px !important;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: .06em;
-  padding: 10px 12px !important;
+  font-weight: 800 !important;
+  text-transform: uppercase !important;
+  letter-spacing: .06em !important;
+  padding: 0 !important;
   border-bottom: 1px solid var(--stora-border) !important;
+  border-top: none !important;
   white-space: nowrap !important;
-  text-align: left;
+  vertical-align: middle !important;
+  line-height: normal !important;
+  text-align: left !important;
+  position: relative !important;
+  box-sizing: border-box !important;
 }
 
-#result_list thead th a {
+/* Header text wrappers - EXACT MATCH with td padding */
+#result_list thead th .text {
+  padding: 0 !important;
+  margin: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  min-height: 42px !important;
+  box-sizing: border-box !important;
+}
+
+#result_list thead th .text a,
+#result_list thead th .text span {
+  display: inline-flex !important;
+  align-items: center !important;
+  padding: 12px 14px !important;
+  margin: 0 !important;
   color: #aab8bb !important;
-  text-decoration: none;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  letter-spacing: .06em !important;
+  text-transform: uppercase !important;
+  text-decoration: none !important;
+  box-sizing: border-box !important;
 }
 
-#result_list thead th a:hover {
+#result_list thead th .text a:hover {
   color: var(--stora-accent) !important;
 }
 
+/* For simple header th without .text wrapper */
+#result_list thead th:not(.action-checkbox-column):not(:has(.text)) {
+  padding: 12px 14px !important;
+}
+
+/* Sorted headers */
 #result_list thead th.sorted {
   background: var(--stora-accent-bg) !important;
 }
 
-#result_list thead th.sorted a {
+#result_list thead th.sorted .text a {
   color: var(--stora-accent) !important;
 }
 
+/* Position sorting options cleanly on the right so they NEVER push the text */
+#result_list thead th.sortable .text a {
+  padding-right: 28px !important;
+}
+
+#result_list thead th .sortoptions {
+  position: absolute !important;
+  right: 10px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 3px !important;
+  float: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  z-index: 2 !important;
+}
+
+#result_list thead th .clear {
+  display: none !important;
+}
+
+/* Row backgrounds */
 #result_list tbody tr:nth-child(odd) {
   background: var(--stora-bg) !important;
 }
@@ -1759,14 +1819,17 @@ a.selector-clearall:hover {
   background: var(--stora-surface-raised) !important;
 }
 
+/* Table body cells - MATCH EXACT PADDING: 12px vertical, 14px horizontal */
 #result_list tbody td,
 #result_list tbody th {
-  padding: 8px 12px !important;
+  padding: 12px 14px !important;
   color: var(--stora-text) !important;
-  font-size: 12px !important;
+  font-size: 13px !important;
   border-bottom: 1px solid var(--stora-border) !important;
-  vertical-align: middle;
+  vertical-align: middle !important;
   white-space: nowrap !important;
+  box-sizing: border-box !important;
+  line-height: 1.4 !important;
 }
 
 #result_list tbody th a,
@@ -1780,6 +1843,103 @@ a.selector-clearall:hover {
 #result_list tbody td a:hover {
   color: var(--stora-accent-strong) !important;
   text-decoration: underline;
+}
+
+/* Action Checkbox Column: Fixed width and perfectly centered in both thead and tbody */
+#result_list thead th.action-checkbox-column,
+#result_list tbody td.action-checkbox {
+  width: 48px !important;
+  min-width: 48px !important;
+  max-width: 48px !important;
+  padding: 0 !important;
+  text-align: center !important;
+  vertical-align: middle !important;
+}
+
+#result_list thead th.action-checkbox-column .text {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  min-height: 42px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+#result_list thead th.action-checkbox-column .text span {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+#result_list thead th.action-checkbox-column input[type="checkbox"],
+#result_list tbody td.action-checkbox input[type="checkbox"] {
+  display: block !important;
+  margin: 0 auto !important;
+  cursor: pointer !important;
+  width: 16px !important;
+  height: 16px !important;
+  accent-color: var(--stora-accent) !important;
+}
+
+/* Centered Columns: Badges, Status, and Boolean Icons */
+#result_list thead th.column-role_badge,
+#result_list tbody td.field-role_badge,
+#result_list thead th.column-account_status_badge,
+#result_list tbody td.field-account_status_badge,
+#result_list thead th.column-subscription_status,
+#result_list tbody td.field-subscription_status,
+#result_list thead th.column-is_email_verified,
+#result_list tbody td.field-is_email_verified,
+#result_list thead th.column-is_active,
+#result_list tbody td.field-is_active,
+#result_list thead th.column-is_staff,
+#result_list tbody td.field-is_staff,
+#result_list thead th.column-is_blocked,
+#result_list tbody td.field-is_blocked,
+#result_list tbody td.boolean-cell {
+  text-align: center !important;
+}
+
+#result_list thead th.column-role_badge .text,
+#result_list thead th.column-role_badge .text a,
+#result_list thead th.column-account_status_badge .text,
+#result_list thead th.column-account_status_badge .text a,
+#result_list thead th.column-subscription_status .text,
+#result_list thead th.column-subscription_status .text a,
+#result_list thead th.column-is_email_verified .text,
+#result_list thead th.column-is_email_verified .text a,
+#result_list thead th.column-is_active .text,
+#result_list thead th.column-is_active .text a,
+#result_list thead th.column-is_staff .text,
+#result_list thead th.column-is_staff .text a,
+#result_list thead th.column-is_blocked .text,
+#result_list thead th.column-is_blocked .text a {
+  justify-content: center !important;
+  text-align: center !important;
+}
+
+/* Center icons & badges inside centered columns */
+#result_list tbody td.field-role_badge .user-badge,
+#result_list tbody td.field-account_status_badge span,
+#result_list tbody td.field-subscription_status .user-badge {
+  display: inline-flex !important;
+  margin: 0 auto !important;
+  vertical-align: middle !important;
+}
+
+#result_list tbody td.field-is_email_verified img,
+#result_list tbody td.field-is_active img,
+#result_list tbody td.field-is_staff img,
+#result_list tbody td.field-is_blocked img,
+#result_list tbody td img[alt="True"],
+#result_list tbody td img[alt="False"] {
+  display: inline-block !important;
+  margin: 0 auto !important;
+  vertical-align: middle !important;
 }
 
 /* User Status Badges */
@@ -2427,7 +2587,7 @@ body.popup .submit-row {
 }
 
 .stora-footer-container {
-  padding: 20px max(24px, calc((100vw - 1340px) / 2));
+  padding: 20px max(24px, calc((100vw - 1640px) / 2));
   text-align: center;
   font-size: 12px;
   font-weight: 700;

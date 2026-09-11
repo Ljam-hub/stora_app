@@ -251,6 +251,25 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  Future<bool> removeAvatar() async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final updated = await CustomerApiService.instance.removeAvatar();
+      _currentUser = updated;
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString().replaceAll('Exception: ', '');
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
   Future<void> logout() async {
     try {
       await CustomerApiService.instance.clearFcmToken();
@@ -260,5 +279,10 @@ class AuthProvider extends ChangeNotifier {
     _currentUser = null;
     CustomerApiService.instance.accessToken = null;
     notifyListeners();
+  }
+
+  Future<void> deleteAccount() async {
+    await CustomerApiService.instance.deleteAccount();
+    await logout();
   }
 }

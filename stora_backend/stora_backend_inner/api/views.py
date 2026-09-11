@@ -8,7 +8,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from .permissions import HasAssignedModelPermission
+from .permissions import HasAssignedModelPermission, IsNotBlocked
 
 from django.conf import settings as django_settings
 from django.contrib.auth.models import update_last_login
@@ -380,10 +380,21 @@ def login(request):
     return Response(_tokens_for(user, request=request))
 
 
-@api_view(["GET", "PATCH", "PUT"])
-@permission_classes([IsAuthenticated])
+@api_view(["GET", "PATCH", "PUT", "DELETE"])
+@permission_classes([IsAuthenticated, IsNotBlocked])
 @parser_classes([MultiPartParser, FormParser, JSONParser])
 def me(request):
+    if getattr(request.user, "is_blocked", False) or not request.user.is_active:
+        return Response(
+            {"detail": "Your account has been suspended or blocked. Please contact support."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
+    if request.method == "DELETE":
+        user = request.user
+        user.delete()
+        return Response({"detail": "Account deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
+
     if request.method in ["PATCH", "PUT"]:
         serializer = UserUpdateSerializer(request.user, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)

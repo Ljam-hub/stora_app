@@ -4,6 +4,7 @@ import 'config/api_config.dart';
 import 'providers/auth_provider.dart';
 import 'providers/cart_provider.dart';
 import 'providers/catalog_provider.dart';
+import 'providers/chat_provider.dart';
 import 'providers/order_provider.dart';
 import 'screens/auth/email_verification_screen.dart';
 import 'screens/auth/forgot_password_screen.dart';
@@ -34,6 +35,7 @@ void main() async {
         ChangeNotifierProvider<CatalogProvider>(create: (_) => CatalogProvider()),
         ChangeNotifierProvider<CartProvider>(create: (_) => CartProvider()),
         ChangeNotifierProvider<OrderProvider>(create: (_) => OrderProvider()),
+        ChangeNotifierProvider<ChatProvider>(create: (_) => ChatProvider()),
       ],
       child: StoraCustomerApp(initialRoute: initialRoute),
     ),

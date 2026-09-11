@@ -3,6 +3,7 @@ import '../../data/services/notification_service.dart';
 import '../../stora_login/theme/app_colors.dart';
 import '../stores/orders_store.dart';
 import '../theme/home_colors.dart';
+import '../widgets/notification_badge.dart';
 import 'owner_chat_screen.dart';
 
 class PendingOrdersScreen extends StatefulWidget {
@@ -108,7 +109,8 @@ class _PendingOrdersScreenState extends State<PendingOrdersScreen> {
                 Row(
                   children: [
                     _FilterChip(
-                      label: 'Active / Pending (${store.pendingCount})',
+                      label: 'Active / Pending',
+                      badgeCount: store.pendingCount,
                       isSelected: _filter == 'pending',
                       onTap: () => setState(() => _filter = 'pending'),
                     ),
@@ -174,11 +176,13 @@ class _FilterChip extends StatelessWidget {
   final String label;
   final bool isSelected;
   final VoidCallback onTap;
+  final int badgeCount;
 
   const _FilterChip({
     required this.label,
     required this.isSelected,
     required this.onTap,
+    this.badgeCount = 0,
   });
 
   @override
@@ -195,13 +199,26 @@ class _FilterChip extends StatelessWidget {
             color: isSelected ? AppColors.purpleLight : Colors.white10,
           ),
         ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: isSelected ? Colors.white : AppColors.label,
-            fontSize: 13,
-            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-          ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? Colors.white : AppColors.label,
+                fontSize: 13,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+              ),
+            ),
+            if (badgeCount > 0) ...[
+              const SizedBox(width: 6),
+              AppNotificationBadge(
+                count: badgeCount,
+                minSize: 17,
+                borderColor: isSelected ? AppColors.purpleLight : HomeColors.cardElevated,
+              ),
+            ],
+          ],
         ),
       ),
     );

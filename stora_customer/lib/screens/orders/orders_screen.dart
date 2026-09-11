@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../providers/order_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/empty_state.dart';
+import '../../widgets/notification_badge.dart';
 import '../../widgets/order_card.dart';
 import '../../widgets/shimmer_order_card.dart';
 import '../../widgets/fade_slide_in.dart';
@@ -53,11 +54,27 @@ class _OrdersScreenState extends State<OrdersScreen> {
               itemBuilder: (context, index) {
                 final f = filters[index];
                 final isSelected = orderProvider.selectedStatusFilter == f['id'];
+                int badgeCount = 0;
+                if (f['id'] == 'pending') badgeCount = orderProvider.pendingCount;
+                if (f['id'] == 'counter_offer') badgeCount = orderProvider.counterOfferCount;
 
                 return Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: FilterChip(
-                    label: Text(f['label']!),
+                    label: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(f['label']!),
+                        if (badgeCount > 0) ...[
+                          const SizedBox(width: 6),
+                          AppNotificationBadge(
+                            count: badgeCount,
+                            minSize: 16,
+                            borderColor: AppColors.cardBackground,
+                          ),
+                        ],
+                      ],
+                    ),
                     selected: isSelected,
                     onSelected: (_) => orderProvider.setFilter(f['id']!),
                     selectedColor: AppColors.cardElevated,

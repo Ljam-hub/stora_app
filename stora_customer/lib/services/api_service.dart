@@ -358,6 +358,30 @@ class CustomerApiService {
     _throw(response);
   }
 
+  Future<UserModel> removeAvatar() async {
+    final response = await _dispatch(
+      'PATCH',
+      _uri('/auth/me/'),
+      body: {'remove_avatar': true},
+    );
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      final user = UserModel.fromJson(data);
+      final session = await SessionManager.instance.getSession();
+      if (session != null) {
+        await SessionManager.instance.saveSession(
+          accessToken: session.accessToken,
+          refreshToken: session.refreshToken,
+          user: user,
+          savedPhone: session.savedPhone,
+          savedAddress: session.savedAddress,
+        );
+      }
+      return user;
+    }
+    _throw(response);
+  }
+
   Future<void> changePassword({
     required String oldPassword,
     required String newPassword,
@@ -371,6 +395,16 @@ class CustomerApiService {
       },
     );
     if (response.statusCode != 200) {
+      _throw(response);
+    }
+  }
+
+  Future<void> deleteAccount() async {
+    final response = await _dispatch(
+      'DELETE',
+      _uri('/auth/me/'),
+    );
+    if (response.statusCode != 200 && response.statusCode != 204) {
       _throw(response);
     }
   }
@@ -519,6 +553,15 @@ class CustomerApiService {
   }
 
   // ---------- Chat & Messaging ----------
+
+  Future<List<Map<String, dynamic>>> fetchConversations() async {
+    final response = await _dispatch('GET', _uri('/messages/conversations/'));
+    if (response.statusCode == 200) {
+      final list = jsonDecode(response.body) as List;
+      return list.cast<Map<String, dynamic>>();
+    }
+    _throw(response);
+  }
 
   Future<List<Map<String, dynamic>>> fetchMessages(int storeOwnerId) async {
     final response = await _dispatch('GET', _uri('/messages/', {'with_user': storeOwnerId.toString()}));

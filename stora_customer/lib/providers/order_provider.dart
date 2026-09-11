@@ -22,6 +22,18 @@ class OrderProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
+  int get activePendingCount => _orders.where((o) =>
+      o.status == 'pending' ||
+      o.status == 'counter_offer' ||
+      o.status == 'accepted' ||
+      o.status == 'ready'
+  ).length;
+
+  int get pendingCount => _orders.where((o) => o.status == 'pending').length;
+  int get counterOfferCount => _orders.where((o) => o.status == 'counter_offer').length;
+  int get acceptedCount => _orders.where((o) => o.status == 'accepted').length;
+  int get readyCount => _orders.where((o) => o.status == 'ready').length;
+
   void startPolling({Duration interval = const Duration(seconds: 12)}) {
     _pollingTimer?.cancel();
     _pollingTimer = Timer.periodic(interval, (_) => refresh(isSilent: true));

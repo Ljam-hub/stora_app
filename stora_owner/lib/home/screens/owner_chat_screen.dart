@@ -6,11 +6,14 @@ import 'package:intl/intl.dart';
 import '../../data/api/api_client.dart';
 import '../../data/api/api_config.dart';
 import '../../stora_login/theme/app_colors.dart';
+import '../stores/chat_store.dart';
 import '../theme/home_colors.dart';
 import '../utils/date_utils.dart';
+import '../widgets/notification_badge.dart';
 
 class OwnerChatScreen extends StatefulWidget {
-  const OwnerChatScreen({super.key});
+  final bool isTab;
+  const OwnerChatScreen({super.key, this.isTab = false});
 
   @override
   State<OwnerChatScreen> createState() => _OwnerChatScreenState();
@@ -43,11 +46,11 @@ class _OwnerChatScreenState extends State<OwnerChatScreen> {
   Future<void> _loadConversations({bool silent = false}) async {
     if (!silent) setState(() => _loading = true);
     try {
-      final data = await ApiClient.instance.fetchConversations();
+      await ChatStore.instance.fetchConversations(isSilent: silent);
       if (mounted) {
         setState(() {
-          _conversations = data;
-          _error = null;
+          _conversations = ChatStore.instance.conversations;
+          _error = ChatStore.instance.error;
           _loading = false;
         });
       }
@@ -216,10 +219,13 @@ class _OwnerChatScreenState extends State<OwnerChatScreen> {
           'Customer Messages',
           style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
         ),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
+        leading: widget.isTab
+            ? null
+            : IconButton(
+                icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+        automaticallyImplyLeading: !widget.isTab,
         actions: [
           IconButton(
             icon: const Icon(Icons.edit_square, color: AppColors.primary, size: 22),
@@ -370,15 +376,21 @@ class _OwnerChatScreenState extends State<OwnerChatScreen> {
                                     );
                                     _loadConversations(silent: true);
                                   },
-                                  leading: CircleAvatar(
-                                    radius: 28,
-                                    backgroundColor: const Color(0xFF3A3B3C),
-                                    backgroundImage: (avatarUrl != null && avatarUrl.isNotEmpty)
-                                        ? NetworkImage(avatarUrl)
-                                        : null,
-                                    child: (avatarUrl == null || avatarUrl.isEmpty)
-                                        ? const Icon(Icons.person, color: Colors.white, size: 34)
-                                        : null,
+                                  leading: AppNotificationBadge(
+                                    count: unreadCount,
+                                    top: -2,
+                                    right: -2,
+                                    borderColor: const Color(0xFF1B1428),
+                                    child: CircleAvatar(
+                                      radius: 28,
+                                      backgroundColor: const Color(0xFF3A3B3C),
+                                      backgroundImage: (avatarUrl != null && avatarUrl.isNotEmpty)
+                                          ? NetworkImage(avatarUrl)
+                                          : null,
+                                      child: (avatarUrl == null || avatarUrl.isEmpty)
+                                          ? const Icon(Icons.person, color: Colors.white, size: 34)
+                                          : null,
+                                    ),
                                   ),
                                   title: Row(
                                     children: [
@@ -398,7 +410,7 @@ class _OwnerChatScreenState extends State<OwnerChatScreen> {
                                         Text(
                                           timeDisplay,
                                           style: TextStyle(
-                                            color: unreadCount > 0 ? AppColors.purpleLight : AppColors.label,
+                                            color: unreadCount > 0 ? const Color(0xFFEF4444) : AppColors.label,
                                             fontSize: 12,
                                             fontWeight: unreadCount > 0 ? FontWeight.bold : FontWeight.normal,
                                           ),
@@ -422,16 +434,11 @@ class _OwnerChatScreenState extends State<OwnerChatScreen> {
                                           ),
                                         ),
                                         if (unreadCount > 0)
-                                          Container(
-                                            margin: const EdgeInsets.only(left: 8),
-                                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                                            decoration: BoxDecoration(
-                                              color: AppColors.purpleLight,
-                                              borderRadius: BorderRadius.circular(10),
-                                            ),
-                                            child: Text(
-                                              '$unreadCount',
-                                              style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                                          Padding(
+                                            padding: const EdgeInsets.only(left: 8),
+                                            child: AppNotificationBadge(
+                                              count: unreadCount,
+                                              borderColor: HomeColors.cardBackground,
                                             ),
                                           ),
                                       ],

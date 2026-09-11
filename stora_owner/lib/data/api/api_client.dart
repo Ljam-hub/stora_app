@@ -263,6 +263,13 @@ class ApiClient {
     return jsonDecode(response.body) as Map<String, dynamic>;
   }
 
+  Future<void> deleteAccount() async {
+    final response = await _send('DELETE', '/auth/me/');
+    if (response.statusCode != 200 && response.statusCode != 204) {
+      _throw(response);
+    }
+  }
+
   Future<Map<String, dynamic>> updateProfile({
     String? businessName,
     String? email,
@@ -291,6 +298,12 @@ class ApiClient {
     );
     final streamedResponse = await request.send();
     final response = await http.Response.fromStream(streamedResponse);
+    if (response.statusCode != 200) _throw(response);
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> removeAvatar() async {
+    final response = await _send('PATCH', '/auth/me/', body: {'remove_avatar': true});
     if (response.statusCode != 200) _throw(response);
     return jsonDecode(response.body) as Map<String, dynamic>;
   }

@@ -4,10 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/cart_provider.dart';
 import '../providers/catalog_provider.dart';
+import '../providers/chat_provider.dart';
 import '../providers/order_provider.dart';
 import '../services/notification_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/notification_badge.dart';
 import 'cart/cart_screen.dart';
+import 'chat/customer_conversations_screen.dart';
 import 'map/store_map_screen.dart';
 import 'orders/orders_screen.dart';
 import 'profile/profile_screen.dart';
@@ -37,6 +40,7 @@ class _MainShellState extends State<MainShell> {
       if (!mounted) return;
       final orderProvider = context.read<OrderProvider>();
       orderProvider.startPolling();
+      context.read<ChatProvider>().startPolling();
       orderProvider.onOrderStatusChanged = (order, newStatus) {
         if (!mounted) return;
         final isReady = newStatus == 'ready';
@@ -144,7 +148,7 @@ class _MainShellState extends State<MainShell> {
             TextButton(
               onPressed: () {
                 ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                setState(() => _currentIndex = 3);
+                setState(() => _currentIndex = 4);
               },
               style: TextButton.styleFrom(
                 backgroundColor: accentColor,
@@ -172,6 +176,9 @@ class _MainShellState extends State<MainShell> {
       orderProvider.stopPolling();
       orderProvider.onOrderStatusChanged = null;
     } catch (_) {}
+    try {
+      context.read<ChatProvider>().stopPolling();
+    } catch (_) {}
     NotificationService.instance.onForegroundMessageReceived = null;
     super.dispose();
   }
@@ -184,6 +191,8 @@ class _MainShellState extends State<MainShell> {
   @override
   Widget build(BuildContext context) {
     final cart = context.watch<CartProvider>();
+    final chat = context.watch<ChatProvider>();
+    final orderProvider = context.watch<OrderProvider>();
 
     final screens = [
       ShopScreen(
@@ -197,7 +206,10 @@ class _MainShellState extends State<MainShell> {
       ),
       CartScreen(
         onStartShopping: () => setState(() => _currentIndex = 0),
-        onOrderPlaced: () => setState(() => _currentIndex = 3),
+        onOrderPlaced: () => setState(() => _currentIndex = 4),
+      ),
+      CustomerConversationsScreen(
+        onBrowseStores: () => setState(() => _currentIndex = 0),
       ),
       OrdersScreen(
         onStartShopping: () => setState(() => _currentIndex = 0),
@@ -250,15 +262,29 @@ class _MainShellState extends State<MainShell> {
                 activeIcon: Icons.map_rounded,
                 label: 'Map',
               ),
-              _buildCartNavItem(cart: cart, index: 2),
+              _buildNavItem(
+                index: 2,
+                icon: Icons.shopping_cart_outlined,
+                activeIcon: Icons.shopping_cart_rounded,
+                label: 'Cart',
+                badgeCount: cart.totalItemCount,
+              ),
               _buildNavItem(
                 index: 3,
-                icon: Icons.receipt_long_outlined,
-                activeIcon: Icons.receipt_long_rounded,
-                label: 'Orders',
+                icon: Icons.chat_bubble_outline_rounded,
+                activeIcon: Icons.chat_bubble_rounded,
+                label: 'Chat',
+                badgeCount: chat.unreadCount,
               ),
               _buildNavItem(
                 index: 4,
+                icon: Icons.receipt_long_outlined,
+                activeIcon: Icons.receipt_long_rounded,
+                label: 'Orders',
+                badgeCount: orderProvider.activePendingCount,
+              ),
+              _buildNavItem(
+                index: 5,
                 icon: Icons.person_outline,
                 activeIcon: Icons.person_rounded,
                 label: 'Profile',
@@ -279,6 +305,7 @@ class _MainShellState extends State<MainShell> {
     required IconData icon,
     required IconData activeIcon,
     required String label,
+    int badgeCount = 0,
   }) {
     final isSelected = _currentIndex == index;
     return GestureDetector(
@@ -287,7 +314,7 @@ class _MainShellState extends State<MainShell> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeInOut,
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
           color: isSelected ? AppColors.primary.withValues(alpha: 0.15) : Colors.transparent,
           borderRadius: BorderRadius.circular(18),
@@ -295,100 +322,22 @@ class _MainShellState extends State<MainShell> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              isSelected ? activeIcon : icon,
-              size: 22,
-              color: isSelected ? AppColors.primary : AppColors.textMuted,
+            AppNotificationBadge(
+              count: badgeCount,
+              top: -5,
+              right: -7,
+              borderColor: AppColors.navBackground,
+              child: Icon(
+                isSelected ? activeIcon : icon,
+                size: 22,
+                color: isSelected ? AppColors.primary : AppColors.textMuted,
+              ),
             ),
             if (isSelected) ...[
-              const SizedBox(width: 6),
+              const SizedBox(width: 5),
               Text(
                 label,
                 style: const TextStyle(
-                  color: AppColors.primary,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -0.2,
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCartNavItem({required CartProvider cart, int index = 2}) {
-    final isSelected = _currentIndex == index;
-    final count = cart.totalItemCount;
-
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () => _onTabTapped(index),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeInOut,
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary.withValues(alpha: 0.15) : Colors.transparent,
-          borderRadius: BorderRadius.circular(18),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Icon(
-                  isSelected ? Icons.shopping_cart_rounded : Icons.shopping_cart_outlined,
-                  size: 22,
-                  color: isSelected ? AppColors.primary : AppColors.textMuted,
-                ),
-                if (count > 0)
-                  Positioned(
-                    top: -4,
-                    right: -7,
-                    child: TweenAnimationBuilder<double>(
-                      key: ValueKey(count),
-                      tween: Tween(begin: 1.4, end: 1.0),
-                      duration: const Duration(milliseconds: 350),
-                      curve: Curves.elasticOut,
-                      builder: (context, scale, child) => Transform.scale(
-                        scale: scale,
-                        child: child,
-                      ),
-                      child: Container(
-                        padding: const EdgeInsets.all(3),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.primary.withValues(alpha: 0.4),
-                              blurRadius: 6,
-                            ),
-                          ],
-                        ),
-                        constraints: const BoxConstraints(minWidth: 15, minHeight: 15),
-                        child: Text(
-                          '$count',
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            color: Colors.black,
-                            fontSize: 9,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-            if (isSelected) ...[
-              const SizedBox(width: 6),
-              const Text(
-                'Cart',
-                style: TextStyle(
                   color: AppColors.primary,
                   fontSize: 12,
                   fontWeight: FontWeight.w700,

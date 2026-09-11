@@ -7,15 +7,18 @@ import '../../stora_login/stora_login.dart';
 import '../screens/alerts_screen.dart';
 import '../screens/dashboard_screen.dart';
 import '../screens/inventory_list_screen.dart';
+import '../screens/owner_chat_screen.dart';
 import '../screens/pending_orders_screen.dart';
 import '../screens/pos_screen.dart';
 import '../stores/category_store.dart';
+import '../stores/chat_store.dart';
 import '../stores/inventory_store.dart';
 import '../stores/orders_store.dart';
 import '../stores/sales_store.dart';
 import '../theme/home_colors.dart';
+import '../widgets/notification_badge.dart';
 
-/// App shell — bottom nav with 4 tabs. "Add / Edit product" and "Sales
+/// App shell — bottom nav with 5 tabs including Chat. "Add / Edit product" and "Sales
 /// history" are pushed on top rather than being tabs, since they're
 /// flows, not destinations.
 class StoraShell extends StatefulWidget {
@@ -28,11 +31,12 @@ class StoraShell extends StatefulWidget {
 class _StoraShellState extends State<StoraShell> {
   int _index = 0;
 
-  final _screens = const [
-    DashboardScreen(),
-    InventoryListScreen(),
-    PosScreen(),
-    AlertsScreen(),
+  late final List<Widget> _screens = [
+    DashboardScreen(onNavigateToChat: () => setState(() => _index = 1)),
+    const OwnerChatScreen(isTab: true),
+    const InventoryListScreen(),
+    const PosScreen(),
+    const AlertsScreen(),
   ];
 
   @override
@@ -45,6 +49,8 @@ class _StoraShellState extends State<StoraShell> {
     SalesStore.instance.loadSales();
     OrdersStore.instance.fetchOrders();
     OrdersStore.instance.startPolling();
+    ChatStore.instance.fetchConversations();
+    ChatStore.instance.startPolling();
     OwnerNotificationService.instance.init();
 
     OrdersStore.instance.onNewOrderReceived = (order) {
@@ -170,6 +176,7 @@ class _StoraShellState extends State<StoraShell> {
   void dispose() {
     OrdersStore.instance.stopPolling();
     OrdersStore.instance.onNewOrderReceived = null;
+    ChatStore.instance.stopPolling();
     AccountStatusStore.instance.removeListener(_checkPriceChange);
     OwnerNotificationService.instance.onForegroundMessageReceived = null;
     super.dispose();
@@ -211,13 +218,23 @@ class _StoraShellState extends State<StoraShell> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: IndexedStack(index: _index, children: _screens),
-      bottomNavigationBar: _StoraNavBar(
-        currentIndex: _index,
-        onTap: (i) => setState(() => _index = i),
-      ),
+    return AnimatedBuilder(
+      animation: Listenable.merge([
+        ChatStore.instance,
+        InventoryStore.instance,
+      ]),
+      builder: (context, _) {
+        return Scaffold(
+          backgroundColor: AppColors.background,
+          body: IndexedStack(index: _index, children: _screens),
+          bottomNavigationBar: _StoraNavBar(
+            currentIndex: _index,
+            onTap: (i) => setState(() => _index = i),
+            chatUnreadCount: ChatStore.instance.totalUnreadCount,
+            alertsCount: InventoryStore.instance.lowStock.length,
+          ),
+        );
+      },
     );
   }
 }
@@ -231,10 +248,19 @@ class _NavItem {
 class _StoraNavBar extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
-  const _StoraNavBar({required this.currentIndex, required this.onTap});
+  final int chatUnreadCount;
+  final int alertsCount;
+
+  const _StoraNavBar({
+    required this.currentIndex,
+    required this.onTap,
+    this.chatUnreadCount = 0,
+    this.alertsCount = 0,
+  });
 
   static const _items = [
     _NavItem(Icons.space_dashboard_rounded, 'Home'),
+    _NavItem(Icons.chat_bubble_outline_rounded, 'Chat'),
     _NavItem(Icons.inventory_2_rounded, 'Inventory'),
     _NavItem(Icons.point_of_sale_rounded, 'Sales'),
     _NavItem(Icons.notifications_rounded, 'Alerts'),
@@ -275,6 +301,15 @@ class _StoraNavBar extends StatelessWidget {
             children: List.generate(_items.length, (i) {
               final selected = i == currentIndex;
               final item = _items[i];
+              int badgeCount = 0;
+              if (item.label == 'Chat') badgeCount = chatUnreadCount;
+              if (item.label == 'Alerts') badgeCount = alertsCount;
+
+              IconData displayIcon = item.icon;
+              if (selected && item.label == 'Chat') {
+                displayIcon = Icons.chat_bubble_rounded;
+              }
+
               return Expanded(
                 child: GestureDetector(
                   behavior: HitTestBehavior.opaque,
@@ -297,10 +332,16 @@ class _StoraNavBar extends StatelessWidget {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(
-                          item.icon,
-                          size: 22,
-                          color: selected ? AppColors.purpleLight : AppColors.label,
+                        AppNotificationBadge(
+                          count: badgeCount,
+                          top: -5,
+                          right: -8,
+                          borderColor: HomeColors.navBackground,
+                          child: Icon(
+                            displayIcon,
+                            size: 22,
+                            color: selected ? AppColors.purpleLight : AppColors.label,
+                          ),
                         ),
                         const SizedBox(height: 4),
                         Text(

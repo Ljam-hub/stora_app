@@ -52,6 +52,24 @@
     </div>
     <a href="#" class="button cancel-link">{% translate "Go back" %}</a>
 {% else %}
+    <div style="background: rgba(245, 158, 11, 0.09); border: 1px solid rgba(245, 158, 11, 0.35); border-left: 4px solid #f59e0b; border-radius: 10px; padding: 16px 18px; margin-bottom: 20px; display: flex; gap: 14px; align-items: flex-start;">
+      <div style="color: #f59e0b; flex-shrink: 0; margin-top: 2px;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+          <line x1="12" y1="9" x2="12" y2="13"></line>
+          <line x1="12" y1="17" x2="12.01" y2="17"></line>
+        </svg>
+      </div>
+      <div>
+        <div style="color: #fbbf24; font-weight: 700; font-size: 14px; margin-bottom: 4px; letter-spacing: -0.01em;">
+          {% translate "Consideration: Are you sure to delete this?" %}
+        </div>
+        <p style="color: #cbd5e1; font-size: 13px; line-height: 1.5; margin: 0;">
+          {% translate "Please take a moment to consider before proceeding. Deleting the selected records will permanently remove them along with all related dependent objects (categories, products, inventory, and order history) from the database. This action cannot be undone." %}
+        </p>
+      </div>
+    </div>
+
     <p style="color: var(--stora-text); font-size: 14px; line-height: 1.6; margin-bottom: 18px;">
       {% blocktranslate %}Are you sure you want to delete the selected {{ objects_name }}? All of the following objects and their related items will be deleted:{% endblocktranslate %}
     </p>
@@ -65,7 +83,7 @@
       {% endfor %}
     </div>
 
-    <form method="post">{% csrf_token %}
+    <form id="delete-selected-confirmation-form" method="post">{% csrf_token %}
       <div style="display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--stora-border);">
         <a href="#" class="button cancel-link">{% translate "No, take me back" %}</a>
         <div>
@@ -74,10 +92,73 @@
           {% endfor %}
           <input type="hidden" name="action" value="delete_selected">
           <input type="hidden" name="post" value="yes">
-          <input type="submit" value="{% translate 'Yes, delete selected permanently' %}" style="background: #ef4444 !important; color: #ffffff !important; font-weight: 700; padding: 12px 28px; border-radius: 9999px; border: none; cursor: pointer; box-shadow: 0 4px 18px rgba(239, 68, 68, 0.45); font-size: 13px; letter-spacing: 0.02em;">
+          <button type="button" onclick="showBatchDeleteConfirmModal()" style="background: #ef4444 !important; color: #ffffff !important; font-weight: 700; padding: 12px 28px; border-radius: 9999px; border: none; cursor: pointer; box-shadow: 0 4px 18px rgba(239, 68, 68, 0.45); font-size: 13px; letter-spacing: 0.02em;">
+            {% translate "Yes, delete selected permanently" %}
+          </button>
+          <noscript>
+            <input type="submit" value="{% translate 'Yes, delete selected permanently' %}" style="background: #ef4444 !important; color: #ffffff !important; font-weight: 700; padding: 12px 28px; border-radius: 9999px; border: none; cursor: pointer; font-size: 13px;">
+          </noscript>
         </div>
       </div>
     </form>
+
+    <!-- Custom Batch Delete Confirmation Modal -->
+    <div id="batch-delete-confirm-modal" class="stora-modal" hidden>
+        <div class="stora-modal-backdrop" onclick="hideBatchDeleteConfirmModal()"></div>
+        <div class="stora-modal-content">
+            <div class="stora-modal-header" style="display: flex; align-items: center; gap: 10px;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                    <line x1="12" y1="9" x2="12" y2="13"></line>
+                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
+                <h3 class="stora-modal-title" style="color: #ffffff; font-size: 18px; font-weight: 800;">
+                    {% translate "Are you sure to delete this?" %}
+                </h3>
+            </div>
+            <div class="stora-modal-body">
+                <p style="color: #cbd5e1; font-size: 14px; line-height: 1.55; margin: 12px 0 24px 0;">
+                    {% translate "This consideration is permanent. Once confirmed, all selected items and their dependent data will be permanently erased from the database and cannot be recovered." %}
+                </p>
+            </div>
+            <div class="stora-modal-footer" style="display: flex; justify-content: flex-end; gap: 12px;">
+                <button type="button" class="stora-modal-btn stora-modal-btn-cancel" onclick="hideBatchDeleteConfirmModal()">
+                    {% translate "Cancel" %}
+                </button>
+                <button type="button" class="stora-modal-btn stora-modal-btn-confirm" onclick="submitBatchDeleteForm()" style="background: #ef4444 !important; border-color: #ef4444 !important;">
+                    {% translate "Yes, Delete Selected" %}
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    function showBatchDeleteConfirmModal() {
+        var modal = document.getElementById('batch-delete-confirm-modal');
+        if (modal) {
+            modal.hidden = false;
+            document.body.style.overflow = 'hidden';
+        }
+    }
+    function hideBatchDeleteConfirmModal() {
+        var modal = document.getElementById('batch-delete-confirm-modal');
+        if (modal) {
+            modal.hidden = true;
+            document.body.style.overflow = '';
+        }
+    }
+    function submitBatchDeleteForm() {
+        var form = document.getElementById('delete-selected-confirmation-form');
+        if (form) {
+            form.submit();
+        }
+    }
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            hideBatchDeleteConfirmModal();
+        }
+    });
+    </script>
 {% endif %}
 </div>
 {% endblock %}

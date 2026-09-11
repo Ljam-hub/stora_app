@@ -4,8 +4,10 @@ import '../../models/product_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/cart_provider.dart';
 import '../../providers/catalog_provider.dart';
+import '../../providers/chat_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/empty_state.dart';
+import '../../widgets/notification_badge.dart';
 import '../../widgets/product_card.dart';
 import '../../widgets/shimmer_product_card.dart';
 import '../../widgets/fade_slide_in.dart';
@@ -51,6 +53,7 @@ class _ShopScreenState extends State<ShopScreen> {
   Widget build(BuildContext context) {
     final catalog = context.watch<CatalogProvider>();
     final cart = context.watch<CartProvider>();
+    final chat = context.watch<ChatProvider>();
     final auth = context.watch<AuthProvider>();
 
     return Scaffold(
@@ -70,53 +73,38 @@ class _ShopScreenState extends State<ShopScreen> {
         ),
         actions: [
           if (catalog.selectedStore != null)
-            IconButton(
-              icon: const Icon(Icons.chat_bubble_outline_rounded, color: Colors.white),
-              tooltip: 'Message Store',
-              onPressed: () {
-                final store = catalog.selectedStore!;
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => CustomerChatScreen(
-                      storeOwnerId: store.id,
-                      storeName: store.displayName,
-                      storeAvatarUrl: store.avatarUrl,
-                    ),
-                  ),
-                );
-              },
-            ),
-          // Cart action with badge
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.shopping_cart_outlined, color: Colors.white),
-                onPressed: widget.onGoToCart,
-              ),
-              if (cart.totalItemCount > 0)
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: const BoxDecoration(
-                      color: AppColors.primary,
-                      shape: BoxShape.circle,
-                    ),
-                    constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
-                    child: Text(
-                      '${cart.totalItemCount}',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Colors.black,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
+            AppNotificationBadge(
+              count: chat.unreadCount,
+              top: 6,
+              right: 6,
+              borderColor: AppColors.cardBackground,
+              child: IconButton(
+                icon: const Icon(Icons.chat_bubble_outline_rounded, color: Colors.white),
+                tooltip: 'Message Store',
+                onPressed: () {
+                  final store = catalog.selectedStore!;
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => CustomerChatScreen(
+                        storeOwnerId: store.id,
+                        storeName: store.displayName,
+                        storeAvatarUrl: store.avatarUrl,
                       ),
                     ),
-                  ),
-                ),
-            ],
+                  );
+                },
+              ),
+            ),
+          // Cart action with badge
+          AppNotificationBadge(
+            count: cart.totalItemCount,
+            top: 6,
+            right: 6,
+            borderColor: AppColors.cardBackground,
+            child: IconButton(
+              icon: const Icon(Icons.shopping_cart_outlined, color: Colors.white),
+              onPressed: widget.onGoToCart,
+            ),
           ),
           const SizedBox(width: 8),
         ],

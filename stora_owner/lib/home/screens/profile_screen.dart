@@ -31,8 +31,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _isUploadingAvatar = false;
 
   Future<void> _pickAndUploadAvatar() async {
-    final picker = ImagePicker();
-    final source = await showModalBottomSheet<ImageSource>(
+    final hasAvatar = AuthStore.instance.avatarUrl != null && AuthStore.instance.avatarUrl!.isNotEmpty;
+    final action = await showModalBottomSheet<String>(
       context: context,
       backgroundColor: HomeColors.cardBackground,
       shape: const RoundedRectangleBorder(
@@ -44,19 +44,80 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ListTile(
               leading: const Icon(Icons.photo_camera_rounded, color: AppColors.primary),
               title: const Text('Take a photo', style: TextStyle(color: Colors.white)),
-              onTap: () => Navigator.pop(ctx, ImageSource.camera),
+              onTap: () => Navigator.pop(ctx, 'camera'),
             ),
             ListTile(
               leading: const Icon(Icons.photo_library_rounded, color: AppColors.primary),
               title: const Text('Choose from gallery', style: TextStyle(color: Colors.white)),
-              onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+              onTap: () => Navigator.pop(ctx, 'gallery'),
             ),
+            if (hasAvatar) ...[
+              const Divider(color: HomeColors.cardBorder, height: 1),
+              ListTile(
+                leading: const Icon(Icons.delete_outline_rounded, color: AppColors.error),
+                title: const Text('Remove profile photo', style: TextStyle(color: AppColors.error, fontWeight: FontWeight.w600)),
+                onTap: () => Navigator.pop(ctx, 'remove'),
+              ),
+            ],
           ],
         ),
       ),
     );
 
-    if (source == null) return;
+    if (action == null || !mounted) return;
+
+    if (action == 'remove') {
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: HomeColors.cardBackground,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: const BorderSide(color: HomeColors.cardBorder),
+          ),
+          title: const Text('Remove Profile Photo', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
+          content: const Text(
+            'Are you sure you want to remove your profile photo and restore the default avatar?',
+            style: TextStyle(color: AppColors.label, fontSize: 14, height: 1.45),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Cancel', style: TextStyle(color: AppColors.label, fontSize: 14)),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.error,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              child: const Text('Remove', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+      );
+
+      if (confirm != true) return;
+
+      setState(() => _isUploadingAvatar = true);
+      try {
+        await AuthStore.instance.removeAvatar();
+        if (mounted) {
+          setState(() => _isUploadingAvatar = false);
+          showStoraSnackBar(context, 'Profile photo removed. Classic design restored.', isError: false);
+        }
+      } catch (e) {
+        if (mounted) {
+          setState(() => _isUploadingAvatar = false);
+          showStoraSnackBar(context, 'Failed to remove photo: $e');
+        }
+      }
+      return;
+    }
+
+    final source = action == 'camera' ? ImageSource.camera : ImageSource.gallery;
+    final picker = ImagePicker();
 
     try {
       final picked = await picker.pickImage(source: source, maxWidth: 800, maxHeight: 800, imageQuality: 85);
@@ -588,17 +649,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   _MenuTile(
                     icon: Icons.logout_rounded,
                     label: 'Log out',
+                    destructive: false,
+                    onTap: () => _confirmLogout(context),
+                  ),
+                  _MenuTile(
+                    icon: Icons.delete_forever_rounded,
+                    label: 'Delete Account',
                     destructive: true,
-                    onTap: () async {
-                      await AuthStore.instance.logout();
-                      InventoryStore.instance.reset();
-                      CategoryStore.instance.reset();
-                      SalesStore.instance.reset();
-                      CartStore.instance.clear();
-                      AccountStatusStore.instance.reset();
-                      if (!context.mounted) return;
-                      Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
-                    },
+                    onTap: () => _confirmDeleteAccount(context),
                   ),
                 ],
               ),
@@ -606,6 +664,120 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         );
       },
+    );
+  }
+
+  void _confirmLogout(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: HomeColors.cardBackground,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: HomeColors.cardBorder),
+        ),
+        title: const Text('Log Out', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
+        content: const Text(
+          'Are you sure you want to log out?',
+          style: TextStyle(color: AppColors.label, fontSize: 14, height: 1.45),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel', style: TextStyle(color: AppColors.label, fontSize: 14)),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final nav = Navigator.of(context);
+              Navigator.of(ctx).pop();
+              await AuthStore.instance.logout();
+              InventoryStore.instance.reset();
+              CategoryStore.instance.reset();
+              SalesStore.instance.reset();
+              CartStore.instance.clear();
+              AccountStatusStore.instance.reset();
+              nav.pushNamedAndRemoveUntil('/login', (route) => false);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            child: const Text('Log Out', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmDeleteAccount(BuildContext context) {
+    bool isDeleting = false;
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: HomeColors.cardBackground,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: const BorderSide(color: HomeColors.cardBorder),
+          ),
+          title: const Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: AppColors.error, size: 22),
+              SizedBox(width: 8),
+              Text('Delete Account', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          content: const Text(
+            'Are you sure you want to delete your account? This action is permanent and cannot be undone. All your orders, messages, and profile data will be permanently deleted.',
+            style: TextStyle(color: AppColors.label, fontSize: 14, height: 1.45),
+          ),
+          actions: [
+            TextButton(
+              onPressed: isDeleting ? null : () => Navigator.of(ctx).pop(),
+              child: const Text('Cancel', style: TextStyle(color: AppColors.label, fontSize: 14)),
+            ),
+            ElevatedButton(
+              onPressed: isDeleting
+                  ? null
+                  : () async {
+                      setDialogState(() => isDeleting = true);
+                      final nav = Navigator.of(context);
+                      try {
+                        await AuthStore.instance.deleteAccount();
+                        InventoryStore.instance.reset();
+                        CategoryStore.instance.reset();
+                        SalesStore.instance.reset();
+                        CartStore.instance.clear();
+                        AccountStatusStore.instance.reset();
+                        if (ctx.mounted) Navigator.of(ctx).pop();
+                        if (context.mounted) {
+                          showStoraSnackBar(context, 'Your store account has been deleted.', isError: false);
+                        }
+                        nav.pushNamedAndRemoveUntil('/login', (route) => false);
+                      } catch (e) {
+                        setDialogState(() => isDeleting = false);
+                        if (context.mounted) {
+                          showStoraSnackBar(context, 'Failed to delete account: $e');
+                        }
+                      }
+                    },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.error,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              child: isDeleting
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    )
+                  : const Text('Delete Account', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

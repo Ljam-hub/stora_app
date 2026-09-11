@@ -14,19 +14,53 @@ class UserAdmin(DjangoUserAdmin):
     fieldsets = DjangoUserAdmin.fieldsets + (
         ("Store & Role info", {"fields": ("role", "business_name", "avatar", "fcm_token", "is_email_verified")}),
         ("Subscription", {"fields": ("is_premium", "premium_until")}),
+        ("Moderation & App Access", {"fields": ("is_blocked", "block_reason")}),
     )
     list_display = (
         "email",
         "owner_customer_name",
         "role_badge",
+        "account_status_badge",
         "is_email_verified",
         "subscription_status",
         "subscription_expiration",
-        "last_login",
-        "is_active",
+        "formatted_last_login",
     )
     search_fields = ("username", "email", "business_name", "first_name", "last_name")
-    list_filter = ("role", "is_email_verified", "is_premium", "is_staff", "is_active")
+    list_filter = ("role", "is_blocked", "is_email_verified", "is_premium", "is_staff", "is_active")
+    actions = ["block_selected_users", "unblock_selected_users"]
+
+    @admin.display(description="Verified", boolean=True, ordering="is_email_verified")
+    def is_email_verified(self, obj):
+        return obj.is_email_verified
+
+    @admin.display(description="Last Login", ordering="last_login")
+    def formatted_last_login(self, obj):
+        if obj.last_login:
+            return obj.last_login.strftime("%Y-%m-%d %H:%M")
+        return "-"
+
+    @admin.display(description="Status", ordering="is_blocked")
+    def account_status_badge(self, obj):
+        if getattr(obj, "is_blocked", False) or not obj.is_active:
+            reason = f': {obj.block_reason}' if obj.block_reason else ''
+            return format_html(
+                '<span style="background: rgba(239, 68, 68, 0.15); color: #ef4444; padding: 3px 8px; border-radius: 6px; font-weight: 800; font-size: 11px; border: 1px solid rgba(239, 68, 68, 0.35);" title="Blocked{}">BLOCKED</span>',
+                reason,
+            )
+        return format_html(
+            '<span style="background: rgba(16, 185, 129, 0.15); color: #10b981; padding: 3px 8px; border-radius: 6px; font-weight: 700; font-size: 11px; border: 1px solid rgba(16, 185, 129, 0.35);">Active</span>'
+        )
+
+    @admin.action(description="Block selected users (disable app access)")
+    def block_selected_users(self, request, queryset):
+        count = queryset.update(is_blocked=True, is_active=False)
+        self.message_user(request, f"{count} user(s) have been blocked from the app.")
+
+    @admin.action(description="Unblock selected users (restore app access)")
+    def unblock_selected_users(self, request, queryset):
+        count = queryset.update(is_blocked=False, is_active=True)
+        self.message_user(request, f"{count} user(s) have been unblocked and granted app access.")
 
     @admin.display(description="Owner/Customer Name", ordering="business_name")
     def owner_customer_name(self, obj):

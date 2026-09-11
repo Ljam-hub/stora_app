@@ -18,10 +18,14 @@ import 'profile_screen.dart';
 import 'sales_analytics_screen.dart';
 import 'sales_history_screen.dart';
 import 'set_store_location_screen.dart';
+import '../stores/chat_store.dart';
 import '../widgets/fade_slide_in.dart';
+import '../widgets/notification_badge.dart';
 
 class DashboardScreen extends StatelessWidget {
-  const DashboardScreen({super.key});
+  final VoidCallback? onNavigateToChat;
+
+  const DashboardScreen({super.key, this.onNavigateToChat});
 
   @override
   Widget build(BuildContext context) {
@@ -32,6 +36,7 @@ class DashboardScreen extends StatelessWidget {
         SalesStore.instance,
         AccountStatusStore.instance,
         OrdersStore.instance,
+        ChatStore.instance,
       ]),
       builder: (context, _) {
         final store = InventoryStore.instance;
@@ -48,6 +53,7 @@ class DashboardScreen extends StatelessWidget {
                 store.loadProducts(),
                 sales.loadSales(),
                 orders.fetchOrders(),
+                ChatStore.instance.fetchConversations(),
                 AccountStatusStore.instance.fetchStatus(),
               ]);
             },
@@ -110,11 +116,23 @@ class DashboardScreen extends StatelessWidget {
                         ],
                       ),
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.chat_bubble_outline_rounded, color: Colors.white, size: 22),
-                      tooltip: 'Customer Messages',
-                      onPressed: () => Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const OwnerChatScreen()),
+                    AppNotificationBadge(
+                      count: ChatStore.instance.totalUnreadCount,
+                      top: 4,
+                      right: 4,
+                      borderColor: HomeColors.cardBackground,
+                      child: IconButton(
+                        icon: const Icon(Icons.chat_bubble_outline_rounded, color: Colors.white, size: 22),
+                        tooltip: 'Customer Messages',
+                        onPressed: () {
+                          if (onNavigateToChat != null) {
+                            onNavigateToChat!();
+                          } else {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(builder: (_) => const OwnerChatScreen()),
+                            );
+                          }
+                        },
                       ),
                     ),
                     IconButton(
@@ -725,16 +743,22 @@ class _IncomingOrdersCard extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: hasPending ? AppColors.purpleLight.withValues(alpha: 0.18) : Colors.white10,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Icon(
-                Icons.shopping_bag_outlined,
-                color: hasPending ? AppColors.purpleLight : AppColors.label,
-                size: 22,
+            AppNotificationBadge(
+              count: pendingCount,
+              top: -4,
+              right: -4,
+              borderColor: hasPending ? HomeColors.cardBackground : HomeColors.cardElevated,
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: hasPending ? AppColors.purpleLight.withValues(alpha: 0.18) : Colors.white10,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(
+                  Icons.shopping_bag_outlined,
+                  color: hasPending ? AppColors.purpleLight : AppColors.label,
+                  size: 22,
+                ),
               ),
             ),
             const SizedBox(width: 14),

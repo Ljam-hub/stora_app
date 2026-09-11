@@ -48,8 +48,8 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ("id", "email", "business_name", "role", "is_email_verified", "fcm_token", "is_premium", "premium_until", "date_joined", "avatar", "avatar_url")
-        read_only_fields = ("id", "is_email_verified", "is_premium", "premium_until", "date_joined", "avatar_url")
+        fields = ("id", "email", "business_name", "role", "is_email_verified", "fcm_token", "is_premium", "premium_until", "date_joined", "avatar", "avatar_url", "is_blocked", "block_reason")
+        read_only_fields = ("id", "is_email_verified", "is_premium", "premium_until", "date_joined", "avatar_url", "is_blocked", "block_reason")
 
     def get_avatar_url(self, obj):
         if obj.avatar:
@@ -61,9 +61,14 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class UserUpdateSerializer(serializers.ModelSerializer):
+    remove_avatar = serializers.BooleanField(required=False, write_only=True, default=False)
+
     class Meta:
         model = User
-        fields = ("business_name", "email", "avatar")
+        fields = ("business_name", "email", "avatar", "remove_avatar")
+        extra_kwargs = {
+            "avatar": {"allow_null": True, "required": False},
+        }
 
     def validate_email(self, value):
         email = canonicalize_email(value)
@@ -86,8 +91,26 @@ class UserUpdateSerializer(serializers.ModelSerializer):
             instance.is_email_verified = False
         if "business_name" in validated_data:
             instance.business_name = validated_data["business_name"]
-        if "avatar" in validated_data:
-            instance.avatar = validated_data["avatar"]
+
+        remove_avatar = validated_data.pop("remove_avatar", False)
+        if remove_avatar:
+            if instance.avatar:
+                try:
+                    instance.avatar.delete(save=False)
+                except Exception:
+                    pass
+            instance.avatar = None
+        elif "avatar" in validated_data:
+            if validated_data["avatar"] is None:
+                if instance.avatar:
+                    try:
+                        instance.avatar.delete(save=False)
+                    except Exception:
+                        pass
+                instance.avatar = None
+            else:
+                instance.avatar = validated_data["avatar"]
+
         instance.save()
         return instance
 
@@ -134,6 +157,8 @@ class RegisterSerializer(serializers.Serializer):
         # Check existing user accounts
         existing_user = User.objects.filter(email__iexact=email).first()
         if existing_user:
+            if getattr(existing_user, "is_blocked", False) or not existing_user.is_active:
+                raise serializers.ValidationError({"email": "This account has been suspended or blocked. You cannot register with this email."})
             if existing_user.role == "customer" and role == "owner":
                 raise serializers.ValidationError({"email": "This email is registered as a Customer account and cannot be used in the Store Owner app."})
             elif existing_user.role in ("owner", "admin") and role == "customer":
@@ -169,8 +194,12 @@ class LoginSerializer(serializers.Serializer):
         except User.DoesNotExist:
             raise serializers.ValidationError("Invalid email or password.")
 
+        if getattr(user, "is_blocked", False) or not user.is_active:
+            reason = f" Reason: {user.block_reason}" if getattr(user, "block_reason", None) else ""
+            raise serializers.ValidationError(f"Your account has been suspended or blocked.{reason} Please contact support.")
+
         authed = authenticate(username=user.username, password=password)
-        if authed is None or not authed.is_active:
+        if authed is None or not authed.is_active or getattr(authed, "is_blocked", False):
             raise serializers.ValidationError("Invalid email or password.")
 
         # Enforce role exclusivity for apps
@@ -490,6 +519,8 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         return token
 
     def validate(self, attrs):
+        if getattr(self.user, "is_blocked", False) or not self.user.is_active:
+            raise serializers.ValidationError("Your account has been suspended or blocked. Please contact support.")
         data = super().validate(attrs)
         data["user"] = {
             "id": self.user.id,
@@ -497,6 +528,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
             "role": getattr(self.user, "role", "owner"),
             "business_name": getattr(self.user, "business_name", ""),
             "is_premium": getattr(self.user, "is_premium", False),
+            "is_blocked": getattr(self.user, "is_blocked", False),
         }
         return data
 
