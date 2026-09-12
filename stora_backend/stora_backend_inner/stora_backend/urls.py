@@ -10,6 +10,7 @@ from django.urls import include, path, re_path, reverse_lazy
 from django.views.static import serve
 from .admin_site import stora_admin_site
 
+from pathlib import Path
 import json
 import logging
 import urllib.request
@@ -19,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 GITHUB_REPO = "Ljam-hub/stora_app"
 DEFAULT_RELEASE_TAG = "v1.0.0"
-DEFAULT_CUSTOMER_SIZE = "52.9 MB"
+DEFAULT_CUSTOMER_SIZE = "53.0 MB"
 DEFAULT_OWNER_SIZE = "78.0 MB"
 DEFAULT_CUSTOMER_URL = f"https://github.com/{GITHUB_REPO}/releases/latest/download/Stora-Customer.apk"
 DEFAULT_OWNER_URL = f"https://github.com/{GITHUB_REPO}/releases/latest/download/Stora.apk"
@@ -48,6 +49,21 @@ def get_github_release_info():
         "owner_apk_size": DEFAULT_OWNER_SIZE,
         "owner_download_url": DEFAULT_OWNER_URL,
     }
+
+    try:
+        repo_root = Path(settings.BASE_DIR).parent.parent
+        cust_apk = repo_root / "flutter-apk" / "Stora-Customer.apk"
+        if cust_apk.exists():
+            formatted = format_bytes_to_mb(cust_apk.stat().st_size)
+            if formatted:
+                info["customer_apk_size"] = formatted
+        owner_apk = repo_root / "flutter-apk" / "Stora.apk"
+        if owner_apk.exists():
+            formatted = format_bytes_to_mb(owner_apk.stat().st_size)
+            if formatted:
+                info["owner_apk_size"] = formatted
+    except Exception:
+        pass
 
     try:
         url = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest"
