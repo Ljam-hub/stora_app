@@ -51,7 +51,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
         children: [
           // Filter Chips Row
           SizedBox(
-            height: 44,
+            height: 48,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -69,6 +69,9 @@ class _OrdersScreenState extends State<OrdersScreen> {
                 return Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: FilterChip(
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    visualDensity: VisualDensity.compact,
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
                     label: Row(
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.center,

@@ -1,0 +1,892 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block title %}Support Chat Center | STORA Admin{% endblock %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+  .stora-chat-container {
+    display: flex;
+    height: calc(100vh - 140px);
+    min-height: 600px;
+    background: #13101C;
+    border-radius: 16px;
+    border: 1px solid #282138;
+    overflow: hidden;
+    margin-top: 10px;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
+  }
+
+  /* SIDEBAR (Left) */
+  .stora-chat-sidebar {
+    width: 360px;
+    min-width: 320px;
+    border-right: 1px solid #282138;
+    background: #181424;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .stora-chat-sidebar__header {
+    padding: 18px 20px;
+    border-bottom: 1px solid #282138;
+    background: #1F1930;
+  }
+
+  .stora-chat-sidebar__title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+
+  .stora-chat-sidebar__title {
+    font-size: 18px;
+    font-weight: 800;
+    color: #FFF;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+  }
+
+  .stora-chat-tabs {
+    display: flex;
+    background: #13101C;
+    padding: 4px;
+    border-radius: 10px;
+    gap: 4px;
+    margin-bottom: 12px;
+  }
+
+  .stora-chat-tab {
+    flex: 1;
+    text-align: center;
+    padding: 6px 10px;
+    font-size: 12px;
+    font-weight: 700;
+    border-radius: 8px;
+    color: #9CA3AF;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .stora-chat-tab.active {
+    background: #FF6B00;
+    color: #FFF;
+    box-shadow: 0 2px 8px rgba(255, 107, 0, 0.35);
+  }
+
+  .stora-chat-search {
+    position: relative;
+  }
+
+  .stora-chat-search input {
+    width: 100%;
+    background: #13101C;
+    border: 1px solid #2E2640;
+    border-radius: 10px;
+    padding: 8px 12px 8px 34px;
+    color: #FFF;
+    font-size: 13px;
+    box-sizing: border-box;
+  }
+
+  .stora-chat-search input:focus {
+    outline: none;
+    border-color: #FF6B00;
+  }
+
+  .stora-chat-search__icon {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6B7280;
+    font-size: 14px;
+  }
+
+  .stora-chat-convos {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px;
+  }
+
+  .stora-convo-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  }
+
+  .stora-convo-item:hover {
+    background: #231C35;
+  }
+
+  .stora-convo-item.active {
+    background: #2B2144;
+    border: 1px solid rgba(255, 107, 0, 0.4);
+  }
+
+  .stora-convo-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: #2A223D;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    color: #FF8F3D;
+    font-size: 16px;
+    flex-shrink: 0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .stora-convo-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .stora-convo-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .stora-convo-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 4px;
+  }
+
+  .stora-convo-name {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #FFF;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .stora-convo-time {
+    font-size: 11px;
+    color: #9CA3AF;
+  }
+
+  .stora-convo-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+  }
+
+  .stora-convo-preview {
+    font-size: 12px;
+    color: #9CA3AF;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
+  }
+
+  .stora-convo-unread {
+    background: #EF4444;
+    color: #FFF;
+    font-size: 10.5px;
+    font-weight: 800;
+    border-radius: 12px;
+    padding: 1px 7px;
+    flex-shrink: 0;
+  }
+
+  .stora-role-pill {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 6px;
+    margin-left: 6px;
+    text-transform: uppercase;
+  }
+
+  .stora-role-pill--owner {
+    background: #FF6B00;
+    color: #FFF;
+  }
+
+  .stora-role-pill--customer {
+    background: #10B981;
+    color: #FFF;
+  }
+
+  /* MAIN CHAT WINDOW (Right) */
+  .stora-chat-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: #13101C;
+    position: relative;
+  }
+
+  .stora-chat-header {
+    padding: 14px 24px;
+    border-bottom: 1px solid #282138;
+    background: #181424;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .stora-chat-header__user {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .stora-chat-header__name {
+    font-size: 16px;
+    font-weight: 800;
+    color: #FFF;
+  }
+
+  .stora-chat-header__sub {
+    font-size: 12px;
+    color: #9CA3AF;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 2px;
+  }
+
+  .stora-chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .stora-msg-row {
+    display: flex;
+    flex-direction: column;
+    max-width: 65%;
+  }
+
+  .stora-msg-row--in {
+    align-self: flex-start;
+  }
+
+  .stora-msg-row--out {
+    align-self: flex-end;
+  }
+
+  .stora-msg-sender {
+    font-size: 11px;
+    font-weight: 600;
+    color: #9CA3AF;
+    margin-bottom: 4px;
+  }
+
+  .stora-msg-bubble {
+    padding: 10px 16px;
+    border-radius: 16px;
+    font-size: 13.5px;
+    line-height: 1.45;
+    word-break: break-word;
+    position: relative;
+  }
+
+  .stora-msg-row--in .stora-msg-bubble {
+    background: #231C35;
+    color: #FFF;
+    border-bottom-left-radius: 4px;
+    border: 1px solid #2F2644;
+  }
+
+  .stora-msg-row--out .stora-msg-bubble {
+    background: #FF6B00;
+    color: #FFF;
+    border-bottom-right-radius: 4px;
+    box-shadow: 0 4px 14px rgba(255, 107, 0, 0.25);
+  }
+
+  .stora-msg-time {
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.5);
+    margin-top: 4px;
+    text-align: right;
+  }
+
+  .stora-msg-row--in .stora-msg-time {
+    text-align: left;
+    color: #6B7280;
+  }
+
+  .stora-msg-img {
+    max-width: 260px;
+    max-height: 200px;
+    border-radius: 10px;
+    cursor: pointer;
+    margin-bottom: 6px;
+    display: block;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  /* INPUT & ACTION BAR */
+  .stora-chat-composer {
+    padding: 16px 24px;
+    background: #181424;
+    border-top: 1px solid #282138;
+  }
+
+  .stora-chat-quickreplies {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+
+  .stora-quickreply-btn {
+    background: #231C35;
+    border: 1px solid #2E2640;
+    color: #D1D5DB;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 11.5px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s ease;
+  }
+
+  .stora-quickreply-btn:hover {
+    background: #FF6B00;
+    color: #FFF;
+    border-color: #FF6B00;
+  }
+
+  .stora-chat-form {
+    display: flex;
+    gap: 12px;
+    align-items: flex-end;
+  }
+
+  .stora-chat-input-wrap {
+    flex: 1;
+    position: relative;
+    background: #13101C;
+    border: 1px solid #2E2640;
+    border-radius: 12px;
+    padding: 8px 12px;
+  }
+
+  .stora-chat-input-wrap:focus-within {
+    border-color: #FF6B00;
+  }
+
+  .stora-chat-textarea {
+    width: 100%;
+    background: transparent;
+    border: none;
+    color: #FFF;
+    font-size: 13.5px;
+    resize: none;
+    min-height: 38px;
+    max-height: 120px;
+    font-family: inherit;
+    box-sizing: border-box;
+    display: block;
+  }
+
+  .stora-chat-textarea:focus {
+    outline: none;
+  }
+
+  .stora-attach-btn {
+    background: #231C35;
+    border: 1px solid #2E2640;
+    color: #9CA3AF;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    flex-shrink: 0;
+  }
+
+  .stora-attach-btn:hover {
+    color: #FFF;
+    background: #2E2640;
+  }
+
+  .stora-send-btn {
+    background: #FF6B00;
+    color: #FFF;
+    border: none;
+    padding: 0 24px;
+    height: 44px;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 13.5px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(255, 107, 0, 0.3);
+    transition: all 0.15s ease;
+    flex-shrink: 0;
+  }
+
+  .stora-send-btn:hover {
+    background: #FF7D1A;
+    transform: translateY(-1px);
+  }
+
+  .stora-send-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  /* EMPTY / PLACEHOLDER */
+  .stora-chat-empty {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #6B7280;
+    text-align: center;
+    padding: 30px;
+  }
+
+  .stora-chat-empty__icon {
+    font-size: 48px;
+    margin-bottom: 12px;
+    opacity: 0.6;
+  }
+
+  /* PREVIEW ATTACHMENT STRIP */
+  .stora-attached-file {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    background: #231C35;
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-size: 11.5px;
+    color: #E5E7EB;
+    margin-bottom: 6px;
+  }
+
+  .stora-attached-file button {
+    background: none;
+    border: none;
+    color: #EF4444;
+    cursor: pointer;
+    font-weight: bold;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="stora-chat-container">
+  <!-- SIDEBAR -->
+  <aside class="stora-chat-sidebar">
+    <div class="stora-chat-sidebar__header">
+      <div class="stora-chat-sidebar__title-row">
+        <h2 class="stora-chat-sidebar__title">
+          <span>💬</span> Support Inbox
+        </h2>
+        <span id="unread-total-badge" class="stora-convo-unread" style="display: none;">0</span>
+      </div>
+
+      <div class="stora-chat-tabs">
+        <button type="button" class="stora-chat-tab active" data-filter="all" onclick="setFilter('all')">All</button>
+        <button type="button" class="stora-chat-tab" data-filter="owner" onclick="setFilter('owner')">Store Owners</button>
+        <button type="button" class="stora-chat-tab" data-filter="customer" onclick="setFilter('customer')">Customers</button>
+      </div>
+
+      <div class="stora-chat-search">
+        <span class="stora-chat-search__icon">🔍</span>
+        <input type="text" id="convo-search" placeholder="Search by name or email..." oninput="filterConversations()">
+      </div>
+    </div>
+
+    <div class="stora-chat-convos" id="convos-list">
+      <div style="padding: 24px; text-align: center; color: #6B7280;">Loading conversations...</div>
+    </div>
+  </aside>
+
+  <!-- MAIN CHAT AREA -->
+  <section class="stora-chat-main" id="chat-main">
+    <div class="stora-chat-empty" id="empty-state">
+      <div class="stora-chat-empty__icon">💬</div>
+      <h3 style="color: #FFF; font-size: 18px; margin: 0 0 6px 0;">Select a Conversation</h3>
+      <p style="font-size: 13.5px; max-width: 320px; line-height: 1.5;">Choose a Store Owner or Customer on the left to review support inquiries and send instant replies.</p>
+    </div>
+
+    <!-- Active Chat View (Hidden initially) -->
+    <div id="active-chat" style="display: none; flex: 1; flex-direction: column; height: 100%;">
+      <div class="stora-chat-header">
+        <div class="stora-chat-header__user">
+          <div class="stora-convo-avatar" id="header-avatar">?</div>
+          <div>
+            <div style="display: flex; align-items: center;">
+              <span class="stora-chat-header__name" id="header-name">—</span>
+              <span class="stora-role-pill" id="header-role-pill">User</span>
+            </div>
+            <div class="stora-chat-header__sub">
+              <span id="header-email">—</span>
+              <span>&bull;</span>
+              <a id="header-admin-link" href="#" target="_blank" style="color: #FF8F3D; text-decoration: none;">View Admin Record &rarr;</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="stora-chat-messages" id="messages-stream">
+        <!-- Messages dynamically rendered here -->
+      </div>
+
+      <div class="stora-chat-composer">
+        <div class="stora-chat-quickreplies">
+          <button type="button" class="stora-quickreply-btn" onclick="insertQuickReply('Hello! How can we help you with Stora today?')">👋 Greeting</button>
+          <button type="button" class="stora-quickreply-btn" onclick="insertQuickReply('Thank you for reaching out. We are looking into this right now.')">🔍 Investigating</button>
+          <button type="button" class="stora-quickreply-btn" onclick="insertQuickReply('Your account and subscription status have been verified successfully.')">✅ Verified</button>
+          <button type="button" class="stora-quickreply-btn" onclick="insertQuickReply('Please feel free to reach back out if you have any other questions. Have a great day!')">👍 Resolved</button>
+        </div>
+
+        <div id="attached-preview" class="stora-attached-file">
+          <span id="attached-name">photo.jpg</span>
+          <button type="button" onclick="clearAttachment()">✕</button>
+        </div>
+
+        <form class="stora-chat-form" id="chat-form" onsubmit="handleSendMessage(event)">
+          {% csrf_token %}
+          <label class="stora-attach-btn" title="Attach Photo">
+            <span>📷</span>
+            <input type="file" id="image-file" accept="image/*" style="display: none;" onchange="handleFileSelected(this)">
+          </label>
+
+          <div class="stora-chat-input-wrap">
+            <textarea id="message-input" class="stora-chat-textarea" placeholder="Type a reply to this user... (Enter to send, Shift+Enter for newline)" onkeydown="handleKeyDown(event)"></textarea>
+          </div>
+
+          <button type="submit" class="stora-send-btn" id="send-btn">
+            <span>Send</span> <span>&rarr;</span>
+          </button>
+        </form>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+  let currentFilter = 'all';
+  let conversationsData = [];
+  let activeUserId = null;
+  let pollInterval = null;
+
+  async function loadConversations() {
+    try {
+      const res = await fetch("{% url 'admin:support_conversations_api' %}");
+      if (!res.ok) return;
+      const data = await res.json();
+      conversationsData = data.conversations || [];
+      renderConversations();
+      updateUnreadTotal();
+    } catch (e) {
+      console.error("Failed to load conversations", e);
+    }
+  }
+
+  function setFilter(filter) {
+    currentFilter = filter;
+    document.querySelectorAll('.stora-chat-tab').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.filter === filter);
+    });
+    renderConversations();
+  }
+
+  function filterConversations() {
+    renderConversations();
+  }
+
+  function updateUnreadTotal() {
+    const totalUnread = conversationsData.reduce((acc, c) => acc + (c.unread_count || 0), 0);
+    const badge = document.getElementById('unread-total-badge');
+    if (totalUnread > 0) {
+      badge.textContent = totalUnread;
+      badge.style.display = 'inline-block';
+    } else {
+      badge.style.display = 'none';
+    }
+  }
+
+  function renderConversations() {
+    const searchVal = (document.getElementById('convo-search').value || '').toLowerCase().trim();
+    const listEl = document.getElementById('convos-list');
+
+    let filtered = conversationsData.filter(c => {
+      if (currentFilter === 'owner' && c.role !== 'owner') return false;
+      if (currentFilter === 'customer' && c.role !== 'customer') return false;
+      if (searchVal) {
+        const nameMatch = (c.name || '').toLowerCase().includes(searchVal);
+        const emailMatch = (c.email || '').toLowerCase().includes(searchVal);
+        const bizMatch = (c.business_name || '').toLowerCase().includes(searchVal);
+        return nameMatch || emailMatch || bizMatch;
+      }
+      return true;
+    });
+
+    if (filtered.length === 0) {
+      listEl.innerHTML = '<div style="padding: 24px; text-align: center; color: #6B7280; font-size: 13px;">No users found</div>';
+      return;
+    }
+
+    listEl.innerHTML = filtered.map(c => {
+      const isActive = c.user_id === activeUserId;
+      const roleClass = c.role === 'owner' ? 'stora-role-pill--owner' : 'stora-role-pill--customer';
+      const roleLabel = c.role === 'owner' ? 'Owner' : 'Customer';
+      const initial = (c.name || c.email || 'U').charAt(0).toUpperCase();
+
+      const avatarHtml = c.avatar_url 
+        ? `<img src="${c.avatar_url}" alt="${c.name}">` 
+        : initial;
+
+      const unreadBadge = c.unread_count > 0 
+        ? `<span class="stora-convo-unread">${c.unread_count}</span>` 
+        : '';
+
+      const prefix = c.last_message_is_support ? '<span style="color: #FF8F3D;">You: </span>' : '';
+
+      return `
+        <div class="stora-convo-item ${isActive ? 'active' : ''}" onclick="selectUser(${c.user_id})">
+          <div class="stora-convo-avatar">${avatarHtml}</div>
+          <div class="stora-convo-info">
+            <div class="stora-convo-top">
+              <span class="stora-convo-name">${escapeHtml(c.name)} <span class="stora-role-pill ${roleClass}">${roleLabel}</span></span>
+              ${unreadBadge}
+            </div>
+            <div class="stora-convo-bottom">
+              <span class="stora-convo-preview">${prefix}${escapeHtml(c.last_message || 'Tap to chat with this user')}</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  async function selectUser(userId) {
+    activeUserId = userId;
+    renderConversations();
+
+    document.getElementById('empty-state').style.display = 'none';
+    const activeChat = document.getElementById('active-chat');
+    activeChat.style.display = 'flex';
+
+    await loadActiveMessages();
+  }
+
+  async function loadActiveMessages() {
+    if (!activeUserId) return;
+    try {
+      const res = await fetch(`{% url 'admin:support_messages_api' %}?user_id=${activeUserId}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      renderChatHeader(data.partner);
+      renderMessagesStream(data.messages);
+
+      // Refresh conversations in background to update unread badge counts
+      updateConversationsUnreadLocally(activeUserId);
+    } catch (e) {
+      console.error("Failed to load messages", e);
+    }
+  }
+
+  function updateConversationsUnreadLocally(userId) {
+    const convo = conversationsData.find(c => c.user_id === userId);
+    if (convo && convo.unread_count > 0) {
+      convo.unread_count = 0;
+      renderConversations();
+      updateUnreadTotal();
+    }
+  }
+
+  function renderChatHeader(partner) {
+    document.getElementById('header-name').textContent = partner.name || partner.email;
+    document.getElementById('header-email').textContent = partner.email;
+    
+    const rolePill = document.getElementById('header-role-pill');
+    rolePill.textContent = partner.role_label;
+    rolePill.className = `stora-role-pill ${partner.role === 'owner' ? 'stora-role-pill--owner' : 'stora-role-pill--customer'}`;
+
+    const initial = (partner.name || partner.email || 'U').charAt(0).toUpperCase();
+    const avatarEl = document.getElementById('header-avatar');
+    if (partner.avatar_url) {
+      avatarEl.innerHTML = `<img src="${partner.avatar_url}" alt="${partner.name}">`;
+    } else {
+      avatarEl.textContent = initial;
+    }
+
+    document.getElementById('header-admin-link').href = `/admin/accounts/user/${partner.id}/change/`;
+  }
+
+  function renderMessagesStream(messages) {
+    const stream = document.getElementById('messages-stream');
+    if (!messages || messages.length === 0) {
+      stream.innerHTML = '<div style="margin: auto; color: #6B7280; font-size: 13.5px;">No previous messages. Send a message below to begin chatting!</div>';
+      return;
+    }
+
+    const html = messages.map(m => {
+      const isOut = m.is_support;
+      const rowClass = isOut ? 'stora-msg-row--out' : 'stora-msg-row--in';
+      const senderLabel = isOut ? 'STORA Support' : escapeHtml(m.sender_name);
+
+      let imageHtml = '';
+      if (m.image_url) {
+        imageHtml = `<a href="${m.image_url}" target="_blank"><img src="${m.image_url}" class="stora-msg-img" alt="Photo Attachment"></a>`;
+      }
+
+      return `
+        <div class="stora-msg-row ${rowClass}">
+          <span class="stora-msg-sender">${senderLabel}</span>
+          <div class="stora-msg-bubble">
+            ${imageHtml}
+            <div>${escapeHtml(m.message || '')}</div>
+            <div class="stora-msg-time">${m.created_at} ${isOut && m.is_read ? '✓✓' : ''}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    // Only auto-scroll if user is near bottom or first load
+    const isAtBottom = stream.scrollHeight - stream.scrollTop <= stream.clientHeight + 150;
+    stream.innerHTML = html;
+    if (isAtBottom) {
+      stream.scrollTop = stream.scrollHeight;
+    }
+  }
+
+  function insertQuickReply(text) {
+    const input = document.getElementById('message-input');
+    input.value = text;
+    input.focus();
+  }
+
+  function handleFileSelected(input) {
+    if (input.files && input.files[0]) {
+      const file = input.files[0];
+      document.getElementById('attached-name').textContent = file.name;
+      document.getElementById('attached-preview').style.display = 'inline-flex';
+    }
+  }
+
+  function clearAttachment() {
+    document.getElementById('image-file').value = '';
+    document.getElementById('attached-preview').style.display = 'none';
+  }
+
+  function handleKeyDown(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      document.getElementById('chat-form').requestSubmit();
+    }
+  }
+
+  async function handleSendMessage(e) {
+    e.preventDefault();
+    if (!activeUserId) return;
+
+    const input = document.getElementById('message-input');
+    const msgText = input.value.trim();
+    const fileInput = document.getElementById('image-file');
+    const hasFile = fileInput.files && fileInput.files[0];
+
+    if (!msgText && !hasFile) return;
+
+    const sendBtn = document.getElementById('send-btn');
+    sendBtn.disabled = true;
+
+    const formData = new FormData();
+    formData.append('recipient_id', activeUserId);
+    formData.append('message', msgText);
+    if (hasFile) {
+      formData.append('image', fileInput.files[0]);
+    }
+
+    const csrfEl = document.querySelector('[name=csrfmiddlewaretoken]');
+    let csrfToken = csrfEl ? csrfEl.value : '';
+    if (!csrfToken && document.cookie) {
+      const match = document.cookie.match(/csrftoken=([^;]+)/);
+      if (match) csrfToken = decodeURIComponent(match[1]);
+    }
+
+    try {
+      const res = await fetch("{% url 'admin:support_send_api' %}", {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': csrfToken
+        },
+        body: formData
+      });
+
+      if (res.ok) {
+        input.value = '';
+        clearAttachment();
+        await loadActiveMessages();
+        await loadConversations();
+      } else {
+        alert('Failed to send message. Please try again.');
+      }
+    } catch (err) {
+      console.error('Error sending message', err);
+      alert('Error sending message. Check network connection.');
+    } finally {
+      sendBtn.disabled = false;
+      input.focus();
+    }
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return str
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  // Polling setup
+  window.addEventListener('DOMContentLoaded', () => {
+    loadConversations();
+    pollInterval = setInterval(() => {
+      loadConversations();
+      if (activeUserId) {
+        loadActiveMessages();
+      }
+    }, 4000);
+  });
+
+  window.addEventListener('beforeunload', () => {
+    if (pollInterval) clearInterval(pollInterval);
+  });
+</script>
+{% endblock %}

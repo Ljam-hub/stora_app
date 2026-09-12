@@ -672,6 +672,16 @@ class CustomerApiService {
     return false;
   }
 
+  Future<Map<String, dynamic>?> getSupportContact() async {
+    try {
+      final response = await _dispatch('GET', _uri('/support/contact/'));
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      }
+    } catch (_) {}
+    return null;
+  }
+
   Future<Map<String, dynamic>> submitReport({
     required int reportedUserId,
     required String reason,

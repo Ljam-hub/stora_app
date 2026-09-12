@@ -13,6 +13,12 @@
 
 {% block nav-global %}
 <div class="stora-global-actions">
+  {% if user.is_authenticated and user.is_staff %}
+  <a href="{% url 'admin:support_chat' %}" class="stora-header-link stora-header-support" style="position: relative; display: inline-flex; align-items: center; gap: 6px; font-weight: 700; background: rgba(255, 107, 0, 0.12); border: 1px solid rgba(255, 107, 0, 0.35); border-radius: 8px; padding: 4px 10px;">
+    <span aria-hidden="true">💬</span> Support
+    <span id="stora-admin-global-badge" class="stora-header-badge" style="display: {% if stora_unread_support_count > 0 %}inline-flex{% else %}none{% endif %}; background: #EF4444; color: #FFF; font-size: 11px; font-weight: 800; border-radius: 10px; padding: 1px 7px; line-height: 1.3; box-shadow: 0 0 8px rgba(239, 68, 68, 0.6);">{{ stora_unread_support_count|default:"0" }}</span>
+  </a>
+  {% endif %}
   <span class="stora-api-status">
     <span class="stora-api-status__dot" aria-hidden="true"></span>
     API Online
@@ -20,4 +26,29 @@
   <a href="/api/health/" target="_blank" class="stora-header-link">Health Check <span aria-hidden="true">↗</span></a>
   <a href="/" target="_blank" class="stora-header-link">Backend Portal <span aria-hidden="true">↗</span></a>
 </div>
+
+{% if user.is_authenticated and user.is_staff %}
+<script>
+  // Live polling for STORA Admin Support Badge across all admin pages
+  (function() {
+    function refreshAdminSupportBadge() {
+      fetch("{% url 'admin:support_unread_count_api' %}")
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+          var badge = document.getElementById('stora-admin-global-badge');
+          if (!badge) return;
+          var count = data.unread_count || 0;
+          if (count > 0) {
+            badge.textContent = count;
+            badge.style.display = 'inline-flex';
+          } else {
+            badge.style.display = 'none';
+          }
+        })
+        .catch(function(e) {});
+    }
+    setInterval(refreshAdminSupportBadge, 5000);
+  })();
+</script>
+{% endif %}
 {% endblock %}

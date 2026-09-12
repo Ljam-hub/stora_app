@@ -31,6 +31,7 @@ urlpatterns = [
     path("users/me/fcm/", views.update_fcm_token, name="user_fcm_token"),
 
     # Chat & Messaging
+    path("support/contact/", views.support_contact, name="support_contact"),
     path("messages/", views.chat_messages, name="chat_messages"),
     path("messages/<int:message_id>/", views.delete_single_message, name="delete_single_message"),
     path("messages/conversations/", views.list_conversations, name="chat_conversations"),

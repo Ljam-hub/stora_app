@@ -642,6 +642,20 @@ class ApiClient {
     return [];
   }
 
+  Future<Map<String, dynamic>?> getSupportContact() async {
+    try {
+      final response = await _send('GET', '/support/contact/');
+      if (response.statusCode != 200) return null;
+      final decoded = _decode(response);
+      if (decoded is Map<String, dynamic>) {
+        return decoded;
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<List<Map<String, dynamic>>> fetchMessages(int withUserId) async {
     final response = await _send('GET', '/messages/?with_user=$withUserId');
     if (response.statusCode != 200) _throw(response);

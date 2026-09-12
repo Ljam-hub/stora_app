@@ -1330,7 +1330,11 @@ def list_conversations(request):
                 last_message_text = f"{prefix}{last_msg.message}"
 
         avatar_url = request.build_absolute_uri(partner.avatar.url) if partner.avatar else None
-        if hasattr(partner, "get_display_name"):
+        partner_role = partner.role
+        if partner.role == User.ROLE_ADMIN or partner.is_superuser or partner.is_staff:
+            partner_name = "STORA Support"
+            partner_role = User.ROLE_ADMIN
+        elif hasattr(partner, "get_display_name"):
             partner_name = partner.get_display_name()
         elif partner.role in (User.ROLE_OWNER, User.ROLE_ADMIN) and partner.business_name:
             partner_name = partner.business_name
@@ -1355,7 +1359,7 @@ def list_conversations(request):
             "user_id": partner.id,
             "name": partner_name,
             "email": partner.email,
-            "role": partner.role,
+            "role": partner_role,
             "avatar_url": avatar_url,
             "last_message": last_message_text,
             "last_message_is_me": last_msg_is_me,
@@ -1366,6 +1370,51 @@ def list_conversations(request):
 
     conversations.sort(key=lambda x: x["last_message_at"] or "", reverse=True)
     return Response(conversations)
+
+
+def get_support_user():
+    """
+    Returns the designated STORA Support User instance (admin/superuser).
+    """
+    support = User.objects.filter(role=User.ROLE_ADMIN, is_active=True).order_by("id").first()
+    if not support:
+        support = User.objects.filter(is_superuser=True, is_active=True).order_by("id").first()
+    if not support:
+        support = User.objects.filter(is_staff=True, is_active=True).order_by("id").first()
+    return support
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def support_contact(request):
+    """
+    Returns the designated STORA Support user contact details for in-app chat.
+    Also returns the current user's unread message count from support.
+    """
+    support = get_support_user()
+    if not support:
+        return Response({"error": "Support account not configured."}, status=status.HTTP_404_NOT_FOUND)
+
+    avatar_url = request.build_absolute_uri(support.avatar.url) if support.avatar else None
+
+    unread_count = ChatMessage.objects.filter(
+        sender=support,
+        recipient=request.user,
+        is_read=False,
+        is_unsent=False,
+    ).count()
+
+    return Response({
+        "id": support.id,
+        "user_id": support.id,
+        "name": "STORA Support",
+        "business_name": "STORA Support Team",
+        "email": support.email,
+        "role": User.ROLE_ADMIN,
+        "avatar_url": avatar_url,
+        "is_support": True,
+        "unread_count": unread_count,
+    })
 
 
 @api_view(["DELETE", "POST"])

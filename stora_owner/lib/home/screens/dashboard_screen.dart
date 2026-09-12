@@ -115,25 +115,6 @@ class DashboardScreen extends StatelessWidget {
                         ],
                       ),
                     ),
-                    AppNotificationBadge(
-                      count: ChatStore.instance.totalUnreadCount,
-                      top: 4,
-                      right: 4,
-                      borderColor: HomeColors.cardBackground,
-                      child: IconButton(
-                        icon: const Icon(Icons.chat_bubble_outline_rounded, color: Colors.white, size: 22),
-                        tooltip: 'Customer Messages',
-                        onPressed: () {
-                          if (onNavigateToChat != null) {
-                            onNavigateToChat!();
-                          } else {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(builder: (_) => const OwnerChatScreen()),
-                            );
-                          }
-                        },
-                      ),
-                    ),
                     IconButton(
                       onPressed: () => Navigator.of(context).push(
                         MaterialPageRoute(

@@ -12,9 +12,7 @@ import '../widgets/product_image_widget.dart';
 import '../widgets/stock_step_button.dart';
 import '../../subscription/subscription_screen.dart';
 import '../widgets/shimmer_product_card.dart';
-import '../widgets/fade_slide_in.dart';
 import 'add_edit_product_screen.dart';
-import 'owner_chat_screen.dart';
 
 class InventoryListScreen extends StatefulWidget {
   const InventoryListScreen({super.key});
@@ -101,35 +99,6 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
                               style: TextStyle(color: AppColors.label, fontSize: 12),
                             ),
                           ],
-                        ),
-                      ),
-                      InkWell(
-                        onTap: () => Navigator.of(context).push(
-                          MaterialPageRoute(builder: (_) => const OwnerChatScreen()),
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: HomeColors.cardElevated,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppColors.purpleLight.withValues(alpha: 0.3)),
-                          ),
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.chat_bubble_outline_rounded, color: AppColors.purpleLight, size: 18),
-                              SizedBox(width: 6),
-                              Text(
-                                'Messages',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 13,
-                                ),
-                              ),
-                            ],
-                          ),
                         ),
                       ),
                     ],

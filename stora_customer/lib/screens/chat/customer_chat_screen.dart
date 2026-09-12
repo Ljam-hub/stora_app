@@ -15,6 +15,7 @@ class CustomerChatScreen extends StatefulWidget {
   final String storeName;
   final String? storeAvatarUrl;
   final int? initialOrderId;
+  final bool isSupport;
 
   const CustomerChatScreen({
     super.key,
@@ -22,6 +23,7 @@ class CustomerChatScreen extends StatefulWidget {
     required this.storeName,
     this.storeAvatarUrl,
     this.initialOrderId,
+    this.isSupport = false,
   });
 
   @override
@@ -53,6 +55,14 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
     {'icon': Icons.local_offer_outlined, 'text': 'Do you offer bulk discounts?'},
   ];
 
+  static const List<Map<String, dynamic>> _supportQuickReplies = [
+    {'icon': Icons.help_outline_rounded, 'text': 'I need help with an order.'},
+    {'icon': Icons.delivery_dining_outlined, 'text': 'Where is my delivery right now?'},
+    {'icon': Icons.payment_rounded, 'text': 'I have a question about payment or refunds.'},
+    {'icon': Icons.report_problem_outlined, 'text': 'I encountered an issue with a store.'},
+    {'icon': Icons.chat_bubble_outline_rounded, 'text': 'Can I speak with a customer representative?'},
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -76,6 +86,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
   }
 
   Future<void> _fetchBlockStatus() async {
+    if (widget.isSupport) return;
     try {
       final blocked = await CustomerApiService.instance.checkBlockStatus(widget.storeOwnerId);
       if (mounted) setState(() => _isBlocked = blocked);
@@ -662,30 +673,56 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
         titleSpacing: 0,
         title: Row(
           children: [
-            CircleAvatar(
-              radius: 19,
-              backgroundColor: AppColors.cardElevated,
-              backgroundImage: (widget.storeAvatarUrl != null && widget.storeAvatarUrl!.isNotEmpty)
-                  ? NetworkImage(widget.storeAvatarUrl!)
-                  : null,
-              child: (widget.storeAvatarUrl == null || widget.storeAvatarUrl!.isEmpty)
-                  ? const Icon(Icons.storefront_rounded, color: AppColors.primary, size: 20)
-                  : null,
-            ),
+            if (widget.isSupport)
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.2),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.5)),
+                ),
+                child: const Icon(Icons.support_agent_rounded, color: AppColors.primary, size: 22),
+              )
+            else
+              CircleAvatar(
+                radius: 19,
+                backgroundColor: AppColors.cardElevated,
+                backgroundImage: (widget.storeAvatarUrl != null && widget.storeAvatarUrl!.isNotEmpty)
+                    ? NetworkImage(widget.storeAvatarUrl!)
+                    : null,
+                child: (widget.storeAvatarUrl == null || widget.storeAvatarUrl!.isEmpty)
+                    ? const Icon(Icons.storefront_rounded, color: AppColors.primary, size: 20)
+                    : null,
+              ),
             const SizedBox(width: 10),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    widget.storeName,
-                    style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
-                    overflow: TextOverflow.ellipsis,
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          widget.isSupport ? 'STORA Support' : widget.storeName,
+                          style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (widget.isSupport) ...[
+                        const SizedBox(width: 6),
+                        const Icon(Icons.verified_rounded, color: AppColors.secondaryLight, size: 16),
+                      ],
+                    ],
                   ),
                   Text(
-                    _isBlocked ? 'Blocked by store' : 'Store Owner',
+                    widget.isSupport
+                        ? 'Official Support · Online'
+                        : (_isBlocked ? 'Blocked by store' : 'Store Owner'),
                     style: TextStyle(
-                      color: _isBlocked ? AppColors.danger : AppColors.secondaryLight,
+                      color: widget.isSupport
+                          ? AppColors.secondaryLight
+                          : (_isBlocked ? AppColors.danger : AppColors.secondaryLight),
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
                     ),
@@ -704,23 +741,24 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
               if (val == 'delete') _deleteConversation();
             },
             itemBuilder: (ctx) => [
-              const PopupMenuItem(
-                value: 'report',
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.flag_rounded,
-                      color: Colors.amber,
-                      size: 20,
-                    ),
-                    SizedBox(width: 10),
-                    Text(
-                      'Report Store',
-                      style: TextStyle(color: Colors.amber),
-                    ),
-                  ],
+              if (!widget.isSupport)
+                const PopupMenuItem(
+                  value: 'report',
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.flag_rounded,
+                        color: Colors.amber,
+                        size: 20,
+                      ),
+                      SizedBox(width: 10),
+                      Text(
+                        'Report Store',
+                        style: TextStyle(color: Colors.amber),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
               const PopupMenuItem(
                 value: 'delete',
                 child: Row(
@@ -1098,10 +1136,10 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 12),
-                itemCount: _customerQuickReplies.length,
+                itemCount: widget.isSupport ? _supportQuickReplies.length : _customerQuickReplies.length,
                 separatorBuilder: (context, index) => const SizedBox(width: 8),
                 itemBuilder: (context, i) {
-                  final item = _customerQuickReplies[i];
+                  final item = widget.isSupport ? _supportQuickReplies[i] : _customerQuickReplies[i];
                   return InkWell(
                     borderRadius: BorderRadius.circular(20),
                     onTap: () => _onQuickReplyTap(item['text'] as String),

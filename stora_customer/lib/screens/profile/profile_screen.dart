@@ -8,6 +8,7 @@ import '../../widgets/custom_text_field.dart';
 import '../../widgets/gradient_button.dart';
 import 'package:image_picker/image_picker.dart';
 import '../auth/email_verification_screen.dart';
+import '../chat/customer_chat_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -530,6 +531,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  Future<void> _openSupportChat() async {
+    try {
+      final contact = await CustomerApiService.instance.getSupportContact();
+      if (!mounted) return;
+      final supportId = (contact?['id'] as num?)?.toInt() ?? 1;
+      final supportName = (contact?['name'] as String?) ?? 'STORA Support';
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => CustomerChatScreen(
+            storeOwnerId: supportId,
+            storeName: supportName,
+            isSupport: true,
+          ),
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Unable to connect to STORA Support: $e'),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
@@ -895,6 +923,66 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           SizedBox(height: 2),
                           Text(
                             'Change your account password',
+                            style: TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(
+                      Icons.chevron_right_rounded,
+                      color: AppColors.textMuted,
+                      size: 22,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Help & Customer Support Tile
+            InkWell(
+              onTap: _openSupportChat,
+              borderRadius: BorderRadius.circular(16),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).cardColor,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.cardBorder),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(
+                        Icons.support_agent_rounded,
+                        color: AppColors.primary,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Help & Customer Support',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                            ),
+                          ),
+                          SizedBox(height: 2),
+                          Text(
+                            'Chat directly with STORA Support team',
                             style: TextStyle(
                               color: AppColors.textSecondary,
                               fontSize: 12,

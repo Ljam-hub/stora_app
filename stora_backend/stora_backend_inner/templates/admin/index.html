@@ -3,6 +3,17 @@
 
 {% block content %}
 <section class="stora-alerts" aria-label="Notifications">
+  {% if stora_stats.unread_support_count > 0 %}
+  <article class="stora-alert stora-alert--support" style="border-left-color: #FF6B00; background: linear-gradient(135deg, rgba(255, 107, 0, 0.15), rgba(24, 20, 36, 0.95));">
+    <span class="stora-alert__icon" aria-hidden="true" style="color: #FF6B00;">&#128172;</span>
+    <div class="stora-alert__copy">
+      <h2 style="color: #FF8F3D;">Support Messages</h2>
+      <p><strong>{{ stora_stats.unread_support_count }}</strong> unread message{{ stora_stats.unread_support_count|pluralize }} from customer{{ stora_stats.unread_support_count|pluralize }} & store owner{{ stora_stats.unread_support_count|pluralize }}.</p>
+    </div>
+    <a class="stora-alert__action" href="{% url 'admin:support_chat' %}" style="background: #FF6B00; color: #FFF;">Open Support Chat <span aria-hidden="true">&rarr;</span></a>
+  </article>
+  {% endif %}
+
   {% if stora_stats.pending_orders_count > 0 %}
   <article class="stora-alert stora-alert--orders">
     <span class="stora-alert__icon" aria-hidden="true">&#128722;</span>
@@ -47,6 +58,11 @@
     <div class="stora-card__top"><span class="stora-card__label">Pending orders</span><span class="stora-card__icon" aria-hidden="true">&#8599;</span></div>
     <p class="stora-card__value">{{ stora_stats.pending_orders_count }}</p>
     <p class="stora-card__sub"><a href="/admin/orders/order/?status__exact=pending">Review carts <span aria-hidden="true">&rarr;</span></a></p>
+  </article>
+  <article class="stora-card" style="border: 1px solid rgba(255, 107, 0, 0.35);">
+    <div class="stora-card__top"><span class="stora-card__label">Support Inquiries</span><span class="stora-card__icon" style="color: #FF6B00;" aria-hidden="true">&#128172;</span></div>
+    <p class="stora-card__value" style="color: #FF8F3D;">{{ stora_stats.unread_support_count }}</p>
+    <p class="stora-card__sub"><a href="{% url 'admin:support_chat' %}">Open Support Inbox <span aria-hidden="true">&rarr;</span></a></p>
   </article>
   <article class="stora-card">
     <div class="stora-card__top"><span class="stora-card__label">Total products</span><span class="stora-card__icon stora-card__icon--blue" aria-hidden="true">&#9632;</span></div>

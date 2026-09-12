@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../providers/chat_provider.dart';
+import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/notification_badge.dart';
@@ -111,6 +112,126 @@ class _CustomerConversationsScreenState extends State<CustomerConversationsScree
     return false;
   }
 
+  Future<void> _openSupportChat() async {
+    try {
+      final contact = await CustomerApiService.instance.getSupportContact();
+      if (!mounted) return;
+      final supportId = (contact?['id'] as num?)?.toInt() ?? 1;
+      final supportName = (contact?['name'] as String?) ?? 'STORA Support';
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => CustomerChatScreen(
+            storeOwnerId: supportId,
+            storeName: supportName,
+            isSupport: true,
+          ),
+        ),
+      );
+      if (mounted) {
+        context.read<ChatProvider>().fetchConversations();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Unable to connect to STORA Support: $e'),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+      }
+    }
+  }
+
+  Widget _buildSupportCard() {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.35)),
+        gradient: LinearGradient(
+          colors: [
+            AppColors.primary.withValues(alpha: 0.16),
+            AppColors.cardElevated,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: _openSupportChat,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            child: Row(
+              children: [
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.2),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.4)),
+                  ),
+                  child: const Icon(Icons.support_agent_rounded, color: AppColors.primary, size: 24),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Text(
+                            'STORA Support',
+                            style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: const Text(
+                              'OFFICIAL',
+                              style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w800),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      const Text(
+                        'Orders, delivery & customer assistance',
+                        style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text('Chat', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                      SizedBox(width: 3),
+                      Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 10),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final chatProvider = context.watch<ChatProvider>();
@@ -176,6 +297,10 @@ class _CustomerConversationsScreenState extends State<CustomerConversationsScree
               ),
             ),
           ),
+
+          // Pinned Support Card
+          if (_searchQuery.trim().isEmpty || 'stora support'.contains(_searchQuery.trim().toLowerCase()))
+            _buildSupportCard(),
 
           // Conversation list
           Expanded(

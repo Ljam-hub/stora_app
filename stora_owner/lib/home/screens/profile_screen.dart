@@ -14,6 +14,7 @@ import '../../subscription/subscription_screen.dart';
 import '../../subscription/subscription_status_screen.dart';
 import '../../subscription/subscription_status.dart';
 import '../theme/theme_mode_controller.dart';
+import 'owner_chat_screen.dart';
 
 // ---------------------------------------------------------------------
 // Profile — store header (name, owner, plan pill) plus a settings
@@ -442,6 +443,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  Future<void> _openSupportChat() async {
+    try {
+      final contact = await ApiClient.instance.getSupportContact();
+      if (!mounted) return;
+      final supportId = (contact?['id'] as num?)?.toInt() ?? 1;
+      final supportName = (contact?['name'] as String?) ?? 'STORA Support';
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => OwnerChatThreadScreen(
+            customerId: supportId,
+            customerName: supportName,
+            isSupport: true,
+          ),
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        showStoraSnackBar(context, 'Unable to connect to STORA Support: $e');
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
@@ -646,6 +669,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         );
                       }
                     },
+                  ),
+                  _MenuTile(
+                    icon: Icons.support_agent_rounded,
+                    label: 'Contact STORA Support',
+                    onTap: _openSupportChat,
                   ),
                   AnimatedBuilder(
                     animation: ThemeModeController.instance,

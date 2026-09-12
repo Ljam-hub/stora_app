@@ -75,6 +75,124 @@ class _OwnerChatScreenState extends State<OwnerChatScreen> {
     }).toList();
   }
 
+  Future<void> _openSupportChat() async {
+    try {
+      final support = await ApiClient.instance.getSupportContact();
+      if (!mounted) return;
+      if (support != null) {
+        final supportId = ((support['id'] ?? support['user_id']) as num?)?.toInt() ?? 1;
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => OwnerChatThreadScreen(
+              customerId: supportId,
+              customerName: support['name'] ?? 'STORA Support',
+              customerEmail: support['email'] ?? 'support@stora.app',
+              customerAvatarUrl: support['avatar_url'],
+              isSupport: true,
+            ),
+          ),
+        ).then((_) => _loadConversations(silent: true));
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Support service is currently unavailable.')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to reach support: $e')),
+        );
+      }
+    }
+  }
+
+  Widget _buildSupportCard() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: _openSupportChat,
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.primary.withValues(alpha: 0.35)),
+              gradient: LinearGradient(
+                colors: [
+                  AppColors.primary.withValues(alpha: 0.16),
+                  HomeColors.cardElevated,
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.2),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.4)),
+                  ),
+                  child: const Icon(Icons.support_agent_rounded, color: AppColors.primary, size: 24),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Text(
+                            'STORA Store Support',
+                            style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: const Text('OFFICIAL', style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w800)),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      const Text(
+                        'Direct help with store, billing & issues',
+                        style: TextStyle(color: AppColors.label, fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text('Chat', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                      SizedBox(width: 4),
+                      Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 10),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<bool> _confirmDeleteConversation(int customerId, String customerName) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -336,6 +454,8 @@ class _OwnerChatScreenState extends State<OwnerChatScreen> {
               ),
             ),
           ),
+          if (_searchQuery.trim().isEmpty || 'stora support'.contains(_searchQuery.trim().toLowerCase()))
+            _buildSupportCard(),
           Expanded(
             child: _loading && _conversations.isEmpty
                 ? const Center(child: CircularProgressIndicator(color: AppColors.purpleLight))
@@ -579,6 +699,7 @@ class OwnerChatThreadScreen extends StatefulWidget {
   final String? customerEmail;
   final String? customerAvatarUrl;
   final int? orderId;
+  final bool isSupport;
 
   const OwnerChatThreadScreen({
     super.key,
@@ -587,6 +708,7 @@ class OwnerChatThreadScreen extends StatefulWidget {
     this.customerEmail,
     this.customerAvatarUrl,
     this.orderId,
+    this.isSupport = false,
   });
 
   @override
@@ -618,6 +740,14 @@ class _OwnerChatThreadScreenState extends State<OwnerChatThreadScreen> {
     {'icon': Icons.favorite_border_rounded, 'text': 'Thank you for shopping with us!'},
   ];
 
+  static const List<Map<String, dynamic>> _supportQuickReplies = [
+    {'icon': Icons.help_outline_rounded, 'text': 'I need help verifying my store'},
+    {'icon': Icons.card_membership_rounded, 'text': 'Question about subscription and payments'},
+    {'icon': Icons.shopping_bag_outlined, 'text': 'Having an issue with an order or customer'},
+    {'icon': Icons.bug_report_outlined, 'text': 'I want to report an app bug or feedback'},
+    {'icon': Icons.support_agent_rounded, 'text': 'Can I speak with a support agent?'},
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -638,6 +768,7 @@ class _OwnerChatThreadScreenState extends State<OwnerChatThreadScreen> {
   }
 
   Future<void> _fetchBlockStatus() async {
+    if (widget.isSupport) return;
     try {
       final blocked = await ApiClient.instance.checkBlockStatus(widget.customerId);
       if (mounted) setState(() => _isBlocked = blocked);
@@ -1317,12 +1448,12 @@ class _OwnerChatThreadScreenState extends State<OwnerChatThreadScreen> {
           children: [
             CircleAvatar(
               radius: 19,
-              backgroundColor: const Color(0xFF3A3B3C),
+              backgroundColor: widget.isSupport ? AppColors.primary.withValues(alpha: 0.2) : const Color(0xFF3A3B3C),
               backgroundImage: (widget.customerAvatarUrl != null && widget.customerAvatarUrl!.isNotEmpty)
                   ? NetworkImage(widget.customerAvatarUrl!)
                   : null,
               child: (widget.customerAvatarUrl == null || widget.customerAvatarUrl!.isEmpty)
-                  ? const Icon(Icons.person, color: Colors.white, size: 22)
+                  ? Icon(widget.isSupport ? Icons.support_agent_rounded : Icons.person, color: widget.isSupport ? AppColors.primary : Colors.white, size: 22)
                   : null,
             ),
             const SizedBox(width: 10),
@@ -1330,19 +1461,31 @@ class _OwnerChatThreadScreenState extends State<OwnerChatThreadScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    widget.customerName,
-                    style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
-                    overflow: TextOverflow.ellipsis,
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          widget.customerName,
+                          style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (widget.isSupport) ...[
+                        const SizedBox(width: 4),
+                        const Icon(Icons.verified_rounded, color: AppColors.primary, size: 16),
+                      ],
+                    ],
                   ),
                   Text(
-                    _isBlocked
-                        ? 'Blocked'
-                        : ((widget.customerEmail != null && widget.customerEmail!.isNotEmpty)
-                            ? widget.customerEmail!
-                            : 'Customer'),
+                    widget.isSupport
+                        ? 'Official Support • Active'
+                        : (_isBlocked
+                            ? 'Blocked'
+                            : ((widget.customerEmail != null && widget.customerEmail!.isNotEmpty)
+                                ? widget.customerEmail!
+                                : 'Customer')),
                     style: TextStyle(
-                      color: _isBlocked ? HomeColors.dangerText : AppColors.label,
+                      color: widget.isSupport ? const Color(0xFF10B981) : (_isBlocked ? HomeColors.dangerText : AppColors.label),
                       fontSize: 11,
                       fontWeight: FontWeight.w500,
                     ),
@@ -1363,53 +1506,55 @@ class _OwnerChatThreadScreenState extends State<OwnerChatThreadScreen> {
               if (val == 'delete') _deleteConversation();
             },
             itemBuilder: (ctx) => [
-              const PopupMenuItem(
-                value: 'report',
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.flag_rounded,
-                      color: Colors.amber,
-                      size: 20,
-                    ),
-                    SizedBox(width: 10),
-                    Text(
-                      'Report Customer',
-                      style: TextStyle(color: Colors.amber),
-                    ),
-                  ],
+              if (!widget.isSupport) ...[
+                const PopupMenuItem(
+                  value: 'report',
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.flag_rounded,
+                        color: Colors.amber,
+                        size: 20,
+                      ),
+                      SizedBox(width: 10),
+                      Text(
+                        'Report Customer',
+                        style: TextStyle(color: Colors.amber),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
+                PopupMenuItem(
+                  value: 'block',
+                  child: Row(
+                    children: [
+                      Icon(
+                        _isBlocked ? Icons.lock_open_rounded : Icons.block_rounded,
+                        color: _isBlocked ? HomeColors.successText : HomeColors.dangerText,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        _isBlocked ? 'Unblock Customer' : 'Block Customer',
+                        style: TextStyle(color: _isBlocked ? HomeColors.successText : HomeColors.dangerText),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               PopupMenuItem(
-                value: 'block',
-                child: Row(
-                  children: [
-                    Icon(
-                      _isBlocked ? Icons.lock_open_rounded : Icons.block_rounded,
-                      color: _isBlocked ? HomeColors.successText : HomeColors.dangerText,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 10),
-                    Text(
-                      _isBlocked ? 'Unblock Customer' : 'Block Customer',
-                      style: TextStyle(color: _isBlocked ? HomeColors.successText : HomeColors.dangerText),
-                    ),
-                  ],
-                ),
-              ),
-              const PopupMenuItem(
                 value: 'delete',
                 child: Row(
                   children: [
-                    Icon(
+                    const Icon(
                       Icons.delete_outline_rounded,
                       color: HomeColors.dangerText,
                       size: 20,
                     ),
-                    SizedBox(width: 10),
+                    const SizedBox(width: 10),
                     Text(
-                      'Delete Conversation',
-                      style: TextStyle(color: HomeColors.dangerText),
+                      widget.isSupport ? 'Clear Conversation' : 'Delete Conversation',
+                      style: const TextStyle(color: HomeColors.dangerText),
                     ),
                   ],
                 ),
@@ -1781,10 +1926,10 @@ class _OwnerChatThreadScreenState extends State<OwnerChatThreadScreen> {
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 12),
-                itemCount: _quickReplies.length,
+                itemCount: (widget.isSupport ? _supportQuickReplies : _quickReplies).length,
                 separatorBuilder: (context, index) => const SizedBox(width: 8),
                 itemBuilder: (context, i) {
-                  final item = _quickReplies[i];
+                  final item = (widget.isSupport ? _supportQuickReplies : _quickReplies)[i];
                   return InkWell(
                     borderRadius: BorderRadius.circular(20),
                     onTap: () => _onQuickReplyTap(item['text'] as String),

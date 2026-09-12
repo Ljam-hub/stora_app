@@ -771,16 +771,20 @@ class ChatMessageSerializer(serializers.ModelSerializer):
         }
 
     def get_sender_name(self, obj):
+        if obj.sender.role == "admin" or obj.sender.is_superuser or obj.sender.is_staff:
+            return "STORA Support"
         if hasattr(obj.sender, "get_display_name"):
             return obj.sender.get_display_name()
-        if obj.sender.role in ("owner", "admin") and obj.sender.business_name:
+        if obj.sender.role == "owner" and obj.sender.business_name:
             return obj.sender.business_name
         return f"{obj.sender.first_name} {obj.sender.last_name}".strip() or obj.sender.business_name or obj.sender.username
 
     def get_recipient_name(self, obj):
+        if obj.recipient.role == "admin" or obj.recipient.is_superuser or obj.recipient.is_staff:
+            return "STORA Support"
         if hasattr(obj.recipient, "get_display_name"):
             return obj.recipient.get_display_name()
-        if obj.recipient.role in ("owner", "admin") and obj.recipient.business_name:
+        if obj.recipient.role == "owner" and obj.recipient.business_name:
             return obj.recipient.business_name
         return f"{obj.recipient.first_name} {obj.recipient.last_name}".strip() or obj.recipient.business_name or obj.recipient.username
 
