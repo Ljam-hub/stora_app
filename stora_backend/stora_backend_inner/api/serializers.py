@@ -138,12 +138,12 @@ class ResendVerificationSerializer(serializers.Serializer):
 
 class ChangePasswordSerializer(serializers.Serializer):
     old_password = serializers.CharField(required=True, write_only=True)
-    new_password = serializers.CharField(required=True, min_length=6, write_only=True)
+    new_password = serializers.CharField(required=True, min_length=8, write_only=True)
 
 
 class RegisterSerializer(serializers.Serializer):
     email = serializers.EmailField()
-    password = serializers.CharField(write_only=True, min_length=6)
+    password = serializers.CharField(write_only=True, min_length=8)
     business_name = serializers.CharField(max_length=150, required=False, allow_blank=True, default="")
     first_name = serializers.CharField(max_length=150, required=False, allow_blank=True, default="")
     last_name = serializers.CharField(max_length=150, required=False, allow_blank=True, default="")
@@ -506,7 +506,7 @@ class ForgotPasswordSerializer(serializers.Serializer):
 
 class ResetPasswordSerializer(serializers.Serializer):
     token = serializers.CharField()
-    new_password = serializers.CharField(min_length=6, write_only=True)
+    new_password = serializers.CharField(min_length=8, write_only=True)
 
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
@@ -644,14 +644,7 @@ class OrderSerializer(serializers.ModelSerializer):
         return None
 
     def get_latest_message(self, obj):
-        from api.models import ChatMessage
-        from django.db.models import Q
         msg = obj.chat_messages.order_by("-created_at").first()
-        if not msg and obj.customer and obj.owner:
-            msg = ChatMessage.objects.filter(
-                (Q(sender=obj.customer) & Q(recipient=obj.owner)) |
-                (Q(sender=obj.owner) & Q(recipient=obj.customer))
-            ).order_by("-created_at").first()
 
         if msg:
             request = self.context.get("request")
@@ -689,11 +682,7 @@ class OrderSerializer(serializers.ModelSerializer):
         if not request or not request.user.is_authenticated:
             return 0
         user = request.user
-        count = obj.chat_messages.filter(recipient=user, is_read=False, is_unsent=False).count()
-        if count == 0 and obj.customer and obj.owner:
-            partner = obj.owner if user == obj.customer else obj.customer
-            count = ChatMessage.objects.filter(sender=partner, recipient=user, is_read=False, is_unsent=False).count()
-        return count
+        return obj.chat_messages.filter(recipient=user, is_read=False, is_unsent=False).count()
 
     def create(self, validated_data):
         items_data = validated_data.pop("items_data", [])

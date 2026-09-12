@@ -69,14 +69,38 @@ class _CustomTextFieldState extends State<CustomTextField> {
                 ? Icon(widget.prefixIcon, color: AppColors.primaryLight, size: 20)
                 : null,
             suffixIcon: widget.isPassword
-                ? IconButton(
-                    icon: Icon(
-                      _obscureText ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-                      color: AppColors.textMuted,
-                      size: 20,
-                    ),
-                    tooltip: _obscureText ? 'Show password' : 'Hide password',
-                    onPressed: () => setState(() => _obscureText = !_obscureText),
+                ? ValueListenableBuilder<TextEditingValue>(
+                    valueListenable: widget.controller,
+                    builder: (context, value, _) {
+                      return Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (value.text.isNotEmpty)
+                            IconButton(
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                              icon: const Icon(
+                                Icons.close_rounded,
+                                color: AppColors.textMuted,
+                                size: 18,
+                              ),
+                              tooltip: 'Clear password',
+                              onPressed: () => widget.controller.clear(),
+                            ),
+                          IconButton(
+                            padding: const EdgeInsets.only(right: 8),
+                            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                            icon: Icon(
+                              _obscureText ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                              color: AppColors.textMuted,
+                              size: 20,
+                            ),
+                            tooltip: _obscureText ? 'Show password' : 'Hide password',
+                            onPressed: () => setState(() => _obscureText = !_obscureText),
+                          ),
+                        ],
+                      );
+                    },
                   )
                 : widget.suffix,
           ),

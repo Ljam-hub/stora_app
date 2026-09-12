@@ -261,14 +261,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     filled: true,
                     fillColor: AppColors.fieldBackground,
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        obscureOld ? Icons.visibility_rounded : Icons.visibility_off_rounded,
-                        color: AppColors.label,
-                        size: 20,
-                      ),
-                      tooltip: obscureOld ? 'Show password' : 'Hide password',
-                      onPressed: () => setDialogState(() => obscureOld = !obscureOld),
+                    suffixIcon: ValueListenableBuilder<TextEditingValue>(
+                      valueListenable: oldPasswordController,
+                      builder: (context, value, _) {
+                        return Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (value.text.isNotEmpty)
+                              IconButton(
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                                icon: const Icon(Icons.close_rounded, color: AppColors.label, size: 18),
+                                tooltip: 'Clear password',
+                                onPressed: () => oldPasswordController.clear(),
+                              ),
+                            IconButton(
+                              padding: const EdgeInsets.only(right: 8),
+                              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                              icon: Icon(
+                                obscureOld ? Icons.visibility_rounded : Icons.visibility_off_rounded,
+                                color: AppColors.label,
+                                size: 20,
+                              ),
+                              tooltip: obscureOld ? 'Show password' : 'Hide password',
+                              onPressed: () => setDialogState(() => obscureOld = !obscureOld),
+                            ),
+                          ],
+                        );
+                      },
                     ),
                   ),
                 ),
@@ -283,14 +303,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     filled: true,
                     fillColor: AppColors.fieldBackground,
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        obscureNew ? Icons.visibility_rounded : Icons.visibility_off_rounded,
-                        color: AppColors.label,
-                        size: 20,
-                      ),
-                      tooltip: obscureNew ? 'Show password' : 'Hide password',
-                      onPressed: () => setDialogState(() => obscureNew = !obscureNew),
+                    suffixIcon: ValueListenableBuilder<TextEditingValue>(
+                      valueListenable: newPasswordController,
+                      builder: (context, value, _) {
+                        return Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (value.text.isNotEmpty)
+                              IconButton(
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                                icon: const Icon(Icons.close_rounded, color: AppColors.label, size: 18),
+                                tooltip: 'Clear password',
+                                onPressed: () => newPasswordController.clear(),
+                              ),
+                            IconButton(
+                              padding: const EdgeInsets.only(right: 8),
+                              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                              icon: Icon(
+                                obscureNew ? Icons.visibility_rounded : Icons.visibility_off_rounded,
+                                color: AppColors.label,
+                                size: 20,
+                              ),
+                              tooltip: obscureNew ? 'Show password' : 'Hide password',
+                              onPressed: () => setDialogState(() => obscureNew = !obscureNew),
+                            ),
+                          ],
+                        );
+                      },
                     ),
                   ),
                 ),
@@ -305,14 +345,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     filled: true,
                     fillColor: AppColors.fieldBackground,
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        obscureConfirm ? Icons.visibility_rounded : Icons.visibility_off_rounded,
-                        color: AppColors.label,
-                        size: 20,
-                      ),
-                      tooltip: obscureConfirm ? 'Show password' : 'Hide password',
-                      onPressed: () => setDialogState(() => obscureConfirm = !obscureConfirm),
+                    suffixIcon: ValueListenableBuilder<TextEditingValue>(
+                      valueListenable: confirmPasswordController,
+                      builder: (context, value, _) {
+                        return Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (value.text.isNotEmpty)
+                              IconButton(
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                                icon: const Icon(Icons.close_rounded, color: AppColors.label, size: 18),
+                                tooltip: 'Clear password',
+                                onPressed: () => confirmPasswordController.clear(),
+                              ),
+                            IconButton(
+                              padding: const EdgeInsets.only(right: 8),
+                              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                              icon: Icon(
+                                obscureConfirm ? Icons.visibility_rounded : Icons.visibility_off_rounded,
+                                color: AppColors.label,
+                                size: 20,
+                              ),
+                              tooltip: obscureConfirm ? 'Show password' : 'Hide password',
+                              onPressed: () => setDialogState(() => obscureConfirm = !obscureConfirm),
+                            ),
+                          ],
+                        );
+                      },
                     ),
                   ),
                 ),
@@ -341,8 +401,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         showStoraSnackBar(context, 'Please fill in all password fields');
                         return;
                       }
-                      if (newPass.length < 6) {
-                        showStoraSnackBar(context, 'New password must be at least 6 characters');
+                      if (newPass.length < 8) {
+                        showStoraSnackBar(context, 'New password must be at least 8 characters');
                         return;
                       }
                       if (newPass != confirmPass) {

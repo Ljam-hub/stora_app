@@ -35,10 +35,19 @@ class OrderProvider extends ChangeNotifier {
   int get counterOfferCount => _orders.where((o) => o.status == 'counter_offer').length;
   int get acceptedCount => _orders.where((o) => o.status == 'accepted').length;
   int get readyCount => _orders.where((o) => o.status == 'ready').length;
+  int get acceptedAndReadyCount => _orders.where((o) => o.status == 'accepted' || o.status == 'ready').length;
+  int get declinedCount => _orders.where((o) => o.status == 'declined' || o.status == 'auto_declined').length;
 
   bool _ordersTabSeen = false;
   final Set<String> _seenFilters = {};
+  final Set<int> _unreadDeclinedOrderIds = {};
   Map<int, String> _persistedSeenStatuses = {};
+
+  int get unreadDeclinedCount => _orders
+      .where((o) =>
+          (o.status == 'declined' || o.status == 'auto_declined') &&
+          _unreadDeclinedOrderIds.contains(o.id))
+      .length;
 
   OrderProvider() {
     _loadPersistedSeen();
@@ -59,9 +68,29 @@ class OrderProvider extends ChangeNotifier {
 
   Future<void> markOrdersTabSeen() async {
     _ordersTabSeen = true;
+    notifyListeners();
+  }
 
-    for (final o in _orders) {
-      _persistedSeenStatuses[o.id] = o.status;
+  Future<void> markFilterSeen(String filterId) async {
+    _seenFilters.add(filterId);
+
+    if (filterId == 'all') {
+      for (final o in _orders) {
+        _persistedSeenStatuses[o.id] = o.status;
+      }
+    } else if (filterId == 'declined') {
+      _unreadDeclinedOrderIds.clear();
+      for (final o in _orders.where((o) => o.status == 'declined' || o.status == 'auto_declined')) {
+        _persistedSeenStatuses[o.id] = o.status;
+      }
+    } else if (filterId == 'accepted') {
+      for (final o in _orders.where((o) => o.status == 'accepted' || o.status == 'ready')) {
+        _persistedSeenStatuses[o.id] = o.status;
+      }
+    } else {
+      for (final o in _orders.where((o) => o.status == filterId)) {
+        _persistedSeenStatuses[o.id] = o.status;
+      }
     }
     notifyListeners();
 
@@ -69,22 +98,6 @@ class OrderProvider extends ChangeNotifier {
       final raw = jsonEncode(_persistedSeenStatuses.map((k, v) => MapEntry(k.toString(), v)));
       await SessionManager.instance.setSetting('seen_orders_snapshot', raw);
       await SessionManager.instance.setSetting('has_initialized_seen_orders', 'true');
-    } catch (e) {
-      debugPrint('Error persisting seen orders snapshot: $e');
-    }
-  }
-
-  Future<void> markFilterSeen(String filterId) async {
-    _seenFilters.add(filterId);
-
-    for (final o in _orders.where((o) => o.status == filterId)) {
-      _persistedSeenStatuses[o.id] = o.status;
-    }
-    notifyListeners();
-
-    try {
-      final raw = jsonEncode(_persistedSeenStatuses.map((k, v) => MapEntry(k.toString(), v)));
-      await SessionManager.instance.setSetting('seen_orders_snapshot', raw);
     } catch (_) {}
   }
 
@@ -108,6 +121,33 @@ class OrderProvider extends ChangeNotifier {
     int unread = 0;
     for (final o in _orders) {
       if (o.status == 'counter_offer' && _persistedSeenStatuses[o.id] != 'counter_offer') {
+        unread++;
+      }
+    }
+    return unread;
+  }
+
+  int get unreadAcceptedCount {
+    if (_seenFilters.contains('accepted')) {
+      return 0;
+    }
+    int unread = 0;
+    for (final o in _orders) {
+      if ((o.status == 'accepted' || o.status == 'ready') &&
+          _persistedSeenStatuses[o.id] != o.status) {
+        unread++;
+      }
+    }
+    return unread;
+  }
+
+  int get unreadAllCount {
+    if (_seenFilters.contains('all')) {
+      return 0;
+    }
+    int unread = 0;
+    for (final o in _orders) {
+      if (_persistedSeenStatuses[o.id] != o.status) {
         unread++;
       }
     }
@@ -157,7 +197,9 @@ class OrderProvider extends ChangeNotifier {
       final oldStatus = _knownStatuses[o.id];
       if (oldStatus != null && oldStatus != o.status) {
         _ordersTabSeen = false;
+        _seenFilters.remove('all');
         if (o.status == 'accepted') {
+          _seenFilters.remove('accepted');
           NotificationService.instance.showNotification(
             title: '👨‍🍳 Order #${o.id} Accepted!',
             body: 'The store is now preparing your items! We will notify you when it is ready.',
@@ -165,6 +207,7 @@ class OrderProvider extends ChangeNotifier {
           );
           onOrderStatusChanged?.call(o, 'accepted');
         } else if (o.status == 'ready') {
+          _seenFilters.remove('accepted');
           NotificationService.instance.showNotification(
             title: '🎉 Order #${o.id} Ready for Pickup!',
             body: 'Your items are packed and ready for pickup! Tap to view details.',
@@ -172,6 +215,8 @@ class OrderProvider extends ChangeNotifier {
           );
           onOrderStatusChanged?.call(o, 'ready');
         } else if (o.status == 'declined' || o.status == 'auto_declined') {
+          _unreadDeclinedOrderIds.add(o.id);
+          _seenFilters.remove('declined');
           final reason = o.declineReason?.isNotEmpty == true ? ': ${o.declineReason}' : '.';
           NotificationService.instance.showNotification(
             title: 'Order #${o.id} Declined',
@@ -180,6 +225,7 @@ class OrderProvider extends ChangeNotifier {
           );
           onOrderStatusChanged?.call(o, 'declined');
         } else if (o.status == 'counter_offer') {
+          _seenFilters.remove('counter_offer');
           final priceText = o.counterPrice != null ? ' (₱${o.counterPrice!.toStringAsFixed(2)})' : '';
           NotificationService.instance.showNotification(
             title: '💬 Counter-Offer on Order #${o.id}',
@@ -205,7 +251,7 @@ class OrderProvider extends ChangeNotifier {
         return o.status == 'counter_offer';
       }
       if (_selectedStatusFilter == 'accepted') {
-        return o.status == 'accepted';
+        return o.status == 'accepted' || o.status == 'ready';
       }
       if (_selectedStatusFilter == 'declined') {
         return o.status == 'declined' || o.status == 'auto_declined';
@@ -280,14 +326,9 @@ class OrderProvider extends ChangeNotifier {
       );
       _orders.insert(0, order);
       _knownStatuses[order.id] = order.status;
-      _persistedSeenStatuses[order.id] = order.status;
-
-      // Pop up system notification for order placed
-      NotificationService.instance.showNotification(
-        title: '🛍️ Order #${order.id} Placed!',
-        body: 'Your order has been sent to the store! Waiting for confirmation.',
-        payload: order.id.toString(),
-      );
+      _seenFilters.remove('pending');
+      _seenFilters.remove('all');
+      _ordersTabSeen = false;
 
       _isLoading = false;
       notifyListeners();

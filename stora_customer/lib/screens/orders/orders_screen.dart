@@ -60,8 +60,11 @@ class _OrdersScreenState extends State<OrdersScreen> {
                 final f = filters[index];
                 final isSelected = orderProvider.selectedStatusFilter == f['id'];
                 int badgeCount = 0;
+                if (f['id'] == 'all') badgeCount = orderProvider.unreadAllCount;
                 if (f['id'] == 'pending') badgeCount = orderProvider.unreadPendingCount;
                 if (f['id'] == 'counter_offer') badgeCount = orderProvider.unreadCounterOfferCount;
+                if (f['id'] == 'accepted') badgeCount = orderProvider.unreadAcceptedCount;
+                if (f['id'] == 'declined') badgeCount = orderProvider.unreadDeclinedCount;
 
                 return Padding(
                   padding: const EdgeInsets.only(right: 8),
@@ -112,6 +115,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                 NotificationService.instance.cancelAll();
                 await orderProvider.refresh();
                 orderProvider.markOrdersTabSeen();
+                orderProvider.markFilterSeen(orderProvider.selectedStatusFilter);
               },
               child: orderProvider.isLoading && orderProvider.rawOrders.isEmpty
                   ? ListView.builder(

@@ -45,14 +45,38 @@ class _StoraTextFieldState extends State<StoraTextField> {
   Widget build(BuildContext context) {
     Widget? suffix = widget.suffixIcon;
     if (widget.obscureText && suffix == null) {
-      suffix = IconButton(
-        icon: Icon(
-          _obscured ? Icons.visibility_rounded : Icons.visibility_off_rounded,
-          color: AppColors.label,
-          size: 20,
-        ),
-        tooltip: _obscured ? 'Show password' : 'Hide password',
-        onPressed: () => setState(() => _obscured = !_obscured),
+      suffix = ValueListenableBuilder<TextEditingValue>(
+        valueListenable: widget.controller,
+        builder: (context, value, _) {
+          return Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (value.text.isNotEmpty)
+                IconButton(
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                  icon: const Icon(
+                    Icons.close_rounded,
+                    color: AppColors.label,
+                    size: 18,
+                  ),
+                  tooltip: 'Clear password',
+                  onPressed: () => widget.controller.clear(),
+                ),
+              IconButton(
+                padding: const EdgeInsets.only(right: 8),
+                constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                icon: Icon(
+                  _obscured ? Icons.visibility_rounded : Icons.visibility_off_rounded,
+                  color: AppColors.label,
+                  size: 20,
+                ),
+                tooltip: _obscured ? 'Show password' : 'Hide password',
+                onPressed: () => setState(() => _obscured = !_obscured),
+              ),
+            ],
+          );
+        },
       );
     }
 
