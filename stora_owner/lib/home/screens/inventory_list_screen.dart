@@ -12,6 +12,7 @@ import '../widgets/product_image_widget.dart';
 import '../widgets/stock_step_button.dart';
 import '../../subscription/subscription_screen.dart';
 import '../widgets/shimmer_product_card.dart';
+import '../widgets/fade_slide_in.dart';
 import 'add_edit_product_screen.dart';
 
 class InventoryListScreen extends StatefulWidget {

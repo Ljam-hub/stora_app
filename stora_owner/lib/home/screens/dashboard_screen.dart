@@ -10,7 +10,6 @@ import '../utils/date_utils.dart';
 import '../../subscription/subscription_screen.dart';
 import 'add_edit_product_screen.dart';
 import 'ai_insights_screen.dart';
-import 'owner_chat_screen.dart';
 import 'pending_orders_screen.dart';
 import 'pos_screen.dart';
 import 'profile_screen.dart';
