@@ -23,6 +23,9 @@ class OrdersStore extends ChangeNotifier {
   String? get error => _error;
 
   int get pendingCount =>
+      _orders.where((o) => o['status'] == 'pending').length;
+
+  int get activeCount =>
       _orders.where((o) => o['status'] == 'pending' || o['status'] == 'counter_offer' || o['status'] == 'accepted').length;
 
   void startPolling({Duration interval = const Duration(seconds: 12)}) {

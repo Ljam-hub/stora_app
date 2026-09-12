@@ -20,6 +20,7 @@ class _PendingOrdersScreenState extends State<PendingOrdersScreen> {
   void initState() {
     super.initState();
     OrdersStore.instance.fetchOrders();
+    OwnerNotificationService.instance.cancelAll();
   }
 
   @override
@@ -364,11 +365,6 @@ class _OrderCardState extends State<_OrderCard> {
           icon: Icons.check_circle_rounded,
         );
       }
-      // Show Android heads-up notification in notification shade
-      OwnerNotificationService.instance.showNotification(
-        title: 'Order #$orderId Accepted',
-        body: 'Stock deducted and recorded in sales. Order is now preparing.',
-      );
     } catch (e) {
       if (mounted) {
         _showFeedback('Failed to accept order: $e', isSuccess: false);
@@ -389,11 +385,6 @@ class _OrderCardState extends State<_OrderCard> {
           icon: Icons.storefront_rounded,
         );
       }
-      // Show Android heads-up notification in notification shade
-      OwnerNotificationService.instance.showNotification(
-        title: 'Order #$orderId Ready for Pickup',
-        body: 'Customer has been notified that Order #$orderId is ready for pickup.',
-      );
     } catch (e) {
       if (mounted) {
         _showFeedback('Failed to mark order as ready: $e', isSuccess: false);
@@ -471,10 +462,6 @@ class _OrderCardState extends State<_OrderCard> {
                       icon: Icons.cancel_outlined,
                     );
                   }
-                  OwnerNotificationService.instance.showNotification(
-                    title: 'Order #$orderId Declined',
-                    body: 'Order #$orderId declined: $reason',
-                  );
                 } catch (e) {
                   if (mounted) {
                     _showFeedback('Failed to decline order: $e', isSuccess: false);
@@ -569,10 +556,6 @@ class _OrderCardState extends State<_OrderCard> {
                     icon: Icons.handshake_outlined,
                   );
                 }
-                OwnerNotificationService.instance.showNotification(
-                  title: 'Counter-Offer Sent',
-                  body: 'Sent counter-offer for Order #$orderId${price != null ? ' (₱$price)' : ''}',
-                );
               } catch (e) {
                 if (mounted) {
                   _showFeedback('Failed to send counter-offer: $e', isSuccess: false);
@@ -676,19 +659,6 @@ class _OrderCardState extends State<_OrderCard> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      if (customerEmail.isNotEmpty) ...[
-                        const SizedBox(height: 2),
-                        Text(
-                          customerEmail,
-                          style: const TextStyle(
-                            color: AppColors.label,
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w400,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
                     ],
                   ),
                 ),

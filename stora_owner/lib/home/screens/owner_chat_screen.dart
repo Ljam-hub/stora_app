@@ -633,6 +633,7 @@ class _OwnerChatThreadScreenState extends State<OwnerChatThreadScreen> {
     _pollTimer?.cancel();
     _textController.dispose();
     _scrollController.dispose();
+    ChatStore.instance.fetchConversations(isSilent: true);
     super.dispose();
   }
 
