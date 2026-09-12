@@ -19,7 +19,7 @@ class AppColors {
   static const secondaryLight = Color(0xFF34D399);
 
   static const success = Color(0xFF10B981);
-  static const successBg = Color(0xFF0E3824);
+  static const successBg = Color(0xFF059669);
 
   static const warning = Color(0xFFF59E0B);
   static const warningBg = Color(0xFF332408);

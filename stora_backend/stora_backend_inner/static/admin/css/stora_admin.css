@@ -543,7 +543,7 @@ div.breadcrumbs a:hover {
 }
 
 body.change-list .stora-content-area {
-  padding: 28px max(24px, calc((100vw - 1720px) / 2)) !important;
+  padding: 22px max(16px, calc((100vw - 1760px) / 2)) !important;
 }
 
 #content {
@@ -1725,10 +1725,10 @@ a.selector-clearall:hover {
 #result_list thead th {
   background: var(--stora-surface-raised) !important;
   color: #aab8bb !important;
-  font-size: 11px !important;
+  font-size: 10.5px !important;
   font-weight: 800 !important;
   text-transform: uppercase !important;
-  letter-spacing: .06em !important;
+  letter-spacing: .05em !important;
   padding: 0 !important;
   border-bottom: 1px solid var(--stora-border) !important;
   border-top: none !important;
@@ -1740,26 +1740,27 @@ a.selector-clearall:hover {
   box-sizing: border-box !important;
 }
 
-/* Header text wrappers - EXACT MATCH with td padding */
+/* Header text wrappers */
 #result_list thead th .text {
   padding: 0 !important;
   margin: 0 !important;
   display: flex !important;
   align-items: center !important;
-  min-height: 42px !important;
+  min-height: 38px !important;
   box-sizing: border-box !important;
+  width: 100% !important;
 }
 
 #result_list thead th .text a,
 #result_list thead th .text span {
   display: inline-flex !important;
   align-items: center !important;
-  padding: 12px 14px !important;
+  padding: 8px 10px !important;
   margin: 0 !important;
   color: #aab8bb !important;
-  font-size: 11px !important;
+  font-size: 10.5px !important;
   font-weight: 800 !important;
-  letter-spacing: .06em !important;
+  letter-spacing: .05em !important;
   text-transform: uppercase !important;
   text-decoration: none !important;
   box-sizing: border-box !important;
@@ -1771,7 +1772,7 @@ a.selector-clearall:hover {
 
 /* For simple header th without .text wrapper */
 #result_list thead th:not(.action-checkbox-column):not(:has(.text)) {
-  padding: 12px 14px !important;
+  padding: 8px 10px !important;
 }
 
 /* Sorted headers */
@@ -1783,19 +1784,19 @@ a.selector-clearall:hover {
   color: var(--stora-accent) !important;
 }
 
-/* Position sorting options cleanly on the right so they NEVER push the text */
-#result_list thead th.sortable .text a {
-  padding-right: 28px !important;
+/* Position sorting options cleanly on the right */
+#result_list thead th.sortable:not(.column-role_badge):not(.column-account_status_badge):not(.column-subscription_status):not(.column-is_email_verified):not(.column-subscription_expiration):not(.column-formatted_last_login):not(.column-is_active):not(.column-is_staff):not(.column-is_blocked) .text a {
+  padding-right: 24px !important;
 }
 
 #result_list thead th .sortoptions {
   position: absolute !important;
-  right: 10px !important;
+  right: 6px !important;
   top: 50% !important;
   transform: translateY(-50%) !important;
   display: flex !important;
   align-items: center !important;
-  gap: 3px !important;
+  gap: 2px !important;
   float: none !important;
   padding: 0 !important;
   margin: 0 !important;
@@ -1819,12 +1820,12 @@ a.selector-clearall:hover {
   background: var(--stora-surface-raised) !important;
 }
 
-/* Table body cells - MATCH EXACT PADDING: 12px vertical, 14px horizontal */
+/* Table body cells - COMPACT 8px vertical, 10px horizontal for ideal screen fit */
 #result_list tbody td,
 #result_list tbody th {
-  padding: 12px 14px !important;
+  padding: 8px 10px !important;
   color: var(--stora-text) !important;
-  font-size: 13px !important;
+  font-size: 12px !important;
   border-bottom: 1px solid var(--stora-border) !important;
   vertical-align: middle !important;
   white-space: nowrap !important;
@@ -1848,9 +1849,9 @@ a.selector-clearall:hover {
 /* Action Checkbox Column: Fixed width and perfectly centered in both thead and tbody */
 #result_list thead th.action-checkbox-column,
 #result_list tbody td.action-checkbox {
-  width: 48px !important;
-  min-width: 48px !important;
-  max-width: 48px !important;
+  width: 42px !important;
+  min-width: 42px !important;
+  max-width: 42px !important;
   padding: 0 !important;
   text-align: center !important;
   vertical-align: middle !important;
@@ -1861,7 +1862,7 @@ a.selector-clearall:hover {
   align-items: center !important;
   justify-content: center !important;
   width: 100% !important;
-  min-height: 42px !important;
+  min-height: 38px !important;
   padding: 0 !important;
   margin: 0 !important;
 }
@@ -1880,12 +1881,12 @@ a.selector-clearall:hover {
   display: block !important;
   margin: 0 auto !important;
   cursor: pointer !important;
-  width: 16px !important;
-  height: 16px !important;
+  width: 15px !important;
+  height: 15px !important;
   accent-color: var(--stora-accent) !important;
 }
 
-/* Centered Columns: Badges, Status, and Boolean Icons */
+/* Centered Columns: Badges, Status, Dates, and Boolean Icons */
 #result_list thead th.column-role_badge,
 #result_list tbody td.field-role_badge,
 #result_list thead th.column-account_status_badge,
@@ -1894,6 +1895,10 @@ a.selector-clearall:hover {
 #result_list tbody td.field-subscription_status,
 #result_list thead th.column-is_email_verified,
 #result_list tbody td.field-is_email_verified,
+#result_list thead th.column-subscription_expiration,
+#result_list tbody td.field-subscription_expiration,
+#result_list thead th.column-formatted_last_login,
+#result_list tbody td.field-formatted_last_login,
 #result_list thead th.column-is_active,
 #result_list tbody td.field-is_active,
 #result_list thead th.column-is_staff,
@@ -1902,24 +1907,49 @@ a.selector-clearall:hover {
 #result_list tbody td.field-is_blocked,
 #result_list tbody td.boolean-cell {
   text-align: center !important;
+  vertical-align: middle !important;
 }
 
 #result_list thead th.column-role_badge .text,
-#result_list thead th.column-role_badge .text a,
 #result_list thead th.column-account_status_badge .text,
-#result_list thead th.column-account_status_badge .text a,
 #result_list thead th.column-subscription_status .text,
-#result_list thead th.column-subscription_status .text a,
 #result_list thead th.column-is_email_verified .text,
-#result_list thead th.column-is_email_verified .text a,
+#result_list thead th.column-subscription_expiration .text,
+#result_list thead th.column-formatted_last_login .text,
 #result_list thead th.column-is_active .text,
-#result_list thead th.column-is_active .text a,
 #result_list thead th.column-is_staff .text,
-#result_list thead th.column-is_staff .text a,
-#result_list thead th.column-is_blocked .text,
-#result_list thead th.column-is_blocked .text a {
+#result_list thead th.column-is_blocked .text {
+  display: flex !important;
   justify-content: center !important;
+  align-items: center !important;
   text-align: center !important;
+  width: 100% !important;
+}
+
+#result_list thead th.column-role_badge .text a,
+#result_list thead th.column-role_badge .text span,
+#result_list thead th.column-account_status_badge .text a,
+#result_list thead th.column-account_status_badge .text span,
+#result_list thead th.column-subscription_status .text a,
+#result_list thead th.column-subscription_status .text span,
+#result_list thead th.column-is_email_verified .text a,
+#result_list thead th.column-is_email_verified .text span,
+#result_list thead th.column-subscription_expiration .text a,
+#result_list thead th.column-subscription_expiration .text span,
+#result_list thead th.column-formatted_last_login .text a,
+#result_list thead th.column-formatted_last_login .text span,
+#result_list thead th.column-is_active .text a,
+#result_list thead th.column-is_active .text span,
+#result_list thead th.column-is_staff .text a,
+#result_list thead th.column-is_staff .text span,
+#result_list thead th.column-is_blocked .text a,
+#result_list thead th.column-is_blocked .text span {
+  display: inline-flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  text-align: center !important;
+  padding: 8px 10px !important;
+  margin: 0 auto !important;
 }
 
 /* Center icons & badges inside centered columns */
@@ -1927,7 +1957,8 @@ a.selector-clearall:hover {
 #result_list tbody td.field-account_status_badge span,
 #result_list tbody td.field-subscription_status .user-badge {
   display: inline-flex !important;
-  margin: 0 auto !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
   vertical-align: middle !important;
 }
 
@@ -1938,18 +1969,27 @@ a.selector-clearall:hover {
 #result_list tbody td img[alt="True"],
 #result_list tbody td img[alt="False"] {
   display: inline-block !important;
-  margin: 0 auto !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
   vertical-align: middle !important;
 }
 
-/* User Status Badges */
+/* Mono date styling for compact centered fit */
+#result_list tbody td.field-subscription_expiration,
+#result_list tbody td.field-formatted_last_login {
+  font-family: var(--stora-font-mono) !important;
+  font-size: 11px !important;
+  color: var(--stora-muted) !important;
+}
+
+/* User Status Badges - Vibrant & High Contrast */
 .user-badge {
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
   white-space: nowrap !important;
-  font-size: 11px !important;
-  font-weight: 700 !important;
+  font-size: 10.5px !important;
+  font-weight: 800 !important;
   padding: 2px 8px !important;
   border-radius: 6px !important;
   line-height: 1.3 !important;
@@ -1957,38 +1997,46 @@ a.selector-clearall:hover {
 }
 
 .user-badge--admin {
-  background: #7c3aed !important;
-  color: #ffffff !important;
+  background: rgba(124, 58, 237, 0.22) !important;
+  color: #c4b5fd !important;
+  border: 1px solid rgba(124, 58, 237, 0.5) !important;
 }
 
 .user-badge--owner {
-  background: #f56a10 !important;
-  color: #ffffff !important;
+  background: rgba(245, 106, 16, 0.22) !important;
+  color: #fb923c !important;
+  border: 1px solid rgba(245, 106, 16, 0.5) !important;
 }
 
 .user-badge--customer {
-  background: #334155 !important;
+  background: rgba(51, 65, 85, 0.35) !important;
   color: #cbd5e1 !important;
+  border: 1px solid rgba(148, 163, 184, 0.3) !important;
 }
 
 .user-badge--premium {
-  background: #059669 !important;
-  color: #ffffff !important;
+  background: rgba(16, 185, 129, 0.22) !important;
+  color: #34d399 !important;
+  border: 1px solid rgba(52, 211, 153, 0.5) !important;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.2) !important;
 }
 
 .user-badge--trial {
-  background: #d97706 !important;
-  color: #ffffff !important;
+  background: rgba(217, 119, 6, 0.22) !important;
+  color: #fbbf24 !important;
+  border: 1px solid rgba(217, 119, 6, 0.5) !important;
 }
 
 .user-badge--expired {
-  background: #dc2626 !important;
-  color: #ffffff !important;
+  background: rgba(220, 38, 38, 0.22) !important;
+  color: #f87171 !important;
+  border: 1px solid rgba(220, 38, 38, 0.5) !important;
 }
 
 .user-badge--free {
-  background: #475569 !important;
-  color: #e2e8f0 !important;
+  background: rgba(71, 85, 105, 0.3) !important;
+  color: #94a3b8 !important;
+  border: 1px solid rgba(148, 163, 184, 0.25) !important;
 }
 
 /* Search Bar */
@@ -2313,9 +2361,9 @@ input[type="submit"].default {
    13. CHANGELIST FILTER SIDEBAR
    ========================================================================== */
 #changelist-filter {
-  flex: 0 0 240px !important;
-  width: 240px !important;
-  min-width: 240px !important;
+  flex: 0 0 210px !important;
+  width: 210px !important;
+  min-width: 210px !important;
   position: static !important;
   margin: 0 !important;
   background: var(--stora-surface) !important;

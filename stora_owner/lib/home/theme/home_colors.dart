@@ -9,8 +9,8 @@ class HomeColors {
   static const cardBorder = Color(0xFF352B46);
   static const cardBorderLight = Color(0xFF4C3E63);
   
-  static const successText = Color(0xFF34D399);
-  static const successBg = Color(0xFF0E3824);
+  static const successText = Color(0xFF10B981);
+  static const successBg = Color(0xFF065F46);
   
   static const warningText = Color(0xFFFBBF24);
   static const warningBg = Color(0xFF332408);

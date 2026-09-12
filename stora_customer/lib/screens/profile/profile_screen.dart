@@ -98,8 +98,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         if (ok) {
           messenger.showSnackBar(
             const SnackBar(
-              content: Text('Profile photo removed. Classic avatar restored.'),
-              backgroundColor: AppColors.successBg,
+              content: Text('Profile photo removed. Classic avatar restored.', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              backgroundColor: Color(0xFF059669),
             ),
           );
         } else {
@@ -136,8 +136,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (ok) {
         messenger.showSnackBar(
           const SnackBar(
-            content: Text('Profile photo updated!'),
-            backgroundColor: AppColors.successBg,
+            content: Text('Profile photo updated!', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            backgroundColor: Color(0xFF059669),
           ),
         );
       } else {
@@ -207,8 +207,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 if (ok) {
                   messenger.showSnackBar(
                     const SnackBar(
-                      content: Text('Profile updated successfully!'),
-                      backgroundColor: AppColors.successBg,
+                      content: Text('Profile updated successfully!', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      backgroundColor: Color(0xFF059669),
                     ),
                   );
                 }
@@ -273,8 +273,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 nav.pop();
                 messenger.showSnackBar(
                   const SnackBar(
-                    content: Text('Delivery information saved!'),
-                    backgroundColor: AppColors.successBg,
+                    content: Text('Delivery information saved!', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    backgroundColor: Color(0xFF059669),
                   ),
                 );
               }
@@ -391,8 +391,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         nav.pop();
                         messenger.showSnackBar(
                           const SnackBar(
-                            content: Text('Password changed successfully!'),
-                            backgroundColor: AppColors.successBg,
+                            content: Text('Password changed successfully!', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                            backgroundColor: Color(0xFF059669),
                           ),
                         );
                       } catch (e) {

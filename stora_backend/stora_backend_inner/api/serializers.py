@@ -664,8 +664,10 @@ class AIInsightSerializer(serializers.ModelSerializer):
 
 
 class ChatMessageSerializer(serializers.ModelSerializer):
+    sender_id = serializers.IntegerField(source="sender.id", read_only=True)
     sender_name = serializers.SerializerMethodField()
     sender_role = serializers.CharField(source="sender.role", read_only=True)
+    recipient_id = serializers.IntegerField(source="recipient.id", read_only=True)
     recipient_name = serializers.SerializerMethodField()
     order_title = serializers.SerializerMethodField()
     image_url = serializers.SerializerMethodField()
@@ -676,9 +678,11 @@ class ChatMessageSerializer(serializers.ModelSerializer):
         fields = (
             "id",
             "sender",
+            "sender_id",
             "sender_name",
             "sender_role",
             "recipient",
+            "recipient_id",
             "recipient_name",
             "order",
             "order_title",
@@ -688,7 +692,7 @@ class ChatMessageSerializer(serializers.ModelSerializer):
             "is_read",
             "created_at",
         )
-        read_only_fields = ("id", "sender", "is_read", "created_at", "image_url")
+        read_only_fields = ("id", "sender", "sender_id", "recipient_id", "is_read", "created_at", "image_url")
         extra_kwargs = {
             "image": {"required": False, "allow_null": True},
             "message": {"required": False, "allow_blank": True},

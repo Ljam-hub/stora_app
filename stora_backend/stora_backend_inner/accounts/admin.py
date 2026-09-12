@@ -45,11 +45,11 @@ class UserAdmin(DjangoUserAdmin):
         if getattr(obj, "is_blocked", False) or not obj.is_active:
             reason = f': {obj.block_reason}' if obj.block_reason else ''
             return format_html(
-                '<span style="background: rgba(239, 68, 68, 0.15); color: #ef4444; padding: 3px 8px; border-radius: 6px; font-weight: 800; font-size: 11px; border: 1px solid rgba(239, 68, 68, 0.35);" title="Blocked{}">BLOCKED</span>',
+                '<span style="background: rgba(239, 68, 68, 0.2); color: #f87171; padding: 3px 10px; border-radius: 6px; font-weight: 800; font-size: 11px; border: 1px solid rgba(239, 68, 68, 0.45); display: inline-flex; align-items: center; justify-content: center; margin: 0 auto;" title="Blocked{}">BLOCKED</span>',
                 reason,
             )
         return format_html(
-            '<span style="background: rgba(16, 185, 129, 0.15); color: #10b981; padding: 3px 8px; border-radius: 6px; font-weight: 700; font-size: 11px; border: 1px solid rgba(16, 185, 129, 0.35);">Active</span>'
+            '<span style="background: rgba(16, 185, 129, 0.22); color: #34d399; padding: 3px 10px; border-radius: 6px; font-weight: 800; font-size: 11px; border: 1px solid rgba(52, 211, 153, 0.5); box-shadow: 0 0 8px rgba(16, 185, 129, 0.2); display: inline-flex; align-items: center; justify-content: center; margin: 0 auto;">Active</span>'
         )
 
     @admin.action(description="Block selected users (disable app access)")

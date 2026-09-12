@@ -575,7 +575,10 @@ class _OwnerChatThreadScreenState extends State<OwnerChatThreadScreen> {
         setState(() => _isBlocked = willBlock);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(willBlock ? '${widget.customerName} has been blocked' : '${widget.customerName} has been unblocked'),
+            content: Text(
+              willBlock ? '${widget.customerName} has been blocked' : '${widget.customerName} has been unblocked',
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
             backgroundColor: willBlock ? HomeColors.dangerText : HomeColors.successText,
           ),
         );
@@ -808,7 +811,10 @@ class _OwnerChatThreadScreenState extends State<OwnerChatThreadScreen> {
 
                                         messenger.showSnackBar(
                                           const SnackBar(
-                                            content: Text('Report submitted. Our administrators will review this user.'),
+                                            content: Text(
+                                              'Report submitted. Our administrators will review this user.',
+                                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                            ),
                                             backgroundColor: HomeColors.successText,
                                           ),
                                         );
@@ -1109,7 +1115,10 @@ class _OwnerChatThreadScreenState extends State<OwnerChatThreadScreen> {
                         itemCount: _messages.length,
                         itemBuilder: (context, index) {
                           final msg = _messages[index];
-                          final isMe = msg['sender_id'] != widget.customerId;
+                          final senderId = msg['sender_id'] ?? msg['sender'];
+                          final senderRole = msg['sender_role'] as String?;
+                          final bool isMe = (senderRole != null && (senderRole == 'owner' || senderRole == 'admin')) ||
+                              (senderRole == null && senderId != null && senderId != widget.customerId);
                           final text = msg['message'] as String? ?? '';
                           final rawImg = msg['image'] as String?;
                           final orderId = msg['order'] as int?;
