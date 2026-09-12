@@ -69,7 +69,10 @@ class AppNotificationBadge extends StatelessWidget {
         );
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+        padding: EdgeInsets.symmetric(
+          horizontal: displayText.length > 1 ? 5 : 4,
+          vertical: 1,
+        ),
         constraints: BoxConstraints(
           minWidth: minSize,
           minHeight: minSize,
@@ -84,12 +87,14 @@ class AppNotificationBadge extends StatelessWidget {
           boxShadow: [
             BoxShadow(
               color: badgeColor.withValues(alpha: 0.5),
-              blurRadius: 6,
+              blurRadius: 4,
               offset: const Offset(0, 1),
             ),
           ],
         ),
         child: Center(
+          widthFactor: 1.0,
+          heightFactor: 1.0,
           child: Text(
             displayText,
             textAlign: TextAlign.center,

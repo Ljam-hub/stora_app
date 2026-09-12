@@ -22,7 +22,13 @@ class _OrdersScreenState extends State<OrdersScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<OrderProvider>().fetchOrders();
+      if (!mounted) return;
+      final provider = context.read<OrderProvider>();
+      provider.fetchOrders();
+      provider.markOrdersTabSeen();
+      if (provider.selectedStatusFilter != 'all') {
+        provider.markFilterSeen(provider.selectedStatusFilter);
+      }
     });
   }
 
@@ -55,14 +61,15 @@ class _OrdersScreenState extends State<OrdersScreen> {
                 final f = filters[index];
                 final isSelected = orderProvider.selectedStatusFilter == f['id'];
                 int badgeCount = 0;
-                if (f['id'] == 'pending') badgeCount = orderProvider.pendingCount;
-                if (f['id'] == 'counter_offer') badgeCount = orderProvider.counterOfferCount;
+                if (f['id'] == 'pending') badgeCount = orderProvider.unreadPendingCount;
+                if (f['id'] == 'counter_offer') badgeCount = orderProvider.unreadCounterOfferCount;
 
                 return Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: FilterChip(
                     label: Row(
                       mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Text(f['label']!),
                         if (badgeCount > 0) ...[
@@ -70,13 +77,15 @@ class _OrdersScreenState extends State<OrdersScreen> {
                           AppNotificationBadge(
                             count: badgeCount,
                             minSize: 16,
-                            borderColor: AppColors.cardBackground,
+                            borderColor: isSelected ? AppColors.primary : AppColors.cardBackground,
                           ),
                         ],
                       ],
                     ),
                     selected: isSelected,
-                    onSelected: (_) => orderProvider.setFilter(f['id']!),
+                    onSelected: (_) {
+                      orderProvider.setFilter(f['id']!);
+                    },
                     selectedColor: AppColors.cardElevated,
                     checkmarkColor: AppColors.primaryLight,
                     labelStyle: TextStyle(

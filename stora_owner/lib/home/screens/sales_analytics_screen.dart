@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../../data/stores/account_status_store.dart';
 import '../../stora_login/stora_login.dart';
+import '../../subscription/subscription_screen.dart';
 import '../stores/inventory_store.dart';
 import '../stores/sales_store.dart';
 import '../theme/home_colors.dart';
@@ -19,8 +21,92 @@ class _SalesAnalyticsScreenState extends State<SalesAnalyticsScreen> {
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: Listenable.merge([SalesStore.instance, InventoryStore.instance]),
+      animation: Listenable.merge([SalesStore.instance, InventoryStore.instance, AccountStatusStore.instance]),
       builder: (context, _) {
+        final isPremium = AccountStatusStore.instance.isPremium;
+        if (!isPremium) {
+          return Scaffold(
+            backgroundColor: AppColors.background,
+            body: SafeArea(
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                    child: Row(
+                      children: [
+                        IconButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          icon: const Icon(Icons.chevron_left, color: Colors.white),
+                          style: IconButton.styleFrom(
+                            backgroundColor: HomeColors.cardBackground,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                        ),
+                        const Expanded(
+                          child: Text(
+                            'Sales Analytics',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700),
+                          ),
+                        ),
+                        const SizedBox(width: 40),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: Center(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 28.0),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(20),
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.amber.withValues(alpha: 0.15),
+                                border: Border.all(color: Colors.amber.withValues(alpha: 0.4), width: 2),
+                              ),
+                              child: const Icon(Icons.insights_rounded, color: Colors.amber, size: 54),
+                            ),
+                            const SizedBox(height: 24),
+                            const Text(
+                              'Premium Feature',
+                              style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800),
+                            ),
+                            const SizedBox(height: 10),
+                            const Text(
+                              'Sales Analytics & Reports provide in-depth charts for 7-day and 30-day revenue trends, best-selling product breakdowns, and order volume insights.\n\nUpgrade to Premium to unlock full analytics.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(color: AppColors.label, fontSize: 14, height: 1.5),
+                            ),
+                            const SizedBox(height: 28),
+                            ElevatedButton.icon(
+                              onPressed: () => Navigator.of(context).push(
+                                MaterialPageRoute(builder: (_) => SubscriptionScreen()),
+                              ),
+                              icon: const Icon(Icons.workspace_premium_rounded, color: Colors.white, size: 20),
+                              label: const Text(
+                                'Upgrade to Premium',
+                                style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primary,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
         final sales = SalesStore.instance.sales;
         final now = DateTime.now();
 

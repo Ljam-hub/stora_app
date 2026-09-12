@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../auth/auth_store.dart';
 import '../../stora_login/stora_login.dart';
-import '../../data/models/account_status.dart';
 import '../../data/stores/account_status_store.dart';
 import '../stores/inventory_store.dart';
 import '../stores/orders_store.dart';
@@ -146,8 +145,6 @@ class DashboardScreen extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 14),
-                _TopStatusBadge(status: AccountStatusStore.instance.status),
-                const SizedBox(height: 16),
                 FadeSlideIn(
                   delay: const Duration(milliseconds: 0),
                   child: _IncomingOrdersCard(
@@ -165,6 +162,8 @@ class DashboardScreen extends StatelessWidget {
                     subtitle:
                         '${sales.todaysSalesCount} sales · Avg. ₱${sales.todaysAverage.toStringAsFixed(2)}',
                     badge: sales.changeBadge,
+                    isPremium: AccountStatusStore.instance.isPremium,
+                    daysLeft: AccountStatusStore.instance.daysLeft,
                     onTap: () => Navigator.of(context).push(
                       MaterialPageRoute(builder: (_) => const SalesHistoryScreen()),
                     ),
@@ -178,9 +177,15 @@ class DashboardScreen extends StatelessWidget {
                     children: [
                       Expanded(
                         child: GestureDetector(
-                          onTap: () => Navigator.of(context).push(
-                            MaterialPageRoute(builder: (_) => const AiInsightsScreen()),
-                          ),
+                          onTap: () {
+                            if (!AccountStatusStore.instance.isPremium) {
+                              _showPremiumFeatureDialog(context, featureName: 'AI Store Insights');
+                              return;
+                            }
+                            Navigator.of(context).push(
+                              MaterialPageRoute(builder: (_) => const AiInsightsScreen()),
+                            );
+                          },
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                             decoration: BoxDecoration(
@@ -206,17 +211,39 @@ class DashboardScreen extends StatelessWidget {
                                   child: const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 16),
                                 ),
                                 const SizedBox(width: 10),
-                                const Expanded(
+                                Expanded(
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Row(
                                         children: [
-                                          Text('AI Insights',
+                                          const Text('AI Insights',
                                               style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700)),
+                                          if (!AccountStatusStore.instance.isPremium) ...[
+                                            const SizedBox(width: 5),
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                              decoration: BoxDecoration(
+                                                color: Colors.amber.withValues(alpha: 0.18),
+                                                borderRadius: BorderRadius.circular(6),
+                                                border: Border.all(color: Colors.amber.withValues(alpha: 0.4), width: 0.8),
+                                              ),
+                                              child: const Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Icon(Icons.lock_rounded, color: Colors.amber, size: 9),
+                                                  SizedBox(width: 2),
+                                                  Text(
+                                                    'PRO',
+                                                    style: TextStyle(color: Colors.amber, fontSize: 8.5, fontWeight: FontWeight.w900),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ],
                                         ],
                                       ),
-                                      Text('Smart store tips',
+                                      const Text('Smart store tips',
                                           style: TextStyle(color: AppColors.label, fontSize: 11)),
                                     ],
                                   ),
@@ -274,9 +301,15 @@ class DashboardScreen extends StatelessWidget {
                 FadeSlideIn(
                   delay: const Duration(milliseconds: 300),
                   child: GestureDetector(
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const SalesAnalyticsScreen()),
-                    ),
+                    onTap: () {
+                      if (!AccountStatusStore.instance.isPremium) {
+                        _showPremiumFeatureDialog(context, featureName: 'Sales Analytics & Reports');
+                        return;
+                      }
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const SalesAnalyticsScreen()),
+                      );
+                    },
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                       decoration: BoxDecoration(
@@ -295,13 +328,39 @@ class DashboardScreen extends StatelessWidget {
                             child: const Icon(Icons.insights_rounded, color: AppColors.purpleLight, size: 18),
                           ),
                           const SizedBox(width: 12),
-                          const Expanded(
+                          Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('Sales Analytics & Reports',
-                                    style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700)),
-                                Text('View 7-day revenue charts & top sellers',
+                                Row(
+                                  children: [
+                                    const Text('Sales Analytics & Reports',
+                                        style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700)),
+                                    if (!AccountStatusStore.instance.isPremium) ...[
+                                      const SizedBox(width: 6),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                        decoration: BoxDecoration(
+                                          color: Colors.amber.withValues(alpha: 0.18),
+                                          borderRadius: BorderRadius.circular(6),
+                                          border: Border.all(color: Colors.amber.withValues(alpha: 0.4), width: 0.8),
+                                        ),
+                                        child: const Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(Icons.lock_rounded, color: Colors.amber, size: 9),
+                                            SizedBox(width: 2),
+                                            Text(
+                                              'PRO',
+                                              style: TextStyle(color: Colors.amber, fontSize: 8.5, fontWeight: FontWeight.w900),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                                const Text('View 7-day revenue charts & top sellers',
                                     style: TextStyle(color: AppColors.label, fontSize: 11)),
                               ],
                             ),
@@ -425,8 +484,17 @@ class _EarningsCard extends StatelessWidget {
   final String amount;
   final String subtitle;
   final String badge;
+  final bool isPremium;
+  final int daysLeft;
   final VoidCallback? onTap;
-  const _EarningsCard({required this.amount, required this.subtitle, required this.badge, this.onTap});
+  const _EarningsCard({
+    required this.amount,
+    required this.subtitle,
+    required this.badge,
+    this.isPremium = false,
+    this.daysLeft = 0,
+    this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -470,6 +538,87 @@ class _EarningsCard extends StatelessWidget {
                     style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700, letterSpacing: 0.2),
                   ),
                 ),
+                if (isPremium) ...[
+                  const SizedBox(width: 6),
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => SubscriptionScreen()),
+                    ),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4.5),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.22),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: const Color(0xFFFFD54F).withValues(alpha: 0.9),
+                          width: 1,
+                        ),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.star_rounded, color: Color(0xFFFFD54F), size: 13),
+                          SizedBox(width: 3.5),
+                          Text(
+                            'PREMIUM',
+                            style: TextStyle(
+                              color: Color(0xFFFFD54F),
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.4,
+                              height: 1.1,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ] else ...[
+                  const SizedBox(width: 6),
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => SubscriptionScreen()),
+                    ),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4.5),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.22),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: daysLeft <= 3
+                              ? const Color(0xFFFF6B6B).withValues(alpha: 0.9)
+                              : Colors.white.withValues(alpha: 0.4),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            daysLeft <= 3 ? Icons.warning_amber_rounded : Icons.hourglass_top_rounded,
+                            color: daysLeft <= 3 ? const Color(0xFFFF8787) : Colors.white,
+                            size: 12,
+                          ),
+                          const SizedBox(width: 3.5),
+                          Text(
+                            daysLeft <= 0 ? 'TRIAL ENDED' : 'TRIAL · ${daysLeft}d',
+                            style: TextStyle(
+                              color: daysLeft <= 3
+                                  ? const Color(0xFFFF8787)
+                                  : Colors.white.withValues(alpha: 0.95),
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.3,
+                              height: 1.1,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
                 const SizedBox(width: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -835,109 +984,60 @@ class _IncomingOrdersCard extends StatelessWidget {
   }
 }
 
-class _TopStatusBadge extends StatelessWidget {
-  final AccountStatus status;
-  const _TopStatusBadge({required this.status});
-
-  @override
-  Widget build(BuildContext context) {
-    final isPremium = status.isPremium;
-    final daysLeft = status.daysLeft;
-    final isExpiringSoon = !isPremium && daysLeft <= 3;
-
-    final bgColor = isPremium
-        ? const Color(0xFF2A1C3C)
-        : isExpiringSoon
-            ? HomeColors.warningBg
-            : HomeColors.cardElevated;
-    final borderColor = isPremium
-        ? const Color(0xFF9D4EDD)
-        : isExpiringSoon
-            ? HomeColors.warningText.withValues(alpha: 0.5)
-            : HomeColors.cardBorder;
-    final textColor = isPremium
-        ? const Color(0xFFE0AAFF)
-        : isExpiringSoon
-            ? HomeColors.warningText
-            : Colors.white;
-
-    return GestureDetector(
-      onTap: () => Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => SubscriptionScreen()),
+void _showPremiumFeatureDialog(BuildContext context, {required String featureName}) {
+  showDialog(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      backgroundColor: HomeColors.cardBackground,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(color: Colors.amber.withValues(alpha: 0.35), width: 1),
       ),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-        decoration: BoxDecoration(
-          color: bgColor,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: borderColor, width: 1),
-          boxShadow: [
-            BoxShadow(
-              color: (isPremium ? const Color(0xFF9D4EDD) : Colors.black).withValues(alpha: 0.12),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
+      title: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.amber.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(10),
             ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Text(
-              isPremium ? '⭐' : isExpiringSoon ? '⚠️' : '⏳',
-              style: const TextStyle(fontSize: 18),
+            child: const Icon(Icons.workspace_premium_rounded, color: Colors.amber, size: 22),
+          ),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Text(
+              'Premium Feature',
+              style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Text(
-                        isPremium
-                            ? 'Premium Plan'
-                            : 'Free Trial: $daysLeft days left',
-                        style: TextStyle(
-                          color: textColor,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                      ),
-                      if (isExpiringSoon) ...[
-                        const SizedBox(width: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: HomeColors.dangerBg,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: const Text(
-                            'Expiring Soon',
-                            style: TextStyle(color: HomeColors.dangerText, fontSize: 10, fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    isPremium
-                        ? 'Active · Unlimited products & full features unlocked'
-                        : isExpiringSoon
-                            ? 'Upgrade to Premium now to keep your store active'
-                            : 'Tap to view plan details & upgrade to Premium',
-                    style: TextStyle(
-                      color: isPremium ? const Color(0xFFC77DFF) : AppColors.label,
-                      fontSize: 11,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const Icon(Icons.arrow_forward_ios_rounded, color: AppColors.label, size: 12),
-          ],
-        ),
+          ),
+        ],
       ),
-    );
-  }
+      content: Text(
+        '$featureName is exclusive to Premium subscribers. Upgrade now to unlock advanced analytics, smart AI store recommendations, and unlimited products.',
+        style: const TextStyle(color: AppColors.label, fontSize: 13, height: 1.4),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(ctx).pop(),
+          child: const Text('Not Now', style: TextStyle(color: AppColors.label)),
+        ),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.primary,
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          ),
+          onPressed: () {
+            Navigator.of(ctx).pop();
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => SubscriptionScreen()),
+            );
+          },
+          child: const Text('Upgrade to Premium', style: TextStyle(fontWeight: FontWeight.bold)),
+        ),
+      ],
+    ),
+  );
 }
 

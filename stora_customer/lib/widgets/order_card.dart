@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/order_model.dart';
+import '../providers/chat_provider.dart';
+import '../providers/order_provider.dart';
 import '../screens/chat/customer_chat_screen.dart';
 import '../services/api_service.dart';
 import '../theme/app_theme.dart';
+import 'notification_badge.dart';
 import 'order_status_stepper.dart';
 
 class OrderCard extends StatefulWidget {
@@ -585,14 +589,132 @@ class _OrderCardState extends State<OrderCard> {
               ],
             ),
           ),
+          if (order.latestMessage != null && order.latestMessage!.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 0, 14, 10),
+              child: InkWell(
+                onTap: () async {
+                  await Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => CustomerChatScreen(
+                        storeOwnerId: order.ownerId,
+                        storeName: order.storeName.isNotEmpty ? order.storeName : 'Store Owner',
+                        storeAvatarUrl: order.storeAvatarUrl,
+                        initialOrderId: order.id,
+                      ),
+                    ),
+                  );
+                  if (context.mounted) {
+                    context.read<OrderProvider>().refresh(isSilent: true);
+                    context.read<ChatProvider>().fetchConversations(isSilent: true);
+                  }
+                },
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                  decoration: BoxDecoration(
+                    color: order.unreadMessageCount > 0
+                        ? AppColors.primary.withValues(alpha: 0.12)
+                        : AppColors.cardElevated,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: order.unreadMessageCount > 0
+                          ? AppColors.primary.withValues(alpha: 0.5)
+                          : AppColors.cardBorder,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: order.unreadMessageCount > 0
+                              ? AppColors.primary.withValues(alpha: 0.2)
+                              : Colors.white10,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          order.latestMessageIsUnsent
+                              ? Icons.undo_rounded
+                              : Icons.chat_bubble_rounded,
+                          size: 14,
+                          color: order.unreadMessageCount > 0
+                              ? AppColors.primaryLight
+                              : AppColors.textMuted,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Row(
+                              children: [
+                                Text(
+                                  order.latestMessageIsMe
+                                      ? 'You'
+                                      : (order.storeName.isNotEmpty ? order.storeName : 'Store Owner'),
+                                  style: TextStyle(
+                                    color: order.unreadMessageCount > 0
+                                        ? Colors.white
+                                        : AppColors.textSecondary,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                if (order.latestMessageAt != null) ...[
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    '• ${_formatMessageTime(order.latestMessageAt!)}',
+                                    style: const TextStyle(
+                                      color: AppColors.textMuted,
+                                      fontSize: 10.5,
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              order.latestMessageIsUnsent ? 'Message unsent' : order.latestMessage!,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: order.latestMessageIsUnsent
+                                    ? AppColors.textMuted
+                                    : (order.unreadMessageCount > 0
+                                        ? Colors.white
+                                        : AppColors.textSecondary),
+                                fontSize: 12.5,
+                                fontStyle: order.latestMessageIsUnsent ? FontStyle.italic : FontStyle.normal,
+                                fontWeight: order.unreadMessageCount > 0 ? FontWeight.w600 : FontWeight.normal,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (order.unreadMessageCount > 0) ...[
+                        const SizedBox(width: 8),
+                        AppNotificationBadge(
+                          count: order.unreadMessageCount,
+                          minSize: 16,
+                          borderColor: AppColors.cardBackground,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ),
           Padding(
             padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
             child: Row(
               children: [
                 Expanded(
                   child: OutlinedButton.icon(
-                    onPressed: () {
-                      Navigator.of(context).push(
+                    onPressed: () async {
+                      await Navigator.of(context).push(
                         MaterialPageRoute(
                           builder: (_) => CustomerChatScreen(
                             storeOwnerId: order.ownerId,
@@ -602,11 +724,23 @@ class _OrderCardState extends State<OrderCard> {
                           ),
                         ),
                       );
+                      if (context.mounted) {
+                        context.read<OrderProvider>().refresh(isSilent: true);
+                        context.read<ChatProvider>().fetchConversations(isSilent: true);
+                      }
                     },
-                    icon: const Icon(Icons.chat_bubble_outline_rounded, size: 16, color: AppColors.primaryLight),
-                    label: const Text(
-                      'Inquire / Message Store',
-                      style: TextStyle(color: AppColors.primaryLight, fontSize: 13, fontWeight: FontWeight.w600),
+                    icon: AppNotificationBadge(
+                      count: order.unreadMessageCount,
+                      top: -4,
+                      right: -6,
+                      minSize: 14,
+                      child: const Icon(Icons.chat_bubble_outline_rounded, size: 16, color: AppColors.primaryLight),
+                    ),
+                    label: Text(
+                      order.unreadMessageCount > 0
+                          ? 'Message Store (${order.unreadMessageCount} new)'
+                          : 'Inquire / Message Store',
+                      style: const TextStyle(color: AppColors.primaryLight, fontSize: 13, fontWeight: FontWeight.w600),
                     ),
                     style: OutlinedButton.styleFrom(
                       side: const BorderSide(color: AppColors.primary),
@@ -635,5 +769,13 @@ class _OrderCardState extends State<OrderCard> {
         ],
       ),
     );
+  }
+
+  String _formatMessageTime(DateTime dt) {
+    final local = dt.toLocal();
+    final hour = local.hour > 12 ? local.hour - 12 : (local.hour == 0 ? 12 : local.hour);
+    final period = local.hour >= 12 ? 'PM' : 'AM';
+    final minute = local.minute.toString().padLeft(2, '0');
+    return '$hour:$minute $period';
   }
 }

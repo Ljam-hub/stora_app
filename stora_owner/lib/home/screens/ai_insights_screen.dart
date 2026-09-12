@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../data/api/api_client.dart';
+import '../../data/stores/account_status_store.dart';
 import '../../stora_login/stora_login.dart';
+import '../../subscription/subscription_screen.dart';
 import '../theme/home_colors.dart';
 import 'inventory_list_screen.dart';
 import 'pending_orders_screen.dart';
@@ -23,7 +25,11 @@ class _AiInsightsScreenState extends State<AiInsightsScreen> {
   @override
   void initState() {
     super.initState();
-    _loadInsights();
+    if (AccountStatusStore.instance.isPremium) {
+      _loadInsights();
+    } else {
+      _isLoading = false;
+    }
   }
 
   Future<void> _loadInsights() async {
@@ -63,6 +69,12 @@ class _AiInsightsScreenState extends State<AiInsightsScreen> {
         );
         break;
       case 'analytics':
+        if (!AccountStatusStore.instance.isPremium) {
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => SubscriptionScreen()),
+          );
+          return;
+        }
         Navigator.of(context).push(
           MaterialPageRoute(builder: (_) => const SalesAnalyticsScreen()),
         );
@@ -79,8 +91,60 @@ class _AiInsightsScreenState extends State<AiInsightsScreen> {
     }
   }
 
+  Widget _buildPremiumPaywall(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 28.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.purple.withValues(alpha: 0.15),
+                border: Border.all(color: AppColors.purpleLight.withValues(alpha: 0.4), width: 2),
+              ),
+              child: const Icon(Icons.auto_awesome_rounded, color: AppColors.purpleLight, size: 54),
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              'Premium Feature',
+              style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 10),
+            const Text(
+              'AI Store Insights analyzes your inventory and sales to provide smart restock alerts, revenue drivers, and growth recommendations.\n\nUpgrade to Premium to unlock full AI capabilities.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: AppColors.label, fontSize: 14, height: 1.5),
+            ),
+            const SizedBox(height: 28),
+            ElevatedButton.icon(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => SubscriptionScreen()),
+              ),
+              icon: const Icon(Icons.workspace_premium_rounded, color: Colors.white, size: 20),
+              label: const Text(
+                'Upgrade to Premium',
+                style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isPremium = AccountStatusStore.instance.isPremium;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -101,14 +165,17 @@ class _AiInsightsScreenState extends State<AiInsightsScreen> {
           ],
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded, color: AppColors.label),
-            onPressed: _loadInsights,
-          ),
+          if (isPremium)
+            IconButton(
+              icon: const Icon(Icons.refresh_rounded, color: AppColors.label),
+              onPressed: _loadInsights,
+            ),
         ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.purpleLight))
+      body: !isPremium
+          ? _buildPremiumPaywall(context)
+          : _isLoading
+              ? const Center(child: CircularProgressIndicator(color: AppColors.purpleLight))
           : _error != null
               ? Center(
                   child: Padding(

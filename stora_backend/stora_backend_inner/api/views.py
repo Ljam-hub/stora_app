@@ -1009,6 +1009,8 @@ def ai_store_insights(request):
     user = request.user
     if getattr(user, "role", "owner") != "owner":
         raise PermissionDenied("Only store owners can access AI insights.")
+    if not getattr(user, "is_premium_active", False):
+        raise PermissionDenied("AI store insights are exclusive to Premium members.")
 
     # 1. Gather store statistics
     products = list(Product.objects.filter(owner=user).select_related("category"))
@@ -1304,6 +1306,7 @@ def list_conversations(request):
             sender=partner,
             recipient=user,
             is_read=False,
+            is_unsent=False,
         ).count()
 
         is_blocked = False
@@ -1315,7 +1318,9 @@ def list_conversations(request):
         last_msg_is_me = (last_msg.sender_id == user.id) if last_msg else False
         last_message_text = ""
         if last_msg:
-            if last_msg.image and not last_msg.message:
+            if getattr(last_msg, "is_unsent", False):
+                last_message_text = "You unsent a message" if last_msg_is_me else "This message was unsent"
+            elif last_msg.image and not last_msg.message:
                 last_message_text = "You sent a photo." if last_msg_is_me else "Sent a photo."
             elif last_msg.image and last_msg.message:
                 prefix = "You: " if last_msg_is_me else ""
@@ -1404,6 +1409,19 @@ def delete_single_message(request, message_id):
             msg.image.delete(save=False)
         except Exception:
             pass
+        msg.image = None
+
+    if msg.sender == request.user:
+        msg.is_unsent = True
+        msg.message = "This message was unsent"
+        msg.is_read = True
+        msg.save(update_fields=["is_unsent", "message", "image", "is_read"])
+        return Response({
+            "status": "success",
+            "message_id": message_id,
+            "is_unsent": True,
+            "detail": "Message unsent successfully.",
+        }, status=status.HTTP_200_OK)
 
     msg.delete()
     return Response({

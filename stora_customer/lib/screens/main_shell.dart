@@ -186,6 +186,9 @@ class _MainShellState extends State<MainShell> {
   void _onTabTapped(int index) {
     HapticFeedback.lightImpact();
     setState(() => _currentIndex = index);
+    if (index == 4) {
+      context.read<OrderProvider>().markOrdersTabSeen();
+    }
   }
 
   @override
@@ -281,7 +284,7 @@ class _MainShellState extends State<MainShell> {
                 icon: Icons.receipt_long_outlined,
                 activeIcon: Icons.receipt_long_rounded,
                 label: 'Orders',
-                badgeCount: orderProvider.activePendingCount,
+                badgeCount: _currentIndex == 4 ? 0 : orderProvider.unreadActiveOrdersCount,
               ),
               _buildNavItem(
                 index: 5,

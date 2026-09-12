@@ -1306,11 +1306,14 @@ class CustomerNameAndEmailDisplayTests(APITestCase):
         m1 = ChatMessage.objects.create(sender=self.owner, recipient=self.customer, message="Message 1")
         m2 = ChatMessage.objects.create(sender=self.customer, recipient=self.owner, message="Message 2")
 
-        # Sender (owner) deletes m1
+        # Sender (owner) deletes m1 (unsend)
         self.client.force_authenticate(user=self.owner)
         res1 = self.client.delete(f"/api/messages/{m1.id}/")
         self.assertEqual(res1.status_code, 200)
-        self.assertFalse(ChatMessage.objects.filter(id=m1.id).exists())
+        self.assertTrue(res1.data.get("is_unsent"))
+        m1.refresh_from_db()
+        self.assertTrue(m1.is_unsent)
+        self.assertEqual(m1.message, "This message was unsent")
 
         # Recipient (owner) deletes m2
         res2 = self.client.delete(f"/api/messages/{m2.id}/")

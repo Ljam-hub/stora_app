@@ -3,7 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import '../../config/api_config.dart';
+import '../../providers/chat_provider.dart';
+import '../../providers/order_provider.dart';
 import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
 
@@ -65,6 +68,10 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
     _pollTimer?.cancel();
     _textController.dispose();
     _scrollController.dispose();
+    try {
+      context.read<ChatProvider>().fetchConversations(isSilent: true);
+      context.read<OrderProvider>().refresh(isSilent: true);
+    } catch (_) {}
     super.dispose();
   }
 
@@ -214,7 +221,19 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
                         await CustomerApiService.instance.deleteMessage(msgId);
                         if (mounted) {
                           setState(() {
-                            _messages.removeWhere((m) => m['id'] == msgId);
+                            if (isMe) {
+                              final idx = _messages.indexWhere((m) => m['id'] == msgId);
+                              if (idx != -1) {
+                                _messages[idx] = {
+                                  ..._messages[idx],
+                                  'is_unsent': true,
+                                  'message': 'You unsent a message',
+                                  'image': null,
+                                };
+                              }
+                            } else {
+                              _messages.removeWhere((m) => m['id'] == msgId);
+                            }
                           });
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
@@ -845,6 +864,72 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
                                   final dt = DateTime.parse(createdAt).toLocal();
                                   timeDisplay = DateFormat('h:mm a').format(dt);
                                 } catch (_) {}
+                              }
+
+                              final isUnsent = msg['is_unsent'] == true;
+
+                              if (isUnsent) {
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 8),
+                                  child: Row(
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+                                    children: [
+                                      if (!isMe) ...[
+                                        CircleAvatar(
+                                          radius: 14,
+                                          backgroundColor: AppColors.cardElevated,
+                                          backgroundImage: (widget.storeAvatarUrl != null && widget.storeAvatarUrl!.isNotEmpty)
+                                              ? NetworkImage(widget.storeAvatarUrl!)
+                                              : null,
+                                          child: (widget.storeAvatarUrl == null || widget.storeAvatarUrl!.isEmpty)
+                                              ? const Icon(Icons.storefront_rounded, color: AppColors.primary, size: 14)
+                                              : null,
+                                        ),
+                                        const SizedBox(width: 8),
+                                      ],
+                                      Container(
+                                        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.74),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white.withValues(alpha: 0.05),
+                                          borderRadius: BorderRadius.circular(14),
+                                          border: Border.all(
+                                            color: Colors.white12,
+                                            width: 1,
+                                          ),
+                                        ),
+                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            const Icon(Icons.undo_rounded, size: 14, color: AppColors.textMuted),
+                                            const SizedBox(width: 6),
+                                            Flexible(
+                                              child: Text(
+                                                isMe ? 'You unsent a message' : '${widget.storeName} unsent a message',
+                                                style: const TextStyle(
+                                                  color: AppColors.textMuted,
+                                                  fontSize: 13,
+                                                  fontStyle: FontStyle.italic,
+                                                ),
+                                              ),
+                                            ),
+                                            if (timeDisplay.isNotEmpty) ...[
+                                              const SizedBox(width: 8),
+                                              Text(
+                                                timeDisplay,
+                                                style: const TextStyle(
+                                                  color: Colors.white38,
+                                                  fontSize: 9.5,
+                                                ),
+                                              ),
+                                            ],
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
                               }
 
                               return Padding(

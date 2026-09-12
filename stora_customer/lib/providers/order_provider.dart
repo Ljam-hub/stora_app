@@ -34,6 +34,49 @@ class OrderProvider extends ChangeNotifier {
   int get acceptedCount => _orders.where((o) => o.status == 'accepted').length;
   int get readyCount => _orders.where((o) => o.status == 'ready').length;
 
+  bool _ordersTabSeen = false;
+  final Set<String> _seenFilters = {};
+  int _lastSeenPendingCount = 0;
+  int _lastSeenCounterOfferCount = 0;
+  int _lastSeenActiveOrdersCount = 0;
+
+  void markOrdersTabSeen() {
+    _ordersTabSeen = true;
+    _lastSeenActiveOrdersCount = activePendingCount;
+    notifyListeners();
+  }
+
+  void markFilterSeen(String filterId) {
+    _seenFilters.add(filterId);
+    if (filterId == 'pending') {
+      _lastSeenPendingCount = pendingCount;
+    } else if (filterId == 'counter_offer') {
+      _lastSeenCounterOfferCount = counterOfferCount;
+    }
+    notifyListeners();
+  }
+
+  int get unreadPendingCount {
+    if (_seenFilters.contains('pending') && pendingCount <= _lastSeenPendingCount) {
+      return 0;
+    }
+    return pendingCount;
+  }
+
+  int get unreadCounterOfferCount {
+    if (_seenFilters.contains('counter_offer') && counterOfferCount <= _lastSeenCounterOfferCount) {
+      return 0;
+    }
+    return counterOfferCount;
+  }
+
+  int get unreadActiveOrdersCount {
+    if (_ordersTabSeen && activePendingCount <= _lastSeenActiveOrdersCount) {
+      return 0;
+    }
+    return activePendingCount;
+  }
+
   void startPolling({Duration interval = const Duration(seconds: 12)}) {
     _pollingTimer?.cancel();
     _pollingTimer = Timer.periodic(interval, (_) => refresh(isSilent: true));
@@ -115,7 +158,7 @@ class OrderProvider extends ChangeNotifier {
 
   void setFilter(String filter) {
     _selectedStatusFilter = filter;
-    notifyListeners();
+    markFilterSeen(filter);
   }
 
   Future<void> fetchOrders() async {

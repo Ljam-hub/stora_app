@@ -557,6 +557,8 @@ class OrderSerializer(serializers.ModelSerializer):
     customer_avatar_url = serializers.SerializerMethodField()
     store_avatar_url = serializers.SerializerMethodField()
     store_name = serializers.CharField(source="owner.business_name", read_only=True, default="")
+    latest_message = serializers.SerializerMethodField()
+    unread_message_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
@@ -581,6 +583,8 @@ class OrderSerializer(serializers.ModelSerializer):
             "total_amount",
             "items",
             "items_data",
+            "latest_message",
+            "unread_message_count",
         )
         read_only_fields = (
             "id",
@@ -596,6 +600,8 @@ class OrderSerializer(serializers.ModelSerializer):
             "expires_at",
             "total_amount",
             "items",
+            "latest_message",
+            "unread_message_count",
         )
 
     def to_representation(self, instance):
@@ -636,6 +642,58 @@ class OrderSerializer(serializers.ModelSerializer):
                 return request.build_absolute_uri(obj.owner.avatar.url)
             return obj.owner.avatar.url
         return None
+
+    def get_latest_message(self, obj):
+        from api.models import ChatMessage
+        from django.db.models import Q
+        msg = obj.chat_messages.order_by("-created_at").first()
+        if not msg and obj.customer and obj.owner:
+            msg = ChatMessage.objects.filter(
+                (Q(sender=obj.customer) & Q(recipient=obj.owner)) |
+                (Q(sender=obj.owner) & Q(recipient=obj.customer))
+            ).order_by("-created_at").first()
+
+        if msg:
+            request = self.context.get("request")
+            user = request.user if (request and request.user.is_authenticated) else None
+            is_me = (msg.sender_id == user.id) if user else False
+            sender_name = ""
+            if hasattr(msg.sender, "get_display_name"):
+                sender_name = msg.sender.get_display_name()
+            elif msg.sender.role in ("owner", "admin") and msg.sender.business_name:
+                sender_name = msg.sender.business_name
+            else:
+                sender_name = f"{msg.sender.first_name} {msg.sender.last_name}".strip() or msg.sender.username
+
+            msg_text = msg.message
+            if getattr(msg, "is_unsent", False):
+                msg_text = "You unsent a message" if is_me else "This message was unsent"
+            elif msg.image and not msg_text:
+                msg_text = "Photo sent"
+
+            return {
+                "id": msg.id,
+                "message": msg_text,
+                "sender_id": msg.sender_id,
+                "sender_name": sender_name,
+                "sender_role": getattr(msg.sender, "role", "unknown"),
+                "is_me": is_me,
+                "is_read": msg.is_read,
+                "is_unsent": getattr(msg, "is_unsent", False),
+                "created_at": msg.created_at.isoformat(),
+            }
+        return None
+
+    def get_unread_message_count(self, obj):
+        request = self.context.get("request")
+        if not request or not request.user.is_authenticated:
+            return 0
+        user = request.user
+        count = obj.chat_messages.filter(recipient=user, is_read=False, is_unsent=False).count()
+        if count == 0 and obj.customer and obj.owner:
+            partner = obj.owner if user == obj.customer else obj.customer
+            count = ChatMessage.objects.filter(sender=partner, recipient=user, is_read=False, is_unsent=False).count()
+        return count
 
     def create(self, validated_data):
         items_data = validated_data.pop("items_data", [])
@@ -713,9 +771,10 @@ class ChatMessageSerializer(serializers.ModelSerializer):
             "image",
             "image_url",
             "is_read",
+            "is_unsent",
             "created_at",
         )
-        read_only_fields = ("id", "sender", "sender_id", "recipient_id", "is_read", "created_at", "image_url")
+        read_only_fields = ("id", "sender", "sender_id", "recipient_id", "is_read", "is_unsent", "created_at", "image_url")
         extra_kwargs = {
             "image": {"required": False, "allow_null": True},
             "message": {"required": False, "allow_blank": True},

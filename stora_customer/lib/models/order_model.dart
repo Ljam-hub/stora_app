@@ -57,6 +57,11 @@ class CustomerOrder {
   final DateTime? createdAt;
   final DateTime? expiresAt;
   final List<CustomerOrderItem> items;
+  final String? latestMessage;
+  final bool latestMessageIsMe;
+  final int unreadMessageCount;
+  final DateTime? latestMessageAt;
+  final bool latestMessageIsUnsent;
 
   CustomerOrder({
     required this.id,
@@ -75,6 +80,11 @@ class CustomerOrder {
     this.createdAt,
     this.expiresAt,
     required this.items,
+    this.latestMessage,
+    this.latestMessageIsMe = false,
+    this.unreadMessageCount = 0,
+    this.latestMessageAt,
+    this.latestMessageIsUnsent = false,
   });
 
   String get formattedTotal => '₱${totalAmount.toStringAsFixed(2)}';
@@ -179,6 +189,11 @@ class CustomerOrder {
       createdAt: json['created_at'] != null ? DateTime.tryParse(json['created_at'].toString()) : null,
       expiresAt: json['expires_at'] != null ? DateTime.tryParse(json['expires_at'].toString()) : null,
       items: rawItems.map((e) => CustomerOrderItem.fromJson(e as Map<String, dynamic>)).toList(),
+      latestMessage: json['latest_message'] is Map ? (json['latest_message']['message'] as String?) : null,
+      latestMessageIsMe: json['latest_message'] is Map ? (json['latest_message']['is_me'] as bool? ?? false) : false,
+      unreadMessageCount: (json['unread_message_count'] as int?) ?? (json['latest_message'] is Map && json['latest_message']['is_read'] == false && json['latest_message']['is_me'] == false ? 1 : 0),
+      latestMessageAt: json['latest_message'] is Map && json['latest_message']['created_at'] != null ? DateTime.tryParse(json['latest_message']['created_at'].toString()) : null,
+      latestMessageIsUnsent: json['latest_message'] is Map ? (json['latest_message']['is_unsent'] as bool? ?? false) : false,
     );
   }
 }

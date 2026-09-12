@@ -782,7 +782,19 @@ class _OwnerChatThreadScreenState extends State<OwnerChatThreadScreen> {
                         await ApiClient.instance.deleteMessage(msgId);
                         if (mounted) {
                           setState(() {
-                            _messages.removeWhere((m) => m['id'] == msgId);
+                            if (isMe) {
+                              final idx = _messages.indexWhere((m) => m['id'] == msgId);
+                              if (idx != -1) {
+                                _messages[idx] = {
+                                  ..._messages[idx],
+                                  'is_unsent': true,
+                                  'message': 'You unsent a message',
+                                  'image': null,
+                                };
+                              }
+                            } else {
+                              _messages.removeWhere((m) => m['id'] == msgId);
+                            }
                           });
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
@@ -1534,6 +1546,72 @@ class _OwnerChatThreadScreenState extends State<OwnerChatThreadScreen> {
                               final dt = parseApiDateTime(createdAt).toLocal();
                               timeDisplay = DateFormat('h:mm a').format(dt);
                             } catch (_) {}
+                          }
+
+                          final isUnsent = msg['is_unsent'] == true;
+
+                          if (isUnsent) {
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 8),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+                                children: [
+                                  if (!isMe) ...[
+                                    CircleAvatar(
+                                      radius: 14,
+                                      backgroundColor: const Color(0xFF3A3B3C),
+                                      backgroundImage: (widget.customerAvatarUrl != null && widget.customerAvatarUrl!.isNotEmpty)
+                                          ? NetworkImage(widget.customerAvatarUrl!)
+                                          : null,
+                                      child: (widget.customerAvatarUrl == null || widget.customerAvatarUrl!.isEmpty)
+                                          ? const Icon(Icons.person, color: Colors.white, size: 16)
+                                          : null,
+                                    ),
+                                    const SizedBox(width: 8),
+                                  ],
+                                  Container(
+                                    constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.74),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withValues(alpha: 0.05),
+                                      borderRadius: BorderRadius.circular(14),
+                                      border: Border.all(
+                                        color: Colors.white12,
+                                        width: 1,
+                                      ),
+                                    ),
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(Icons.undo_rounded, size: 14, color: AppColors.label),
+                                        const SizedBox(width: 6),
+                                        Flexible(
+                                          child: Text(
+                                            isMe ? 'You unsent a message' : '${widget.customerName} unsent a message',
+                                            style: const TextStyle(
+                                              color: AppColors.label,
+                                              fontSize: 13,
+                                              fontStyle: FontStyle.italic,
+                                            ),
+                                          ),
+                                        ),
+                                        if (timeDisplay.isNotEmpty) ...[
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            timeDisplay,
+                                            style: const TextStyle(
+                                              color: Colors.white38,
+                                              fontSize: 9.5,
+                                            ),
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
                           }
 
                           return Padding(
