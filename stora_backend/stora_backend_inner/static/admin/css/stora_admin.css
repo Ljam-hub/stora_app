@@ -184,6 +184,38 @@ a:hover {
   gap: 12px;
 }
 
+.stora-support-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border: 1px solid rgba(255, 122, 26, 0.45);
+  border-radius: 99px;
+  background: rgba(255, 122, 26, 0.12);
+  color: #FFA55C !important;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none !important;
+  transition: all .2s ease;
+  position: relative;
+}
+
+.stora-support-status:hover {
+  background: rgba(255, 122, 26, 0.22);
+  border-color: rgba(255, 122, 26, 0.75);
+  color: #FFFFFF !important;
+  box-shadow: 0 0 14px rgba(255, 122, 26, 0.35);
+}
+
+.stora-support-status__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #FF7A1A;
+  box-shadow: 0 0 0 3px rgba(255, 122, 26, 0.25);
+  flex-shrink: 0;
+}
+
 .stora-api-status {
   display: inline-flex;
   align-items: center;
@@ -780,7 +812,7 @@ form div.radiolist label {
 }
 
 /* TEXT INPUTS */
-input[type="text"]:not(#searchbar):not(.vDateField):not(.vTimeField),
+input[type="text"]:not(#searchbar):not(.vDateField):not(.vTimeField):not(#convo-search),
 input[type="password"],
 input[type="email"],
 input[type="url"],

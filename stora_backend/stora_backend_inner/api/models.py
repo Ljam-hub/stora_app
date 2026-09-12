@@ -28,6 +28,11 @@ class ChatMessage(models.Model):
     image = models.ImageField(upload_to=chat_image_upload_path, null=True, blank=True)
     is_read = models.BooleanField(default=False)
     is_unsent = models.BooleanField(default=False)
+    deleted_by_users = models.ManyToManyField(
+        settings.AUTH_USER_MODEL,
+        blank=True,
+        related_name="deleted_chat_messages",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

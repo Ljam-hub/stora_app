@@ -11,8 +11,9 @@ const _monthNames = [
 
 /// Parse an API timestamp. Naive values are treated as UTC (Django storage).
 DateTime parseApiDateTime(String raw) {
-  final parsed = DateTime.parse(raw);
-  if (!_tzSuffix.hasMatch(raw.trim())) {
+  final trimmed = raw.trim();
+  final parsed = DateTime.parse(trimmed);
+  if (!_tzSuffix.hasMatch(trimmed)) {
     return DateTime.utc(
       parsed.year,
       parsed.month,

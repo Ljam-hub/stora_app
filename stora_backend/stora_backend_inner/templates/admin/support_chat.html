@@ -3,70 +3,314 @@
 
 {% block title %}Support Chat Center | STORA Admin{% endblock %}
 
+{% block content_title %}{% endblock %}
+{% block nav-breadcrumbs %}{% endblock %}
+{% block breadcrumbs %}{% endblock %}
+{% block footer %}{% endblock %}
+
 {% block extrastyle %}
 {{ block.super }}
 <style>
-  .stora-chat-container {
-    display: flex;
-    height: calc(100vh - 140px);
-    min-height: 600px;
-    background: #13101C;
-    border-radius: 16px;
-    border: 1px solid #282138;
-    overflow: hidden;
-    margin-top: 10px;
-    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
+  /* Lock page scroll on Support Chat Center */
+  html, body {
+    height: 100vh !important;
+    max-height: 100vh !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
   }
+
+  #footer,
+  .stora-breadcrumbs-bar,
+  #content > br.clear,
+  .skip-to-content-link {
+    display: none !important;
+  }
+
+  #container {
+    height: 100vh !important;
+    max-height: 100vh !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+    min-height: 0 !important;
+  }
+
+  #header {
+    flex: 0 0 auto !important;
+    flex-shrink: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Django Admin Side Menu (visible and expandable) */
+  .toggle-nav-sidebar {
+    height: 100% !important;
+    max-height: 100% !important;
+    flex-shrink: 0 !important;
+  }
+
+  #nav-sidebar {
+    height: 100% !important;
+    max-height: 100% !important;
+    flex-shrink: 0 !important;
+  }
+
+  .stora-main-container,
+  #main {
+    flex: 1 1 0 !important;
+    min-height: 0 !important;
+    height: 100% !important;
+    display: flex !important;
+    flex-direction: row !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+  }
+
+  .stora-content-area,
+  main#content-start {
+    flex: 1 1 0 !important;
+    min-height: 0 !important;
+    min-width: 0 !important;
+    height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    padding: 8px 14px 10px 14px !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+  }
+
+  #content {
+    flex: 1 1 0 !important;
+    min-height: 0 !important;
+    min-width: 0 !important;
+    height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .stora-chat-container {
+    flex: 1 1 0 !important;
+    min-height: 0 !important;
+    min-width: 0 !important;
+    height: calc(100vh - 84px) !important;
+    max-height: calc(100vh - 84px) !important;
+    display: flex !important;
+    flex-direction: row !important;
+    background: #13101C;
+    border-radius: 14px;
+    border: 1px solid #282138;
+    overflow: hidden !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    box-sizing: border-box !important;
+  }
+
 
   /* SIDEBAR (Left) */
   .stora-chat-sidebar {
-    width: 360px;
-    min-width: 320px;
+    width: 330px;
+    min-width: 300px;
+    max-width: 340px;
+    flex-shrink: 0 !important;
     border-right: 1px solid #282138;
     background: #181424;
-    display: flex;
-    flex-direction: column;
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
   }
 
   .stora-chat-sidebar__header {
-    padding: 18px 20px;
+    padding: 12px 14px;
     border-bottom: 1px solid #282138;
     background: #1F1930;
+    flex-shrink: 0 !important;
+  }
+
+  /* STORA Support Profile Card */
+  .stora-support-profile-card {
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px;
+    padding: 12px 14px;
+    background: #13101C;
+    border-bottom: 1px solid #282138;
+    flex-shrink: 0 !important;
+    box-sizing: border-box;
+  }
+
+  .stora-support-avatar-wrap {
+    position: relative;
+    width: 52px;
+    height: 52px;
+    min-width: 52px;
+    min-height: 52px;
+    max-width: 52px;
+    max-height: 52px;
+    flex-shrink: 0 !important;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .stora-support-avatar-circle {
+    width: 52px !important;
+    height: 52px !important;
+    min-width: 52px !important;
+    min-height: 52px !important;
+    max-width: 52px !important;
+    max-height: 52px !important;
+    border-radius: 50% !important;
+    overflow: hidden !important;
+    background: #231C35;
+    border: 2px solid #3E3358;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
+    box-sizing: border-box !important;
+  }
+
+  .stora-support-avatar-circle img,
+  #support-avatar-display img,
+  .stora-support-avatar-wrap img {
+    width: 100% !important;
+    height: 100% !important;
+    min-width: 100% !important;
+    min-height: 100% !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    border-radius: 50% !important;
+    object-fit: cover !important;
+    display: block !important;
+  }
+
+  .stora-support-avatar-initial {
+    font-size: 22px;
+    font-weight: 800;
+    color: #FF8F3D;
+    line-height: 1;
+  }
+
+  .stora-support-camera-badge {
+    position: absolute;
+    bottom: -1px;
+    right: -1px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #FF6B00;
+    border: 2px solid #13101C;
+    color: #FFF;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+    transition: transform 0.15s ease, background 0.15s ease;
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  .stora-support-avatar-wrap:hover .stora-support-camera-badge {
+    background: #FF8F3D;
+    transform: scale(1.1);
+  }
+
+  .stora-support-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .stora-support-name {
+    font-size: 13.5px;
+    font-weight: 800;
+    color: #FFF;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .stora-support-role {
+    font-size: 11px;
+    color: #9CA3AF;
+    margin-top: 1px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .stora-support-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 5px;
+  }
+
+  .stora-support-action-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: 11px;
+    font-weight: 700;
+    color: #FF8F3D;
+    cursor: pointer;
+    text-decoration: underline;
+  }
+
+  .stora-support-action-btn:hover {
+    color: #FFA55C;
+  }
+
+  .stora-support-action-btn--remove {
+    color: #EF4444;
+  }
+
+  .stora-support-action-btn--remove:hover {
+    color: #F87171;
   }
 
   .stora-chat-sidebar__title-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 12px;
+    margin-bottom: 10px;
   }
 
   .stora-chat-sidebar__title {
-    font-size: 18px;
+    font-size: 15px;
     font-weight: 800;
     color: #FFF;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     margin: 0;
   }
 
   .stora-chat-tabs {
     display: flex;
     background: #13101C;
-    padding: 4px;
-    border-radius: 10px;
-    gap: 4px;
-    margin-bottom: 12px;
+    padding: 3px;
+    border-radius: 8px;
+    gap: 3px;
+    margin-bottom: 10px;
   }
 
   .stora-chat-tab {
     flex: 1;
     text-align: center;
-    padding: 6px 10px;
-    font-size: 12px;
+    padding: 5px 8px;
+    font-size: 11.5px;
     font-weight: 700;
-    border-radius: 8px;
+    border-radius: 6px;
     color: #9CA3AF;
     background: transparent;
     border: none;
@@ -81,46 +325,69 @@
   }
 
   .stora-chat-search {
-    position: relative;
+    position: relative !important;
+    display: flex !important;
+    align-items: center !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
   }
 
+  #content .stora-chat-search input#convo-search,
+  #content .stora-chat-search input[type="text"],
+  #content .stora-chat-search input,
+  #convo-search,
   .stora-chat-search input {
-    width: 100%;
-    background: #13101C;
-    border: 1px solid #2E2640;
-    border-radius: 10px;
-    padding: 8px 12px 8px 34px;
-    color: #FFF;
-    font-size: 13px;
-    box-sizing: border-box;
+    box-sizing: border-box !important;
+    width: 100% !important;
+    height: 38px !important;
+    min-height: 38px !important;
+    line-height: 36px !important;
+    background: #13101C !important;
+    border: 1px solid #2E2640 !important;
+    border-radius: 8px !important;
+    padding: 0 14px 0 42px !important;
+    padding-left: 42px !important;
+    color: #FFF !important;
+    font-size: 12.5px !important;
   }
 
+  #content .stora-chat-search input:focus,
+  #convo-search:focus,
   .stora-chat-search input:focus {
-    outline: none;
-    border-color: #FF6B00;
+    outline: none !important;
+    border-color: #FF6B00 !important;
+    box-shadow: 0 0 0 2px rgba(255, 107, 0, 0.2) !important;
   }
 
   .stora-chat-search__icon {
-    position: absolute;
-    left: 10px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: #6B7280;
-    font-size: 14px;
+    position: absolute !important;
+    left: 14px !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    color: #8B839E !important;
+    pointer-events: none !important;
+    z-index: 5 !important;
+    width: 16px !important;
+    height: 16px !important;
   }
 
   .stora-chat-convos {
-    flex: 1;
-    overflow-y: auto;
-    padding: 8px;
+    flex: 1 1 0 !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    padding: 6px;
+    box-sizing: border-box !important;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
   }
 
   .stora-convo-item {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 12px;
-    border-radius: 12px;
+    gap: 10px;
+    padding: 10px;
+    border-radius: 10px;
     cursor: pointer;
     transition: background 0.15s ease;
     border-bottom: 1px solid rgba(255, 255, 255, 0.03);
@@ -136,8 +403,8 @@
   }
 
   .stora-convo-avatar {
-    width: 44px;
-    height: 44px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
     background: #2A223D;
     display: flex;
@@ -145,7 +412,7 @@
     justify-content: center;
     font-weight: 700;
     color: #FF8F3D;
-    font-size: 16px;
+    font-size: 15px;
     flex-shrink: 0;
     position: relative;
     overflow: hidden;
@@ -166,21 +433,26 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 4px;
+    gap: 8px;
+    margin-bottom: 3px;
   }
 
   .stora-convo-name {
-    font-size: 13.5px;
+    font-size: 13px;
     font-weight: 700;
     color: #FFF;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    min-width: 0;
+    flex: 1;
   }
 
   .stora-convo-time {
     font-size: 11px;
     color: #9CA3AF;
+    flex-shrink: 0;
+    white-space: nowrap;
   }
 
   .stora-convo-bottom {
@@ -191,7 +463,7 @@
   }
 
   .stora-convo-preview {
-    font-size: 12px;
+    font-size: 11.5px;
     color: #9CA3AF;
     white-space: nowrap;
     overflow: hidden;
@@ -202,20 +474,20 @@
   .stora-convo-unread {
     background: #EF4444;
     color: #FFF;
-    font-size: 10.5px;
+    font-size: 10px;
     font-weight: 800;
-    border-radius: 12px;
-    padding: 1px 7px;
+    border-radius: 10px;
+    padding: 1px 6px;
     flex-shrink: 0;
   }
 
   .stora-role-pill {
     display: inline-block;
-    font-size: 10px;
+    font-size: 9.5px;
     font-weight: 700;
-    padding: 1px 6px;
-    border-radius: 6px;
-    margin-left: 6px;
+    padding: 1px 5px;
+    border-radius: 5px;
+    margin-left: 4px;
     text-transform: uppercase;
   }
 
@@ -231,15 +503,59 @@
 
   /* MAIN CHAT WINDOW (Right) */
   .stora-chat-main {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100% !important;
     background: #13101C;
     position: relative;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+  }
+
+  .stora-chat-empty {
+    flex: 1 1 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    text-align: center;
+    color: #6B7280;
+    box-sizing: border-box;
+  }
+
+  .stora-chat-empty.is-hidden,
+  .stora-chat-empty[style*="display: none"] {
+    display: none !important;
+  }
+
+  .stora-chat-empty__icon {
+    font-size: 48px;
+    margin-bottom: 12px;
+  }
+
+  #active-chat {
+    flex: 1 1 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+    box-sizing: border-box;
+  }
+
+  #active-chat.is-hidden,
+  #active-chat[style*="display: none"] {
+    display: none !important;
   }
 
   .stora-chat-header {
-    padding: 14px 24px;
+    flex-shrink: 0 !important;
+    padding: 12px 20px;
     border-bottom: 1px solid #282138;
     background: #181424;
     display: flex;
@@ -251,57 +567,103 @@
     display: flex;
     align-items: center;
     gap: 12px;
+    min-width: 0;
   }
 
   .stora-chat-header__name {
-    font-size: 16px;
+    font-size: 15px;
     font-weight: 800;
     color: #FFF;
   }
 
   .stora-chat-header__sub {
-    font-size: 12px;
+    font-size: 11.5px;
     color: #9CA3AF;
     display: flex;
     align-items: center;
-    gap: 8px;
-    margin-top: 2px;
+    gap: 6px;
+    margin-top: 1px;
   }
 
+  .stora-header-delete-convo-btn {
+    background: rgba(239, 68, 68, 0.12);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    color: #F87171;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.15s ease;
+  }
+
+  .stora-header-delete-convo-btn:hover {
+    background: #EF4444;
+    color: #FFF;
+    border-color: #EF4444;
+  }
+
+  /* MESSAGES STREAM */
   .stora-chat-messages {
-    flex: 1;
-    overflow-y: auto;
-    padding: 24px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
+    flex: 1 1 0 !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    padding: 16px 20px;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px;
+    box-sizing: border-box !important;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
   }
 
   .stora-msg-row {
     display: flex;
     flex-direction: column;
-    max-width: 65%;
+    max-width: 70%;
   }
 
   .stora-msg-row--in {
     align-self: flex-start;
+    align-items: flex-start;
   }
 
   .stora-msg-row--out {
     align-self: flex-end;
+    align-items: flex-end;
   }
 
   .stora-msg-sender {
-    font-size: 11px;
-    font-weight: 600;
+    font-size: 10.5px;
+    font-weight: 700;
     color: #9CA3AF;
-    margin-bottom: 4px;
+    margin-bottom: 3px;
+  }
+
+  .stora-msg-row--out .stora-msg-sender {
+    text-align: right;
+    color: #FF8F3D;
+  }
+
+  .stora-msg-bubble-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    position: relative;
+  }
+
+  .stora-msg-row--out .stora-msg-bubble-wrap {
+    flex-direction: row-reverse;
   }
 
   .stora-msg-bubble {
-    padding: 10px 16px;
-    border-radius: 16px;
-    font-size: 13.5px;
+    padding: 9px 14px;
+    border-radius: 14px;
+    font-size: 13px;
     line-height: 1.45;
     word-break: break-word;
     position: relative;
@@ -310,21 +672,92 @@
   .stora-msg-row--in .stora-msg-bubble {
     background: #231C35;
     color: #FFF;
-    border-bottom-left-radius: 4px;
+    border-bottom-left-radius: 3px;
     border: 1px solid #2F2644;
   }
 
   .stora-msg-row--out .stora-msg-bubble {
     background: #FF6B00;
     color: #FFF;
-    border-bottom-right-radius: 4px;
-    box-shadow: 0 4px 14px rgba(255, 107, 0, 0.25);
+    border-bottom-right-radius: 3px;
+    box-shadow: 0 3px 10px rgba(255, 107, 0, 0.2);
+  }
+
+  .stora-msg-bubble--unsent {
+    opacity: 0.65;
+    font-style: italic;
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px dashed rgba(255, 255, 255, 0.2) !important;
+    color: #9CA3AF !important;
+    box-shadow: none !important;
+  }
+
+  .stora-msg-actions {
+    opacity: 0;
+    display: flex;
+    gap: 4px;
+    transition: opacity 0.15s ease;
+  }
+
+  .stora-msg-row:hover .stora-msg-actions {
+    opacity: 1;
+  }
+
+  .stora-msg-action-btn {
+    background: #1F1930;
+    border: 1px solid #362D4A;
+    color: #9CA3AF;
+    border-radius: 6px;
+    padding: 3px 7px;
+    font-size: 11px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    transition: all 0.15s ease;
+  }
+
+  .stora-msg-action-btn:hover {
+    color: #FFF;
+    border-color: #FF6B00;
+    background: #2B2144;
+  }
+
+  .stora-msg-action-btn--danger:hover {
+    color: #EF4444;
+    border-color: #EF4444;
+    background: rgba(239, 68, 68, 0.12);
+  }
+
+  .stora-chat-time-divider {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 16px 0 10px 0;
+    width: 100%;
+  }
+
+  .stora-chat-time-divider span {
+    color: #8B839E;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+  }
+
+  .stora-msg-status {
+    font-size: 11px;
+    color: #8B839E;
+    text-align: right;
+    margin-top: 3px;
+    padding-right: 4px;
+    font-weight: 500;
   }
 
   .stora-msg-time {
-    font-size: 10px;
-    color: rgba(255, 255, 255, 0.5);
-    margin-top: 4px;
+    font-size: 9.5px;
+    color: rgba(255, 255, 255, 0.55);
+    margin-top: 3px;
     text-align: right;
   }
 
@@ -334,37 +767,38 @@
   }
 
   .stora-msg-img {
-    max-width: 260px;
-    max-height: 200px;
-    border-radius: 10px;
+    max-width: 240px;
+    max-height: 180px;
+    border-radius: 8px;
     cursor: pointer;
-    margin-bottom: 6px;
+    margin-bottom: 5px;
     display: block;
     border: 1px solid rgba(255, 255, 255, 0.1);
   }
 
-  /* INPUT & ACTION BAR */
+  /* INPUT & ACTION BAR — PINNED TO EXACT BOTTOM */
   .stora-chat-composer {
-    padding: 16px 24px;
+    flex-shrink: 0;
+    padding: 10px 16px 12px;
     background: #181424;
     border-top: 1px solid #282138;
   }
 
   .stora-chat-quickreplies {
     display: flex;
-    gap: 8px;
-    margin-bottom: 10px;
+    gap: 6px;
+    margin-bottom: 8px;
     overflow-x: auto;
-    padding-bottom: 4px;
+    padding-bottom: 2px;
   }
 
   .stora-quickreply-btn {
     background: #231C35;
     border: 1px solid #2E2640;
     color: #D1D5DB;
-    padding: 4px 12px;
-    border-radius: 20px;
-    font-size: 11.5px;
+    padding: 3px 10px;
+    border-radius: 14px;
+    font-size: 11px;
     cursor: pointer;
     white-space: nowrap;
     transition: all 0.15s ease;
@@ -376,129 +810,131 @@
     border-color: #FF6B00;
   }
 
-  .stora-chat-form {
-    display: flex;
-    gap: 12px;
-    align-items: flex-end;
+  .stora-attached-file {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    background: #231C35;
+    border: 1px solid #FF6B00;
+    padding: 4px 10px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    font-size: 11.5px;
+    color: #FFF;
+    width: fit-content;
   }
 
-  .stora-chat-input-wrap {
-    flex: 1;
-    position: relative;
-    background: #13101C;
-    border: 1px solid #2E2640;
-    border-radius: 12px;
-    padding: 8px 12px;
-  }
-
-  .stora-chat-input-wrap:focus-within {
-    border-color: #FF6B00;
-  }
-
-  .stora-chat-textarea {
-    width: 100%;
+  .stora-attached-file button {
     background: transparent;
     border: none;
-    color: #FFF;
-    font-size: 13.5px;
-    resize: none;
-    min-height: 38px;
-    max-height: 120px;
-    font-family: inherit;
-    box-sizing: border-box;
-    display: block;
+    color: #EF4444;
+    cursor: pointer;
+    font-weight: bold;
+    padding: 0;
   }
 
-  .stora-chat-textarea:focus {
-    outline: none;
+  .stora-chat-form {
+    display: flex;
+    gap: 8px;
+    align-items: center;
   }
 
   .stora-attach-btn {
     background: #231C35;
     border: 1px solid #2E2640;
     color: #9CA3AF;
-    width: 44px;
-    height: 44px;
-    border-radius: 12px;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     transition: all 0.15s ease;
     flex-shrink: 0;
+    font-size: 16px;
   }
 
   .stora-attach-btn:hover {
     color: #FFF;
     background: #2E2640;
+    border-color: #FF6B00;
+  }
+
+  .stora-chat-input-wrap {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    position: relative;
+    background: #13101C !important;
+    border: 1px solid #2E2640 !important;
+    border-radius: 20px !important;
+    padding: 0 16px !important;
+    display: flex !important;
+    align-items: center !important;
+    box-sizing: border-box !important;
+  }
+
+  .stora-chat-input-wrap:focus-within {
+    border-color: #FF6B00 !important;
+    box-shadow: 0 0 0 2px rgba(255, 107, 0, 0.2) !important;
+  }
+
+  #content textarea.stora-chat-textarea,
+  textarea#message-input,
+  .stora-chat-textarea {
+    box-sizing: border-box !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: 38px !important;
+    max-height: 80px !important;
+    height: 38px !important;
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
+    color: #FFF !important;
+    font-size: 13px !important;
+    resize: none !important;
+    line-height: 20px !important;
+    padding: 9px 0 !important;
+    font-family: inherit !important;
+    outline: none !important;
+    box-shadow: none !important;
+    display: block !important;
+  }
+
+  #content textarea.stora-chat-textarea:focus,
+  textarea#message-input:focus,
+  .stora-chat-textarea:focus {
+    border: none !important;
+    box-shadow: none !important;
+    outline: none !important;
   }
 
   .stora-send-btn {
     background: #FF6B00;
     color: #FFF;
     border: none;
-    padding: 0 24px;
-    height: 44px;
-    border-radius: 12px;
+    padding: 0 18px;
+    height: 38px;
+    border-radius: 20px;
     font-weight: 700;
-    font-size: 13.5px;
+    font-size: 13px;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     cursor: pointer;
-    box-shadow: 0 4px 14px rgba(255, 107, 0, 0.3);
+    box-shadow: 0 3px 10px rgba(255, 107, 0, 0.25);
     transition: all 0.15s ease;
     flex-shrink: 0;
   }
 
   .stora-send-btn:hover {
-    background: #FF7D1A;
-    transform: translateY(-1px);
+    background: #E05D00;
   }
 
   .stora-send-btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
-    transform: none;
-  }
-
-  /* EMPTY / PLACEHOLDER */
-  .stora-chat-empty {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    color: #6B7280;
-    text-align: center;
-    padding: 30px;
-  }
-
-  .stora-chat-empty__icon {
-    font-size: 48px;
-    margin-bottom: 12px;
-    opacity: 0.6;
-  }
-
-  /* PREVIEW ATTACHMENT STRIP */
-  .stora-attached-file {
-    display: none;
-    align-items: center;
-    gap: 8px;
-    background: #231C35;
-    padding: 4px 10px;
-    border-radius: 8px;
-    font-size: 11.5px;
-    color: #E5E7EB;
-    margin-bottom: 6px;
-  }
-
-  .stora-attached-file button {
-    background: none;
-    border: none;
-    color: #EF4444;
-    cursor: pointer;
-    font-weight: bold;
   }
 </style>
 {% endblock %}
@@ -507,6 +943,34 @@
 <div class="stora-chat-container">
   <!-- SIDEBAR -->
   <aside class="stora-chat-sidebar">
+    <!-- STORA Support Profile Card -->
+    <div class="stora-support-profile-card">
+      <div class="stora-support-avatar-wrap" onclick="triggerSupportAvatarUpload()" title="Click to change profile picture">
+        <div id="support-avatar-display" class="stora-support-avatar-circle">
+          {% if stora_support_avatar %}
+            <img src="{{ stora_support_avatar }}" alt="STORA Support">
+          {% else %}
+            <span class="stora-support-avatar-initial">S</span>
+          {% endif %}
+        </div>
+        <div class="stora-support-camera-badge" title="Change photo">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor">
+            <path d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4z"/>
+            <path d="M9 2L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/>
+          </svg>
+        </div>
+      </div>
+      <input type="file" id="support-avatar-input" accept="image/*" style="display: none;" onchange="handleSupportAvatarUpload(this)">
+      <div class="stora-support-info">
+        <div class="stora-support-name">STORA Support</div>
+        <div class="stora-support-role">Official Support Account</div>
+        <div class="stora-support-actions">
+          <button type="button" class="stora-support-action-btn" onclick="triggerSupportAvatarUpload()">Change Photo</button>
+          <button type="button" class="stora-support-action-btn stora-support-action-btn--remove" id="support-avatar-remove-btn" style="{% if not stora_support_avatar %}display: none;{% endif %}" onclick="removeSupportAvatar()">Remove</button>
+        </div>
+      </div>
+    </div>
+
     <div class="stora-chat-sidebar__header">
       <div class="stora-chat-sidebar__title-row">
         <h2 class="stora-chat-sidebar__title">
@@ -522,8 +986,11 @@
       </div>
 
       <div class="stora-chat-search">
-        <span class="stora-chat-search__icon">🔍</span>
-        <input type="text" id="convo-search" placeholder="Search by name or email..." oninput="filterConversations()">
+        <svg class="stora-chat-search__icon" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input type="text" id="convo-search" style="padding-left: 42px !important;" placeholder="Search by name or email..." oninput="filterConversations()">
       </div>
     </div>
 
@@ -541,12 +1008,12 @@
     </div>
 
     <!-- Active Chat View (Hidden initially) -->
-    <div id="active-chat" style="display: none; flex: 1; flex-direction: column; height: 100%;">
+    <div id="active-chat" class="is-hidden" style="display: none; flex: 1; flex-direction: column; height: 100%;">
       <div class="stora-chat-header">
         <div class="stora-chat-header__user">
           <div class="stora-convo-avatar" id="header-avatar">?</div>
           <div>
-            <div style="display: flex; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 8px;">
               <span class="stora-chat-header__name" id="header-name">—</span>
               <span class="stora-role-pill" id="header-role-pill">User</span>
             </div>
@@ -556,6 +1023,11 @@
               <a id="header-admin-link" href="#" target="_blank" style="color: #FF8F3D; text-decoration: none;">View Admin Record &rarr;</a>
             </div>
           </div>
+        </div>
+        <div>
+          <button type="button" class="stora-header-delete-convo-btn" onclick="confirmDeleteCurrentConversation()" title="Delete entire conversation history with this user">
+            🗑️ Delete Conversation
+          </button>
         </div>
       </div>
 
@@ -602,14 +1074,90 @@
   let activeUserId = null;
   let pollInterval = null;
 
+  function getCsrfToken() {
+    const csrfEl = document.querySelector('[name=csrfmiddlewaretoken]');
+    if (csrfEl && csrfEl.value) return csrfEl.value;
+    if (document.cookie) {
+      const match = document.cookie.match(/csrftoken=([^;]+)/);
+      if (match) return decodeURIComponent(match[1]);
+    }
+    return '';
+  }
+
+  // Support Profile Picture Handlers
+  function triggerSupportAvatarUpload() {
+    document.getElementById('support-avatar-input').click();
+  }
+
+  async function handleSupportAvatarUpload(input) {
+    if (!input.files || !input.files[0]) return;
+    const file = input.files[0];
+    const formData = new FormData();
+    formData.append('avatar', file);
+
+    try {
+      const res = await fetch("{% url 'admin:support_avatar_api' %}", {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': getCsrfToken()
+        },
+        body: formData
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.avatar_url) {
+          document.getElementById('support-avatar-display').innerHTML = `<img src="${data.avatar_url}" alt="STORA Support">`;
+          document.getElementById('support-avatar-remove-btn').style.display = 'inline-block';
+        }
+      } else {
+        alert('Failed to upload profile picture. Please try again.');
+      }
+    } catch (e) {
+      console.error('Failed to upload avatar', e);
+      alert('Error uploading profile picture.');
+    } finally {
+      input.value = '';
+    }
+  }
+
+  async function removeSupportAvatar() {
+    if (!confirm('Are you sure you want to remove the STORA Support profile picture?')) return;
+    const formData = new FormData();
+    formData.append('remove', 'true');
+
+    try {
+      const res = await fetch("{% url 'admin:support_avatar_api' %}", {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': getCsrfToken()
+        },
+        body: formData
+      });
+      if (res.ok) {
+        document.getElementById('support-avatar-display').innerHTML = '<span class="stora-support-avatar-initial">S</span>';
+        document.getElementById('support-avatar-remove-btn').style.display = 'none';
+      } else {
+        alert('Failed to remove profile picture.');
+      }
+    } catch (e) {
+      console.error('Failed to remove avatar', e);
+      alert('Error removing profile picture.');
+    }
+  }
+
+  let lastConvosJson = '';
   async function loadConversations() {
     try {
       const res = await fetch("{% url 'admin:support_conversations_api' %}");
       if (!res.ok) return;
       const data = await res.json();
-      conversationsData = data.conversations || [];
-      renderConversations();
-      updateUnreadTotal();
+      const newJson = JSON.stringify(data.conversations || []);
+      if (newJson !== lastConvosJson) {
+        lastConvosJson = newJson;
+        conversationsData = data.conversations || [];
+        renderConversations();
+        updateUnreadTotal();
+      }
     } catch (e) {
       console.error("Failed to load conversations", e);
     }
@@ -636,6 +1184,46 @@
     } else {
       badge.style.display = 'none';
     }
+  }
+
+  function formatConvoTime(isoStr) {
+    if (!isoStr) return '';
+    try {
+      const d = new Date(isoStr);
+      if (isNaN(d.getTime())) return '';
+      const now = new Date();
+      const isToday = d.toDateString() === now.toDateString();
+      const hours = d.getHours();
+      const minutes = d.getMinutes().toString().padStart(2, '0');
+      const hour12 = hours % 12 === 0 ? 12 : hours % 12;
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      if (isToday) {
+        return `${hour12}:${minutes} ${ampm}`;
+      }
+      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      return `${months[d.getMonth()]} ${d.getDate()}`;
+    } catch (_) {
+      return '';
+    }
+  }
+
+  function formatMsgTime(m) {
+    if (m.created_at && m.created_at.length <= 10 && m.created_at.includes(':') && (m.created_at.includes('M') || m.created_at.includes('m'))) {
+      return m.created_at;
+    }
+    if (m.iso_time) {
+      try {
+        const d = new Date(m.iso_time);
+        if (!isNaN(d.getTime())) {
+          const hours = d.getHours();
+          const minutes = d.getMinutes().toString().padStart(2, '0');
+          const hour12 = hours % 12 === 0 ? 12 : hours % 12;
+          const ampm = hours >= 12 ? 'PM' : 'AM';
+          return `${hour12}:${minutes} ${ampm}`;
+        }
+      } catch (_) {}
+    }
+    return m.created_at || '';
   }
 
   function renderConversations() {
@@ -675,16 +1263,20 @@
 
       const prefix = c.last_message_is_support ? '<span style="color: #FF8F3D;">You: </span>' : '';
 
+      const timeStr = c.last_message_time || formatConvoTime(c.last_message_at);
+      const timeHtml = timeStr ? `<span class="stora-convo-time">${escapeHtml(timeStr)}</span>` : '';
+
       return `
         <div class="stora-convo-item ${isActive ? 'active' : ''}" onclick="selectUser(${c.user_id})">
           <div class="stora-convo-avatar">${avatarHtml}</div>
           <div class="stora-convo-info">
             <div class="stora-convo-top">
               <span class="stora-convo-name">${escapeHtml(c.name)} <span class="stora-role-pill ${roleClass}">${roleLabel}</span></span>
-              ${unreadBadge}
+              ${timeHtml}
             </div>
             <div class="stora-convo-bottom">
               <span class="stora-convo-preview">${prefix}${escapeHtml(c.last_message || 'Tap to chat with this user')}</span>
+              ${unreadBadge}
             </div>
           </div>
         </div>
@@ -694,25 +1286,32 @@
 
   async function selectUser(userId) {
     activeUserId = userId;
+    lastMessagesJson = '';
     renderConversations();
 
-    document.getElementById('empty-state').style.display = 'none';
+    const emptyState = document.getElementById('empty-state');
+    if (emptyState) {
+      emptyState.classList.add('is-hidden');
+      emptyState.style.setProperty('display', 'none', 'important');
+    }
     const activeChat = document.getElementById('active-chat');
-    activeChat.style.display = 'flex';
+    if (activeChat) {
+      activeChat.classList.remove('is-hidden');
+      activeChat.style.setProperty('display', 'flex', 'important');
+    }
 
-    await loadActiveMessages();
+    await loadActiveMessages(true);
   }
 
-  async function loadActiveMessages() {
+  async function loadActiveMessages(forceScroll = false) {
     if (!activeUserId) return;
     try {
       const res = await fetch(`{% url 'admin:support_messages_api' %}?user_id=${activeUserId}`);
       if (!res.ok) return;
       const data = await res.json();
       renderChatHeader(data.partner);
-      renderMessagesStream(data.messages);
+      renderMessagesStream(data.messages, forceScroll);
 
-      // Refresh conversations in background to update unread badge counts
       updateConversationsUnreadLocally(activeUserId);
     } catch (e) {
       console.error("Failed to load messages", e);
@@ -747,40 +1346,218 @@
     document.getElementById('header-admin-link').href = `/admin/accounts/user/${partner.id}/change/`;
   }
 
-  function renderMessagesStream(messages) {
+  let lastMessagesJson = '';
+
+  function renderMessagesStream(messages, forceScroll = false) {
     const stream = document.getElementById('messages-stream');
+    const newJson = JSON.stringify(messages || []);
+    if (newJson === lastMessagesJson && !forceScroll) {
+      return;
+    }
+    lastMessagesJson = newJson;
+
     if (!messages || messages.length === 0) {
       stream.innerHTML = '<div style="margin: auto; color: #6B7280; font-size: 13.5px;">No previous messages. Send a message below to begin chatting!</div>';
       return;
     }
 
-    const html = messages.map(m => {
+    const wasAtBottom = stream.scrollHeight - stream.scrollTop <= stream.clientHeight + 150;
+
+    let lastDt = null;
+    const lastMsgIndex = messages.length - 1;
+
+    const html = messages.map((m, idx) => {
       const isOut = m.is_support;
       const rowClass = isOut ? 'stora-msg-row--out' : 'stora-msg-row--in';
-      const senderLabel = isOut ? 'STORA Support' : escapeHtml(m.sender_name);
+
+      let headerHtml = '';
+      if (m.iso_time) {
+        try {
+          const curDt = new Date(m.iso_time);
+          if (!isNaN(curDt.getTime())) {
+            let showHeader = false;
+            if (idx === 0) {
+              showHeader = true;
+            } else if (lastDt) {
+              const diffMinutes = Math.abs((curDt.getTime() - lastDt.getTime()) / (1000 * 60));
+              if (diffMinutes >= 20 || curDt.toDateString() !== lastDt.toDateString()) {
+                showHeader = true;
+              }
+            } else {
+              showHeader = true;
+            }
+
+            if (showHeader) {
+              const now = new Date();
+              const isToday = curDt.toDateString() === now.toDateString();
+              const yesterday = new Date(now);
+              yesterday.setDate(yesterday.getDate() - 1);
+              const isYesterday = curDt.toDateString() === yesterday.toDateString();
+
+              const hours = curDt.getHours();
+              const minutes = curDt.getMinutes().toString().padStart(2, '0');
+              const hour12 = hours % 12 === 0 ? 12 : hours % 12;
+              const ampm = hours >= 12 ? 'PM' : 'AM';
+              const timeStr = `${hour12}:${minutes} ${ampm}`;
+
+              let headerText = '';
+              if (isToday) {
+                headerText = timeStr;
+              } else if (isYesterday) {
+                headerText = `YESTERDAY AT ${timeStr}`;
+              } else {
+                const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+                const monthStr = months[curDt.getMonth()];
+                const dayStr = curDt.getDate();
+                if (curDt.getFullYear() === now.getFullYear()) {
+                  headerText = `${monthStr} ${dayStr} AT ${timeStr}`;
+                } else {
+                  headerText = `${monthStr} ${dayStr}, ${curDt.getFullYear()} AT ${timeStr}`;
+                }
+              }
+              headerHtml = `<div class="stora-chat-time-divider"><span>${headerText}</span></div>`;
+            }
+            lastDt = curDt;
+          }
+        } catch (_) {}
+      }
 
       let imageHtml = '';
       if (m.image_url) {
         imageHtml = `<a href="${m.image_url}" target="_blank"><img src="${m.image_url}" class="stora-msg-img" alt="Photo Attachment"></a>`;
       }
 
-      return `
-        <div class="stora-msg-row ${rowClass}">
-          <span class="stora-msg-sender">${senderLabel}</span>
-          <div class="stora-msg-bubble">
-            ${imageHtml}
-            <div>${escapeHtml(m.message || '')}</div>
-            <div class="stora-msg-time">${m.created_at} ${isOut && m.is_read ? '✓✓' : ''}</div>
+      const fullDateTitle = m.full_date || (m.created_at ? `Sent at ${m.created_at}` : '');
+      const isLastMessage = (idx === lastMsgIndex);
+      const deliveryStatus = isOut && isLastMessage
+        ? `<div class="stora-msg-status">${m.is_read ? 'Seen' : 'Delivered'}</div>`
+        : '';
+
+      if (m.is_unsent) {
+        return `
+          ${headerHtml}
+          <div class="stora-msg-row ${rowClass}" id="msg-row-${m.id}">
+            <div class="stora-msg-bubble-wrap">
+              <div class="stora-msg-bubble stora-msg-bubble--unsent" title="${escapeHtml(fullDateTitle)}">
+                <div>🚫 ${isOut ? 'You unsent this message' : 'This message was unsent'}</div>
+              </div>
+              <div class="stora-msg-actions">
+                <button type="button" class="stora-msg-action-btn stora-msg-action-btn--danger" onclick="deleteMessage(${m.id})" title="Remove for you">🗑️ Remove</button>
+              </div>
+            </div>
+            ${deliveryStatus}
           </div>
+        `;
+      }
+
+      return `
+        ${headerHtml}
+        <div class="stora-msg-row ${rowClass}" id="msg-row-${m.id}">
+          <div class="stora-msg-bubble-wrap">
+            <div class="stora-msg-bubble" title="${escapeHtml(fullDateTitle)}">
+              ${imageHtml}
+              <div>${escapeHtml(m.message || '')}</div>
+            </div>
+            <div class="stora-msg-actions">
+              ${isOut ? `<button type="button" class="stora-msg-action-btn" onclick="unsendMessage(${m.id})" title="Unsend for everyone">↩️ Unsend</button>` : ''}
+              <button type="button" class="stora-msg-action-btn stora-msg-action-btn--danger" onclick="deleteMessage(${m.id})" title="Remove for you">🗑️ Remove</button>
+            </div>
+          </div>
+          ${deliveryStatus}
         </div>
       `;
     }).join('');
 
-    // Only auto-scroll if user is near bottom or first load
-    const isAtBottom = stream.scrollHeight - stream.scrollTop <= stream.clientHeight + 150;
     stream.innerHTML = html;
-    if (isAtBottom) {
+    if (wasAtBottom || forceScroll) {
       stream.scrollTop = stream.scrollHeight;
+    }
+  }
+
+  async function unsendMessage(messageId) {
+    if (!confirm('Unsend this message for everyone? All participants will see that it was unsent.')) return;
+    try {
+      const url = "{% url 'admin:support_unsend_message_api' 0 %}".replace('/0/', '/' + messageId + '/');
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': getCsrfToken()
+        }
+      });
+      if (res.ok) {
+        lastMessagesJson = '';
+        await loadActiveMessages(true);
+        lastConvosJson = '';
+        await loadConversations();
+      } else {
+        alert('Failed to unsend message.');
+      }
+    } catch (e) {
+      console.error('Error unsending message', e);
+      alert('Error unsending message.');
+    }
+  }
+
+  async function deleteMessage(messageId) {
+    if (!confirm('Remove this message for you? You will no longer see it, but the other participant can still see it.')) return;
+    try {
+      const url = "{% url 'admin:support_delete_message_api' 0 %}".replace('/0/', '/' + messageId + '/');
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': getCsrfToken()
+        }
+      });
+      if (res.ok) {
+        lastMessagesJson = '';
+        await loadActiveMessages(true);
+        lastConvosJson = '';
+        await loadConversations();
+      } else {
+        alert('Failed to remove message.');
+      }
+    } catch (e) {
+      console.error('Error removing message', e);
+      alert('Error removing message.');
+    }
+  }
+
+  async function confirmDeleteCurrentConversation() {
+    if (!activeUserId) return;
+    const partnerName = document.getElementById('header-name').textContent || 'this user';
+    if (!confirm(`Are you sure you want to delete the conversation with ${partnerName}? This will only be removed for you; the other person can still see it unless they delete it too.`)) {
+      return;
+    }
+
+    try {
+      const url = "{% url 'admin:support_delete_conversation_api' 0 %}".replace('/0/', '/' + activeUserId + '/');
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': getCsrfToken()
+        }
+      });
+      if (res.ok) {
+        activeUserId = null;
+        lastMessagesJson = '';
+        const activeChat = document.getElementById('active-chat');
+        if (activeChat) {
+          activeChat.classList.add('is-hidden');
+          activeChat.style.setProperty('display', 'none', 'important');
+        }
+        const emptyState = document.getElementById('empty-state');
+        if (emptyState) {
+          emptyState.classList.remove('is-hidden');
+          emptyState.style.setProperty('display', 'flex', 'important');
+        }
+        lastConvosJson = '';
+        await loadConversations();
+      } else {
+        alert('Failed to delete conversation.');
+      }
+    } catch (e) {
+      console.error('Error deleting conversation', e);
+      alert('Error deleting conversation.');
     }
   }
 
@@ -831,18 +1608,11 @@
       formData.append('image', fileInput.files[0]);
     }
 
-    const csrfEl = document.querySelector('[name=csrfmiddlewaretoken]');
-    let csrfToken = csrfEl ? csrfEl.value : '';
-    if (!csrfToken && document.cookie) {
-      const match = document.cookie.match(/csrftoken=([^;]+)/);
-      if (match) csrfToken = decodeURIComponent(match[1]);
-    }
-
     try {
       const res = await fetch("{% url 'admin:support_send_api' %}", {
         method: 'POST',
         headers: {
-          'X-CSRFToken': csrfToken
+          'X-CSRFToken': getCsrfToken()
         },
         body: formData
       });
@@ -850,7 +1620,9 @@
       if (res.ok) {
         input.value = '';
         clearAttachment();
-        await loadActiveMessages();
+        lastMessagesJson = '';
+        await loadActiveMessages(true);
+        lastConvosJson = '';
         await loadConversations();
       } else {
         alert('Failed to send message. Please try again.');

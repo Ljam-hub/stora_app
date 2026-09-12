@@ -114,6 +114,7 @@ class _UploadGcashProofScreenState extends State<UploadGcashProofScreen> {
               statusStr,
               submittedAt,
               referenceNumber: ref,
+              amount: _amount.toDouble(),
             ),
           ),
         ),

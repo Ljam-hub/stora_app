@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
+import '../utils/date_utils.dart';
 
 class CustomerOrderItem {
   final int? id;
@@ -162,7 +163,7 @@ class CustomerOrder {
 
   String get formattedDate {
     if (createdAt == null) return '';
-    final dt = createdAt!.toLocal();
+    final dt = toPht(createdAt!);
     final monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     final hour = dt.hour > 12 ? dt.hour - 12 : (dt.hour == 0 ? 12 : dt.hour);
     final period = dt.hour >= 12 ? 'PM' : 'AM';

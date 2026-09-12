@@ -9,6 +9,7 @@ import '../../providers/chat_provider.dart';
 import '../../providers/order_provider.dart';
 import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/date_utils.dart';
 
 class CustomerChatScreen extends StatefulWidget {
   final int storeOwnerId;
@@ -46,6 +47,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
 
   Uint8List? _selectedImageBytes;
   String? _selectedImageName;
+  int? _tappedMessageId;
 
   static const List<Map<String, dynamic>> _customerQuickReplies = [
     {'icon': Icons.inventory_2_outlined, 'text': 'Is this item in stock and available?'},
@@ -175,18 +177,18 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
                     );
                   },
                 ),
-              if (msgId != null)
+              if (msgId != null && isMe)
                 ListTile(
                   leading: const CircleAvatar(
                     radius: 18,
-                    backgroundColor: AppColors.dangerBg,
-                    child: Icon(Icons.delete_outline_rounded, color: AppColors.danger, size: 18),
+                    backgroundColor: Color(0xFF2E1F4D),
+                    child: Icon(Icons.undo_rounded, color: AppColors.primaryLight, size: 18),
                   ),
-                  title: Text(isMe ? 'Unsend Message' : 'Delete Message',
-                      style: const TextStyle(color: AppColors.danger, fontWeight: FontWeight.w600, fontSize: 15)),
-                  subtitle: Text(
-                    isMe ? 'Remove message for everyone' : 'Delete this message from chat',
-                    style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+                  title: const Text('Unsend for everyone',
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 15)),
+                  subtitle: const Text(
+                    'Unsend message for all participants',
+                    style: TextStyle(color: AppColors.textMuted, fontSize: 12),
                   ),
                   onTap: () async {
                     Navigator.pop(ctx);
@@ -195,18 +197,102 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
                       builder: (dCtx) => AlertDialog(
                         backgroundColor: AppColors.cardBackground,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        title: Row(
+                        title: const Row(
                           children: [
-                            const Icon(Icons.delete_outline_rounded, color: AppColors.danger, size: 22),
-                            const SizedBox(width: 10),
-                            Text(isMe ? 'Unsend Message?' : 'Delete Message?',
-                                style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
+                            Icon(Icons.undo_rounded, color: AppColors.primaryLight, size: 22),
+                            SizedBox(width: 10),
+                            Text('Unsend Message?',
+                                style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
                           ],
                         ),
                         content: Text(
-                          isMe
-                              ? 'This message will be removed for both you and the store.'
-                              : 'Are you sure you want to delete this message?',
+                          'This message will be unsent for both you and ${widget.storeName}.',
+                          style: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.of(dCtx).pop(false),
+                            child: const Text('Cancel', style: TextStyle(color: AppColors.textMuted)),
+                          ),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            ),
+                            onPressed: () => Navigator.of(dCtx).pop(true),
+                            child: const Text('Unsend', style: TextStyle(fontWeight: FontWeight.bold)),
+                          ),
+                        ],
+                      ),
+                    );
+
+                    if (confirmed == true) {
+                      try {
+                        await CustomerApiService.instance.deleteMessage(msgId, action: 'unsend');
+                        if (mounted) {
+                          setState(() {
+                            final idx = _messages.indexWhere((m) => m['id'] == msgId);
+                            if (idx != -1) {
+                              _messages[idx] = {
+                                ..._messages[idx],
+                                'is_unsent': true,
+                                'message': 'You unsent a message',
+                                'image': null,
+                              };
+                            }
+                          });
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Message unsent', style: TextStyle(color: Colors.white)),
+                              backgroundColor: AppColors.cardElevated,
+                              duration: Duration(seconds: 2),
+                            ),
+                          );
+                        }
+                      } catch (e) {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Failed to unsend message: $e'),
+                              backgroundColor: AppColors.danger,
+                            ),
+                          );
+                        }
+                      }
+                    }
+                  },
+                ),
+              if (msgId != null)
+                ListTile(
+                  leading: const CircleAvatar(
+                    radius: 18,
+                    backgroundColor: AppColors.dangerBg,
+                    child: Icon(Icons.delete_outline_rounded, color: AppColors.danger, size: 18),
+                  ),
+                  title: const Text('Remove for you',
+                      style: TextStyle(color: AppColors.danger, fontWeight: FontWeight.w600, fontSize: 15)),
+                  subtitle: const Text(
+                    'Remove this message for you only (the other person can still see it)',
+                    style: TextStyle(color: AppColors.textMuted, fontSize: 12),
+                  ),
+                  onTap: () async {
+                    Navigator.pop(ctx);
+                    final confirmed = await showDialog<bool>(
+                      context: context,
+                      builder: (dCtx) => AlertDialog(
+                        backgroundColor: AppColors.cardBackground,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        title: const Row(
+                          children: [
+                            Icon(Icons.delete_outline_rounded, color: AppColors.danger, size: 22),
+                            SizedBox(width: 10),
+                            Text('Remove for you?',
+                                style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                        content: Text(
+                          'This will remove the message from your chat only. ${widget.storeName} can still see it.',
                           style: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
                         ),
                         actions: [
@@ -221,7 +307,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                             ),
                             onPressed: () => Navigator.of(dCtx).pop(true),
-                            child: Text(isMe ? 'Unsend' : 'Delete', style: const TextStyle(fontWeight: FontWeight.bold)),
+                            child: const Text('Remove', style: TextStyle(fontWeight: FontWeight.bold)),
                           ),
                         ],
                       ),
@@ -229,29 +315,16 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
 
                     if (confirmed == true) {
                       try {
-                        await CustomerApiService.instance.deleteMessage(msgId);
+                        await CustomerApiService.instance.deleteMessage(msgId, action: 'remove_for_me');
                         if (mounted) {
                           setState(() {
-                            if (isMe) {
-                              final idx = _messages.indexWhere((m) => m['id'] == msgId);
-                              if (idx != -1) {
-                                _messages[idx] = {
-                                  ..._messages[idx],
-                                  'is_unsent': true,
-                                  'message': 'You unsent a message',
-                                  'image': null,
-                                };
-                              }
-                            } else {
-                              _messages.removeWhere((m) => m['id'] == msgId);
-                            }
+                            _messages.removeWhere((m) => m['id'] == msgId);
                           });
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(isMe ? 'Message unsent' : 'Message deleted',
-                                  style: const TextStyle(color: Colors.white)),
+                            const SnackBar(
+                              content: Text('Message removed for you', style: TextStyle(color: Colors.white)),
                               backgroundColor: AppColors.cardElevated,
-                              duration: const Duration(seconds: 2),
+                              duration: Duration(seconds: 2),
                             ),
                           );
                         }
@@ -259,7 +332,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
                         if (mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text('Failed to delete message: $e'),
+                              content: Text('Failed to remove message: $e'),
                               backgroundColor: AppColors.danger,
                             ),
                           );
@@ -617,7 +690,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
           ],
         ),
         content: Text(
-          'Are you sure you want to delete all messages with ${widget.storeName}? This cannot be undone.',
+          'Are you sure you want to delete the conversation with ${widget.storeName}? This will only be removed for you; the other person can still see it unless they delete it too.',
           style: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
         ),
         actions: [
@@ -884,215 +957,335 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
                               ],
                             ),
                           )
-                        : ListView.builder(
-                            controller: _scrollController,
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                            itemCount: _messages.length,
-                            itemBuilder: (context, index) {
-                              final msg = _messages[index];
-                              final isMe = msg['sender_role'] == 'customer';
-                              final text = msg['message'] as String? ?? '';
-                              final rawImg = msg['image'] as String?;
-                              final orderId = msg['order'] as int?;
-                              final createdAt = msg['created_at'] as String?;
-
-                              String timeDisplay = '';
-                              if (createdAt != null) {
-                                try {
-                                  final dt = DateTime.parse(createdAt).toLocal();
-                                  timeDisplay = DateFormat('h:mm a').format(dt);
-                                } catch (_) {}
+                        : Builder(
+                            builder: (context) {
+                              int lastMeIndex = -1;
+                              for (int i = _messages.length - 1; i >= 0; i--) {
+                                final m = _messages[i];
+                                final mIsMe = (m['is_me'] is bool)
+                                    ? (m['is_me'] as bool)
+                                    : (m['sender_role'] == 'customer');
+                                if (mIsMe && m['is_unsent'] != true) {
+                                  lastMeIndex = i;
+                                  break;
+                                }
                               }
 
-                              final isUnsent = msg['is_unsent'] == true;
+                              return ListView.builder(
+                                controller: _scrollController,
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                itemCount: _messages.length,
+                                itemBuilder: (context, index) {
+                                  final msg = _messages[index];
+                                  final isMe = (msg['is_me'] is bool)
+                                      ? (msg['is_me'] as bool)
+                                      : (msg['sender_role'] == 'customer');
+                                  final msgAvatar = (msg['sender_avatar_url'] as String?) ?? widget.storeAvatarUrl;
+                                  final text = msg['message'] as String? ?? '';
+                                  final rawImg = msg['image'] as String?;
+                                  final orderId = msg['order'] as int?;
+                                  final createdAt = msg['created_at'] as String?;
+                                  final otherPartyName = widget.isSupport
+                                      ? 'STORA Support'
+                                      : (widget.storeName.trim().isNotEmpty ? widget.storeName.trim() : 'Store');
 
-                              if (isUnsent) {
-                                return Padding(
-                                  padding: const EdgeInsets.only(bottom: 8),
-                                  child: Row(
-                                    crossAxisAlignment: CrossAxisAlignment.end,
-                                    mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
-                                    children: [
-                                      if (!isMe) ...[
-                                        CircleAvatar(
-                                          radius: 14,
-                                          backgroundColor: AppColors.cardElevated,
-                                          backgroundImage: (widget.storeAvatarUrl != null && widget.storeAvatarUrl!.isNotEmpty)
-                                              ? NetworkImage(widget.storeAvatarUrl!)
-                                              : null,
-                                          child: (widget.storeAvatarUrl == null || widget.storeAvatarUrl!.isEmpty)
-                                              ? const Icon(Icons.storefront_rounded, color: AppColors.primary, size: 14)
-                                              : null,
-                                        ),
-                                        const SizedBox(width: 8),
-                                      ],
-                                      Container(
-                                        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.74),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white.withValues(alpha: 0.05),
-                                          borderRadius: BorderRadius.circular(14),
-                                          border: Border.all(
-                                            color: Colors.white12,
-                                            width: 1,
-                                          ),
-                                        ),
-                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            const Icon(Icons.undo_rounded, size: 14, color: AppColors.textMuted),
-                                            const SizedBox(width: 6),
-                                            Flexible(
+                                  String timeDisplay = '';
+                                  DateTime? currentDt;
+                                  if (createdAt != null && createdAt.isNotEmpty) {
+                                    try {
+                                      currentDt = parseApiDateTimeToPht(createdAt);
+                                      timeDisplay = DateFormat('h:mm a').format(currentDt);
+                                    } catch (_) {}
+                                  }
+
+                                  bool showHeader = false;
+                                  String headerText = '';
+                                  if (currentDt != null) {
+                                    if (index == 0) {
+                                      showHeader = true;
+                                    } else {
+                                      final prevMsg = _messages[index - 1];
+                                      final prevCreatedAt = prevMsg['created_at'] as String?;
+                                      if (prevCreatedAt != null && prevCreatedAt.isNotEmpty) {
+                                        try {
+                                          final prevDt = parseApiDateTimeToPht(prevCreatedAt);
+                                          if (currentDt.difference(prevDt).inMinutes.abs() >= 20 ||
+                                              currentDt.day != prevDt.day ||
+                                              currentDt.month != prevDt.month ||
+                                              currentDt.year != prevDt.year) {
+                                            showHeader = true;
+                                          }
+                                        } catch (_) {
+                                          showHeader = true;
+                                        }
+                                      } else {
+                                        showHeader = true;
+                                      }
+                                    }
+
+                                    if (showHeader) {
+                                      final now = nowInPht();
+                                      final isToday = currentDt.year == now.year && currentDt.month == now.month && currentDt.day == now.day;
+                                      final yesterday = now.subtract(const Duration(days: 1));
+                                      final isYesterday = currentDt.year == yesterday.year && currentDt.month == yesterday.month && currentDt.day == yesterday.day;
+                                      final timeStr = DateFormat('h:mm a').format(currentDt);
+
+                                      if (isToday) {
+                                        headerText = timeStr;
+                                      } else if (isYesterday) {
+                                        headerText = 'YESTERDAY AT $timeStr';
+                                      } else if (currentDt.year == now.year) {
+                                        headerText = '${DateFormat('MMM d').format(currentDt).toUpperCase()} AT $timeStr';
+                                      } else {
+                                        headerText = '${DateFormat('MMM d, yyyy').format(currentDt).toUpperCase()} AT $timeStr';
+                                      }
+                                    }
+                                  }
+
+                                  final msgId = msg['id'] as int? ?? index;
+                                  final bool isTapped = (_tappedMessageId == msgId);
+                                  final bool isLastMeInThread = (index == lastMeIndex);
+
+                                  bool isLastOfCluster = true;
+                                  if (index < _messages.length - 1) {
+                                    final nextMsg = _messages[index + 1];
+                                    final nextIsMe = (nextMsg['is_me'] is bool)
+                                        ? (nextMsg['is_me'] as bool)
+                                        : (nextMsg['sender_role'] == 'customer');
+                                    if (nextIsMe == isMe && nextMsg['is_unsent'] != true) {
+                                      isLastOfCluster = false;
+                                    }
+                                  }
+
+                                  final isUnsent = msg['is_unsent'] == true;
+
+                                  if (isUnsent) {
+                                    return Column(
+                                      crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                                      children: [
+                                        if (showHeader && headerText.isNotEmpty)
+                                          Padding(
+                                            padding: const EdgeInsets.symmetric(vertical: 14),
+                                            child: Center(
                                               child: Text(
-                                                isMe ? 'You unsent a message' : '${widget.storeName} unsent a message',
+                                                headerText,
                                                 style: const TextStyle(
-                                                  color: AppColors.textMuted,
-                                                  fontSize: 13,
-                                                  fontStyle: FontStyle.italic,
+                                                  color: Colors.white54,
+                                                  fontSize: 11.5,
+                                                  fontWeight: FontWeight.w600,
+                                                  letterSpacing: 0.3,
                                                 ),
                                               ),
                                             ),
-                                            if (timeDisplay.isNotEmpty) ...[
-                                              const SizedBox(width: 8),
-                                              Text(
-                                                timeDisplay,
-                                                style: const TextStyle(
-                                                  color: Colors.white38,
-                                                  fontSize: 9.5,
+                                          ),
+                                        Padding(
+                                          padding: const EdgeInsets.only(bottom: 6),
+                                          child: Row(
+                                            crossAxisAlignment: CrossAxisAlignment.end,
+                                            mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+                                            children: [
+                                              if (!isMe) ...[
+                                                CircleAvatar(
+                                                  radius: 14,
+                                                  backgroundColor: AppColors.cardElevated,
+                                                  backgroundImage: (msgAvatar != null && msgAvatar.isNotEmpty)
+                                                      ? NetworkImage(msgAvatar)
+                                                      : null,
+                                                  child: (msgAvatar == null || msgAvatar.isEmpty)
+                                                      ? const Icon(Icons.storefront_rounded, color: AppColors.primary, size: 14)
+                                                      : null,
+                                                ),
+                                                const SizedBox(width: 8),
+                                              ],
+                                              Container(
+                                                constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.74),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.white.withValues(alpha: 0.05),
+                                                  borderRadius: BorderRadius.circular(14),
+                                                  border: Border.all(
+                                                    color: Colors.white12,
+                                                    width: 1,
+                                                  ),
+                                                ),
+                                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                                child: Row(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    const Icon(Icons.undo_rounded, size: 14, color: AppColors.textMuted),
+                                                    const SizedBox(width: 6),
+                                                    Flexible(
+                                                      child: Text(
+                                                        isMe ? 'You unsent a message' : '$otherPartyName unsent a message',
+                                                        style: const TextStyle(
+                                                          color: AppColors.textMuted,
+                                                          fontSize: 13,
+                                                          fontStyle: FontStyle.italic,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
                                                 ),
                                               ),
-                                            ],
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              }
-
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: 8),
-                                child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
-                                  children: [
-                                    if (!isMe) ...[
-                                      CircleAvatar(
-                                        radius: 14,
-                                        backgroundColor: AppColors.cardElevated,
-                                        backgroundImage: (widget.storeAvatarUrl != null && widget.storeAvatarUrl!.isNotEmpty)
-                                            ? NetworkImage(widget.storeAvatarUrl!)
-                                            : null,
-                                        child: (widget.storeAvatarUrl == null || widget.storeAvatarUrl!.isEmpty)
-                                            ? const Icon(Icons.storefront_rounded, color: AppColors.primary, size: 14)
-                                            : null,
-                                      ),
-                                      const SizedBox(width: 8),
-                                    ],
-                                    Flexible(
-                                      child: GestureDetector(
-                                        onLongPress: () => _showMessageActionSheet(msg, isMe),
-                                        child: Container(
-                                          constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.74),
-                                          decoration: BoxDecoration(
-                                            gradient: isMe ? AppColors.purpleGradient : null,
-                                            color: isMe ? null : AppColors.cardElevated,
-                                            borderRadius: BorderRadius.only(
-                                              topLeft: const Radius.circular(16),
-                                              topRight: const Radius.circular(16),
-                                              bottomLeft: isMe ? const Radius.circular(16) : const Radius.circular(4),
-                                              bottomRight: isMe ? const Radius.circular(4) : const Radius.circular(16),
-                                            ),
-                                            boxShadow: [
-                                              BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 4, offset: const Offset(0, 2)),
                                             ],
                                           ),
-                                          padding: const EdgeInsets.all(12),
-                                          child: Column(
-                                            crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-                                            children: [
-                                              if (orderId != null)
-                                                Container(
-                                                  margin: const EdgeInsets.only(bottom: 6),
-                                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                        ),
+                                      ],
+                                    );
+                                  }
+
+                                  return Column(
+                                    crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                                    children: [
+                                      if (showHeader && headerText.isNotEmpty)
+                                        Padding(
+                                          padding: const EdgeInsets.symmetric(vertical: 14),
+                                          child: Center(
+                                            child: Text(
+                                              headerText,
+                                              style: const TextStyle(
+                                                color: Colors.white54,
+                                                fontSize: 11.5,
+                                                fontWeight: FontWeight.w600,
+                                                letterSpacing: 0.3,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      Padding(
+                                        padding: EdgeInsets.only(bottom: (isLastOfCluster || isLastMeInThread || isTapped) ? 6 : 2),
+                                        child: Row(
+                                          crossAxisAlignment: CrossAxisAlignment.end,
+                                          mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+                                          children: [
+                                            if (!isMe) ...[
+                                              if (isLastOfCluster)
+                                                CircleAvatar(
+                                                  radius: 14,
+                                                  backgroundColor: AppColors.cardElevated,
+                                                  backgroundImage: (msgAvatar != null && msgAvatar.isNotEmpty)
+                                                      ? NetworkImage(msgAvatar)
+                                                      : null,
+                                                  child: (msgAvatar == null || msgAvatar.isEmpty)
+                                                      ? const Icon(Icons.storefront_rounded, color: AppColors.primary, size: 14)
+                                                      : null,
+                                                )
+                                              else
+                                                const SizedBox(width: 28),
+                                              const SizedBox(width: 8),
+                                            ],
+                                            Flexible(
+                                              child: GestureDetector(
+                                                onTap: () {
+                                                  setState(() {
+                                                    _tappedMessageId = (_tappedMessageId == msgId) ? null : msgId;
+                                                  });
+                                                },
+                                                onLongPress: () => _showMessageActionSheet(msg, isMe),
+                                                child: Container(
+                                                  constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.74),
                                                   decoration: BoxDecoration(
-                                                    color: Colors.black26,
-                                                    borderRadius: BorderRadius.circular(6),
+                                                    gradient: isMe ? AppColors.purpleGradient : null,
+                                                    color: isMe ? null : AppColors.cardElevated,
+                                                    borderRadius: BorderRadius.only(
+                                                      topLeft: const Radius.circular(16),
+                                                      topRight: const Radius.circular(16),
+                                                      bottomLeft: isMe ? const Radius.circular(16) : Radius.circular(isLastOfCluster ? 4 : 16),
+                                                      bottomRight: isMe ? Radius.circular(isLastOfCluster ? 4 : 16) : const Radius.circular(16),
+                                                    ),
+                                                    boxShadow: [
+                                                      BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 4, offset: const Offset(0, 2)),
+                                                    ],
                                                   ),
-                                                  child: Row(
-                                                    mainAxisSize: MainAxisSize.min,
+                                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                                  child: Column(
+                                                    crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
                                                     children: [
-                                                      const Icon(Icons.receipt_long_rounded, color: Colors.white70, size: 13),
-                                                      const SizedBox(width: 4),
-                                                      Text('Order #$orderId', style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                                                      if (orderId != null)
+                                                        Container(
+                                                          margin: const EdgeInsets.only(bottom: 6),
+                                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                                          decoration: BoxDecoration(
+                                                            color: Colors.black26,
+                                                            borderRadius: BorderRadius.circular(6),
+                                                          ),
+                                                          child: Row(
+                                                            mainAxisSize: MainAxisSize.min,
+                                                            children: [
+                                                              const Icon(Icons.receipt_long_rounded, color: Colors.white70, size: 13),
+                                                              const SizedBox(width: 4),
+                                                              Text('Order #$orderId', style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                                                            ],
+                                                          ),
+                                                        ),
+                                                      if (rawImg != null && rawImg.isNotEmpty) ...[
+                                                        GestureDetector(
+                                                          onTap: () => _showImageFullscreen(_resolveImageUrl(rawImg)),
+                                                          child: ClipRRect(
+                                                            borderRadius: BorderRadius.circular(10),
+                                                            child: Image.network(
+                                                              _resolveImageUrl(rawImg),
+                                                              fit: BoxFit.cover,
+                                                              width: double.infinity,
+                                                              height: 180,
+                                                              loadingBuilder: (_, child, progress) {
+                                                                if (progress == null) return child;
+                                                                return Container(
+                                                                  height: 180,
+                                                                  color: Colors.black12,
+                                                                  child: const Center(child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)),
+                                                                );
+                                                              },
+                                                              errorBuilder: (_, error, stackTrace) => Container(
+                                                                height: 100,
+                                                                color: Colors.black12,
+                                                                child: const Center(child: Icon(Icons.broken_image_rounded, color: Colors.white54)),
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        ),
+                                                        if (text.isNotEmpty) const SizedBox(height: 6),
+                                                      ],
+                                                      if (text.isNotEmpty)
+                                                        Text(
+                                                          text,
+                                                          style: const TextStyle(color: Colors.white, fontSize: 14.5, height: 1.3),
+                                                        ),
                                                     ],
                                                   ),
                                                 ),
-                                              if (rawImg != null && rawImg.isNotEmpty) ...[
-                                                GestureDetector(
-                                                  onTap: () => _showImageFullscreen(_resolveImageUrl(rawImg)),
-                                                  child: ClipRRect(
-                                                    borderRadius: BorderRadius.circular(10),
-                                                    child: Image.network(
-                                                      _resolveImageUrl(rawImg),
-                                                      fit: BoxFit.cover,
-                                                      width: double.infinity,
-                                                      height: 180,
-                                                      loadingBuilder: (_, child, progress) {
-                                                        if (progress == null) return child;
-                                                        return Container(
-                                                          height: 180,
-                                                          color: Colors.black12,
-                                                          child: const Center(child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)),
-                                                        );
-                                                      },
-                                                      errorBuilder: (_, error, stackTrace) => Container(
-                                                        height: 100,
-                                                        color: Colors.black12,
-                                                        child: const Center(child: Icon(Icons.broken_image_rounded, color: Colors.white54)),
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ),
-                                                if (text.isNotEmpty) const SizedBox(height: 6),
-                                              ],
-                                              if (text.isNotEmpty)
-                                                Text(
-                                                  text,
-                                                  style: const TextStyle(color: Colors.white, fontSize: 14, height: 1.3),
-                                                ),
-                                              const SizedBox(height: 4),
-                                              Row(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  Text(
-                                                    timeDisplay,
-                                                    style: TextStyle(
-                                                      color: isMe ? Colors.white70 : AppColors.textSecondary,
-                                                      fontSize: 10,
-                                                    ),
-                                                  ),
-                                                  if (isMe) ...[
-                                                    const SizedBox(width: 4),
-                                                    Icon(
-                                                      (msg['is_read'] == true)
-                                                          ? Icons.done_all_rounded
-                                                          : Icons.done_rounded,
-                                                      size: 13,
-                                                      color: (msg['is_read'] == true)
-                                                          ? const Color(0xFF38BDF8)
-                                                          : Colors.white60,
-                                                    ),
-                                                  ],
-                                                ],
                                               ),
-                                            ],
-                                          ),
+                                            ),
+                                          ],
                                         ),
                                       ),
-                                    ),
-                                  ],
-                                ),
+                                      if (isMe && (isLastMeInThread || isTapped)) ...[
+                                        Padding(
+                                          padding: const EdgeInsets.only(top: 2, right: 6, bottom: 4),
+                                          child: Text(
+                                            isTapped && timeDisplay.isNotEmpty
+                                                ? '$timeDisplay • ${(msg['is_read'] == true) ? 'Seen' : 'Delivered'}'
+                                                : ((msg['is_read'] == true) ? 'Seen' : 'Delivered'),
+                                            style: const TextStyle(
+                                              color: Colors.white54,
+                                              fontSize: 11,
+                                            ),
+                                          ),
+                                        ),
+                                      ] else if (!isMe && isTapped && timeDisplay.isNotEmpty) ...[
+                                        Padding(
+                                          padding: const EdgeInsets.only(top: 2, left: 36, bottom: 4),
+                                          child: Text(
+                                            timeDisplay,
+                                            style: const TextStyle(
+                                              color: Colors.white54,
+                                              fontSize: 11,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ],
+                                  );
+                                },
                               );
                             },
                           ),

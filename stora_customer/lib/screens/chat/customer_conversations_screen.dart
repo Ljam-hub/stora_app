@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../providers/chat_provider.dart';
 import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/date_utils.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/notification_badge.dart';
 import 'customer_chat_screen.dart';
@@ -38,8 +39,8 @@ class _CustomerConversationsScreenState extends State<CustomerConversationsScree
   String _formatTime(String? dateStr) {
     if (dateStr == null || dateStr.isEmpty) return '';
     try {
-      final dt = DateTime.parse(dateStr).toLocal();
-      final now = DateTime.now();
+      final dt = parseApiDateTimeToPht(dateStr);
+      final now = nowInPht();
       if (dt.day == now.day && dt.month == now.month && dt.year == now.year) {
         return DateFormat('h:mm a').format(dt);
       }
@@ -63,7 +64,7 @@ class _CustomerConversationsScreenState extends State<CustomerConversationsScree
           ],
         ),
         content: Text(
-          'Are you sure you want to delete all messages with $storeName? This cannot be undone.',
+          'Are you sure you want to delete the conversation with $storeName? This will only be removed for you; the other person can still see it unless they delete it too.',
           style: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
         ),
         actions: [
@@ -147,15 +148,22 @@ class _CustomerConversationsScreenState extends State<CustomerConversationsScree
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 10),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.35)),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.55), width: 1.2),
         gradient: LinearGradient(
           colors: [
-            AppColors.primary.withValues(alpha: 0.16),
+            AppColors.primary.withValues(alpha: 0.28),
             AppColors.cardElevated,
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.12),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Material(
         color: Colors.transparent,
@@ -170,9 +178,9 @@ class _CustomerConversationsScreenState extends State<CustomerConversationsScree
                   width: 42,
                   height: 42,
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.2),
+                    color: AppColors.primary.withValues(alpha: 0.25),
                     shape: BoxShape.circle,
-                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.4)),
+                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.6)),
                   ),
                   child: const Icon(Icons.support_agent_rounded, color: AppColors.primary, size: 24),
                 ),
@@ -335,7 +343,7 @@ class _CustomerConversationsScreenState extends State<CustomerConversationsScree
                           separatorBuilder: (_, _) => const SizedBox(height: 8),
                           itemBuilder: (context, index) {
                             final conv = filtered[index];
-                            final storeOwnerId = (conv['id'] ?? conv['user_id']) as int;
+                            final storeOwnerId = (conv['id'] ?? conv['user_id']) as int? ?? 0;
                             final storeName = (conv['name'] as String?)?.trim() ?? 'Store';
                             final avatarUrl = conv['avatar_url'] as String?;
                             final unreadCount = (conv['unread_count'] as int?) ?? 0;

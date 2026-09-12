@@ -9,12 +9,14 @@ class SubscriptionStatus {
   final DateTime submittedAt;
   final String? referenceNumber;
   final String? rejectionReason;
+  final double? amount;
 
   const SubscriptionStatus({
     required this.currentStep,
     required this.submittedAt,
     this.referenceNumber,
     this.rejectionReason,
+    this.amount,
   });
 
   factory SubscriptionStatus.fromBackend(
@@ -22,6 +24,7 @@ class SubscriptionStatus {
     DateTime submittedAt, {
     String? referenceNumber,
     String? rejectionReason,
+    double? amount,
   }) {
     final step = switch (status.toLowerCase()) {
       'approved' => SubscriptionStep.approved,
@@ -34,6 +37,7 @@ class SubscriptionStatus {
       submittedAt: submittedAt,
       referenceNumber: referenceNumber,
       rejectionReason: rejectionReason,
+      amount: amount,
     );
   }
 

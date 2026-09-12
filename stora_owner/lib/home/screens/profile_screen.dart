@@ -449,11 +449,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (!mounted) return;
       final supportId = (contact?['id'] as num?)?.toInt() ?? 1;
       final supportName = (contact?['name'] as String?) ?? 'STORA Support';
+      final supportAvatar = contact?['avatar_url'] as String?;
+      final supportEmail = contact?['email'] as String?;
       Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) => OwnerChatThreadScreen(
             customerId: supportId,
             customerName: supportName,
+            customerEmail: supportEmail,
+            customerAvatarUrl: supportAvatar,
             isSupport: true,
           ),
         ),
@@ -646,14 +650,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     icon: Icons.workspace_premium_outlined,
                     label: 'Subscription Plan',
                     onTap: () {
-                      if (account.latestPaymentProof != null) {
+                      final proof = account.latestPaymentProof;
+                      if (proof != null) {
+                        final proofAmount = proof.amount.isNotEmpty
+                            ? double.tryParse(proof.amount)
+                            : null;
                         Navigator.of(context).push(
                           MaterialPageRoute(
                             builder: (_) => SubscriptionStatusScreen(
                               status: SubscriptionStatus.fromBackend(
-                                account.latestPaymentProof!.status,
-                                account.latestPaymentProof!.submittedAt,
-                                referenceNumber: account.latestPaymentProof!.referenceNumber,
+                                proof.status,
+                                proof.submittedAt,
+                                referenceNumber: proof.referenceNumber,
+                                amount: proofAmount ?? account.monthlyPrice,
                               ),
                             ),
                           ),

@@ -4,6 +4,7 @@ import '../../auth/auth_store.dart';
 import '../models/sale.dart';
 import '../services/receipt_service.dart';
 import '../theme/home_colors.dart';
+import '../utils/date_utils.dart';
 
 class ReceiptDialog extends StatefulWidget {
   final Sale sale;
@@ -30,7 +31,7 @@ class _ReceiptDialogState extends State<ReceiptDialog> {
     final sale = widget.sale;
     final businessName = AuthStore.instance.businessName ?? 'Stora Store';
     final dateFormat = DateFormat('MMM dd, yyyy • hh:mm a');
-    final formattedDate = dateFormat.format(sale.date);
+    final formattedDate = dateFormat.format(toManila(sale.date));
 
     return Dialog(
       backgroundColor: Colors.transparent,

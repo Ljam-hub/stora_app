@@ -138,9 +138,9 @@ class UserAdmin(DjangoUserAdmin):
     def get_fieldsets(self, request, obj=None):
         if request.user.is_superuser:
             return super().get_fieldsets(request, obj)
-        # Non-superuser staff can only edit their own basic info
+        # Non-superuser staff can only edit their own basic info and avatar
         return (
-            (None, {"fields": ("username", "email")}),
+            (None, {"fields": ("username", "email", "avatar")}),
             ("Store info", {"fields": ("business_name",)}),
         )
 

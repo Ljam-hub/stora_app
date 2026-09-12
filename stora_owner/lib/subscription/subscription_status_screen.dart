@@ -42,18 +42,26 @@ class _SubscriptionStatusScreenState extends State<SubscriptionStatusScreen> {
       final proof = accountStatus.latestPaymentProof;
 
       if (mounted) {
+        final rawAmount = proof?.amount;
+        final proofAmount = (rawAmount != null && rawAmount.isNotEmpty)
+            ? double.tryParse(rawAmount)
+            : null;
+        final actualAmount = proofAmount ?? accountStatus.monthlyPrice;
+
         setState(() {
           if (accountStatus.isPremium) {
             _status = SubscriptionStatus(
               currentStep: SubscriptionStep.approved,
               submittedAt: proof?.submittedAt ?? accountStatus.trialStartedAt ?? DateTime.now(),
               referenceNumber: proof?.referenceNumber,
+              amount: actualAmount,
             );
           } else if (proof != null) {
             _status = SubscriptionStatus.fromBackend(
               proof.status,
               proof.submittedAt,
               referenceNumber: proof.referenceNumber,
+              amount: actualAmount,
             );
           } else {
             _status = widget.status;
@@ -245,6 +253,8 @@ class _SubscriptionStatusScreenState extends State<SubscriptionStatusScreen> {
     final ref = (status.referenceNumber != null && status.referenceNumber!.trim().isNotEmpty)
         ? status.referenceNumber!.trim()
         : 'SUB-${status.submittedAt.millisecondsSinceEpoch}';
+    final receiptAmount = status.amount ?? 100.0;
+    final amountFormatted = 'PHP ${receiptAmount.toStringAsFixed(2)}';
 
     showModalBottomSheet(
       context: context,
@@ -314,7 +324,7 @@ class _SubscriptionStatusScreenState extends State<SubscriptionStatusScreen> {
                       const Divider(color: AppColors.fieldBorder, height: 16),
                       _receiptRow('Status', 'PAID & ACTIVE', valueColor: HomeColors.successText),
                       const Divider(color: AppColors.fieldBorder, height: 16),
-                      _receiptRow('Amount', 'PHP 299.00', isBold: true),
+                      _receiptRow('Amount', amountFormatted, isBold: true),
                       const Divider(color: AppColors.fieldBorder, height: 16),
                       _receiptRow('Payment Method', 'GCash'),
                       const Divider(color: AppColors.fieldBorder, height: 16),
@@ -341,7 +351,7 @@ class _SubscriptionStatusScreenState extends State<SubscriptionStatusScreen> {
                             businessName: bName,
                             email: mail,
                             planName: 'Stora Premium - Monthly',
-                            amount: 299.0,
+                            amount: receiptAmount,
                             referenceNumber: ref,
                             date: status.submittedAt,
                             expiresAt: status.submittedAt.add(const Duration(days: 30)),
@@ -366,7 +376,7 @@ class _SubscriptionStatusScreenState extends State<SubscriptionStatusScreen> {
                             businessName: bName,
                             email: mail,
                             planName: 'Stora Premium - Monthly',
-                            amount: 299.0,
+                            amount: receiptAmount,
                             referenceNumber: ref,
                             date: status.submittedAt,
                             expiresAt: status.submittedAt.add(const Duration(days: 30)),
@@ -388,7 +398,7 @@ class _SubscriptionStatusScreenState extends State<SubscriptionStatusScreen> {
                         businessName: bName,
                         email: mail,
                         planName: 'Stora Premium - Monthly',
-                        amount: 299.0,
+                        amount: receiptAmount,
                         referenceNumber: ref,
                         date: status.submittedAt,
                         expiresAt: status.submittedAt.add(const Duration(days: 30)),

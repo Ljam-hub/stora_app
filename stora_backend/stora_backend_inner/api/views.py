@@ -1154,7 +1154,7 @@ def clear_fcm_token(request):
 
 
 def _perform_delete_conversation(user, partner_id):
-    """Internal helper to delete all messages and images between user and partner_id."""
+    """Internal helper to soft-delete conversation for the requesting user only."""
     if not partner_id:
         return None, "partner_id is required."
 
@@ -1167,17 +1167,21 @@ def _perform_delete_conversation(user, partner_id):
     msgs = ChatMessage.objects.filter(
         (Q(sender=user) & Q(recipient_id=pid)) |
         (Q(sender_id=pid) & Q(recipient=user))
+    ).exclude(deleted_by_users=user)
+
+    msg_ids = list(msgs.values_list("id", flat=True))
+    if not msg_ids:
+        return 0, None
+
+    through = ChatMessage.deleted_by_users.through
+    existing = set(
+        through.objects.filter(user=user, chatmessage_id__in=msg_ids).values_list("chatmessage_id", flat=True)
     )
+    new_records = [through(user=user, chatmessage_id=mid) for mid in msg_ids if mid not in existing]
+    if new_records:
+        through.objects.bulk_create(new_records)
 
-    for m in msgs.exclude(image="").exclude(image__isnull=True):
-        try:
-            if m.image:
-                m.image.delete(save=False)
-        except Exception:
-            pass
-
-    deleted_count, _ = msgs.delete()
-    return deleted_count, None
+    return len(msg_ids), None
 
 
 @api_view(["GET", "POST", "DELETE"])
@@ -1212,7 +1216,7 @@ def chat_messages(request):
         messages = ChatMessage.objects.filter(
             (Q(sender=user) & Q(recipient_id=with_user_id)) |
             (Q(sender_id=with_user_id) & Q(recipient=user))
-        ).order_by("created_at")
+        ).exclude(deleted_by_users=user).order_by("created_at")
 
         # Automatically mark incoming messages as read
         ChatMessage.objects.filter(
@@ -1286,8 +1290,8 @@ def list_conversations(request):
     user = request.user
     from django.db.models import Q
 
-    sent_to = ChatMessage.objects.filter(sender=user).values_list("recipient_id", flat=True).distinct()
-    received_from = ChatMessage.objects.filter(recipient=user).values_list("sender_id", flat=True).distinct()
+    sent_to = ChatMessage.objects.filter(sender=user).exclude(deleted_by_users=user).values_list("recipient_id", flat=True).distinct()
+    received_from = ChatMessage.objects.filter(recipient=user).exclude(deleted_by_users=user).values_list("sender_id", flat=True).distinct()
     partner_ids = set(sent_to) | set(received_from)
 
     conversations = []
@@ -1300,14 +1304,17 @@ def list_conversations(request):
         last_msg = ChatMessage.objects.filter(
             (Q(sender=user) & Q(recipient=partner)) |
             (Q(sender=partner) & Q(recipient=user))
-        ).order_by("-created_at").first()
+        ).exclude(deleted_by_users=user).order_by("-created_at").first()
+
+        if not last_msg:
+            continue
 
         unread_count = ChatMessage.objects.filter(
             sender=partner,
             recipient=user,
             is_read=False,
             is_unsent=False,
-        ).count()
+        ).exclude(deleted_by_users=user).count()
 
         is_blocked = False
         if user.role in (User.ROLE_OWNER, User.ROLE_ADMIN):
@@ -1333,11 +1340,8 @@ def list_conversations(request):
         partner_role = partner.role
         if partner.role == User.ROLE_ADMIN or partner.is_superuser or partner.is_staff:
             partner_name = "STORA Support"
-            partner_role = User.ROLE_ADMIN
-        elif hasattr(partner, "get_display_name"):
-            partner_name = partner.get_display_name()
-        elif partner.role in (User.ROLE_OWNER, User.ROLE_ADMIN) and partner.business_name:
-            partner_name = partner.business_name
+        elif partner.role == User.ROLE_OWNER:
+            partner_name = partner.business_name or f"{partner.first_name} {partner.last_name}".strip() or partner.username
         else:
             partner_name = (
                 f"{partner.first_name} {partner.last_name}".strip()
@@ -1402,7 +1406,7 @@ def support_contact(request):
         recipient=request.user,
         is_read=False,
         is_unsent=False,
-    ).count()
+    ).exclude(deleted_by_users=request.user).count()
 
     return Response({
         "id": support.id,
@@ -1438,12 +1442,14 @@ def delete_conversation(request, partner_id=None):
     }, status=status.HTTP_200_OK)
 
 
-@api_view(["DELETE"])
+@api_view(["DELETE", "POST"])
 @permission_classes([IsAuthenticated])
 def delete_single_message(request, message_id):
     """
     Delete a single chat message.
-    The requesting user must be either the sender or the recipient.
+    Action:
+      - 'unsend': Unsend message for everyone (sender only)
+      - 'remove_for_me' (default): Remove message for requesting user only, other user still sees it
     """
     try:
         msg = ChatMessage.objects.get(id=message_id)
@@ -1453,30 +1459,35 @@ def delete_single_message(request, message_id):
     if msg.sender != request.user and msg.recipient != request.user:
         return Response({"error": "You do not have permission to delete this message."}, status=status.HTTP_403_FORBIDDEN)
 
-    if msg.image:
-        try:
-            msg.image.delete(save=False)
-        except Exception:
-            pass
-        msg.image = None
+    action = request.query_params.get("action") or request.data.get("action") or "remove_for_me"
 
-    if msg.sender == request.user:
+    if action == "unsend":
+        if msg.sender != request.user:
+            return Response({"error": "Only the sender can unsend this message."}, status=status.HTTP_403_FORBIDDEN)
+        if msg.image:
+            try:
+                msg.image.delete(save=False)
+            except Exception:
+                pass
+            msg.image = None
         msg.is_unsent = True
         msg.message = "This message was unsent"
-        msg.is_read = True
-        msg.save(update_fields=["is_unsent", "message", "image", "is_read"])
+        msg.save(update_fields=["is_unsent", "message", "image"])
         return Response({
             "status": "success",
             "message_id": message_id,
+            "action": "unsend",
             "is_unsent": True,
-            "detail": "Message unsent successfully.",
+            "detail": "Message unsent for everyone successfully.",
         }, status=status.HTTP_200_OK)
 
-    msg.delete()
+    # Default action: remove for me only (someone who you chat can still see it)
+    msg.deleted_by_users.add(request.user)
     return Response({
         "status": "success",
         "message_id": message_id,
-        "detail": "Message deleted successfully.",
+        "action": "remove_for_me",
+        "detail": "Message removed for you successfully.",
     }, status=status.HTTP_200_OK)
 
 

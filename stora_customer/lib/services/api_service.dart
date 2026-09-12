@@ -571,8 +571,8 @@ class CustomerApiService {
     _throw(response);
   }
 
-  Future<void> deleteMessage(int messageId) async {
-    final response = await _dispatch('DELETE', _uri('/messages/$messageId/'));
+  Future<void> deleteMessage(int messageId, {String action = 'remove_for_me'}) async {
+    final response = await _dispatch('DELETE', _uri('/messages/$messageId/', {'action': action}));
     if (response.statusCode == 200 || response.statusCode == 204) {
       return;
     }

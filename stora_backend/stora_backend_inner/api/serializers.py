@@ -737,10 +737,13 @@ class ChatMessageSerializer(serializers.ModelSerializer):
     sender_id = serializers.IntegerField(source="sender.id", read_only=True)
     sender_name = serializers.SerializerMethodField()
     sender_role = serializers.CharField(source="sender.role", read_only=True)
+    sender_avatar_url = serializers.SerializerMethodField()
     recipient_id = serializers.IntegerField(source="recipient.id", read_only=True)
     recipient_name = serializers.SerializerMethodField()
+    recipient_avatar_url = serializers.SerializerMethodField()
     order_title = serializers.SerializerMethodField()
     image_url = serializers.SerializerMethodField()
+    is_me = serializers.SerializerMethodField()
     created_at = UTCDateTimeField(read_only=True)
 
     class Meta:
@@ -751,9 +754,11 @@ class ChatMessageSerializer(serializers.ModelSerializer):
             "sender_id",
             "sender_name",
             "sender_role",
+            "sender_avatar_url",
             "recipient",
             "recipient_id",
             "recipient_name",
+            "recipient_avatar_url",
             "order",
             "order_title",
             "message",
@@ -761,14 +766,21 @@ class ChatMessageSerializer(serializers.ModelSerializer):
             "image_url",
             "is_read",
             "is_unsent",
+            "is_me",
             "created_at",
         )
-        read_only_fields = ("id", "sender", "sender_id", "recipient_id", "is_read", "is_unsent", "created_at", "image_url")
+        read_only_fields = ("id", "sender", "sender_id", "recipient_id", "is_read", "is_unsent", "is_me", "created_at", "image_url", "sender_avatar_url", "recipient_avatar_url")
         extra_kwargs = {
             "image": {"required": False, "allow_null": True},
             "message": {"required": False, "allow_blank": True},
             "order": {"required": False, "allow_null": True},
         }
+
+    def get_is_me(self, obj):
+        req = self.context.get("request")
+        if req and hasattr(req, "user") and req.user.is_authenticated:
+            return obj.sender_id == req.user.id
+        return False
 
     def get_sender_name(self, obj):
         if obj.sender.role == "admin" or obj.sender.is_superuser or obj.sender.is_staff:
@@ -787,6 +799,22 @@ class ChatMessageSerializer(serializers.ModelSerializer):
         if obj.recipient.role == "owner" and obj.recipient.business_name:
             return obj.recipient.business_name
         return f"{obj.recipient.first_name} {obj.recipient.last_name}".strip() or obj.recipient.business_name or obj.recipient.username
+
+    def get_sender_avatar_url(self, obj):
+        if obj.sender and getattr(obj.sender, "avatar", None):
+            req = self.context.get("request")
+            if req:
+                return req.build_absolute_uri(obj.sender.avatar.url)
+            return obj.sender.avatar.url
+        return None
+
+    def get_recipient_avatar_url(self, obj):
+        if obj.recipient and getattr(obj.recipient, "avatar", None):
+            req = self.context.get("request")
+            if req:
+                return req.build_absolute_uri(obj.recipient.avatar.url)
+            return obj.recipient.avatar.url
+        return None
 
     def get_order_title(self, obj):
         if obj.order_id:

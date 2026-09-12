@@ -539,8 +539,8 @@ class _OwnerChatScreenState extends State<OwnerChatScreen> {
                                 String timeDisplay = '';
                                 if (lastMessageAt != null && lastMessageAt.isNotEmpty) {
                                   try {
-                                    final dt = parseApiDateTime(lastMessageAt).toLocal();
-                                    final now = DateTime.now();
+                                    final dt = toManila(parseApiDateTime(lastMessageAt));
+                                    final now = toManila(DateTime.now());
                                     if (dt.day == now.day && dt.month == now.month && dt.year == now.year) {
                                       timeDisplay = DateFormat('h:mm a').format(dt);
                                     } else {
@@ -731,6 +731,7 @@ class _OwnerChatThreadScreenState extends State<OwnerChatThreadScreen> {
 
   Uint8List? _selectedImageBytes;
   String? _selectedImageName;
+  int? _tappedMessageId;
 
   static const List<Map<String, dynamic>> _quickReplies = [
     {'icon': Icons.waving_hand_rounded, 'text': 'Hello! How can I help you today?'},
@@ -1671,221 +1672,343 @@ class _OwnerChatThreadScreenState extends State<OwnerChatThreadScreen> {
                               ],
                             ),
                           )
-                        : ListView.builder(
-                        controller: _scrollController,
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        itemCount: _messages.length,
-                        itemBuilder: (context, index) {
-                          final msg = _messages[index];
-                          final senderId = msg['sender_id'] ?? msg['sender'];
-                          final senderRole = msg['sender_role'] as String?;
-                          final bool isMe = (senderRole != null && (senderRole == 'owner' || senderRole == 'admin')) ||
-                              (senderRole == null && senderId != null && senderId != widget.customerId);
-                          final text = msg['message'] as String? ?? '';
-                          final rawImg = msg['image'] as String?;
-                          final orderId = msg['order'] as int?;
-                          final createdAt = msg['created_at'] as String?;
+                        : Builder(
+                            builder: (context) {
+                              int lastMeIndex = -1;
+                              for (int i = _messages.length - 1; i >= 0; i--) {
+                                 final m = _messages[i];
+                                 final mSenderId = m['sender_id'] ?? m['sender'];
+                                 final mSenderRole = m['sender_role'] as String?;
+                                 final bool mIsMe = (m['is_me'] is bool)
+                                     ? (m['is_me'] as bool)
+                                     : ((mSenderRole != null && (mSenderRole == 'owner' || mSenderRole == 'admin')) ||
+                                        (mSenderRole == null && mSenderId != null && mSenderId != widget.customerId));
+                                 if (mIsMe && m['is_unsent'] != true) {
+                                   lastMeIndex = i;
+                                   break;
+                                 }
+                               }
 
-                          String timeDisplay = '';
-                          if (createdAt != null) {
-                            try {
-                              final dt = parseApiDateTime(createdAt).toLocal();
-                              timeDisplay = DateFormat('h:mm a').format(dt);
-                            } catch (_) {}
-                          }
+                               return ListView.builder(
+                                 controller: _scrollController,
+                                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                 itemCount: _messages.length,
+                                 itemBuilder: (context, index) {
+                                   final msg = _messages[index];
+                                   final senderId = msg['sender_id'] ?? msg['sender'];
+                                   final senderRole = msg['sender_role'] as String?;
+                                   final bool isMe = (msg['is_me'] is bool)
+                                       ? (msg['is_me'] as bool)
+                                       : ((senderRole != null && (senderRole == 'owner' || senderRole == 'admin')) ||
+                                          (senderRole == null && senderId != null && senderId != widget.customerId));
+                                  final text = msg['message'] as String? ?? '';
+                                  final rawImg = msg['image'] as String?;
+                                  final orderId = msg['order'] as int?;
+                                  final createdAt = msg['created_at'] as String?;
 
-                          final isUnsent = msg['is_unsent'] == true;
+                                  String timeDisplay = '';
+                                  DateTime? currentDt;
+                                  if (createdAt != null && createdAt.isNotEmpty) {
+                                    try {
+                                      currentDt = toManila(parseApiDateTime(createdAt));
+                                      timeDisplay = DateFormat('h:mm a').format(currentDt);
+                                    } catch (_) {}
+                                  }
 
-                          if (isUnsent) {
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 8),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
-                                children: [
-                                  if (!isMe) ...[
-                                    CircleAvatar(
-                                      radius: 14,
-                                      backgroundColor: const Color(0xFF3A3B3C),
-                                      backgroundImage: (widget.customerAvatarUrl != null && widget.customerAvatarUrl!.isNotEmpty)
-                                          ? NetworkImage(widget.customerAvatarUrl!)
-                                          : null,
-                                      child: (widget.customerAvatarUrl == null || widget.customerAvatarUrl!.isEmpty)
-                                          ? const Icon(Icons.person, color: Colors.white, size: 16)
-                                          : null,
-                                    ),
-                                    const SizedBox(width: 8),
-                                  ],
-                                  Container(
-                                    constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.74),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withValues(alpha: 0.05),
-                                      borderRadius: BorderRadius.circular(14),
-                                      border: Border.all(
-                                        color: Colors.white12,
-                                        width: 1,
-                                      ),
-                                    ),
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
+                                  bool showHeader = false;
+                                  String headerText = '';
+                                  if (currentDt != null) {
+                                    if (index == 0) {
+                                      showHeader = true;
+                                    } else {
+                                      final prevMsg = _messages[index - 1];
+                                      final prevCreatedAt = prevMsg['created_at'] as String?;
+                                      if (prevCreatedAt != null && prevCreatedAt.isNotEmpty) {
+                                        try {
+                                          final prevDt = toManila(parseApiDateTime(prevCreatedAt));
+                                          if (currentDt.difference(prevDt).inMinutes.abs() >= 20 ||
+                                              currentDt.day != prevDt.day ||
+                                              currentDt.month != prevDt.month ||
+                                              currentDt.year != prevDt.year) {
+                                            showHeader = true;
+                                          }
+                                        } catch (_) {
+                                          showHeader = true;
+                                        }
+                                      } else {
+                                        showHeader = true;
+                                      }
+                                    }
+
+                                    if (showHeader) {
+                                      final now = toManila(DateTime.now());
+                                      final isToday = currentDt.year == now.year && currentDt.month == now.month && currentDt.day == now.day;
+                                      final yesterday = now.subtract(const Duration(days: 1));
+                                      final isYesterday = currentDt.year == yesterday.year && currentDt.month == yesterday.month && currentDt.day == yesterday.day;
+                                      final timeStr = DateFormat('h:mm a').format(currentDt);
+
+                                      if (isToday) {
+                                        headerText = timeStr;
+                                      } else if (isYesterday) {
+                                        headerText = 'YESTERDAY AT $timeStr';
+                                      } else if (currentDt.year == now.year) {
+                                        headerText = '${DateFormat('MMM d').format(currentDt).toUpperCase()} AT $timeStr';
+                                      } else {
+                                        headerText = '${DateFormat('MMM d, yyyy').format(currentDt).toUpperCase()} AT $timeStr';
+                                      }
+                                    }
+                                  }
+
+                                  final msgId = msg['id'] as int? ?? index;
+                                  final bool isTapped = (_tappedMessageId == msgId);
+                                  final bool isLastMeInThread = (index == lastMeIndex);
+
+                                  bool isLastOfCluster = true;
+                                  if (index < _messages.length - 1) {
+                                    final nextMsg = _messages[index + 1];
+                                    final nextSenderId = nextMsg['sender_id'] ?? nextMsg['sender'];
+                                    final nextSenderRole = nextMsg['sender_role'] as String?;
+                                    final bool nextIsMe = (nextMsg['is_me'] is bool)
+                                        ? (nextMsg['is_me'] as bool)
+                                        : ((nextSenderRole != null && (nextSenderRole == 'owner' || nextSenderRole == 'admin')) ||
+                                           (nextSenderRole == null && nextSenderId != null && nextSenderId != widget.customerId));
+                                    if (nextIsMe == isMe && nextMsg['is_unsent'] != true) {
+                                      isLastOfCluster = false;
+                                    }
+                                  }
+
+                                  final isUnsent = msg['is_unsent'] == true;
+
+                                  if (isUnsent) {
+                                    return Column(
+                                      crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
                                       children: [
-                                        const Icon(Icons.undo_rounded, size: 14, color: AppColors.label),
-                                        const SizedBox(width: 6),
-                                        Flexible(
-                                          child: Text(
-                                            isMe ? 'You unsent a message' : '${widget.customerName} unsent a message',
-                                            style: const TextStyle(
-                                              color: AppColors.label,
-                                              fontSize: 13,
-                                              fontStyle: FontStyle.italic,
+                                        if (showHeader && headerText.isNotEmpty)
+                                          Padding(
+                                            padding: const EdgeInsets.symmetric(vertical: 14),
+                                            child: Center(
+                                              child: Text(
+                                                headerText,
+                                                style: const TextStyle(
+                                                  color: Colors.white54,
+                                                  fontSize: 11.5,
+                                                  fontWeight: FontWeight.w600,
+                                                  letterSpacing: 0.3,
+                                                ),
+                                              ),
                                             ),
+                                          ),
+                                        Padding(
+                                          padding: const EdgeInsets.only(bottom: 6),
+                                          child: Row(
+                                            crossAxisAlignment: CrossAxisAlignment.end,
+                                            mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+                                            children: [
+                                              if (!isMe) ...[
+                                                CircleAvatar(
+                                                  radius: 14,
+                                                  backgroundColor: const Color(0xFF3A3B3C),
+                                                  backgroundImage: (widget.customerAvatarUrl != null && widget.customerAvatarUrl!.isNotEmpty)
+                                                      ? NetworkImage(widget.customerAvatarUrl!)
+                                                      : null,
+                                                  child: (widget.customerAvatarUrl == null || widget.customerAvatarUrl!.isEmpty)
+                                                      ? const Icon(Icons.person, color: Colors.white, size: 16)
+                                                      : null,
+                                                ),
+                                                const SizedBox(width: 8),
+                                              ],
+                                              Container(
+                                                constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.74),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.white.withValues(alpha: 0.05),
+                                                  borderRadius: BorderRadius.circular(14),
+                                                  border: Border.all(
+                                                    color: Colors.white12,
+                                                    width: 1,
+                                                  ),
+                                                ),
+                                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                                child: Row(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    const Icon(Icons.undo_rounded, size: 14, color: AppColors.label),
+                                                    const SizedBox(width: 6),
+                                                    Flexible(
+                                                      child: Text(
+                                                        isMe ? 'You unsent a message' : '${widget.customerName} unsent a message',
+                                                        style: const TextStyle(
+                                                          color: AppColors.label,
+                                                          fontSize: 13,
+                                                          fontStyle: FontStyle.italic,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ],
                                           ),
                                         ),
-                                        if (timeDisplay.isNotEmpty) ...[
-                                          const SizedBox(width: 8),
-                                          Text(
-                                            timeDisplay,
-                                            style: const TextStyle(
-                                              color: Colors.white38,
-                                              fontSize: 9.5,
-                                            ),
-                                          ),
-                                        ],
                                       ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }
+                                    );
+                                  }
 
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 8),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
-                              children: [
-                                if (!isMe) ...[
-                                  CircleAvatar(
-                                    radius: 14,
-                                    backgroundColor: const Color(0xFF3A3B3C),
-                                    backgroundImage: (widget.customerAvatarUrl != null && widget.customerAvatarUrl!.isNotEmpty)
-                                        ? NetworkImage(widget.customerAvatarUrl!)
-                                        : null,
-                                    child: (widget.customerAvatarUrl == null || widget.customerAvatarUrl!.isEmpty)
-                                        ? const Icon(Icons.person, color: Colors.white, size: 16)
-                                        : null,
-                                  ),
-                                  const SizedBox(width: 8),
-                                ],
-                                Flexible(
-                                  child: GestureDetector(
-                                    onLongPress: () => _showMessageActionSheet(msg, isMe),
-                                    child: Container(
-                                      constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.74),
-                                      decoration: BoxDecoration(
-                                        gradient: isMe ? HomeColors.purpleGradient : null,
-                                        color: isMe ? null : HomeColors.cardElevated,
-                                        borderRadius: BorderRadius.only(
-                                          topLeft: const Radius.circular(16),
-                                          topRight: const Radius.circular(16),
-                                          bottomLeft: isMe ? const Radius.circular(16) : const Radius.circular(4),
-                                          bottomRight: isMe ? const Radius.circular(4) : const Radius.circular(16),
-                                        ),
-                                        boxShadow: [
-                                          BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 4, offset: const Offset(0, 2)),
-                                        ],
-                                      ),
-                                      padding: const EdgeInsets.all(12),
-                                      child: Column(
-                                        crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-                                        children: [
-                                          if (orderId != null)
-                                            Container(
-                                              margin: const EdgeInsets.only(bottom: 6),
-                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                              decoration: BoxDecoration(
-                                                color: Colors.black26,
-                                                borderRadius: BorderRadius.circular(6),
-                                              ),
-                                              child: Row(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  const Icon(Icons.receipt_long_rounded, color: Colors.white70, size: 13),
-                                                  const SizedBox(width: 4),
-                                                  Text('Order #$orderId', style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
-                                                ],
+                                  return Column(
+                                    crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                                    children: [
+                                      if (showHeader && headerText.isNotEmpty)
+                                        Padding(
+                                          padding: const EdgeInsets.symmetric(vertical: 14),
+                                          child: Center(
+                                            child: Text(
+                                              headerText,
+                                              style: const TextStyle(
+                                                color: Colors.white54,
+                                                fontSize: 11.5,
+                                                fontWeight: FontWeight.w600,
+                                                letterSpacing: 0.3,
                                               ),
                                             ),
-                                          if (rawImg != null && rawImg.isNotEmpty) ...[
-                                            GestureDetector(
-                                              onTap: () => _showImageFullscreen(_resolveImageUrl(rawImg)),
-                                              child: ClipRRect(
-                                                borderRadius: BorderRadius.circular(10),
-                                                child: Image.network(
-                                                  _resolveImageUrl(rawImg),
-                                                  fit: BoxFit.cover,
-                                                  width: double.infinity,
-                                                  height: 180,
-                                                  loadingBuilder: (_, child, progress) {
-                                                    if (progress == null) return child;
-                                                    return Container(
-                                                      height: 180,
-                                                      color: Colors.black12,
-                                                      child: const Center(child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)),
-                                                    );
-                                                  },
-                                                  errorBuilder: (context, error, stackTrace) => Container(
-                                                    height: 100,
-                                                    color: Colors.black12,
-                                                    child: const Center(child: Icon(Icons.broken_image_rounded, color: Colors.white54)),
+                                          ),
+                                        ),
+                                      Padding(
+                                        padding: EdgeInsets.only(bottom: (isLastOfCluster || isLastMeInThread || isTapped) ? 6 : 2),
+                                        child: Row(
+                                          crossAxisAlignment: CrossAxisAlignment.end,
+                                          mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+                                          children: [
+                                            if (!isMe) ...[
+                                              if (isLastOfCluster)
+                                                CircleAvatar(
+                                                  radius: 14,
+                                                  backgroundColor: const Color(0xFF3A3B3C),
+                                                  backgroundImage: (widget.customerAvatarUrl != null && widget.customerAvatarUrl!.isNotEmpty)
+                                                      ? NetworkImage(widget.customerAvatarUrl!)
+                                                      : null,
+                                                  child: (widget.customerAvatarUrl == null || widget.customerAvatarUrl!.isEmpty)
+                                                      ? const Icon(Icons.person, color: Colors.white, size: 16)
+                                                      : null,
+                                                )
+                                              else
+                                                const SizedBox(width: 28),
+                                              const SizedBox(width: 8),
+                                            ],
+                                            Flexible(
+                                              child: GestureDetector(
+                                                onTap: () {
+                                                  setState(() {
+                                                    _tappedMessageId = (_tappedMessageId == msgId) ? null : msgId;
+                                                  });
+                                                },
+                                                onLongPress: () => _showMessageActionSheet(msg, isMe),
+                                                child: Container(
+                                                  constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.74),
+                                                  decoration: BoxDecoration(
+                                                    gradient: isMe ? HomeColors.purpleGradient : null,
+                                                    color: isMe ? null : HomeColors.cardElevated,
+                                                    borderRadius: BorderRadius.only(
+                                                      topLeft: const Radius.circular(16),
+                                                      topRight: const Radius.circular(16),
+                                                      bottomLeft: isMe ? const Radius.circular(16) : Radius.circular(isLastOfCluster ? 4 : 16),
+                                                      bottomRight: isMe ? Radius.circular(isLastOfCluster ? 4 : 16) : const Radius.circular(16),
+                                                    ),
+                                                    boxShadow: [
+                                                      BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 4, offset: const Offset(0, 2)),
+                                                    ],
+                                                  ),
+                                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                                  child: Column(
+                                                    crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                                                    children: [
+                                                      if (orderId != null)
+                                                        Container(
+                                                          margin: const EdgeInsets.only(bottom: 6),
+                                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                                          decoration: BoxDecoration(
+                                                            color: Colors.black26,
+                                                            borderRadius: BorderRadius.circular(6),
+                                                          ),
+                                                          child: Row(
+                                                            mainAxisSize: MainAxisSize.min,
+                                                            children: [
+                                                              const Icon(Icons.receipt_long_rounded, color: Colors.white70, size: 13),
+                                                              const SizedBox(width: 4),
+                                                              Text('Order #$orderId', style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                                                            ],
+                                                          ),
+                                                        ),
+                                                      if (rawImg != null && rawImg.isNotEmpty) ...[
+                                                        GestureDetector(
+                                                          onTap: () => _showImageFullscreen(_resolveImageUrl(rawImg)),
+                                                          child: ClipRRect(
+                                                            borderRadius: BorderRadius.circular(10),
+                                                            child: Image.network(
+                                                              _resolveImageUrl(rawImg),
+                                                              fit: BoxFit.cover,
+                                                              width: double.infinity,
+                                                              height: 180,
+                                                              loadingBuilder: (_, child, progress) {
+                                                                if (progress == null) return child;
+                                                                return Container(
+                                                                  height: 180,
+                                                                  color: Colors.black12,
+                                                                  child: const Center(child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)),
+                                                                );
+                                                              },
+                                                              errorBuilder: (context, error, stackTrace) => Container(
+                                                                height: 100,
+                                                                color: Colors.black12,
+                                                                child: const Center(child: Icon(Icons.broken_image_rounded, color: Colors.white54)),
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        ),
+                                                        if (text.isNotEmpty) const SizedBox(height: 6),
+                                                      ],
+                                                      if (text.isNotEmpty)
+                                                        Text(
+                                                          text,
+                                                          style: const TextStyle(color: Colors.white, fontSize: 14.5, height: 1.3),
+                                                        ),
+                                                    ],
                                                   ),
                                                 ),
                                               ),
                                             ),
-                                            if (text.isNotEmpty) const SizedBox(height: 6),
                                           ],
-                                          if (text.isNotEmpty)
-                                            Text(
-                                              text,
-                                              style: const TextStyle(color: Colors.white, fontSize: 14, height: 1.3),
-                                            ),
-                                          const SizedBox(height: 4),
-                                          Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Text(
-                                                timeDisplay,
-                                                style: TextStyle(
-                                                  color: isMe ? Colors.white70 : AppColors.label,
-                                                  fontSize: 10,
-                                                ),
-                                              ),
-                                              if (isMe) ...[
-                                                const SizedBox(width: 4),
-                                                Icon(
-                                                  (msg['is_read'] == true)
-                                                      ? Icons.done_all_rounded
-                                                      : Icons.done_rounded,
-                                                  size: 13,
-                                                  color: (msg['is_read'] == true)
-                                                      ? const Color(0xFF38BDF8)
-                                                      : Colors.white60,
-                                                ),
-                                              ],
-                                            ],
-                                          ),
-                                        ],
+                                        ),
                                       ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
+                                      if (isMe && (isLastMeInThread || isTapped)) ...[
+                                        Padding(
+                                          padding: const EdgeInsets.only(top: 2, right: 6, bottom: 4),
+                                          child: Text(
+                                            isTapped && timeDisplay.isNotEmpty
+                                                ? '$timeDisplay • ${(msg['is_read'] == true) ? 'Seen' : 'Delivered'}'
+                                                : ((msg['is_read'] == true) ? 'Seen' : 'Delivered'),
+                                            style: const TextStyle(
+                                              color: Colors.white54,
+                                              fontSize: 11,
+                                            ),
+                                          ),
+                                        ),
+                                      ] else if (!isMe && isTapped && timeDisplay.isNotEmpty) ...[
+                                        Padding(
+                                          padding: const EdgeInsets.only(top: 2, left: 36, bottom: 4),
+                                          child: Text(
+                                            timeDisplay,
+                                            style: const TextStyle(
+                                              color: Colors.white54,
+                                              fontSize: 11,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ],
+                                  );
+                                },
+                              );
+                            },
+                          ),
           ),
           if (_selectedImageBytes != null)
             Container(

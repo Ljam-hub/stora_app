@@ -749,8 +749,8 @@ class ApiClient {
     if (response.statusCode != 200 && response.statusCode != 204) _throw(response);
   }
 
-  Future<void> deleteMessage(int messageId) async {
-    final response = await _send('DELETE', '/messages/$messageId/');
+  Future<void> deleteMessage(int messageId, {String action = 'remove_for_me'}) async {
+    final response = await _send('DELETE', '/messages/$messageId/?action=$action');
     if (response.statusCode != 200 && response.statusCode != 204) _throw(response);
   }
 

@@ -7,6 +7,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:share_plus/share_plus.dart';
 import '../models/sale.dart';
+import '../utils/date_utils.dart';
 
 class ReceiptService {
   ReceiptService._();
@@ -19,7 +20,7 @@ class ReceiptService {
         ? businessName.trim()
         : 'STORA STORE';
     final dateFormat = DateFormat('MMM dd, yyyy - hh:mm a');
-    final formattedDate = dateFormat.format(sale.date);
+    final formattedDate = dateFormat.format(toManila(sale.date));
 
     // Thermal roll format: 58mm width (approx 164 points), auto-expanding height
     final pageFormat = PdfPageFormat(
@@ -213,8 +214,8 @@ class ReceiptService {
   }) async {
     final pdf = pw.Document();
     final dateFormat = DateFormat('MMM dd, yyyy - hh:mm a');
-    final formattedDate = dateFormat.format(date);
-    final formattedExpiry = expiresAt != null ? DateFormat('MMM dd, yyyy').format(expiresAt) : '30 Days from approval';
+    final formattedDate = dateFormat.format(toManila(date));
+    final formattedExpiry = expiresAt != null ? DateFormat('MMM dd, yyyy').format(toManila(expiresAt)) : '30 Days from approval';
 
     final pageFormat = PdfPageFormat.a4;
 

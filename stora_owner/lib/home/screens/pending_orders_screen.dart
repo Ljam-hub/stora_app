@@ -412,15 +412,19 @@ class _OrderCardState extends State<_OrderCard> {
             children: [
               const Text('Select reason for customer:', style: TextStyle(color: AppColors.label, fontSize: 13)),
               const SizedBox(height: 10),
-              ...standardReasons.map((r) => RadioListTile<String>(
+              RadioGroup<String>(
+                groupValue: selectedReason,
+                onChanged: (val) => setDialogState(() => selectedReason = val!),
+                child: Column(
+                  children: standardReasons.map((r) => RadioListTile<String>(
                     dense: true,
                     contentPadding: EdgeInsets.zero,
                     activeColor: AppColors.purpleLight,
                     title: Text(r, style: const TextStyle(color: Colors.white, fontSize: 14)),
                     value: r,
-                    groupValue: selectedReason,
-                    onChanged: (val) => setDialogState(() => selectedReason = val!),
-                  )),
+                  )).toList(),
+                ),
+              ),
               if (selectedReason == 'Custom reason') ...[
                 const SizedBox(height: 8),
                 TextField(

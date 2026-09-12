@@ -1283,12 +1283,19 @@ class CustomerNameAndEmailDisplayTests(APITestCase):
         res = self.client.delete(f"/api/messages/conversations/{self.customer.id}/")
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.data["deleted_count"], 2)
-        self.assertEqual(ChatMessage.objects.count(), 0)
+        # Soft delete: messages still exist in DB for customer
+        self.assertEqual(ChatMessage.objects.count(), 2)
 
-        # Conversations list is now empty
+        # Conversations list is now empty for owner
         conv_res = self.client.get("/api/messages/conversations/")
         self.assertEqual(conv_res.status_code, 200)
         self.assertEqual(len(conv_res.data), 0)
+
+        # But customer still sees the conversation
+        self.client.force_authenticate(user=self.customer)
+        cust_conv = self.client.get("/api/messages/conversations/")
+        self.assertEqual(cust_conv.status_code, 200)
+        self.assertEqual(len(cust_conv.data), 1)
 
     def test_customer_can_delete_conversation_via_query_param(self):
         from api.models import ChatMessage
@@ -1299,26 +1306,41 @@ class CustomerNameAndEmailDisplayTests(APITestCase):
         res = self.client.delete(f"/api/messages/?with_user={self.owner.id}")
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.data["deleted_count"], 1)
-        self.assertEqual(ChatMessage.objects.count(), 0)
+        # Soft delete: message still in DB for owner
+        self.assertEqual(ChatMessage.objects.count(), 1)
+
+        # Customer's conversation list is empty
+        cust_res = self.client.get("/api/messages/conversations/")
+        self.assertEqual(len(cust_res.data), 0)
+
+        # Owner still has the conversation
+        self.client.force_authenticate(user=self.owner)
+        owner_res = self.client.get("/api/messages/conversations/")
+        self.assertEqual(len(owner_res.data), 1)
 
     def test_delete_single_message_by_sender_and_recipient(self):
         from api.models import ChatMessage
         m1 = ChatMessage.objects.create(sender=self.owner, recipient=self.customer, message="Message 1")
         m2 = ChatMessage.objects.create(sender=self.customer, recipient=self.owner, message="Message 2")
 
-        # Sender (owner) deletes m1 (unsend)
+        # Sender (owner) unsend m1
         self.client.force_authenticate(user=self.owner)
-        res1 = self.client.delete(f"/api/messages/{m1.id}/")
+        res1 = self.client.delete(f"/api/messages/{m1.id}/?action=unsend")
         self.assertEqual(res1.status_code, 200)
         self.assertTrue(res1.data.get("is_unsent"))
         m1.refresh_from_db()
         self.assertTrue(m1.is_unsent)
         self.assertEqual(m1.message, "This message was unsent")
 
-        # Recipient (owner) deletes m2
-        res2 = self.client.delete(f"/api/messages/{m2.id}/")
+        # Recipient (owner) deletes m2 for me only
+        res2 = self.client.delete(f"/api/messages/{m2.id}/?action=remove_for_me")
         self.assertEqual(res2.status_code, 200)
-        self.assertFalse(ChatMessage.objects.filter(id=m2.id).exists())
+        self.assertEqual(res2.data.get("action"), "remove_for_me")
+        m2.refresh_from_db()
+        # Message still exists in DB
+        self.assertTrue(m2.deleted_by_users.filter(id=self.owner.id).exists())
+        # Customer has NOT deleted m2
+        self.assertFalse(m2.deleted_by_users.filter(id=self.customer.id).exists())
 
     def test_delete_single_message_unauthorized(self):
         from api.models import ChatMessage

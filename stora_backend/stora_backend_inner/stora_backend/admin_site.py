@@ -26,14 +26,16 @@ class StoraAdminSite(AdminSite):
     def get_unread_support_count(self, request=None):
         from api.models import ChatMessage
         from accounts.models import User
-        # Count all unread messages sent to admin/staff users by non-admin users
-        return ChatMessage.objects.filter(
+        qs = ChatMessage.objects.filter(
             Q(recipient__role=User.ROLE_ADMIN) | Q(recipient__is_superuser=True) | Q(recipient__is_staff=True),
             is_read=False,
             is_unsent=False,
         ).exclude(
             Q(sender__role=User.ROLE_ADMIN) | Q(sender__is_superuser=True)
-        ).count()
+        )
+        if request and getattr(request, "user", None) and request.user.is_authenticated:
+            qs = qs.exclude(deleted_by_users=request.user)
+        return qs.count()
 
     def index(self, request, extra_context=None):
         from accounts.models import PasswordResetToken, PaymentProof
@@ -88,16 +90,30 @@ class StoraAdminSite(AdminSite):
             path("support/", self.admin_view(self.support_chat_view), name="support_chat"),
             path("support/api/conversations/", self.admin_view(self.support_conversations_api), name="support_conversations_api"),
             path("support/api/messages/", self.admin_view(self.support_messages_api), name="support_messages_api"),
+            path("support/api/messages/<int:message_id>/unsend/", self.admin_view(self.support_unsend_message_api), name="support_unsend_message_api"),
+            path("support/api/messages/<int:message_id>/delete/", self.admin_view(self.support_delete_message_api), name="support_delete_message_api"),
+            path("support/api/conversations/<int:partner_id>/delete/", self.admin_view(self.support_delete_conversation_api), name="support_delete_conversation_api"),
+            path("support/api/avatar/", self.admin_view(self.support_avatar_api), name="support_avatar_api"),
             path("support/api/send/", self.admin_view(self.support_send_api), name="support_send_api"),
             path("support/api/unread-count/", self.admin_view(self.support_unread_count_api), name="support_unread_count_api"),
         ]
         return custom_urls + urls
 
     def support_chat_view(self, request):
+        from api.views import get_support_user
+        sup = get_support_user()
+        support_avatar = None
+        if request.user.avatar:
+            support_avatar = request.build_absolute_uri(request.user.avatar.url)
+        elif sup and sup.avatar:
+            support_avatar = request.build_absolute_uri(sup.avatar.url)
+
         context = {
             **self.each_context(request),
             "title": "Support Chat Center",
             "site_header": self.site_header,
+            "stora_support_avatar": support_avatar,
+            "stora_support_email": request.user.email,
         }
         return render(request, "admin/support_chat.html", context)
 
@@ -113,8 +129,8 @@ class StoraAdminSite(AdminSite):
         admin_ids = list(admin_users.values_list("id", flat=True))
 
         # Distinct partner user IDs who ever messaged admin or whom admin messaged
-        sent_to_admin = ChatMessage.objects.filter(recipient_id__in=admin_ids).values_list("sender_id", flat=True)
-        received_from_admin = ChatMessage.objects.filter(sender_id__in=admin_ids).values_list("recipient_id", flat=True)
+        sent_to_admin = ChatMessage.objects.filter(recipient_id__in=admin_ids).exclude(deleted_by_users=request.user).values_list("sender_id", flat=True)
+        received_from_admin = ChatMessage.objects.filter(sender_id__in=admin_ids).exclude(deleted_by_users=request.user).values_list("recipient_id", flat=True)
         partner_ids = (set(sent_to_admin) | set(received_from_admin)) - set(admin_ids)
 
         all_users = User.objects.exclude(id__in=admin_ids).filter(is_active=True)
@@ -126,14 +142,14 @@ class StoraAdminSite(AdminSite):
             last_msg = ChatMessage.objects.filter(
                 (Q(sender=partner) & Q(recipient_id__in=admin_ids)) |
                 (Q(sender_id__in=admin_ids) & Q(recipient=partner))
-            ).order_by("-created_at").first()
+            ).exclude(deleted_by_users=request.user).order_by("-created_at").first()
 
             unread_count = ChatMessage.objects.filter(
                 sender=partner,
                 recipient_id__in=admin_ids,
                 is_read=False,
                 is_unsent=False,
-            ).count()
+            ).exclude(deleted_by_users=request.user).count()
 
             avatar_url = request.build_absolute_uri(partner.avatar.url) if partner.avatar else None
 
@@ -155,6 +171,19 @@ class StoraAdminSite(AdminSite):
                 else:
                     last_msg_text = last_msg.message
 
+            last_msg_time = ""
+            last_msg_at_iso = ""
+            if last_msg and last_msg.created_at:
+                local_dt = timezone.localtime(last_msg.created_at)
+                last_msg_at_iso = local_dt.isoformat()
+                now_dt = timezone.localtime(timezone.now())
+                if local_dt.date() == now_dt.date():
+                    last_msg_time = local_dt.strftime("%I:%M %p").lstrip("0")
+                elif local_dt.year == now_dt.year:
+                    last_msg_time = local_dt.strftime("%b %d")
+                else:
+                    last_msg_time = local_dt.strftime("%b %d, %Y")
+
             conversations.append({
                 "id": partner.id,
                 "user_id": partner.id,
@@ -165,7 +194,8 @@ class StoraAdminSite(AdminSite):
                 "role_label": "Store Owner" if partner.role == "owner" else ("Customer" if partner.role == "customer" else "User"),
                 "avatar_url": avatar_url,
                 "last_message": last_msg_text,
-                "last_message_at": last_msg.created_at.isoformat() if last_msg else "",
+                "last_message_at": last_msg_at_iso,
+                "last_message_time": last_msg_time,
                 "last_message_is_support": (last_msg.sender_id in admin_ids) if last_msg else False,
                 "unread_count": unread_count,
                 "has_chatted": has_chatted,
@@ -204,32 +234,44 @@ class StoraAdminSite(AdminSite):
             is_read=False,
         ).update(is_read=True)
 
-        messages_qs = ChatMessage.objects.filter(
-            (Q(sender=partner) & Q(recipient_id__in=admin_ids)) |
-            (Q(sender_id__in=admin_ids) & Q(recipient=partner))
-        ).order_by("created_at")
-
-        msg_list = []
-        for m in messages_qs:
-            is_support_reply = m.sender_id in admin_ids
-            image_url = request.build_absolute_uri(m.image.url) if m.image else None
-            msg_list.append({
-                "id": m.id,
-                "sender_id": m.sender_id,
-                "sender_name": "STORA Support" if is_support_reply else (partner.get_display_name() if hasattr(partner, "get_display_name") else partner.username),
-                "is_support": is_support_reply,
-                "message": m.message,
-                "image_url": image_url,
-                "is_read": m.is_read,
-                "is_unsent": getattr(m, "is_unsent", False),
-                "created_at": m.created_at.strftime("%b %d, %Y %I:%M %p"),
-                "iso_time": m.created_at.isoformat(),
-            })
+        support_avatar = request.build_absolute_uri(request.user.avatar.url) if request.user.avatar else None
+        if not support_avatar:
+            from api.views import get_support_user
+            sup = get_support_user()
+            if sup and sup.avatar:
+                support_avatar = request.build_absolute_uri(sup.avatar.url)
 
         partner_avatar = request.build_absolute_uri(partner.avatar.url) if partner.avatar else None
         partner_name = partner.get_display_name() if hasattr(partner, "get_display_name") else ""
         if not partner_name:
             partner_name = partner.business_name if partner.role == "owner" and partner.business_name else f"{partner.first_name} {partner.last_name}".strip() or partner.username
+
+        messages_qs = ChatMessage.objects.filter(
+            (Q(sender=partner) & Q(recipient_id__in=admin_ids)) |
+            (Q(sender_id__in=admin_ids) & Q(recipient=partner))
+        ).exclude(deleted_by_users=request.user).order_by("created_at")
+
+        msg_list = []
+        for m in messages_qs:
+            is_support_reply = m.sender_id in admin_ids
+            image_url = request.build_absolute_uri(m.image.url) if m.image else None
+            local_dt = timezone.localtime(m.created_at) if m.created_at else None
+            time_display = local_dt.strftime("%I:%M %p").lstrip("0") if local_dt else ""
+            full_display = (local_dt.strftime("%b %d, %Y ") + time_display) if local_dt else ""
+            msg_list.append({
+                "id": m.id,
+                "sender_id": m.sender_id,
+                "sender_name": "STORA Support" if is_support_reply else (partner.get_display_name() if hasattr(partner, "get_display_name") else partner.username),
+                "sender_avatar_url": support_avatar if is_support_reply else partner_avatar,
+                "is_support": is_support_reply,
+                "message": m.message,
+                "image_url": image_url,
+                "is_read": m.is_read,
+                "is_unsent": getattr(m, "is_unsent", False),
+                "created_at": time_display,
+                "full_date": full_display,
+                "iso_time": local_dt.isoformat() if local_dt else "",
+            })
 
         return JsonResponse({
             "partner": {
@@ -242,8 +284,130 @@ class StoraAdminSite(AdminSite):
                 "avatar_url": partner_avatar,
                 "is_active": partner.is_active,
             },
+            "support": {
+                "name": "STORA Support",
+                "email": request.user.email,
+                "avatar_url": support_avatar,
+            },
             "messages": msg_list,
         })
+
+    def support_unsend_message_api(self, request, message_id):
+        if request.method != "POST":
+            return HttpResponseBadRequest("POST required")
+        from api.models import ChatMessage
+        from accounts.models import User
+        msg = get_object_or_404(ChatMessage, pk=message_id)
+
+        admin_users = User.objects.filter(Q(role=User.ROLE_ADMIN) | Q(is_superuser=True) | Q(is_staff=True))
+        admin_ids = list(admin_users.values_list("id", flat=True))
+
+        # Admin can unsend messages sent by admin
+        if msg.sender_id not in admin_ids and msg.sender != request.user:
+            return JsonResponse({"error": "Can only unsend STORA Support messages."}, status=403)
+
+        if msg.image:
+            try:
+                msg.image.delete(save=False)
+            except Exception:
+                pass
+            msg.image = None
+        msg.is_unsent = True
+        msg.message = "This message was unsent"
+        msg.save(update_fields=["is_unsent", "message", "image"])
+        return JsonResponse({"status": "success", "message_id": message_id, "is_unsent": True})
+
+    def support_delete_message_api(self, request, message_id):
+        if request.method not in ("POST", "DELETE"):
+            return HttpResponseBadRequest("POST or DELETE required")
+        from api.models import ChatMessage
+        msg = get_object_or_404(ChatMessage, pk=message_id)
+        action = request.POST.get("action") or request.GET.get("action") or "remove_for_me"
+
+        if action == "unsend":
+            from accounts.models import User
+            admin_users = User.objects.filter(Q(role=User.ROLE_ADMIN) | Q(is_superuser=True) | Q(is_staff=True))
+            admin_ids = list(admin_users.values_list("id", flat=True))
+            if msg.sender_id not in admin_ids and msg.sender != request.user:
+                return JsonResponse({"error": "Can only unsend STORA Support messages."}, status=403)
+
+            if msg.image:
+                try:
+                    msg.image.delete(save=False)
+                except Exception:
+                    pass
+                msg.image = None
+            msg.is_unsent = True
+            msg.message = "This message was unsent"
+            msg.save(update_fields=["is_unsent", "message", "image"])
+            return JsonResponse({"status": "success", "message_id": message_id, "is_unsent": True})
+
+        # Remove for me only (partner can still see it)
+        msg.deleted_by_users.add(request.user)
+        return JsonResponse({"status": "success", "message_id": message_id, "action": "remove_for_me"})
+
+    def support_delete_conversation_api(self, request, partner_id):
+        if request.method not in ("POST", "DELETE"):
+            return HttpResponseBadRequest("POST or DELETE required")
+        from api.models import ChatMessage
+        from accounts.models import User
+        partner = get_object_or_404(User, pk=partner_id)
+        admin_users = User.objects.filter(Q(role=User.ROLE_ADMIN) | Q(is_superuser=True) | Q(is_staff=True))
+        admin_ids = list(admin_users.values_list("id", flat=True))
+
+        msgs = ChatMessage.objects.filter(
+            (Q(sender=partner) & Q(recipient_id__in=admin_ids)) |
+            (Q(sender_id__in=admin_ids) & Q(recipient=partner))
+        ).exclude(deleted_by_users=request.user)
+
+        msg_ids = list(msgs.values_list("id", flat=True))
+        if msg_ids:
+            through = ChatMessage.deleted_by_users.through
+            existing = set(
+                through.objects.filter(user=request.user, chatmessage_id__in=msg_ids).values_list("chatmessage_id", flat=True)
+            )
+            new_records = [through(user=request.user, chatmessage_id=mid) for mid in msg_ids if mid not in existing]
+            if new_records:
+                through.objects.bulk_create(new_records)
+
+        return JsonResponse({"status": "success", "partner_id": partner_id, "deleted_count": len(msg_ids)})
+
+    def support_avatar_api(self, request):
+        user = request.user
+        if request.method == "GET":
+            avatar_url = request.build_absolute_uri(user.avatar.url) if user.avatar else None
+            return JsonResponse({"avatar_url": avatar_url, "email": user.email, "name": user.get_display_name()})
+
+        if request.method == "POST":
+            remove_avatar = request.POST.get("remove") in ("true", "1", True)
+            if remove_avatar:
+                if user.avatar:
+                    try:
+                        user.avatar.delete(save=False)
+                    except Exception:
+                        pass
+                    user.avatar = None
+                    user.save(update_fields=["avatar"])
+                return JsonResponse({"status": "success", "avatar_url": None})
+
+            new_avatar = request.FILES.get("avatar")
+            if not new_avatar:
+                return HttpResponseBadRequest("No image file provided")
+
+            user.avatar = new_avatar
+            user.save(update_fields=["avatar"])
+
+            # Also ensure designated support account has this avatar if different
+            from api.views import get_support_user
+            support = get_support_user()
+            if support and support.id != user.id and not support.avatar:
+                support.avatar = new_avatar
+                support.save(update_fields=["avatar"])
+
+            avatar_url = request.build_absolute_uri(user.avatar.url) if user.avatar else None
+            return JsonResponse({"status": "success", "avatar_url": avatar_url})
+
+        return HttpResponseBadRequest("GET or POST required")
 
     def support_send_api(self, request):
         if request.method != "POST":
@@ -277,17 +441,23 @@ class StoraAdminSite(AdminSite):
             pass
 
         image_url = request.build_absolute_uri(chat_msg.image.url) if chat_msg.image else None
+        support_avatar = request.build_absolute_uri(request.user.avatar.url) if request.user.avatar else None
+        local_dt = timezone.localtime(chat_msg.created_at) if chat_msg.created_at else None
+        time_display = local_dt.strftime("%I:%M %p").lstrip("0") if local_dt else ""
+        full_display = (local_dt.strftime("%b %d, %Y ") + time_display) if local_dt else ""
         return JsonResponse({
             "status": "success",
             "message": {
                 "id": chat_msg.id,
                 "sender_id": chat_msg.sender_id,
                 "sender_name": "STORA Support",
+                "sender_avatar_url": support_avatar,
                 "is_support": True,
                 "message": chat_msg.message,
                 "image_url": image_url,
-                "created_at": chat_msg.created_at.strftime("%b %d, %Y %I:%M %p"),
-                "iso_time": chat_msg.created_at.isoformat(),
+                "created_at": time_display,
+                "full_date": full_display,
+                "iso_time": local_dt.isoformat() if local_dt else "",
             }
         })
 
