@@ -50,4 +50,10 @@ class ChatStore extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  Future<void> deleteConversation(int withUserId) async {
+    await ApiClient.instance.deleteConversation(withUserId);
+    _conversations.removeWhere((c) => (c['id'] ?? c['user_id']) == withUserId);
+    notifyListeners();
+  }
 }

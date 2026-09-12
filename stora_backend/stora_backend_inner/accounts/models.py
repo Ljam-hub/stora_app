@@ -91,8 +91,27 @@ class User(AbstractUser):
             self.is_staff = True
         super().save(*args, **kwargs)
 
+    def get_display_name(self):
+        if self.role in (self.ROLE_OWNER, self.ROLE_ADMIN) and self.business_name:
+            return self.business_name
+        name = f"{self.first_name} {self.last_name}".strip()
+        if name:
+            return name
+        if self.business_name:
+            return self.business_name
+        if self.role == self.ROLE_CUSTOMER:
+            order_name = (
+                self.customer_orders.exclude(customer_name="")
+                .order_by("-created_at")
+                .values_list("customer_name", flat=True)
+                .first()
+            )
+            if order_name:
+                return order_name
+        return self.username or self.email
+
     def __str__(self):
-        return self.business_name or self.email or self.username
+        return self.get_display_name()
 
 
 class PendingRegistration(models.Model):

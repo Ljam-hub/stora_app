@@ -48,4 +48,10 @@ class ChatProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  Future<void> deleteConversation(int storeOwnerId) async {
+    await CustomerApiService.instance.deleteConversation(storeOwnerId);
+    _conversations.removeWhere((c) => (c['id'] ?? c['user_id']) == storeOwnerId);
+    notifyListeners();
+  }
 }

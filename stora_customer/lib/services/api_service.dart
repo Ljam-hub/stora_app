@@ -563,6 +563,22 @@ class CustomerApiService {
     _throw(response);
   }
 
+  Future<void> deleteConversation(int storeOwnerId) async {
+    final response = await _dispatch('DELETE', _uri('/messages/conversations/$storeOwnerId/'));
+    if (response.statusCode == 200 || response.statusCode == 204) {
+      return;
+    }
+    _throw(response);
+  }
+
+  Future<void> deleteMessage(int messageId) async {
+    final response = await _dispatch('DELETE', _uri('/messages/$messageId/'));
+    if (response.statusCode == 200 || response.statusCode == 204) {
+      return;
+    }
+    _throw(response);
+  }
+
   Future<List<Map<String, dynamic>>> fetchMessages(int storeOwnerId) async {
     final response = await _dispatch('GET', _uri('/messages/', {'with_user': storeOwnerId.toString()}));
     if (response.statusCode == 200) {

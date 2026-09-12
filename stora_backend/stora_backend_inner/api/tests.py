@@ -1226,6 +1226,109 @@ class UserReportingTests(APITestCase):
         self.assertTrue(self.customer.is_active)
 
 
+class CustomerNameAndEmailDisplayTests(APITestCase):
+    def setUp(self):
+        self.owner = User.objects.create_user(
+            username="owner_display@gmail.com",
+            email="owner_display@gmail.com",
+            password="testpassword123",
+            role=User.ROLE_OWNER,
+            business_name="Display Test Shop",
+            is_email_verified=True,
+        )
+        self.customer = User.objects.create_user(
+            username="customer_display@gmail.com",
+            email="customer_display@gmail.com",
+            password="testpassword123",
+            role=User.ROLE_CUSTOMER,
+            business_name="Lejon Osial",
+            is_email_verified=True,
+        )
+
+    def test_customer_display_name_resolves_to_business_name(self):
+        self.assertEqual(self.customer.get_display_name(), "Lejon Osial")
+
+    def test_order_serializer_includes_customer_email(self):
+        from api.serializers import OrderSerializer
+        order = Order.objects.create(
+            owner=self.owner,
+            customer=self.customer,
+            customer_name="Lejon Osial",
+        )
+        serializer_data = OrderSerializer(order).data
+        self.assertEqual(serializer_data.get("customer_name"), "Lejon Osial")
+        self.assertEqual(serializer_data.get("customer_email"), "customer_display@gmail.com")
+
+    def test_conversations_displays_customer_name_instead_of_email(self):
+        from api.models import ChatMessage
+        ChatMessage.objects.create(
+            sender=self.customer,
+            recipient=self.owner,
+            message="Hello store owner",
+        )
+        self.client.force_authenticate(user=self.owner)
+        res = self.client.get("/api/messages/conversations/")
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(len(res.data), 1)
+        self.assertEqual(res.data[0]["name"], "Lejon Osial")
+        self.assertEqual(res.data[0]["email"], "customer_display@gmail.com")
+
+    def test_owner_can_delete_conversation_via_path(self):
+        from api.models import ChatMessage
+        ChatMessage.objects.create(sender=self.customer, recipient=self.owner, message="Hello")
+        ChatMessage.objects.create(sender=self.owner, recipient=self.customer, message="Hi there")
+        self.assertEqual(ChatMessage.objects.count(), 2)
+
+        self.client.force_authenticate(user=self.owner)
+        res = self.client.delete(f"/api/messages/conversations/{self.customer.id}/")
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.data["deleted_count"], 2)
+        self.assertEqual(ChatMessage.objects.count(), 0)
+
+        # Conversations list is now empty
+        conv_res = self.client.get("/api/messages/conversations/")
+        self.assertEqual(conv_res.status_code, 200)
+        self.assertEqual(len(conv_res.data), 0)
+
+    def test_customer_can_delete_conversation_via_query_param(self):
+        from api.models import ChatMessage
+        ChatMessage.objects.create(sender=self.customer, recipient=self.owner, message="Question")
+        self.assertEqual(ChatMessage.objects.count(), 1)
+
+        self.client.force_authenticate(user=self.customer)
+        res = self.client.delete(f"/api/messages/?with_user={self.owner.id}")
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.data["deleted_count"], 1)
+        self.assertEqual(ChatMessage.objects.count(), 0)
+
+    def test_delete_single_message_by_sender_and_recipient(self):
+        from api.models import ChatMessage
+        m1 = ChatMessage.objects.create(sender=self.owner, recipient=self.customer, message="Message 1")
+        m2 = ChatMessage.objects.create(sender=self.customer, recipient=self.owner, message="Message 2")
+
+        # Sender (owner) deletes m1
+        self.client.force_authenticate(user=self.owner)
+        res1 = self.client.delete(f"/api/messages/{m1.id}/")
+        self.assertEqual(res1.status_code, 200)
+        self.assertFalse(ChatMessage.objects.filter(id=m1.id).exists())
+
+        # Recipient (owner) deletes m2
+        res2 = self.client.delete(f"/api/messages/{m2.id}/")
+        self.assertEqual(res2.status_code, 200)
+        self.assertFalse(ChatMessage.objects.filter(id=m2.id).exists())
+
+    def test_delete_single_message_unauthorized(self):
+        from api.models import ChatMessage
+        other_user = User.objects.create_user(username="stranger", email="stranger@example.com", password="pass")
+        m = ChatMessage.objects.create(sender=self.owner, recipient=self.customer, message="Private")
+
+        self.client.force_authenticate(user=other_user)
+        res = self.client.delete(f"/api/messages/{m.id}/")
+        self.assertEqual(res.status_code, 403)
+        self.assertTrue(ChatMessage.objects.filter(id=m.id).exists())
+
+
+
 
 
 

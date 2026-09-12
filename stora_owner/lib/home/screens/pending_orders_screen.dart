@@ -241,6 +241,7 @@ class _OrderCardState extends State<_OrderCard> {
   int get orderId => widget.order['id'] as int;
   String get status => (widget.order['status'] as String?) ?? 'pending';
   String get customerName => (widget.order['customer_name'] as String?) ?? 'Customer';
+  String get customerEmail => (widget.order['customer_email'] as String?) ?? (widget.order['email'] as String?) ?? '';
   String? get customerAvatarUrl => widget.order['customer_avatar_url'] as String?;
   int? get customerId {
     final val = widget.order['customer'] ?? widget.order['customer_id'];
@@ -675,6 +676,19 @@ class _OrderCardState extends State<_OrderCard> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
+                      if (customerEmail.isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          customerEmail,
+                          style: const TextStyle(
+                            color: AppColors.label,
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w400,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -700,6 +714,7 @@ class _OrderCardState extends State<_OrderCard> {
                               builder: (_) => OwnerChatThreadScreen(
                                 customerId: customerId!,
                                 customerName: customerName,
+                                customerEmail: customerEmail,
                                 customerAvatarUrl: customerAvatarUrl,
                                 orderId: orderId,
                               ),
@@ -739,7 +754,7 @@ class _OrderCardState extends State<_OrderCard> {
           ),
 
           // Contact Details & Message Customer Option
-          if (customerPhone.isNotEmpty || customerAddress.isNotEmpty || notes.isNotEmpty || customerId != null)
+          if (customerEmail.isNotEmpty || customerPhone.isNotEmpty || customerAddress.isNotEmpty || notes.isNotEmpty || customerId != null)
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               padding: const EdgeInsets.all(12),
@@ -751,6 +766,23 @@ class _OrderCardState extends State<_OrderCard> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  if (customerEmail.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 6),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.email_outlined, color: AppColors.purpleLight, size: 14),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              customerEmail,
+                              style: const TextStyle(color: AppColors.label, fontSize: 12, fontWeight: FontWeight.w500),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   if (customerPhone.isNotEmpty)
                     Row(
                       children: [
@@ -794,6 +826,7 @@ class _OrderCardState extends State<_OrderCard> {
                             builder: (_) => OwnerChatThreadScreen(
                               customerId: customerId!,
                               customerName: customerName,
+                              customerEmail: customerEmail,
                               customerAvatarUrl: customerAvatarUrl,
                               orderId: orderId,
                             ),

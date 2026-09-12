@@ -32,7 +32,10 @@ urlpatterns = [
 
     # Chat & Messaging
     path("messages/", views.chat_messages, name="chat_messages"),
+    path("messages/<int:message_id>/", views.delete_single_message, name="delete_single_message"),
     path("messages/conversations/", views.list_conversations, name="chat_conversations"),
+    path("messages/conversations/<int:partner_id>/", views.delete_conversation, name="delete_conversation"),
+    path("messages/conversations/delete/", views.delete_conversation, name="delete_conversation_post"),
     path("messages/customers/", views.list_store_customers, name="list_store_customers"),
     path("messages/block/", views.block_customer, name="block_customer"),
     path("messages/unblock/", views.unblock_customer, name="unblock_customer"),

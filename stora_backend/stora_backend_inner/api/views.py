@@ -1151,15 +1151,55 @@ def clear_fcm_token(request):
     return Response({"status": "cleared"})
 
 
-@api_view(["GET", "POST"])
+def _perform_delete_conversation(user, partner_id):
+    """Internal helper to delete all messages and images between user and partner_id."""
+    if not partner_id:
+        return None, "partner_id is required."
+
+    try:
+        pid = int(partner_id)
+    except (ValueError, TypeError):
+        return None, "partner_id must be a valid integer ID."
+
+    from django.db.models import Q
+    msgs = ChatMessage.objects.filter(
+        (Q(sender=user) & Q(recipient_id=pid)) |
+        (Q(sender_id=pid) & Q(recipient=user))
+    )
+
+    for m in msgs.exclude(image="").exclude(image__isnull=True):
+        try:
+            if m.image:
+                m.image.delete(save=False)
+        except Exception:
+            pass
+
+    deleted_count, _ = msgs.delete()
+    return deleted_count, None
+
+
+@api_view(["GET", "POST", "DELETE"])
 @permission_classes([IsAuthenticated])
 @parser_classes([MultiPartParser, FormParser, JSONParser])
 def chat_messages(request):
     """
     GET: List chat messages between request.user and another user (?with_user=<id>)
     POST: Send a message (text and/or image) to another user
+    DELETE: Delete all chat messages with another user (?with_user=<id>)
     """
     user = request.user
+
+    if request.method == "DELETE":
+        with_user_id = request.query_params.get("with_user") or request.data.get("with_user")
+        deleted_count, err = _perform_delete_conversation(user, with_user_id)
+        if err:
+            return Response({"error": err}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({
+            "status": "success",
+            "partner_id": int(with_user_id),
+            "deleted_count": deleted_count,
+            "detail": f"Conversation deleted successfully ({deleted_count} messages removed).",
+        }, status=status.HTTP_200_OK)
 
     if request.method == "GET":
         with_user_id = request.query_params.get("with_user")
@@ -1285,12 +1325,30 @@ def list_conversations(request):
                 last_message_text = f"{prefix}{last_msg.message}"
 
         avatar_url = request.build_absolute_uri(partner.avatar.url) if partner.avatar else None
+        if hasattr(partner, "get_display_name"):
+            partner_name = partner.get_display_name()
+        elif partner.role in (User.ROLE_OWNER, User.ROLE_ADMIN) and partner.business_name:
+            partner_name = partner.business_name
+        else:
+            partner_name = (
+                f"{partner.first_name} {partner.last_name}".strip()
+                or partner.business_name
+                or (
+                    Order.objects.filter(customer=partner)
+                    .exclude(customer_name="")
+                    .order_by("-created_at")
+                    .values_list("customer_name", flat=True)
+                    .first()
+                    if partner.role == User.ROLE_CUSTOMER
+                    else ""
+                )
+                or partner.username
+            )
+
         conversations.append({
             "id": partner.id,
             "user_id": partner.id,
-            "name": partner.business_name if partner.role in (User.ROLE_OWNER, User.ROLE_ADMIN) and partner.business_name else (
-                f"{partner.first_name} {partner.last_name}".strip() or partner.username
-            ),
+            "name": partner_name,
             "email": partner.email,
             "role": partner.role,
             "avatar_url": avatar_url,
@@ -1303,6 +1361,56 @@ def list_conversations(request):
 
     conversations.sort(key=lambda x: x["last_message_at"] or "", reverse=True)
     return Response(conversations)
+
+
+@api_view(["DELETE", "POST"])
+@permission_classes([IsAuthenticated])
+def delete_conversation(request, partner_id=None):
+    """
+    Delete all chat messages in the conversation between request.user and partner_id.
+    Accepts partner_id in URL path, query params (?with_user=<id>), or JSON body ({"partner_id": <id>}).
+    """
+    user = request.user
+    pid = partner_id or request.query_params.get("with_user") or request.data.get("partner_id")
+    deleted_count, err = _perform_delete_conversation(user, pid)
+    if err:
+        return Response({"error": err}, status=status.HTTP_400_BAD_REQUEST)
+
+    return Response({
+        "status": "success",
+        "partner_id": int(pid),
+        "deleted_count": deleted_count,
+        "detail": f"Conversation deleted successfully ({deleted_count} messages removed).",
+    }, status=status.HTTP_200_OK)
+
+
+@api_view(["DELETE"])
+@permission_classes([IsAuthenticated])
+def delete_single_message(request, message_id):
+    """
+    Delete a single chat message.
+    The requesting user must be either the sender or the recipient.
+    """
+    try:
+        msg = ChatMessage.objects.get(id=message_id)
+    except ChatMessage.DoesNotExist:
+        return Response({"error": "Message not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    if msg.sender != request.user and msg.recipient != request.user:
+        return Response({"error": "You do not have permission to delete this message."}, status=status.HTTP_403_FORBIDDEN)
+
+    if msg.image:
+        try:
+            msg.image.delete(save=False)
+        except Exception:
+            pass
+
+    msg.delete()
+    return Response({
+        "status": "success",
+        "message_id": message_id,
+        "detail": "Message deleted successfully.",
+    }, status=status.HTTP_200_OK)
 
 
 @api_view(["POST"])
@@ -1326,7 +1434,11 @@ def block_customer(request):
     return Response({
         "status": "blocked",
         "customer_id": customer.id,
-        "customer_name": f"{customer.first_name} {customer.last_name}".strip() or customer.username,
+        "customer_name": (
+            customer.get_display_name()
+            if hasattr(customer, "get_display_name")
+            else (f"{customer.first_name} {customer.last_name}".strip() or customer.business_name or customer.username)
+        ),
     })
 
 

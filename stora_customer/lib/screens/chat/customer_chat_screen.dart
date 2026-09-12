@@ -1,6 +1,6 @@
 import 'dart:async';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import '../../config/api_config.dart';
@@ -34,11 +34,21 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
   bool _loading = true;
   bool _sending = false;
   bool _isBlocked = false;
+  bool _showOrderBanner = true;
+  bool _showQuickReplies = true;
   String? _error;
   Timer? _pollTimer;
 
   Uint8List? _selectedImageBytes;
   String? _selectedImageName;
+
+  static const List<Map<String, dynamic>> _customerQuickReplies = [
+    {'icon': Icons.inventory_2_outlined, 'text': 'Is this item in stock and available?'},
+    {'icon': Icons.schedule_rounded, 'text': 'What are your store hours today?'},
+    {'icon': Icons.delivery_dining_outlined, 'text': 'Can this be delivered today?'},
+    {'icon': Icons.location_on_outlined, 'text': 'Where is your physical store located?'},
+    {'icon': Icons.local_offer_outlined, 'text': 'Do you offer bulk discounts?'},
+  ];
 
   @override
   void initState() {
@@ -84,6 +94,155 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
         });
       }
     }
+  }
+
+  void _onQuickReplyTap(String text) {
+    setState(() {
+      _textController.text = text;
+      _textController.selection = TextSelection.fromPosition(
+        TextPosition(offset: _textController.text.length),
+      );
+    });
+  }
+
+  void _showMessageActionSheet(Map<String, dynamic> msg, bool isMe) {
+    final text = msg['message'] as String? ?? '';
+    final msgId = msg['id'] as int?;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.cardElevated,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 36,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 14),
+                decoration: BoxDecoration(
+                  color: Colors.white24,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              if (text.isNotEmpty)
+                ListTile(
+                  leading: const CircleAvatar(
+                    radius: 18,
+                    backgroundColor: Color(0xFF064E3B),
+                    child: Icon(Icons.copy_rounded, color: Color(0xFF34D399), size: 18),
+                  ),
+                  title: const Text('Copy Text', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 15)),
+                  subtitle: const Text('Copy message text to clipboard', style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    Clipboard.setData(ClipboardData(text: text));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Row(
+                          children: [
+                            Icon(Icons.check_circle_rounded, color: Color(0xFF34D399), size: 18),
+                            SizedBox(width: 8),
+                            Text('Copied to clipboard', style: TextStyle(color: Colors.white)),
+                          ],
+                        ),
+                        backgroundColor: AppColors.cardBackground,
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                  },
+                ),
+              if (msgId != null)
+                ListTile(
+                  leading: const CircleAvatar(
+                    radius: 18,
+                    backgroundColor: AppColors.dangerBg,
+                    child: Icon(Icons.delete_outline_rounded, color: AppColors.danger, size: 18),
+                  ),
+                  title: Text(isMe ? 'Unsend Message' : 'Delete Message',
+                      style: const TextStyle(color: AppColors.danger, fontWeight: FontWeight.w600, fontSize: 15)),
+                  subtitle: Text(
+                    isMe ? 'Remove message for everyone' : 'Delete this message from chat',
+                    style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+                  ),
+                  onTap: () async {
+                    Navigator.pop(ctx);
+                    final confirmed = await showDialog<bool>(
+                      context: context,
+                      builder: (dCtx) => AlertDialog(
+                        backgroundColor: AppColors.cardBackground,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        title: Row(
+                          children: [
+                            const Icon(Icons.delete_outline_rounded, color: AppColors.danger, size: 22),
+                            const SizedBox(width: 10),
+                            Text(isMe ? 'Unsend Message?' : 'Delete Message?',
+                                style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                        content: Text(
+                          isMe
+                              ? 'This message will be removed for both you and the store.'
+                              : 'Are you sure you want to delete this message?',
+                          style: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.of(dCtx).pop(false),
+                            child: const Text('Cancel', style: TextStyle(color: AppColors.textMuted)),
+                          ),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.danger,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            ),
+                            onPressed: () => Navigator.of(dCtx).pop(true),
+                            child: Text(isMe ? 'Unsend' : 'Delete', style: const TextStyle(fontWeight: FontWeight.bold)),
+                          ),
+                        ],
+                      ),
+                    );
+
+                    if (confirmed == true) {
+                      try {
+                        await CustomerApiService.instance.deleteMessage(msgId);
+                        if (mounted) {
+                          setState(() {
+                            _messages.removeWhere((m) => m['id'] == msgId);
+                          });
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(isMe ? 'Message unsent' : 'Message deleted',
+                                  style: const TextStyle(color: Colors.white)),
+                              backgroundColor: AppColors.cardElevated,
+                              duration: const Duration(seconds: 2),
+                            ),
+                          );
+                        }
+                      } catch (e) {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Failed to delete message: $e'),
+                              backgroundColor: AppColors.danger,
+                            ),
+                          );
+                        }
+                      }
+                    }
+                  },
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> _pickImage(ImageSource source) async {
@@ -414,6 +573,66 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
     }
   }
 
+  Future<void> _deleteConversation() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.cardBackground,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.delete_outline_rounded, color: AppColors.danger, size: 22),
+            SizedBox(width: 10),
+            Text('Delete Conversation?', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: Text(
+          'Are you sure you want to delete all messages with ${widget.storeName}? This cannot be undone.',
+          style: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel', style: TextStyle(color: AppColors.textMuted)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.danger,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Delete', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await CustomerApiService.instance.deleteConversation(widget.storeOwnerId);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Conversation with ${widget.storeName} deleted', style: const TextStyle(color: Colors.white)),
+              backgroundColor: AppColors.cardElevated,
+            ),
+          );
+          Navigator.of(context).pop();
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to delete conversation: $e'),
+              backgroundColor: AppColors.danger,
+            ),
+          );
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -463,6 +682,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
             color: AppColors.cardElevated,
             onSelected: (val) {
               if (val == 'report') _showReportDialog();
+              if (val == 'delete') _deleteConversation();
             },
             itemBuilder: (ctx) => [
               const PopupMenuItem(
@@ -482,24 +702,67 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
                   ],
                 ),
               ),
+              const PopupMenuItem(
+                value: 'delete',
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.delete_outline_rounded,
+                      color: AppColors.danger,
+                      size: 20,
+                    ),
+                    SizedBox(width: 10),
+                    Text(
+                      'Delete Conversation',
+                      style: TextStyle(color: AppColors.danger),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
         ],
       ),
       body: Column(
         children: [
-          if (widget.initialOrderId != null)
+          if (widget.initialOrderId != null && _showOrderBanner)
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              color: AppColors.cardElevated,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+              decoration: BoxDecoration(
+                color: AppColors.cardElevated,
+                border: const Border(
+                  left: BorderSide(color: Color(0xFF10B981), width: 3.5),
+                  bottom: BorderSide(color: Colors.white10, width: 1),
+                ),
+              ),
               child: Row(
                 children: [
-                  const Icon(Icons.receipt_long_rounded, color: AppColors.primaryLight, size: 16),
+                  const Icon(Icons.receipt_long_rounded, color: Color(0xFF34D399), size: 18),
                   const SizedBox(width: 8),
                   Text(
-                    'Inquiring regarding Order #${widget.initialOrderId}',
-                    style: const TextStyle(color: AppColors.primaryLight, fontSize: 12, fontWeight: FontWeight.bold),
+                    'Order #${widget.initialOrderId}',
+                    style: const TextStyle(color: Colors.white, fontSize: 13.5, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF064E3B),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const Text(
+                      'Active Order Chat',
+                      style: TextStyle(color: Color(0xFF34D399), fontSize: 10.5, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  const Spacer(),
+                  GestureDetector(
+                    onTap: () => setState(() => _showOrderBanner = false),
+                    child: const Padding(
+                      padding: EdgeInsets.all(4.0),
+                      child: Icon(Icons.close_rounded, color: Colors.white54, size: 16),
+                    ),
                   ),
                 ],
               ),
@@ -604,84 +867,104 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
                                       const SizedBox(width: 8),
                                     ],
                                     Flexible(
-                                      child: Container(
-                                        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.74),
-                                        decoration: BoxDecoration(
-                                          gradient: isMe ? AppColors.purpleGradient : null,
-                                          color: isMe ? null : AppColors.cardElevated,
-                                          borderRadius: BorderRadius.only(
-                                            topLeft: const Radius.circular(16),
-                                            topRight: const Radius.circular(16),
-                                            bottomLeft: isMe ? const Radius.circular(16) : const Radius.circular(4),
-                                            bottomRight: isMe ? const Radius.circular(4) : const Radius.circular(16),
+                                      child: GestureDetector(
+                                        onLongPress: () => _showMessageActionSheet(msg, isMe),
+                                        child: Container(
+                                          constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.74),
+                                          decoration: BoxDecoration(
+                                            gradient: isMe ? AppColors.purpleGradient : null,
+                                            color: isMe ? null : AppColors.cardElevated,
+                                            borderRadius: BorderRadius.only(
+                                              topLeft: const Radius.circular(16),
+                                              topRight: const Radius.circular(16),
+                                              bottomLeft: isMe ? const Radius.circular(16) : const Radius.circular(4),
+                                              bottomRight: isMe ? const Radius.circular(4) : const Radius.circular(16),
+                                            ),
+                                            boxShadow: [
+                                              BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 4, offset: const Offset(0, 2)),
+                                            ],
                                           ),
-                                          boxShadow: [
-                                            BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 4, offset: const Offset(0, 2)),
-                                          ],
-                                        ),
-                                        padding: const EdgeInsets.all(12),
-                                        child: Column(
-                                          crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-                                          children: [
-                                            if (orderId != null)
-                                              Container(
-                                                margin: const EdgeInsets.only(bottom: 6),
-                                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                                decoration: BoxDecoration(
-                                                  color: Colors.black26,
-                                                  borderRadius: BorderRadius.circular(6),
+                                          padding: const EdgeInsets.all(12),
+                                          child: Column(
+                                            crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                                            children: [
+                                              if (orderId != null)
+                                                Container(
+                                                  margin: const EdgeInsets.only(bottom: 6),
+                                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.black26,
+                                                    borderRadius: BorderRadius.circular(6),
+                                                  ),
+                                                  child: Row(
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    children: [
+                                                      const Icon(Icons.receipt_long_rounded, color: Colors.white70, size: 13),
+                                                      const SizedBox(width: 4),
+                                                      Text('Order #$orderId', style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                                                    ],
+                                                  ),
                                                 ),
-                                                child: Row(
-                                                  mainAxisSize: MainAxisSize.min,
-                                                  children: [
-                                                    const Icon(Icons.receipt_long_rounded, color: Colors.white70, size: 13),
-                                                    const SizedBox(width: 4),
-                                                    Text('Order #$orderId', style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
-                                                  ],
-                                                ),
-                                              ),
-                                            if (rawImg != null && rawImg.isNotEmpty) ...[
-                                              GestureDetector(
-                                                onTap: () => _showImageFullscreen(_resolveImageUrl(rawImg)),
-                                                child: ClipRRect(
-                                                  borderRadius: BorderRadius.circular(10),
-                                                  child: Image.network(
-                                                    _resolveImageUrl(rawImg),
-                                                    fit: BoxFit.cover,
-                                                    width: double.infinity,
-                                                    height: 180,
-                                                    loadingBuilder: (_, child, progress) {
-                                                      if (progress == null) return child;
-                                                      return Container(
-                                                        height: 180,
+                                              if (rawImg != null && rawImg.isNotEmpty) ...[
+                                                GestureDetector(
+                                                  onTap: () => _showImageFullscreen(_resolveImageUrl(rawImg)),
+                                                  child: ClipRRect(
+                                                    borderRadius: BorderRadius.circular(10),
+                                                    child: Image.network(
+                                                      _resolveImageUrl(rawImg),
+                                                      fit: BoxFit.cover,
+                                                      width: double.infinity,
+                                                      height: 180,
+                                                      loadingBuilder: (_, child, progress) {
+                                                        if (progress == null) return child;
+                                                        return Container(
+                                                          height: 180,
+                                                          color: Colors.black12,
+                                                          child: const Center(child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)),
+                                                        );
+                                                      },
+                                                      errorBuilder: (_, error, stackTrace) => Container(
+                                                        height: 100,
                                                         color: Colors.black12,
-                                                        child: const Center(child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)),
-                                                      );
-                                                    },
-                                                    errorBuilder: (_, error, stackTrace) => Container(
-                                                      height: 100,
-                                                      color: Colors.black12,
-                                                      child: const Center(child: Icon(Icons.broken_image_rounded, color: Colors.white54)),
+                                                        child: const Center(child: Icon(Icons.broken_image_rounded, color: Colors.white54)),
+                                                      ),
                                                     ),
                                                   ),
                                                 ),
+                                                if (text.isNotEmpty) const SizedBox(height: 6),
+                                              ],
+                                              if (text.isNotEmpty)
+                                                Text(
+                                                  text,
+                                                  style: const TextStyle(color: Colors.white, fontSize: 14, height: 1.3),
+                                                ),
+                                              const SizedBox(height: 4),
+                                              Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Text(
+                                                    timeDisplay,
+                                                    style: TextStyle(
+                                                      color: isMe ? Colors.white70 : AppColors.textSecondary,
+                                                      fontSize: 10,
+                                                    ),
+                                                  ),
+                                                  if (isMe) ...[
+                                                    const SizedBox(width: 4),
+                                                    Icon(
+                                                      (msg['is_read'] == true)
+                                                          ? Icons.done_all_rounded
+                                                          : Icons.done_rounded,
+                                                      size: 13,
+                                                      color: (msg['is_read'] == true)
+                                                          ? const Color(0xFF38BDF8)
+                                                          : Colors.white60,
+                                                    ),
+                                                  ],
+                                                ],
                                               ),
-                                              if (text.isNotEmpty) const SizedBox(height: 6),
                                             ],
-                                            if (text.isNotEmpty)
-                                              Text(
-                                                text,
-                                                style: const TextStyle(color: Colors.white, fontSize: 14, height: 1.3),
-                                              ),
-                                            const SizedBox(height: 4),
-                                            Text(
-                                              timeDisplay,
-                                              style: TextStyle(
-                                                color: isMe ? Colors.white70 : AppColors.textSecondary,
-                                                fontSize: 10,
-                                              ),
-                                            ),
-                                          ],
+                                          ),
                                         ),
                                       ),
                                     ),
@@ -722,6 +1005,44 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
                 ],
               ),
             ),
+          if (!_isBlocked && _showQuickReplies)
+            Container(
+              height: 44,
+              color: AppColors.cardBackground,
+              padding: const EdgeInsets.symmetric(vertical: 5),
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                itemCount: _customerQuickReplies.length,
+                separatorBuilder: (context, index) => const SizedBox(width: 8),
+                itemBuilder: (context, i) {
+                  final item = _customerQuickReplies[i];
+                  return InkWell(
+                    borderRadius: BorderRadius.circular(20),
+                    onTap: () => _onQuickReplyTap(item['text'] as String),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: AppColors.cardElevated,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: AppColors.primary.withValues(alpha: 0.4)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(item['icon'] as IconData, color: AppColors.primaryLight, size: 14),
+                          const SizedBox(width: 6),
+                          Text(
+                            item['text'] as String,
+                            style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w500),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
           if (!_isBlocked)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -734,6 +1055,15 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
+                    IconButton(
+                      icon: Icon(
+                        _showQuickReplies ? Icons.bolt_rounded : Icons.bolt_outlined,
+                        color: _showQuickReplies ? AppColors.primaryLight : AppColors.textSecondary,
+                        size: 22,
+                      ),
+                      tooltip: 'Quick Questions',
+                      onPressed: () => setState(() => _showQuickReplies = !_showQuickReplies),
+                    ),
                     IconButton(
                       icon: const Icon(Icons.camera_alt_outlined, color: AppColors.textSecondary, size: 22),
                       onPressed: _sending ? null : () => _pickImage(ImageSource.camera),

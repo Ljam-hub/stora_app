@@ -730,6 +730,16 @@ class ApiClient {
     return data['is_blocked'] == true;
   }
 
+  Future<void> deleteConversation(int withUserId) async {
+    final response = await _send('DELETE', '/messages/conversations/$withUserId/');
+    if (response.statusCode != 200 && response.statusCode != 204) _throw(response);
+  }
+
+  Future<void> deleteMessage(int messageId) async {
+    final response = await _send('DELETE', '/messages/$messageId/');
+    if (response.statusCode != 200 && response.statusCode != 204) _throw(response);
+  }
+
   // ---------- User Reporting ----------
 
   Future<Map<String, dynamic>> submitReport({

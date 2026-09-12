@@ -553,6 +553,7 @@ class OrderSerializer(serializers.ModelSerializer):
     created_at = UTCDateTimeField(read_only=True)
     expires_at = UTCDateTimeField(read_only=True)
     total_amount = serializers.SerializerMethodField()
+    customer_email = serializers.SerializerMethodField()
     customer_avatar_url = serializers.SerializerMethodField()
     store_avatar_url = serializers.SerializerMethodField()
     store_name = serializers.CharField(source="owner.business_name", read_only=True, default="")
@@ -566,6 +567,7 @@ class OrderSerializer(serializers.ModelSerializer):
             "store_avatar_url",
             "customer",
             "customer_name",
+            "customer_email",
             "customer_avatar_url",
             "customer_phone",
             "customer_address",
@@ -585,6 +587,7 @@ class OrderSerializer(serializers.ModelSerializer):
             "store_name",
             "store_avatar_url",
             "customer",
+            "customer_email",
             "status",
             "decline_reason",
             "counter_notes",
@@ -595,8 +598,28 @@ class OrderSerializer(serializers.ModelSerializer):
             "items",
         )
 
+    def to_representation(self, instance):
+        ret = super().to_representation(instance)
+        if not ret.get("customer_name") and instance.customer:
+            if hasattr(instance.customer, "get_display_name"):
+                ret["customer_name"] = instance.customer.get_display_name()
+            else:
+                ret["customer_name"] = (
+                    f"{instance.customer.first_name} {instance.customer.last_name}".strip()
+                    or instance.customer.business_name
+                    or instance.customer.username
+                )
+        return ret
+
     def get_total_amount(self, obj):
         return f"{obj.total_amount():.2f}"
+
+    def get_customer_email(self, obj):
+        if obj.customer and obj.customer.email:
+            return obj.customer.email
+        if obj.customer and obj.customer.username and "@" in obj.customer.username:
+            return obj.customer.username
+        return ""
 
     def get_customer_avatar_url(self, obj):
         if obj.customer and obj.customer.avatar:
@@ -700,14 +723,18 @@ class ChatMessageSerializer(serializers.ModelSerializer):
         }
 
     def get_sender_name(self, obj):
-        if obj.sender.role == "owner":
-            return obj.sender.business_name or f"{obj.sender.first_name} {obj.sender.last_name}".strip() or obj.sender.username
-        return f"{obj.sender.first_name} {obj.sender.last_name}".strip() or obj.sender.username
+        if hasattr(obj.sender, "get_display_name"):
+            return obj.sender.get_display_name()
+        if obj.sender.role in ("owner", "admin") and obj.sender.business_name:
+            return obj.sender.business_name
+        return f"{obj.sender.first_name} {obj.sender.last_name}".strip() or obj.sender.business_name or obj.sender.username
 
     def get_recipient_name(self, obj):
-        if obj.recipient.role == "owner":
-            return obj.recipient.business_name or f"{obj.recipient.first_name} {obj.recipient.last_name}".strip() or obj.recipient.username
-        return f"{obj.recipient.first_name} {obj.recipient.last_name}".strip() or obj.recipient.username
+        if hasattr(obj.recipient, "get_display_name"):
+            return obj.recipient.get_display_name()
+        if obj.recipient.role in ("owner", "admin") and obj.recipient.business_name:
+            return obj.recipient.business_name
+        return f"{obj.recipient.first_name} {obj.recipient.last_name}".strip() or obj.recipient.business_name or obj.recipient.username
 
     def get_order_title(self, obj):
         if obj.order_id:
