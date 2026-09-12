@@ -136,6 +136,24 @@ class NotificationService {
     }
   }
 
+  /// Clears all active notifications from the Android notification shade.
+  Future<void> cancelAll() async {
+    try {
+      await _localNotifications.cancelAll();
+    } catch (e) {
+      debugPrint('Error cancelling customer notifications: $e');
+    }
+  }
+
+  /// Clears a specific notification by ID.
+  Future<void> cancel(int id) async {
+    try {
+      await _localNotifications.cancel(id);
+    } catch (e) {
+      debugPrint('Error cancelling customer notification #$id: $e');
+    }
+  }
+
   /// Displays a local heads-up notification banner with sound and vibration.
   void _showLocalNotification(RemoteMessage message) {
     final title = message.notification?.title ?? message.data['title'] ?? 'Order Update';

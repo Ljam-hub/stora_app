@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/order_provider.dart';
+import '../../services/notification_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/notification_badge.dart';
@@ -23,12 +24,10 @@ class _OrdersScreenState extends State<OrdersScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      final provider = context.read<OrderProvider>();
-      provider.fetchOrders();
-      provider.markOrdersTabSeen();
-      if (provider.selectedStatusFilter != 'all') {
-        provider.markFilterSeen(provider.selectedStatusFilter);
-      }
+      // Only fetch orders for preloading — do NOT mark as seen here.
+      // Marking as seen is handled by _onTabTapped(4) in MainShell
+      // when the user actually navigates to this tab.
+      context.read<OrderProvider>().fetchOrders();
     });
   }
 
@@ -109,7 +108,11 @@ class _OrdersScreenState extends State<OrdersScreen> {
             child: RefreshIndicator(
               color: AppColors.primary,
               backgroundColor: AppColors.cardElevated,
-              onRefresh: () => orderProvider.refresh(),
+              onRefresh: () async {
+                NotificationService.instance.cancelAll();
+                await orderProvider.refresh();
+                orderProvider.markOrdersTabSeen();
+              },
               child: orderProvider.isLoading && orderProvider.rawOrders.isEmpty
                   ? ListView.builder(
                       physics: const NeverScrollableScrollPhysics(),

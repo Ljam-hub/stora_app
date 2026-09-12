@@ -275,6 +275,11 @@ class AuthProvider extends ChangeNotifier {
       await CustomerApiService.instance.clearFcmToken();
     } catch (_) {}
     await SessionManager.instance.clearSession();
+    // Clear persisted seen orders so the next user starts fresh
+    try {
+      await SessionManager.instance.setSetting('seen_orders_snapshot', '');
+      await SessionManager.instance.setSetting('has_initialized_seen_orders', '');
+    } catch (_) {}
     _token = null;
     _currentUser = null;
     CustomerApiService.instance.accessToken = null;

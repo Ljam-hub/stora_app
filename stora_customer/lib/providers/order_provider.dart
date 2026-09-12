@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../models/order_model.dart';
 import '../services/api_service.dart';
 import '../services/notification_service.dart';
+import '../storage/session_manager.dart';
 
 class OrderProvider extends ChangeNotifier {
   List<CustomerOrder> _orders = [];
@@ -36,45 +38,100 @@ class OrderProvider extends ChangeNotifier {
 
   bool _ordersTabSeen = false;
   final Set<String> _seenFilters = {};
-  int _lastSeenPendingCount = 0;
-  int _lastSeenCounterOfferCount = 0;
-  int _lastSeenActiveOrdersCount = 0;
+  Map<int, String> _persistedSeenStatuses = {};
 
-  void markOrdersTabSeen() {
-    _ordersTabSeen = true;
-    _lastSeenActiveOrdersCount = activePendingCount;
-    notifyListeners();
+  OrderProvider() {
+    _loadPersistedSeen();
   }
 
-  void markFilterSeen(String filterId) {
-    _seenFilters.add(filterId);
-    if (filterId == 'pending') {
-      _lastSeenPendingCount = pendingCount;
-    } else if (filterId == 'counter_offer') {
-      _lastSeenCounterOfferCount = counterOfferCount;
+  Future<void> _loadPersistedSeen() async {
+    try {
+      final raw = await SessionManager.instance.getSetting('seen_orders_snapshot');
+      if (raw != null && raw.isNotEmpty) {
+        final decoded = jsonDecode(raw) as Map<String, dynamic>;
+        _persistedSeenStatuses = decoded.map((k, v) => MapEntry(int.parse(k), v.toString()));
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('Error loading seen orders snapshot: $e');
+    }
+  }
+
+  Future<void> markOrdersTabSeen() async {
+    _ordersTabSeen = true;
+
+    for (final o in _orders) {
+      _persistedSeenStatuses[o.id] = o.status;
     }
     notifyListeners();
+
+    try {
+      final raw = jsonEncode(_persistedSeenStatuses.map((k, v) => MapEntry(k.toString(), v)));
+      await SessionManager.instance.setSetting('seen_orders_snapshot', raw);
+      await SessionManager.instance.setSetting('has_initialized_seen_orders', 'true');
+    } catch (e) {
+      debugPrint('Error persisting seen orders snapshot: $e');
+    }
+  }
+
+  Future<void> markFilterSeen(String filterId) async {
+    _seenFilters.add(filterId);
+
+    for (final o in _orders.where((o) => o.status == filterId)) {
+      _persistedSeenStatuses[o.id] = o.status;
+    }
+    notifyListeners();
+
+    try {
+      final raw = jsonEncode(_persistedSeenStatuses.map((k, v) => MapEntry(k.toString(), v)));
+      await SessionManager.instance.setSetting('seen_orders_snapshot', raw);
+    } catch (_) {}
   }
 
   int get unreadPendingCount {
-    if (_seenFilters.contains('pending') && pendingCount <= _lastSeenPendingCount) {
+    if (_seenFilters.contains('pending')) {
       return 0;
     }
-    return pendingCount;
+    int unread = 0;
+    for (final o in _orders) {
+      if (o.status == 'pending' && _persistedSeenStatuses[o.id] != 'pending') {
+        unread++;
+      }
+    }
+    return unread;
   }
 
   int get unreadCounterOfferCount {
-    if (_seenFilters.contains('counter_offer') && counterOfferCount <= _lastSeenCounterOfferCount) {
+    if (_seenFilters.contains('counter_offer')) {
       return 0;
     }
-    return counterOfferCount;
+    int unread = 0;
+    for (final o in _orders) {
+      if (o.status == 'counter_offer' && _persistedSeenStatuses[o.id] != 'counter_offer') {
+        unread++;
+      }
+    }
+    return unread;
   }
 
   int get unreadActiveOrdersCount {
-    if (_ordersTabSeen && activePendingCount <= _lastSeenActiveOrdersCount) {
+    if (_ordersTabSeen) {
       return 0;
     }
-    return activePendingCount;
+    int unread = 0;
+    for (final o in _orders) {
+      final isActive = o.status == 'pending' ||
+          o.status == 'counter_offer' ||
+          o.status == 'accepted' ||
+          o.status == 'ready';
+      if (!isActive) continue;
+
+      final lastSeenStatus = _persistedSeenStatuses[o.id];
+      if (lastSeenStatus == null || lastSeenStatus != o.status) {
+        unread++;
+      }
+    }
+    return unread;
   }
 
   void startPolling({Duration interval = const Duration(seconds: 12)}) {
@@ -99,6 +156,7 @@ class OrderProvider extends ChangeNotifier {
     for (final o in newOrders) {
       final oldStatus = _knownStatuses[o.id];
       if (oldStatus != null && oldStatus != o.status) {
+        _ordersTabSeen = false;
         if (o.status == 'accepted') {
           NotificationService.instance.showNotification(
             title: '👨‍🍳 Order #${o.id} Accepted!',
@@ -170,6 +228,16 @@ class OrderProvider extends ChangeNotifier {
       final fetched = await CustomerApiService.instance.fetchMyOrders();
       _checkStatusTransitions(fetched);
       _orders = fetched;
+
+      final hasInitialized = await SessionManager.instance.getSetting('has_initialized_seen_orders');
+      if ((hasInitialized == null || hasInitialized.isEmpty) && _persistedSeenStatuses.isEmpty) {
+        for (final o in fetched) {
+          _persistedSeenStatuses[o.id] = o.status;
+        }
+        await SessionManager.instance.setSetting('has_initialized_seen_orders', 'true');
+        final raw = jsonEncode(_persistedSeenStatuses.map((k, v) => MapEntry(k.toString(), v)));
+        await SessionManager.instance.setSetting('seen_orders_snapshot', raw);
+      }
     } catch (e) {
       _errorMessage = e.toString().replaceAll('Exception: ', '');
     }
@@ -212,6 +280,7 @@ class OrderProvider extends ChangeNotifier {
       );
       _orders.insert(0, order);
       _knownStatuses[order.id] = order.status;
+      _persistedSeenStatuses[order.id] = order.status;
 
       // Pop up system notification for order placed
       NotificationService.instance.showNotification(

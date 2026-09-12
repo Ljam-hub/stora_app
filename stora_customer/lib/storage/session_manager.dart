@@ -151,4 +151,49 @@ class SessionManager {
       debugPrint('Error clearing session: $e');
     }
   }
+
+  Future<String?> getSetting(String key) async {
+    try {
+      final db = await database;
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS app_settings (
+          key TEXT PRIMARY KEY,
+          value TEXT NOT NULL
+        )
+      ''');
+      final rows = await db.query(
+        'app_settings',
+        columns: ['value'],
+        where: 'key = ?',
+        whereArgs: [key],
+        limit: 1,
+      );
+      if (rows.isNotEmpty) {
+        return rows.first['value'] as String?;
+      }
+      return null;
+    } catch (e) {
+      debugPrint('Error reading setting $key: $e');
+      return null;
+    }
+  }
+
+  Future<void> setSetting(String key, String value) async {
+    try {
+      final db = await database;
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS app_settings (
+          key TEXT PRIMARY KEY,
+          value TEXT NOT NULL
+        )
+      ''');
+      await db.insert(
+        'app_settings',
+        {'key': key, 'value': value},
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    } catch (e) {
+      debugPrint('Error saving setting $key: $e');
+    }
+  }
 }

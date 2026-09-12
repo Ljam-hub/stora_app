@@ -188,6 +188,7 @@ class _MainShellState extends State<MainShell> {
     setState(() => _currentIndex = index);
     if (index == 4) {
       context.read<OrderProvider>().markOrdersTabSeen();
+      NotificationService.instance.cancelAll();
     }
   }
 
@@ -209,7 +210,11 @@ class _MainShellState extends State<MainShell> {
       ),
       CartScreen(
         onStartShopping: () => setState(() => _currentIndex = 0),
-        onOrderPlaced: () => setState(() => _currentIndex = 4),
+        onOrderPlaced: () {
+          setState(() => _currentIndex = 4);
+          context.read<OrderProvider>().markOrdersTabSeen();
+          NotificationService.instance.cancelAll();
+        },
       ),
       CustomerConversationsScreen(
         onBrowseStores: () => setState(() => _currentIndex = 0),
