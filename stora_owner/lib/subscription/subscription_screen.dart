@@ -4,6 +4,7 @@ import '../data/stores/account_status_store.dart';
 import '../stora_login/stora_login.dart';
 import '../home/theme/home_colors.dart';
 import '../home/widgets/status_chip.dart';
+import 'past_receipts_sheet.dart';
 import 'upload_gcash_proof_screen.dart';
 
 // ---------------------------------------------------------------------
@@ -66,7 +67,15 @@ class SubscriptionScreen extends StatelessWidget {
                           style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700),
                         ),
                       ),
-                      const SizedBox(width: 40),
+                      IconButton(
+                        tooltip: 'Past Receipts',
+                        onPressed: () => PastReceiptsSheet.show(context),
+                        icon: const Icon(Icons.receipt_long_rounded, color: Colors.white, size: 20),
+                        style: IconButton.styleFrom(
+                          backgroundColor: HomeColors.cardBackground,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 20),
@@ -216,6 +225,24 @@ class SubscriptionScreen extends StatelessWidget {
                         ),
                       ),
                     ),
+                    const SizedBox(height: 12),
+                    OutlinedButton.icon(
+                      onPressed: () => PastReceiptsSheet.show(context),
+                      icon: const Icon(Icons.receipt_long_rounded, size: 18, color: AppColors.purpleLight),
+                      label: const Text(
+                        'Past Subscription Receipts',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        side: BorderSide(color: AppColors.purple.withValues(alpha: 0.5)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      ),
+                    ),
                   ] else ...[
                     // Free / Trial Plan View
                     Text(
@@ -338,6 +365,24 @@ class SubscriptionScreen extends StatelessWidget {
                             qrCodeUrl: account.qrCodeUrl,
                           ),
                         ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    OutlinedButton.icon(
+                      onPressed: () => PastReceiptsSheet.show(context),
+                      icon: const Icon(Icons.receipt_long_rounded, size: 18, color: AppColors.purpleLight),
+                      label: const Text(
+                        'Past Subscription Receipts',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        side: BorderSide(color: AppColors.purple.withValues(alpha: 0.5)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                       ),
                     ),
                   ],

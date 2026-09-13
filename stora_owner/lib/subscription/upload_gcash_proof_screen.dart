@@ -8,6 +8,7 @@ import '../stora_login/stora_login.dart';
 import '../home/theme/home_colors.dart';
 import 'subscription_status_screen.dart';
 import 'subscription_status.dart';
+import 'past_receipts_sheet.dart';
 
 // ---------------------------------------------------------------------
 // Upload GCash Proof — instructs the owner to send the plan price to
@@ -307,7 +308,17 @@ class _UploadGcashProofScreenState extends State<UploadGcashProofScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 40),
+                  IconButton(
+                    tooltip: 'Past Receipts',
+                    onPressed: () => PastReceiptsSheet.show(context),
+                    icon: const Icon(Icons.receipt_long_rounded, color: Colors.white, size: 20),
+                    style: IconButton.styleFrom(
+                      backgroundColor: HomeColors.cardBackground,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 18),
@@ -863,6 +874,21 @@ class _UploadGcashProofScreenState extends State<UploadGcashProofScreen> {
               StoraGradientButton(
                 label: _submitting ? 'Submitting Proof...' : 'Submit for review',
                 onPressed: _submitting ? () {} : _submit,
+              ),
+              const SizedBox(height: 14),
+              Center(
+                child: TextButton.icon(
+                  onPressed: () => PastReceiptsSheet.show(context),
+                  icon: const Icon(Icons.receipt_long_rounded, size: 18, color: AppColors.purpleLight),
+                  label: const Text(
+                    'View Past Subscription Receipts',
+                    style: TextStyle(
+                      color: AppColors.purpleLight,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
               ),
             ],
           ),

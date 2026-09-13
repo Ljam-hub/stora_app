@@ -118,6 +118,16 @@ class _SubscriptionStatusScreenState extends State<SubscriptionStatusScreen> {
                     ),
                   ),
                   IconButton(
+                    tooltip: 'Past Receipts',
+                    onPressed: () => PastReceiptsSheet.show(context),
+                    icon: const Icon(Icons.receipt_long_rounded, color: Colors.white, size: 20),
+                    style: IconButton.styleFrom(
+                      backgroundColor: HomeColors.cardBackground,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
                     onPressed: _loading ? null : _refreshStatus,
                     icon: _loading
                         ? const SizedBox(
