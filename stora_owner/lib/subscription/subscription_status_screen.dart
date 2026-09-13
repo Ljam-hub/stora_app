@@ -259,24 +259,36 @@ class _SubscriptionStatusScreenState extends State<SubscriptionStatusScreen> {
                     MaterialPageRoute(builder: (_) => const UploadGcashProofScreen()),
                   ),
                 ),
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    side: const BorderSide(color: AppColors.fieldBorder),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                  onPressed: () => PastReceiptsSheet.show(context),
+                  icon: const Icon(Icons.receipt_long_rounded, color: AppColors.purpleLight, size: 18),
+                  label: const Text('Past Subscription Receipts', style: TextStyle(fontWeight: FontWeight.w600)),
+                ),
               ] else if (status.isApproved) ...[
                 StoraGradientButton(
-                  label: 'View receipt',
+                  label: 'Subscription Receipts',
                   onPressed: () => _showSubscriptionReceipt(context, status),
                 ),
-              ],
-              const SizedBox(height: 12),
-              OutlinedButton.icon(
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.white,
-                  side: const BorderSide(color: AppColors.fieldBorder),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              ] else ...[
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    side: const BorderSide(color: AppColors.fieldBorder),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                  onPressed: () => PastReceiptsSheet.show(context),
+                  icon: const Icon(Icons.receipt_long_rounded, color: AppColors.purpleLight, size: 18),
+                  label: const Text('Past Subscription Receipts', style: TextStyle(fontWeight: FontWeight.w600)),
                 ),
-                onPressed: () => PastReceiptsSheet.show(context),
-                icon: const Icon(Icons.receipt_long_rounded, color: AppColors.purpleLight, size: 18),
-                label: const Text('Past Subscription Receipts', style: TextStyle(fontWeight: FontWeight.w600)),
-              ),
+              ],
             ],
           ),
         ),
