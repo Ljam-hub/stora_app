@@ -228,18 +228,19 @@ class SubscriptionScreen extends StatelessWidget {
                     const SizedBox(height: 12),
                     OutlinedButton.icon(
                       onPressed: () => PastReceiptsSheet.show(context),
-                      icon: const Icon(Icons.receipt_long_rounded, size: 18, color: AppColors.purpleLight),
+                      icon: const Icon(Icons.receipt_long_rounded, size: 18, color: Color(0xFFC084FC)),
                       label: const Text(
                         'Past Subscription Receipts',
                         style: TextStyle(
                           color: Colors.white,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w700,
                           fontSize: 14,
                         ),
                       ),
                       style: OutlinedButton.styleFrom(
+                        backgroundColor: const Color(0xFF9333EA).withValues(alpha: 0.12),
                         padding: const EdgeInsets.symmetric(vertical: 14),
-                        side: BorderSide(color: AppColors.purple.withValues(alpha: 0.5)),
+                        side: BorderSide(color: const Color(0xFFA855F7).withValues(alpha: 0.6), width: 1.2),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                       ),
                     ),
@@ -370,18 +371,19 @@ class SubscriptionScreen extends StatelessWidget {
                     const SizedBox(height: 12),
                     OutlinedButton.icon(
                       onPressed: () => PastReceiptsSheet.show(context),
-                      icon: const Icon(Icons.receipt_long_rounded, size: 18, color: AppColors.purpleLight),
+                      icon: const Icon(Icons.receipt_long_rounded, size: 18, color: Color(0xFFC084FC)),
                       label: const Text(
                         'Past Subscription Receipts',
                         style: TextStyle(
                           color: Colors.white,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w700,
                           fontSize: 14,
                         ),
                       ),
                       style: OutlinedButton.styleFrom(
+                        backgroundColor: const Color(0xFF9333EA).withValues(alpha: 0.12),
                         padding: const EdgeInsets.symmetric(vertical: 14),
-                        side: BorderSide(color: AppColors.purple.withValues(alpha: 0.5)),
+                        side: BorderSide(color: const Color(0xFFA855F7).withValues(alpha: 0.6), width: 1.2),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                       ),
                     ),

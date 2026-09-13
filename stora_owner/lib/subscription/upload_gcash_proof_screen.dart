@@ -875,17 +875,32 @@ class _UploadGcashProofScreenState extends State<UploadGcashProofScreen> {
                 label: _submitting ? 'Submitting Proof...' : 'Submit for review',
                 onPressed: _submitting ? () {} : _submit,
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 16),
               Center(
-                child: TextButton.icon(
-                  onPressed: () => PastReceiptsSheet.show(context),
-                  icon: const Icon(Icons.receipt_long_rounded, size: 18, color: AppColors.purpleLight),
-                  label: const Text(
-                    'View Past Subscription Receipts',
-                    style: TextStyle(
-                      color: AppColors.purpleLight,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
+                child: InkWell(
+                  onTap: () => PastReceiptsSheet.show(context),
+                  borderRadius: BorderRadius.circular(20),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF9333EA).withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: const Color(0xFFC084FC).withValues(alpha: 0.6), width: 1.2),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.receipt_long_rounded, size: 18, color: Color(0xFFC084FC)),
+                        SizedBox(width: 8),
+                        Text(
+                          'View Past Subscription Receipts',
+                          style: TextStyle(
+                            color: Color(0xFFE9D5FF),
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13.5,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),

@@ -161,6 +161,14 @@ class _SubscriptionStatusScreenState extends State<SubscriptionStatusScreen> {
                 decoration: BoxDecoration(
                   color: HomeColors.cardBackground,
                   borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFA855F7).withValues(alpha: 0.35), width: 1.2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFA855F7).withValues(alpha: 0.08),
+                      blurRadius: 16,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -178,13 +186,13 @@ class _SubscriptionStatusScreenState extends State<SubscriptionStatusScreen> {
                     const SizedBox(height: 4),
                     Text(
                       'Submitted ${_formatSubmitted(status.submittedAt)}',
-                      style: const TextStyle(color: AppColors.label, fontSize: 12),
+                      style: const TextStyle(color: Color(0xFFC4B5FD), fontSize: 12, fontWeight: FontWeight.w500),
                     ),
                     if (status.referenceNumber != null && status.referenceNumber!.isNotEmpty) ...[
                       const SizedBox(height: 4),
                       Text(
                         'Ref: ${status.referenceNumber}',
-                        style: const TextStyle(color: AppColors.label, fontSize: 12),
+                        style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
                       ),
                     ],
                     const SizedBox(height: 22),
@@ -193,14 +201,14 @@ class _SubscriptionStatusScreenState extends State<SubscriptionStatusScreen> {
                       Container(
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
-                          color: HomeColors.dangerBg,
+                          color: const Color(0xFFEF4444).withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: AppColors.error.withValues(alpha: 0.4)),
+                          border: Border.all(color: const Color(0xFFF87171), width: 1.2),
                         ),
                         child: const Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Icon(Icons.error_outline_rounded, color: AppColors.error, size: 22),
+                            Icon(Icons.error_outline_rounded, color: Color(0xFFF87171), size: 22),
                             SizedBox(width: 12),
                             Expanded(
                               child: Column(
@@ -213,7 +221,7 @@ class _SubscriptionStatusScreenState extends State<SubscriptionStatusScreen> {
                                   SizedBox(height: 4),
                                   Text(
                                     'Your GCash payment proof was reviewed and could not be verified by the admin. Please verify your reference number, ensure the payment was sent to the correct GCash account, and submit a clear screenshot.',
-                                    style: TextStyle(color: Colors.white70, fontSize: 12.5, height: 1.4),
+                                    style: TextStyle(color: Color(0xFFFEE2E2), fontSize: 12.5, height: 1.4),
                                   ),
                                 ],
                               ),
@@ -226,20 +234,20 @@ class _SubscriptionStatusScreenState extends State<SubscriptionStatusScreen> {
                       if (!status.isApproved) ...[
                         const SizedBox(height: 10),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                           decoration: BoxDecoration(
-                            color: AppColors.fieldBackground,
+                            color: const Color(0xFFF59E0B).withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: AppColors.fieldBorder),
+                            border: Border.all(color: const Color(0xFFFBBF24).withValues(alpha: 0.5), width: 1.2),
                           ),
                           child: const Row(
                             children: [
-                              Icon(Icons.hourglass_top_rounded, color: AppColors.purpleLight, size: 16),
+                              Icon(Icons.hourglass_top_rounded, color: Color(0xFFFBBF24), size: 16),
                               SizedBox(width: 8),
                               Expanded(
                                 child: Text(
                                   'Awaiting admin verification. Once approved, your receipt and premium features will be unlocked.',
-                                  style: TextStyle(color: AppColors.label, fontSize: 11.5),
+                                  style: TextStyle(color: Color(0xFFFEF3C7), fontSize: 11.5, fontWeight: FontWeight.w500),
                                 ),
                               ),
                             ],
@@ -263,13 +271,14 @@ class _SubscriptionStatusScreenState extends State<SubscriptionStatusScreen> {
                 OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.white,
-                    side: const BorderSide(color: AppColors.fieldBorder),
+                    backgroundColor: const Color(0xFF9333EA).withValues(alpha: 0.12),
+                    side: const BorderSide(color: Color(0xFFA855F7), width: 1.2),
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                   ),
                   onPressed: () => PastReceiptsSheet.show(context),
-                  icon: const Icon(Icons.receipt_long_rounded, color: AppColors.purpleLight, size: 18),
-                  label: const Text('Past Subscription Receipts', style: TextStyle(fontWeight: FontWeight.w600)),
+                  icon: const Icon(Icons.receipt_long_rounded, color: Color(0xFFC084FC), size: 18),
+                  label: const Text('Past Subscription Receipts', style: TextStyle(fontWeight: FontWeight.w700)),
                 ),
               ] else if (status.isApproved) ...[
                 StoraGradientButton(
@@ -280,13 +289,14 @@ class _SubscriptionStatusScreenState extends State<SubscriptionStatusScreen> {
                 OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.white,
-                    side: const BorderSide(color: AppColors.fieldBorder),
+                    backgroundColor: const Color(0xFF9333EA).withValues(alpha: 0.12),
+                    side: const BorderSide(color: Color(0xFFA855F7), width: 1.2),
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                   ),
                   onPressed: () => PastReceiptsSheet.show(context),
-                  icon: const Icon(Icons.receipt_long_rounded, color: AppColors.purpleLight, size: 18),
-                  label: const Text('Past Subscription Receipts', style: TextStyle(fontWeight: FontWeight.w600)),
+                  icon: const Icon(Icons.receipt_long_rounded, color: Color(0xFFC084FC), size: 18),
+                  label: const Text('Past Subscription Receipts', style: TextStyle(fontWeight: FontWeight.w700)),
                 ),
               ],
             ],

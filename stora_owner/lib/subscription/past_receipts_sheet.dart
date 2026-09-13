@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../data/api/api_client.dart';
 import '../home/theme/home_colors.dart';
 import '../home/utils/date_utils.dart';
-import '../home/widgets/status_chip.dart';
 import '../stora_login/stora_login.dart';
 import 'subscription_receipt_modal.dart';
 
@@ -88,10 +87,11 @@ class _PastReceiptsSheetState extends State<PastReceiptsSheet> {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: HomeColors.successBg,
+                    color: const Color(0xFF10B981).withValues(alpha: 0.18),
                     borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFF34D399).withValues(alpha: 0.6), width: 1.2),
                   ),
-                  child: const Icon(Icons.receipt_long_rounded, color: HomeColors.successText, size: 24),
+                  child: const Icon(Icons.receipt_long_rounded, color: Color(0xFF34D399), size: 24),
                 ),
                 const SizedBox(width: 14),
                 const Expanded(
@@ -104,14 +104,14 @@ class _PastReceiptsSheetState extends State<PastReceiptsSheet> {
                       ),
                       Text(
                         'Only approved subscriptions generate official receipts',
-                        style: TextStyle(color: AppColors.label, fontSize: 12),
+                        style: TextStyle(color: Color(0xFFCBD5E1), fontSize: 12),
                       ),
                     ],
                   ),
                 ),
                 IconButton(
                   onPressed: _loading ? null : _fetchReceipts,
-                  icon: const Icon(Icons.refresh_rounded, color: AppColors.label),
+                  icon: const Icon(Icons.refresh_rounded, color: Color(0xFFC084FC)),
                   tooltip: 'Refresh',
                 ),
               ],
@@ -169,12 +169,13 @@ class _PastReceiptsSheetState extends State<PastReceiptsSheet> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
-                  color: AppColors.fieldBackground,
+                  color: const Color(0xFF9333EA).withValues(alpha: 0.15),
                   shape: BoxShape.circle,
+                  border: Border.all(color: const Color(0xFFA855F7).withValues(alpha: 0.5), width: 1.4),
                 ),
-                child: const Icon(Icons.receipt_long_outlined, color: AppColors.label, size: 44),
+                child: const Icon(Icons.receipt_long_outlined, color: Color(0xFFC084FC), size: 44),
               ),
               const SizedBox(height: 14),
               const Text(
@@ -186,7 +187,7 @@ class _PastReceiptsSheetState extends State<PastReceiptsSheet> {
               const Text(
                 'Receipts are generated after your GCash payment proof is reviewed and accepted by the admin. Unverified or pending proofs will not show receipts in advance.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: AppColors.label, fontSize: 12.5, height: 1.4),
+                style: TextStyle(color: Color(0xFFCBD5E1), fontSize: 12.5, height: 1.4),
               ),
             ],
           ),
@@ -220,19 +221,27 @@ class _PastReceiptsSheetState extends State<PastReceiptsSheet> {
           child: Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: AppColors.fieldBackground,
+              color: const Color(0xFF1F172E),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.fieldBorder),
+              border: Border.all(color: const Color(0xFFA855F7).withValues(alpha: 0.35), width: 1.2),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFFA855F7).withValues(alpha: 0.06),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
             child: Row(
               children: [
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: HomeColors.successBg,
+                    color: const Color(0xFF10B981).withValues(alpha: 0.18),
                     shape: BoxShape.circle,
+                    border: Border.all(color: const Color(0xFF34D399).withValues(alpha: 0.5), width: 1),
                   ),
-                  child: const Icon(Icons.check_circle_rounded, color: HomeColors.successText, size: 20),
+                  child: const Icon(Icons.check_circle_rounded, color: Color(0xFF34D399), size: 20),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -246,12 +255,12 @@ class _PastReceiptsSheetState extends State<PastReceiptsSheet> {
                       const SizedBox(height: 3),
                       Text(
                         'Ref: $ref',
-                        style: const TextStyle(color: AppColors.label, fontSize: 12),
+                        style: const TextStyle(color: Color(0xFFC4B5FD), fontSize: 12, fontWeight: FontWeight.w500),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         formatManilaShortDateTime(date),
-                        style: const TextStyle(color: AppColors.label, fontSize: 11),
+                        style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 11),
                       ),
                     ],
                   ),
@@ -261,18 +270,30 @@ class _PastReceiptsSheetState extends State<PastReceiptsSheet> {
                   children: [
                     Text(
                       'PHP ${amountNum.toStringAsFixed(2)}',
-                      style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w800),
+                      style: const TextStyle(color: Color(0xFF4ADE80), fontSize: 15, fontWeight: FontWeight.w800),
                     ),
                     const SizedBox(height: 6),
-                    StatusChip(
-                      label: 'APPROVED',
-                      color: HomeColors.successText,
-                      background: HomeColors.successBg,
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF10B981).withValues(alpha: 0.18),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFF34D399).withValues(alpha: 0.6), width: 0.8),
+                      ),
+                      child: const Text(
+                        'APPROVED',
+                        style: TextStyle(
+                          color: Color(0xFF34D399),
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
                     ),
                   ],
                 ),
-                const SizedBox(width: 6),
-                const Icon(Icons.chevron_right_rounded, color: AppColors.label, size: 20),
+                const SizedBox(width: 8),
+                const Icon(Icons.chevron_right_rounded, color: Color(0xFFC084FC), size: 22),
               ],
             ),
           ),
