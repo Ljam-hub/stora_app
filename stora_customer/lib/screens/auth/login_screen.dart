@@ -97,7 +97,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  const Text(
+                  Text(
                     'Welcome to Stora',
                     textAlign: TextAlign.center,
                     style: TextStyle(
@@ -108,7 +108,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
+                  Text(
                     'Order directly from your favorite local stores',
                     textAlign: TextAlign.center,
                     style: TextStyle(
@@ -187,7 +187,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Text(
+                      Text(
                         "Don't have an account?",
                         style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
                       ),

@@ -35,16 +35,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
           children: [
             ListTile(
               leading: const Icon(Icons.photo_camera_rounded, color: AppColors.primary),
-              title: const Text('Take a photo', style: TextStyle(color: Colors.white)),
+              title: Text('Take a photo', style: TextStyle(color: AppColors.textPrimary)),
               onTap: () => Navigator.pop(ctx, 'camera'),
             ),
             ListTile(
               leading: const Icon(Icons.photo_library_rounded, color: AppColors.primary),
-              title: const Text('Choose from gallery', style: TextStyle(color: Colors.white)),
+              title: Text('Choose from gallery', style: TextStyle(color: AppColors.textPrimary)),
               onTap: () => Navigator.pop(ctx, 'gallery'),
             ),
             if (hasAvatar) ...[
-              const Divider(color: AppColors.cardBorder, height: 1),
+              Divider(color: AppColors.cardBorder, height: 1),
               ListTile(
                 leading: const Icon(Icons.delete_outline_rounded, color: AppColors.danger),
                 title: const Text('Remove profile photo', style: TextStyle(color: AppColors.danger, fontWeight: FontWeight.w600)),
@@ -66,17 +66,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
           backgroundColor: AppColors.cardBackground,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
-            side: const BorderSide(color: AppColors.cardBorder),
+            side: BorderSide(color: AppColors.cardBorder),
           ),
-          title: const Text('Remove Profile Photo', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
-          content: const Text(
+          title: Text('Remove Profile Photo', style: TextStyle(color: AppColors.textPrimary, fontSize: 17, fontWeight: FontWeight.bold)),
+          content: Text(
             'Are you sure you want to remove your profile photo and restore the default avatar?',
             style: TextStyle(color: AppColors.textSecondary, fontSize: 14, height: 1.45),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(false),
-              child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary, fontSize: 14)),
+              child: Text('Cancel', style: TextStyle(color: AppColors.textSecondary, fontSize: 14)),
             ),
             ElevatedButton(
               onPressed: () => Navigator.of(ctx).pop(true),
@@ -172,9 +172,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         backgroundColor: AppColors.cardBackground,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          side: const BorderSide(color: AppColors.cardBorder),
+          side: BorderSide(color: AppColors.cardBorder),
         ),
-        title: const Text('Edit Profile', style: TextStyle(color: Colors.white)),
+        title: Text('Edit Profile', style: TextStyle(color: AppColors.textPrimary)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -194,7 +194,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+            child: Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -238,9 +238,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         backgroundColor: AppColors.cardBackground,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          side: const BorderSide(color: AppColors.cardBorder),
+          side: BorderSide(color: AppColors.cardBorder),
         ),
-        title: const Text('Default Delivery Info', style: TextStyle(color: Colors.white)),
+        title: Text('Default Delivery Info', style: TextStyle(color: AppColors.textPrimary)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -261,7 +261,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+            child: Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -305,9 +305,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           backgroundColor: AppColors.cardBackground,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
-            side: const BorderSide(color: AppColors.cardBorder),
+            side: BorderSide(color: AppColors.cardBorder),
           ),
-          title: const Text('Change Password', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          title: Text('Change Password', style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold)),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -341,7 +341,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           actions: [
             TextButton(
               onPressed: isSaving ? null : () => Navigator.pop(ctx),
-              child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+              child: Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
             ),
             ElevatedButton(
               onPressed: isSaving
@@ -432,17 +432,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
         backgroundColor: AppColors.cardBackground,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: AppColors.cardBorder),
+          side: BorderSide(color: AppColors.cardBorder),
         ),
-        title: const Text('Log Out', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
-        content: const Text(
+        title: Text('Log Out', style: TextStyle(color: AppColors.textPrimary, fontSize: 17, fontWeight: FontWeight.bold)),
+        content: Text(
           'Are you sure you want to log out?',
           style: TextStyle(color: AppColors.textSecondary, fontSize: 14, height: 1.45),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary, fontSize: 14)),
+            child: Text('Cancel', style: TextStyle(color: AppColors.textSecondary, fontSize: 14)),
           ),
           TextButton(
             onPressed: () async {
@@ -468,23 +468,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
           backgroundColor: AppColors.cardBackground,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
-            side: const BorderSide(color: AppColors.cardBorder),
+            side: BorderSide(color: AppColors.cardBorder),
           ),
-          title: const Row(
+          title: Row(
             children: [
-              Icon(Icons.warning_amber_rounded, color: AppColors.danger, size: 22),
-              SizedBox(width: 8),
-              Text('Delete Account', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
+              const Icon(Icons.warning_amber_rounded, color: AppColors.danger, size: 22),
+              const SizedBox(width: 8),
+              Text('Delete Account', style: TextStyle(color: AppColors.textPrimary, fontSize: 17, fontWeight: FontWeight.bold)),
             ],
           ),
-          content: const Text(
+          content: Text(
             'Are you sure you want to delete your account? This action is permanent and cannot be undone. All your orders, messages, and profile data will be permanently deleted.',
             style: TextStyle(color: AppColors.textSecondary, fontSize: 14, height: 1.45),
           ),
           actions: [
             TextButton(
               onPressed: isDeleting ? null : () => Navigator.pop(ctx),
-              child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary, fontSize: 14)),
+              child: Text('Cancel', style: TextStyle(color: AppColors.textSecondary, fontSize: 14)),
             ),
             ElevatedButton(
               onPressed: isDeleting
@@ -661,16 +661,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       children: [
                         Text(
                           user?.displayName ?? 'Customer',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                            color: AppColors.textPrimary,
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           user?.email ?? '',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 13,
                             color: AppColors.textSecondary,
                           ),
@@ -773,14 +773,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Row(
+                      Row(
                         children: [
-                          Icon(Icons.location_on_outlined, color: AppColors.primaryLight, size: 20),
-                          SizedBox(width: 8),
+                          const Icon(Icons.location_on_outlined, color: AppColors.primaryLight, size: 20),
+                          const SizedBox(width: 8),
                           Text(
                             'Default Delivery Info',
                             style: TextStyle(
-                              color: Colors.white,
+                              color: AppColors.textPrimary,
                               fontWeight: FontWeight.bold,
                               fontSize: 15,
                             ),
@@ -798,13 +798,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                     ],
                   ),
-                  const Divider(color: AppColors.cardBorder, height: 16),
+                  Divider(color: AppColors.cardBorder, height: 16),
                   Row(
                     children: [
-                      const Text('Phone: ', style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
+                      Text('Phone: ', style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
                       Text(
                         auth.savedPhone?.isNotEmpty == true ? auth.savedPhone! : 'Not set',
-                        style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                        style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
                       ),
                     ],
                   ),
@@ -812,11 +812,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Address: ', style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
+                      Text('Address: ', style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
                       Expanded(
                         child: Text(
                           auth.savedAddress?.isNotEmpty == true ? auth.savedAddress! : 'Not set',
-                          style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                          style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
                         ),
                       ),
                     ],
@@ -858,15 +858,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           children: [
                             Text(
                               isDark ? 'Dark Mode' : 'Light Mode',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 15,
+                                color: AppColors.textPrimary,
                               ),
                             ),
                             const SizedBox(height: 2),
                             Text(
                               isDark ? 'Comfortable for low-light browsing' : 'Crisp high-contrast retail mode',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: AppColors.textSecondary,
                                 fontSize: 12,
                               ),
@@ -916,7 +917,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                     ),
                     const SizedBox(width: 14),
-                    const Expanded(
+                    Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -925,9 +926,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 15,
+                              color: AppColors.textPrimary,
                             ),
                           ),
-                          SizedBox(height: 2),
+                          const SizedBox(height: 2),
                           Text(
                             'Change your account password',
                             style: TextStyle(
@@ -938,7 +940,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ],
                       ),
                     ),
-                    const Icon(
+                    Icon(
                       Icons.chevron_right_rounded,
                       color: AppColors.textMuted,
                       size: 22,
@@ -976,7 +978,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                     ),
                     const SizedBox(width: 14),
-                    const Expanded(
+                    Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -985,9 +987,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 15,
+                              color: AppColors.textPrimary,
                             ),
                           ),
-                          SizedBox(height: 2),
+                          const SizedBox(height: 2),
                           Text(
                             'Chat directly with STORA Support team',
                             style: TextStyle(
@@ -998,7 +1001,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ],
                       ),
                     ),
-                    const Icon(
+                    Icon(
                       Icons.chevron_right_rounded,
                       color: AppColors.textMuted,
                       size: 22,

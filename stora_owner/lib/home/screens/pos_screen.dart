@@ -37,13 +37,13 @@ void confirmClearCart(BuildContext context) {
     context: context,
     builder: (ctx) => AlertDialog(
       backgroundColor: HomeColors.cardBackground,
-      title: const Text('Clear cart?', style: TextStyle(color: Colors.white)),
-      content: const Text('This removes every item from the cart. Stock is not affected until checkout.',
-          style: TextStyle(color: AppColors.label)),
+      title: Text('Clear cart?', style: TextStyle(color: HomeColors.textPrimary)),
+      content: Text('This removes every item from the cart. Stock is not affected until checkout.',
+          style: TextStyle(color: HomeColors.textSecondary)),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(ctx).pop(),
-          child: const Text('Cancel', style: TextStyle(color: AppColors.label)),
+          child: Text('Cancel', style: TextStyle(color: HomeColors.textSecondary)),
         ),
         TextButton(
           onPressed: () {
@@ -182,16 +182,16 @@ class _PosScreenState extends State<PosScreen> {
                   children: [
                     IconButton(
                       onPressed: () => Navigator.of(context).pop(),
-                      icon: const Icon(Icons.chevron_left, color: Colors.white),
+                      icon: Icon(Icons.chevron_left, color: HomeColors.textPrimary),
                       style: IconButton.styleFrom(
                         backgroundColor: HomeColors.cardBackground,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                     ),
-                    const Expanded(
+                    Expanded(
                       child: Text('New Sale',
                           textAlign: TextAlign.center,
-                          style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700)),
+                          style: TextStyle(color: HomeColors.textPrimary, fontSize: 18, fontWeight: FontWeight.w700)),
                     ),
                     const SizedBox(width: 40),
                   ],
@@ -203,10 +203,10 @@ class _PosScreenState extends State<PosScreen> {
                 controller: _searchController,
                 onChanged: (v) => setState(() => _query = v),
                 onSubmitted: (v) => _handleBarcode(v),
-                style: const TextStyle(color: Colors.white, fontSize: 14),
+                style: TextStyle(color: HomeColors.textPrimary, fontSize: 14),
                 decoration: InputDecoration(
                   hintText: 'Search Product or Scan Barcode',
-                  hintStyle: const TextStyle(color: AppColors.hint),
+                  hintStyle: TextStyle(color: HomeColors.textSecondary),
                   filled: true,
                   fillColor: HomeColors.cardBackground,
                   contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
@@ -310,15 +310,15 @@ class _PosScreenState extends State<PosScreen> {
                               child: const Icon(Icons.shopping_bag_outlined, size: 40, color: AppColors.purpleLight),
                             ),
                             const SizedBox(height: 16),
-                            const Text(
+                            Text(
                               'Virtual cart is empty',
-                              style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700),
+                              style: TextStyle(color: HomeColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w700),
                             ),
                             const SizedBox(height: 6),
-                            const Text(
+                            Text(
                               'Search above or scan a barcode to add products directly.',
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: AppColors.label, fontSize: 13),
+                              style: TextStyle(color: HomeColors.textSecondary, fontSize: 13),
                             ),
                           ],
                         ),
@@ -335,7 +335,7 @@ class _PosScreenState extends State<PosScreen> {
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
               decoration: BoxDecoration(
                 color: HomeColors.navBackground,
-                border: const Border(top: BorderSide(color: HomeColors.cardBorder)),
+                border: Border(top: BorderSide(color: HomeColors.cardBorder)),
                 boxShadow: HomeColors.cardShadow,
               ),
               child: Column(
@@ -364,7 +364,7 @@ class _PosScreenState extends State<PosScreen> {
                         ],
                       ),
                       Text('₱${cart.total.toStringAsFixed(2)}',
-                          style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w900)),
+                          style: TextStyle(color: HomeColors.textPrimary, fontSize: 20, fontWeight: FontWeight.w900)),
                     ],
                   ),
                   const SizedBox(height: 12),
@@ -376,7 +376,7 @@ class _PosScreenState extends State<PosScreen> {
         );
 
         return widget.isStandalone
-            ? Scaffold(backgroundColor: AppColors.background, body: SafeArea(child: body))
+            ? Scaffold(backgroundColor: HomeColors.background, body: SafeArea(child: body))
             : SafeArea(child: body);
       },
     );
@@ -424,7 +424,7 @@ class _PosProductCard extends StatelessWidget {
                   Text(product.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700)),
+                      style: TextStyle(color: HomeColors.textPrimary, fontSize: 12, fontWeight: FontWeight.w700)),
                   const SizedBox(height: 2),
                   Text('₱${product.price.toStringAsFixed(2)}',
                       style: const TextStyle(color: AppColors.purpleLight, fontSize: 11, fontWeight: FontWeight.w800)),
@@ -471,7 +471,7 @@ class _CartRow extends StatelessWidget {
                 Text(item.product.name,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700)),
+                    style: TextStyle(color: HomeColors.textPrimary, fontSize: 13, fontWeight: FontWeight.w700)),
                 const SizedBox(height: 2),
                 Text('₱${item.product.price.toStringAsFixed(2)} · subtotal: ₱${item.subtotal.toStringAsFixed(2)}',
                     style: const TextStyle(color: AppColors.label, fontSize: 11)),

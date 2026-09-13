@@ -43,7 +43,7 @@ class SubscriptionScreen extends StatelessWidget {
         final daysLeft = account.daysLeft;
 
         return Scaffold(
-          backgroundColor: AppColors.background,
+          backgroundColor: HomeColors.scaffoldBackground,
           body: SafeArea(
             child: SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
@@ -54,7 +54,7 @@ class SubscriptionScreen extends StatelessWidget {
                     children: [
                       IconButton(
                         onPressed: () => Navigator.of(context).pop(),
-                        icon: const Icon(Icons.chevron_left, color: Colors.white),
+                        icon: Icon(Icons.chevron_left, color: HomeColors.textPrimary),
                         style: IconButton.styleFrom(
                           backgroundColor: HomeColors.cardBackground,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -64,13 +64,13 @@ class SubscriptionScreen extends StatelessWidget {
                         child: Text(
                           isPremium ? 'My Subscription' : 'Upgrade Plan',
                           textAlign: TextAlign.center,
-                          style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700),
+                          style: TextStyle(color: HomeColors.textPrimary, fontSize: 18, fontWeight: FontWeight.w700),
                         ),
                       ),
                       IconButton(
                         tooltip: 'Past Receipts',
                         onPressed: () => PastReceiptsSheet.show(context),
-                        icon: const Icon(Icons.receipt_long_rounded, color: Colors.white, size: 20),
+                        icon: Icon(Icons.receipt_long_rounded, color: HomeColors.textPrimary, size: 20),
                         style: IconButton.styleFrom(
                           backgroundColor: HomeColors.cardBackground,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -188,9 +188,9 @@ class SubscriptionScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 20),
 
-                    const Text(
+                    Text(
                       'Included Features',
-                      style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700),
+                      style: TextStyle(color: HomeColors.textPrimary, fontSize: 15, fontWeight: FontWeight.w700),
                     ),
                     const SizedBox(height: 12),
                     ..._features.map((f) => Padding(
@@ -206,7 +206,7 @@ class SubscriptionScreen extends StatelessWidget {
                                 child: const Icon(Icons.check_rounded, size: 14, color: Color(0xFF4ADE80)),
                               ),
                               const SizedBox(width: 10),
-                              Text(f, style: const TextStyle(color: Colors.white70, fontSize: 13)),
+                              Text(f, style: TextStyle(color: HomeColors.textSecondary, fontSize: 13)),
                             ],
                           ),
                         )),
@@ -229,10 +229,10 @@ class SubscriptionScreen extends StatelessWidget {
                     OutlinedButton.icon(
                       onPressed: () => PastReceiptsSheet.show(context),
                       icon: const Icon(Icons.receipt_long_rounded, size: 18, color: Color(0xFFC084FC)),
-                      label: const Text(
+                      label: Text(
                         'Past Subscription Receipts',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: HomeColors.textPrimary,
                           fontWeight: FontWeight.w700,
                           fontSize: 14,
                         ),
@@ -250,7 +250,7 @@ class SubscriptionScreen extends StatelessWidget {
                       daysLeft > 0
                           ? 'Free Trial: $daysLeft days left'
                           : "You've hit the Free limit",
-                      style: const TextStyle(color: AppColors.label, fontSize: 14),
+                      style: TextStyle(color: HomeColors.textSecondary, fontSize: 14),
                     ),
                     const SizedBox(height: 16),
 
@@ -260,6 +260,7 @@ class SubscriptionScreen extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: HomeColors.cardBackground,
                         borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: HomeColors.cardBorder),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -269,8 +270,8 @@ class SubscriptionScreen extends StatelessWidget {
                             children: [
                               StatusChip(
                                 label: daysLeft > 0 ? 'FREE TRIAL' : 'FREE',
-                                color: AppColors.label,
-                                background: AppColors.fieldBackground,
+                                color: HomeColors.textSecondary,
+                                background: HomeColors.cardElevated,
                               ),
                               StatusChip(
                                 label: '$currentProducts/$productsLimit used',
@@ -372,10 +373,10 @@ class SubscriptionScreen extends StatelessWidget {
                     OutlinedButton.icon(
                       onPressed: () => PastReceiptsSheet.show(context),
                       icon: const Icon(Icons.receipt_long_rounded, size: 18, color: Color(0xFFC084FC)),
-                      label: const Text(
+                      label: Text(
                         'Past Subscription Receipts',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: HomeColors.textPrimary,
                           fontWeight: FontWeight.w700,
                           fontSize: 14,
                         ),

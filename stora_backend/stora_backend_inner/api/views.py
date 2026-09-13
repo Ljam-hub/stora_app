@@ -1279,11 +1279,11 @@ def chat_messages(request):
         if not with_user_id:
             return Response({"error": "Query parameter 'with_user' is required."}, status=status.HTTP_400_BAD_REQUEST)
 
-        from django.db.models import Q
+        from django.db.models import Q, Count
         messages = ChatMessage.objects.filter(
             (Q(sender=user) & Q(recipient_id=with_user_id)) |
             (Q(sender_id=with_user_id) & Q(recipient=user))
-        ).exclude(deleted_by_users=user).order_by("created_at")
+        ).exclude(deleted_by_users=user).select_related("sender", "recipient", "order").order_by("created_at")
 
         # Automatically mark incoming messages as read
         ChatMessage.objects.filter(
@@ -1352,77 +1352,128 @@ def chat_messages(request):
 def list_conversations(request):
     """
     Returns list of active chat conversations for request.user with last message, unread count,
-    and blocked status.
+    and blocked status. Optimized with batch queries to eliminate N+1 latency.
     """
     user = request.user
-    from django.db.models import Q
+    from django.db.models import Q, Count
 
     sent_to = ChatMessage.objects.filter(sender=user).exclude(deleted_by_users=user).values_list("recipient_id", flat=True).distinct()
     received_from = ChatMessage.objects.filter(recipient=user).exclude(deleted_by_users=user).values_list("sender_id", flat=True).distinct()
     partner_ids = set(sent_to) | set(received_from)
 
-    conversations = []
-    for pid in partner_ids:
-        try:
-            partner = User.objects.get(pk=pid)
-        except User.DoesNotExist:
-            continue
+    if not partner_ids:
+        return Response([])
 
-        last_msg = ChatMessage.objects.filter(
-            (Q(sender=user) & Q(recipient=partner)) |
-            (Q(sender=partner) & Q(recipient=user))
-        ).exclude(deleted_by_users=user).order_by("-created_at").first()
+    # Batch 1: Pre-fetch all partner users in a single query
+    partner_users = {u.id: u for u in User.objects.filter(pk__in=partner_ids)}
 
-        if not last_msg:
-            continue
+    # Batch 2: Pre-fetch all latest messages in a single query
+    recent_messages = (
+        ChatMessage.objects.filter(
+            (Q(sender=user) & Q(recipient_id__in=partner_ids)) |
+            (Q(sender_id__in=partner_ids) & Q(recipient=user))
+        )
+        .exclude(deleted_by_users=user)
+        .select_related("sender", "recipient")
+        .order_by("-created_at")
+    )
+    last_msg_map = {}
+    for msg in recent_messages:
+        pid = msg.recipient_id if msg.sender_id == user.id else msg.sender_id
+        if pid not in last_msg_map:
+            last_msg_map[pid] = msg
 
-        unread_count = ChatMessage.objects.filter(
-            sender=partner,
+    # Batch 3: Pre-fetch unread counts grouped by partner in a single query
+    unread_counts_raw = (
+        ChatMessage.objects.filter(
+            sender_id__in=partner_ids,
             recipient=user,
             is_read=False,
             is_unsent=False,
-        ).exclude(deleted_by_users=user).count()
+        )
+        .exclude(deleted_by_users=user)
+        .values("sender_id")
+        .annotate(count=Count("id"))
+    )
+    unread_map = {row["sender_id"]: row["count"] for row in unread_counts_raw}
 
-        is_blocked = False
-        if user.role in (User.ROLE_OWNER, User.ROLE_ADMIN):
-            is_blocked = BlockedCustomer.objects.filter(owner=user, customer=partner).exists()
-        elif partner.role in (User.ROLE_OWNER, User.ROLE_ADMIN):
-            is_blocked = BlockedCustomer.objects.filter(owner=partner, customer=user).exists()
+    # Batch 4: Pre-fetch blocked status in a single query
+    blocked_customers_set = set()
+    blocked_by_owners_set = set()
+    if user.role in (User.ROLE_OWNER, User.ROLE_ADMIN):
+        blocked_customers_set = set(
+            BlockedCustomer.objects.filter(owner=user, customer_id__in=partner_ids).values_list("customer_id", flat=True)
+        )
+    else:
+        blocked_by_owners_set = set(
+            BlockedCustomer.objects.filter(owner_id__in=partner_ids, customer=user).values_list("owner_id", flat=True)
+        )
 
-        last_msg_is_me = (last_msg.sender_id == user.id) if last_msg else False
+    # Batch 5: Pre-fetch customer names from orders if user is owner/admin
+    order_names_map = {}
+    if user.role in (User.ROLE_OWNER, User.ROLE_ADMIN):
+        customer_pids = [pid for pid, p in partner_users.items() if p.role == User.ROLE_CUSTOMER]
+        if customer_pids:
+            orders = (
+                Order.objects.filter(customer_id__in=customer_pids)
+                .exclude(customer_name="")
+                .order_by("-created_at")
+                .values("customer_id", "customer_name")
+            )
+            for ord_row in orders:
+                cid = ord_row["customer_id"]
+                if cid not in order_names_map:
+                    order_names_map[cid] = ord_row["customer_name"]
+
+    conversations = []
+    for pid in partner_ids:
+        partner = partner_users.get(pid)
+        if not partner:
+            continue
+
+        last_msg = last_msg_map.get(pid)
+        if not last_msg:
+            continue
+
+        unread_count = unread_map.get(pid, 0)
+        is_blocked = (pid in blocked_customers_set) if user.role in (User.ROLE_OWNER, User.ROLE_ADMIN) else (pid in blocked_by_owners_set)
+
+        last_msg_is_me = (last_msg.sender_id == user.id)
         last_message_text = ""
-        if last_msg:
-            if getattr(last_msg, "is_unsent", False):
-                last_message_text = "You unsent a message" if last_msg_is_me else "This message was unsent"
-            elif last_msg.image and not last_msg.message:
-                last_message_text = "You sent a photo." if last_msg_is_me else "Sent a photo."
-            elif last_msg.image and last_msg.message:
-                prefix = "You: " if last_msg_is_me else ""
-                last_message_text = f"{prefix}📷 {last_msg.message}"
-            elif last_msg.message:
-                prefix = "You: " if last_msg_is_me else ""
-                last_message_text = f"{prefix}{last_msg.message}"
+        if getattr(last_msg, "is_unsent", False):
+            last_message_text = "You unsent a message" if last_msg_is_me else "This message was unsent"
+        elif last_msg.image and not last_msg.message:
+            last_message_text = "You sent a photo." if last_msg_is_me else "Sent a photo."
+        elif last_msg.image and last_msg.message:
+            prefix = "You: " if last_msg_is_me else ""
+            last_message_text = f"{prefix}📷 {last_msg.message}"
+        elif last_msg.message:
+            prefix = "You: " if last_msg_is_me else ""
+            last_message_text = f"{prefix}{last_msg.message}"
 
         avatar_url = request.build_absolute_uri(partner.avatar.url) if partner.avatar else None
         partner_role = partner.role
         is_support_partner = partner.role == User.ROLE_ADMIN or partner.is_superuser or partner.is_staff
         if is_support_partner:
             partner_name = "STORA Support"
+            if not avatar_url:
+                sup = get_support_user()
+                if sup and sup.avatar:
+                    avatar_url = request.build_absolute_uri(sup.avatar.url)
+            if not avatar_url:
+                admin_with_avatar = User.objects.filter(
+                    Q(role=User.ROLE_ADMIN) | Q(is_superuser=True) | Q(is_staff=True),
+                    is_active=True
+                ).exclude(avatar="").exclude(avatar__isnull=True).first()
+                if admin_with_avatar and admin_with_avatar.avatar:
+                    avatar_url = request.build_absolute_uri(admin_with_avatar.avatar.url)
         elif partner.role == User.ROLE_OWNER:
             partner_name = partner.business_name or f"{partner.first_name} {partner.last_name}".strip() or partner.username
         else:
             partner_name = (
                 f"{partner.first_name} {partner.last_name}".strip()
                 or partner.business_name
-                or (
-                    Order.objects.filter(customer=partner)
-                    .exclude(customer_name="")
-                    .order_by("-created_at")
-                    .values_list("customer_name", flat=True)
-                    .first()
-                    if partner.role == User.ROLE_CUSTOMER
-                    else ""
-                )
+                or order_names_map.get(partner.id, "")
                 or partner.username
             )
 
@@ -1448,8 +1499,25 @@ def list_conversations(request):
 def get_support_user():
     """
     Returns the designated STORA Support User instance (admin/superuser).
+    Prefers active admin/superuser that already has an avatar set, or the first one by ID.
     """
-    support = User.objects.filter(role=User.ROLE_ADMIN, is_active=True).order_by("id").first()
+    support = (
+        User.objects.filter(role=User.ROLE_ADMIN, is_active=True)
+        .exclude(avatar="")
+        .exclude(avatar__isnull=True)
+        .order_by("id")
+        .first()
+    )
+    if not support:
+        support = (
+            User.objects.filter(Q(is_superuser=True) | Q(is_staff=True), is_active=True)
+            .exclude(avatar="")
+            .exclude(avatar__isnull=True)
+            .order_by("id")
+            .first()
+        )
+    if not support:
+        support = User.objects.filter(role=User.ROLE_ADMIN, is_active=True).order_by("id").first()
     if not support:
         support = User.objects.filter(is_superuser=True, is_active=True).order_by("id").first()
     if not support:
@@ -1469,6 +1537,13 @@ def support_contact(request):
         return Response({"error": "Support account not configured."}, status=status.HTTP_404_NOT_FOUND)
 
     avatar_url = request.build_absolute_uri(support.avatar.url) if support.avatar else None
+    if not avatar_url:
+        admin_with_avatar = User.objects.filter(
+            Q(role=User.ROLE_ADMIN) | Q(is_superuser=True) | Q(is_staff=True),
+            is_active=True
+        ).exclude(avatar="").exclude(avatar__isnull=True).first()
+        if admin_with_avatar and admin_with_avatar.avatar:
+            avatar_url = request.build_absolute_uri(admin_with_avatar.avatar.url)
 
     unread_count = ChatMessage.objects.filter(
         sender=support,

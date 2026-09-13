@@ -98,12 +98,12 @@ class _OrderCardState extends State<OrderCard> {
                               children: [
                                 Text(
                                   'Report ${widget.order.storeName}',
-                                  style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold),
+                                  style: TextStyle(color: AppColors.textPrimary, fontSize: 17, fontWeight: FontWeight.bold),
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
                                   'Report order #${widget.order.id} for investigation by Stora administrators.',
-                                  style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+                                  style: TextStyle(color: AppColors.textMuted, fontSize: 12),
                                 ),
                               ],
                             ),
@@ -111,9 +111,9 @@ class _OrderCardState extends State<OrderCard> {
                         ],
                       ),
                       const SizedBox(height: 20),
-                      const Text(
+                      Text(
                         'Violation Reason',
-                        style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
+                        style: TextStyle(color: AppColors.textPrimary, fontSize: 13, fontWeight: FontWeight.w600),
                       ),
                       const SizedBox(height: 8),
                       Container(
@@ -128,8 +128,8 @@ class _OrderCardState extends State<OrderCard> {
                             value: selectedReason,
                             dropdownColor: AppColors.cardElevated,
                             isExpanded: true,
-                            style: const TextStyle(color: Colors.white, fontSize: 14),
-                            icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.textMuted),
+                            style: TextStyle(color: AppColors.textPrimary, fontSize: 14),
+                            icon: Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.textMuted),
                             items: reasons.map((r) {
                               return DropdownMenuItem<String>(
                                 value: r['value'],
@@ -147,29 +147,29 @@ class _OrderCardState extends State<OrderCard> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      const Text(
+                      Text(
                         'Explanation / Details (Optional)',
-                        style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
+                        style: TextStyle(color: AppColors.textPrimary, fontSize: 13, fontWeight: FontWeight.w600),
                       ),
                       const SizedBox(height: 8),
                       TextField(
                         controller: descriptionController,
                         maxLines: 3,
                         enabled: !isSubmitting,
-                        style: const TextStyle(color: Colors.white, fontSize: 14),
+                        style: TextStyle(color: AppColors.textPrimary, fontSize: 14),
                         decoration: InputDecoration(
                           hintText: 'Please describe the incident in detail for administrators...',
-                          hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+                          hintStyle: TextStyle(color: AppColors.textMuted, fontSize: 13),
                           filled: true,
                           fillColor: AppColors.cardElevated,
                           contentPadding: const EdgeInsets.all(12),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: AppColors.cardBorder),
+                            borderSide: BorderSide(color: AppColors.cardBorder),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: AppColors.cardBorder),
+                            borderSide: BorderSide(color: AppColors.cardBorder),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -184,11 +184,11 @@ class _OrderCardState extends State<OrderCard> {
                             child: OutlinedButton(
                               onPressed: isSubmitting ? null : () => Navigator.of(ctx).pop(),
                               style: OutlinedButton.styleFrom(
-                                side: const BorderSide(color: AppColors.cardBorder),
+                                side: BorderSide(color: AppColors.cardBorder),
                                 padding: const EdgeInsets.symmetric(vertical: 13),
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                               ),
-                              child: const Text('Cancel', style: TextStyle(color: AppColors.textMuted)),
+                              child: Text('Cancel', style: TextStyle(color: AppColors.textMuted)),
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -269,7 +269,7 @@ class _OrderCardState extends State<OrderCard> {
               ? AppColors.primary
               : (order.status == 'accepted'
                   ? AppColors.success.withValues(alpha: 0.5)
-                  : Colors.white.withValues(alpha: 0.08)),
+                  : AppColors.cardBorder),
           width: order.status == 'counter_offer' ? 1.5 : 1,
         ),
         boxShadow: order.status == 'counter_offer'
@@ -290,7 +290,7 @@ class _OrderCardState extends State<OrderCard> {
                   children: [
                     Text(
                       'Order #${order.id}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: AppColors.textPrimary,
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -301,7 +301,7 @@ class _OrderCardState extends State<OrderCard> {
                         padding: const EdgeInsets.only(top: 2),
                         child: Text(
                           order.formattedDate,
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: AppColors.textMuted,
                             fontSize: 12,
                           ),
@@ -336,7 +336,7 @@ class _OrderCardState extends State<OrderCard> {
             ),
           ),
 
-          const Divider(height: 1, color: AppColors.cardBorder),
+          Divider(height: 1, color: AppColors.cardBorder),
 
           // Order Progress Stepper
           Padding(
@@ -375,7 +375,7 @@ class _OrderCardState extends State<OrderCard> {
                     const SizedBox(height: 6),
                     Row(
                       children: [
-                        const Text(
+                        Text(
                           'Proposed Price: ',
                           style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
                         ),
@@ -394,7 +394,7 @@ class _OrderCardState extends State<OrderCard> {
                     const SizedBox(height: 4),
                     Text(
                       'Store Note: "${order.counterNotes}"',
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: AppColors.textPrimary,
                         fontSize: 13,
                         fontStyle: FontStyle.italic,
@@ -444,12 +444,12 @@ class _OrderCardState extends State<OrderCard> {
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.location_on_outlined, size: 16, color: AppColors.textMuted),
+                      Icon(Icons.location_on_outlined, size: 16, color: AppColors.textMuted),
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
                           order.customerAddress,
-                          style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                          style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
                         ),
                       ),
                     ],
@@ -459,11 +459,11 @@ class _OrderCardState extends State<OrderCard> {
                     padding: const EdgeInsets.only(top: 4),
                     child: Row(
                       children: [
-                        const Icon(Icons.phone_outlined, size: 16, color: AppColors.textMuted),
+                        Icon(Icons.phone_outlined, size: 16, color: AppColors.textMuted),
                         const SizedBox(width: 6),
                         Text(
                           order.customerPhone,
-                          style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                          style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
                         ),
                       ],
                     ),
@@ -474,12 +474,12 @@ class _OrderCardState extends State<OrderCard> {
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(Icons.note_alt_outlined, size: 16, color: AppColors.textMuted),
+                        Icon(Icons.note_alt_outlined, size: 16, color: AppColors.textMuted),
                         const SizedBox(width: 6),
                         Expanded(
                           child: Text(
                             'Note: ${order.notes}',
-                            style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                            style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
                           ),
                         ),
                       ],
@@ -509,7 +509,7 @@ class _OrderCardState extends State<OrderCard> {
                     children: [
                       Text(
                         _expanded ? 'Hide Items' : 'View Items',
-                        style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+                        style: TextStyle(color: AppColors.textMuted, fontSize: 12),
                       ),
                       Icon(
                         _expanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
@@ -538,7 +538,7 @@ class _OrderCardState extends State<OrderCard> {
                         Expanded(
                           child: Text(
                             '${item.quantity}x  ${item.productName}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: AppColors.textPrimary,
                               fontSize: 13,
                             ),
@@ -546,7 +546,7 @@ class _OrderCardState extends State<OrderCard> {
                         ),
                         Text(
                           item.formattedSubtotal,
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: AppColors.textSecondary,
                             fontSize: 13,
                             fontWeight: FontWeight.w500,
@@ -560,7 +560,7 @@ class _OrderCardState extends State<OrderCard> {
             ),
           ],
 
-          const Divider(height: 1, color: AppColors.cardBorder),
+          Divider(height: 1, color: AppColors.cardBorder),
 
           // Footer: Total Amount
           Padding(
@@ -568,7 +568,7 @@ class _OrderCardState extends State<OrderCard> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   'Total Amount',
                   style: TextStyle(
                     color: AppColors.textSecondary,
@@ -580,8 +580,8 @@ class _OrderCardState extends State<OrderCard> {
                   order.counterPrice != null && order.counterPrice! > 0
                       ? order.formattedCounterPrice
                       : order.formattedTotal,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: AppColors.textPrimary,
                     fontSize: 17,
                     fontWeight: FontWeight.bold,
                   ),

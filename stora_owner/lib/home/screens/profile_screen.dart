@@ -46,16 +46,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
           children: [
             ListTile(
               leading: const Icon(Icons.photo_camera_rounded, color: AppColors.primary),
-              title: const Text('Take a photo', style: TextStyle(color: Colors.white)),
+              title: Text('Take a photo', style: TextStyle(color: HomeColors.textPrimary)),
               onTap: () => Navigator.pop(ctx, 'camera'),
             ),
             ListTile(
               leading: const Icon(Icons.photo_library_rounded, color: AppColors.primary),
-              title: const Text('Choose from gallery', style: TextStyle(color: Colors.white)),
+              title: Text('Choose from gallery', style: TextStyle(color: HomeColors.textPrimary)),
               onTap: () => Navigator.pop(ctx, 'gallery'),
             ),
             if (hasAvatar) ...[
-              const Divider(color: HomeColors.cardBorder, height: 1),
+              Divider(color: HomeColors.cardBorder, height: 1),
               ListTile(
                 leading: const Icon(Icons.delete_outline_rounded, color: AppColors.error),
                 title: const Text('Remove profile photo', style: TextStyle(color: AppColors.error, fontWeight: FontWeight.w600)),
@@ -76,9 +76,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           backgroundColor: HomeColors.cardBackground,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
-            side: const BorderSide(color: HomeColors.cardBorder),
+            side: BorderSide(color: HomeColors.cardBorder),
           ),
-          title: const Text('Remove Profile Photo', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
+          title: Text('Remove Profile Photo', style: TextStyle(color: HomeColors.textPrimary, fontSize: 17, fontWeight: FontWeight.bold)),
           content: const Text(
             'Are you sure you want to remove your profile photo and restore the default avatar?',
             style: TextStyle(color: AppColors.label, fontSize: 14, height: 1.45),
@@ -151,33 +151,38 @@ class _ProfileScreenState extends State<ProfileScreen> {
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           backgroundColor: HomeColors.cardBackground,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Text('Edit Profile', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: HomeColors.cardBorder),
+          ),
+          title: Text('Edit Profile', style: TextStyle(color: HomeColors.textPrimary, fontSize: 18, fontWeight: FontWeight.w700)),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
                 controller: businessController,
-                style: const TextStyle(color: Colors.white),
+                style: TextStyle(color: HomeColors.textPrimary),
                 decoration: InputDecoration(
                   labelText: 'Store / Business Name',
-                  labelStyle: const TextStyle(color: AppColors.label),
+                  labelStyle: TextStyle(color: HomeColors.textSecondary),
                   filled: true,
-                  fillColor: AppColors.fieldBackground,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                  fillColor: HomeColors.cardElevated,
+                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: HomeColors.cardBorder)),
+                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary, width: 1.5)),
                 ),
               ),
               const SizedBox(height: 14),
               TextField(
                 controller: emailController,
                 keyboardType: TextInputType.emailAddress,
-                style: const TextStyle(color: Colors.white),
+                style: TextStyle(color: HomeColors.textPrimary),
                 decoration: InputDecoration(
                   labelText: 'Email Address',
-                  labelStyle: const TextStyle(color: AppColors.label),
+                  labelStyle: TextStyle(color: HomeColors.textSecondary),
                   filled: true,
-                  fillColor: AppColors.fieldBackground,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                  fillColor: HomeColors.cardElevated,
+                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: HomeColors.cardBorder)),
+                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary, width: 1.5)),
                 ),
               ),
             ],
@@ -185,12 +190,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
           actions: [
             TextButton(
               onPressed: isSaving ? null : () => Navigator.of(ctx).pop(),
-              child: const Text('Cancel', style: TextStyle(color: AppColors.label)),
+              child: Text('Cancel', style: TextStyle(color: HomeColors.textSecondary)),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.purple,
-                foregroundColor: Colors.black,
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               ),
               onPressed: isSaving
@@ -248,8 +253,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           backgroundColor: HomeColors.cardBackground,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Text('Change Password', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: HomeColors.cardBorder),
+          ),
+          title: Text('Change Password', style: TextStyle(color: HomeColors.textPrimary, fontSize: 18, fontWeight: FontWeight.w700)),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -257,13 +265,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 TextField(
                   controller: oldPasswordController,
                   obscureText: obscureOld,
-                  style: const TextStyle(color: Colors.white),
+                  style: TextStyle(color: HomeColors.textPrimary),
                   decoration: InputDecoration(
                     labelText: 'Current Password',
-                    labelStyle: const TextStyle(color: AppColors.label),
+                    labelStyle: TextStyle(color: HomeColors.textSecondary),
                     filled: true,
-                    fillColor: AppColors.fieldBackground,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                    fillColor: HomeColors.cardElevated,
+                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: HomeColors.cardBorder)),
+                    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary, width: 1.5)),
                     suffixIcon: ValueListenableBuilder<TextEditingValue>(
                       valueListenable: oldPasswordController,
                       builder: (context, value, _) {
@@ -279,7 +288,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   padding: EdgeInsets.zero,
                                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                                 ),
-                                icon: const Icon(Icons.close_rounded, color: AppColors.label, size: 18),
+                                icon: Icon(Icons.close_rounded, color: HomeColors.textSecondary, size: 18),
                                 tooltip: 'Clear password',
                                 onPressed: () => oldPasswordController.clear(),
                               ),
@@ -295,7 +304,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ),
                               icon: Icon(
                                 obscureOld ? Icons.visibility_rounded : Icons.visibility_off_rounded,
-                                color: AppColors.label,
+                                color: HomeColors.textSecondary,
                                 size: 20,
                               ),
                               tooltip: obscureOld ? 'Show password' : 'Hide password',
@@ -312,13 +321,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 TextField(
                   controller: newPasswordController,
                   obscureText: obscureNew,
-                  style: const TextStyle(color: Colors.white),
+                  style: TextStyle(color: HomeColors.textPrimary),
                   decoration: InputDecoration(
                     labelText: 'New Password',
-                    labelStyle: const TextStyle(color: AppColors.label),
+                    labelStyle: TextStyle(color: HomeColors.textSecondary),
                     filled: true,
-                    fillColor: AppColors.fieldBackground,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                    fillColor: HomeColors.cardElevated,
+                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: HomeColors.cardBorder)),
+                    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary, width: 1.5)),
                     suffixIcon: ValueListenableBuilder<TextEditingValue>(
                       valueListenable: newPasswordController,
                       builder: (context, value, _) {
@@ -334,7 +344,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   padding: EdgeInsets.zero,
                                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                                 ),
-                                icon: const Icon(Icons.close_rounded, color: AppColors.label, size: 18),
+                                icon: Icon(Icons.close_rounded, color: HomeColors.textSecondary, size: 18),
                                 tooltip: 'Clear password',
                                 onPressed: () => newPasswordController.clear(),
                               ),
@@ -350,7 +360,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ),
                               icon: Icon(
                                 obscureNew ? Icons.visibility_rounded : Icons.visibility_off_rounded,
-                                color: AppColors.label,
+                                color: HomeColors.textSecondary,
                                 size: 20,
                               ),
                               tooltip: obscureNew ? 'Show password' : 'Hide password',
@@ -367,13 +377,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 TextField(
                   controller: confirmPasswordController,
                   obscureText: obscureConfirm,
-                  style: const TextStyle(color: Colors.white),
+                  style: TextStyle(color: HomeColors.textPrimary),
                   decoration: InputDecoration(
                     labelText: 'Confirm New Password',
-                    labelStyle: const TextStyle(color: AppColors.label),
+                    labelStyle: TextStyle(color: HomeColors.textSecondary),
                     filled: true,
-                    fillColor: AppColors.fieldBackground,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                    fillColor: HomeColors.cardElevated,
+                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: HomeColors.cardBorder)),
+                    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary, width: 1.5)),
                     suffixIcon: ValueListenableBuilder<TextEditingValue>(
                       valueListenable: confirmPasswordController,
                       builder: (context, value, _) {
@@ -389,7 +400,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   padding: EdgeInsets.zero,
                                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                                 ),
-                                icon: const Icon(Icons.close_rounded, color: AppColors.label, size: 18),
+                                icon: Icon(Icons.close_rounded, color: HomeColors.textSecondary, size: 18),
                                 tooltip: 'Clear password',
                                 onPressed: () => confirmPasswordController.clear(),
                               ),
@@ -405,7 +416,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ),
                               icon: Icon(
                                 obscureConfirm ? Icons.visibility_rounded : Icons.visibility_off_rounded,
-                                color: AppColors.label,
+                                color: HomeColors.textSecondary,
                                 size: 20,
                               ),
                               tooltip: obscureConfirm ? 'Show password' : 'Hide password',
@@ -424,12 +435,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
           actions: [
             TextButton(
               onPressed: isSaving ? null : () => Navigator.of(ctx).pop(),
-              child: const Text('Cancel', style: TextStyle(color: AppColors.label)),
+              child: Text('Cancel', style: TextStyle(color: HomeColors.textSecondary)),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.purple,
-                foregroundColor: Colors.black,
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               ),
               onPressed: isSaving
@@ -517,7 +528,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: Listenable.merge([AuthStore.instance, AccountStatusStore.instance]),
+      animation: Listenable.merge([AuthStore.instance, AccountStatusStore.instance, ThemeModeController.instance]),
       builder: (context, _) {
         final auth = AuthStore.instance;
         final account = AccountStatusStore.instance.status;
@@ -543,10 +554,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ? HomeColors.successBg
             : isRejected
                 ? HomeColors.dangerBg
-                : AppColors.fieldBackground;
+                : isPending
+                    ? HomeColors.warningBg
+                    : HomeColors.surfaceHover;
 
         return Scaffold(
-          backgroundColor: AppColors.background,
+          backgroundColor: HomeColors.background,
           body: SafeArea(
             child: SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
@@ -557,16 +570,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     children: [
                       IconButton(
                         onPressed: () => Navigator.of(context).pop(),
-                        icon: const Icon(Icons.chevron_left, color: Colors.white),
+                        icon: Icon(Icons.chevron_left, color: HomeColors.textPrimary),
                         style: IconButton.styleFrom(
                           backgroundColor: HomeColors.cardBackground,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         ),
                       ),
-                      const Expanded(
+                      Expanded(
                         child: Text('Profile',
                             textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700)),
+                            style: TextStyle(color: HomeColors.textPrimary, fontSize: 18, fontWeight: FontWeight.w700)),
                       ),
                       const SizedBox(width: 40),
                     ],
@@ -630,9 +643,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                           const SizedBox(height: 14),
                           Text(storeName,
-                              style: const TextStyle(color: Colors.white, fontSize: 19, fontWeight: FontWeight.w800)),
+                              style: TextStyle(color: HomeColors.textPrimary, fontSize: 19, fontWeight: FontWeight.w800)),
                           const SizedBox(height: 4),
-                          Text(ownerEmail, style: const TextStyle(color: AppColors.label, fontSize: 13)),
+                          Text(ownerEmail, style: TextStyle(color: HomeColors.textSecondary, fontSize: 13)),
                           const SizedBox(height: 8),
                           if (AuthStore.instance.isEmailVerified)
                             Row(
@@ -723,7 +736,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     Flexible(
                                       child: Text(
                                         'Payment proof rejected. Tap to resubmit.',
-                                        style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
+                                        style: TextStyle(color: AppColors.error, fontSize: 12, fontWeight: FontWeight.w600),
                                       ),
                                     ),
                                   ],
@@ -826,11 +839,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   children: [
                                     Text(
                                       isDark ? 'Dark Mode' : 'Light Mode',
-                                      style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700),
+                                      style: TextStyle(color: HomeColors.textPrimary, fontSize: 14, fontWeight: FontWeight.w700),
                                     ),
                                     Text(
                                       isDark ? 'Comfortable dark theme' : 'Crisp light retail theme',
-                                      style: const TextStyle(color: AppColors.label, fontSize: 11),
+                                      style: TextStyle(color: HomeColors.textSecondary, fontSize: 11),
                                     ),
                                   ],
                                 ),
@@ -877,17 +890,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
         backgroundColor: HomeColors.cardBackground,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: HomeColors.cardBorder),
+          side: BorderSide(color: HomeColors.cardBorder),
         ),
-        title: const Text('Log Out', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
-        content: const Text(
+        title: Text('Log Out', style: TextStyle(color: HomeColors.textPrimary, fontSize: 17, fontWeight: FontWeight.bold)),
+        content: Text(
           'Are you sure you want to log out?',
-          style: TextStyle(color: AppColors.label, fontSize: 14, height: 1.45),
+          style: TextStyle(color: HomeColors.textSecondary, fontSize: 14, height: 1.45),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel', style: TextStyle(color: AppColors.label, fontSize: 14)),
+            child: Text('Cancel', style: TextStyle(color: HomeColors.textSecondary, fontSize: 14)),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -922,23 +935,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
           backgroundColor: HomeColors.cardBackground,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
-            side: const BorderSide(color: HomeColors.cardBorder),
+            side: BorderSide(color: HomeColors.cardBorder),
           ),
-          title: const Row(
+          title: Row(
             children: [
-              Icon(Icons.warning_amber_rounded, color: AppColors.error, size: 22),
-              SizedBox(width: 8),
-              Text('Delete Account', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
+              const Icon(Icons.warning_amber_rounded, color: AppColors.error, size: 22),
+              const SizedBox(width: 8),
+              Text('Delete Account', style: TextStyle(color: HomeColors.textPrimary, fontSize: 17, fontWeight: FontWeight.bold)),
             ],
           ),
-          content: const Text(
+          content: Text(
             'Are you sure you want to delete your account? This action is permanent and cannot be undone. All your orders, messages, and profile data will be permanently deleted.',
-            style: TextStyle(color: AppColors.label, fontSize: 14, height: 1.45),
+            style: TextStyle(color: HomeColors.textSecondary, fontSize: 14, height: 1.45),
           ),
           actions: [
             TextButton(
               onPressed: isDeleting ? null : () => Navigator.of(ctx).pop(),
-              child: const Text('Cancel', style: TextStyle(color: AppColors.label, fontSize: 14)),
+              child: Text('Cancel', style: TextStyle(color: HomeColors.textSecondary, fontSize: 14)),
             ),
             ElevatedButton(
               onPressed: isDeleting
@@ -994,7 +1007,7 @@ class _MenuTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = destructive ? AppColors.error : Colors.white;
+    final color = destructive ? AppColors.error : HomeColors.textPrimary;
     final iconBg = destructive ? HomeColors.dangerBg : AppColors.purple.withValues(alpha: 0.12);
     final iconColor = destructive ? AppColors.error : AppColors.purpleLight;
 
@@ -1025,7 +1038,7 @@ class _MenuTile extends StatelessWidget {
               Expanded(
                 child: Text(label, style: TextStyle(color: color, fontSize: 14, fontWeight: FontWeight.w700)),
               ),
-              if (!destructive) const Icon(Icons.chevron_right_rounded, size: 18, color: AppColors.label),
+              if (!destructive) Icon(Icons.chevron_right_rounded, size: 18, color: HomeColors.textSecondary),
             ],
           ),
         ),

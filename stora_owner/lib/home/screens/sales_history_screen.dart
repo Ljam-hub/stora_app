@@ -16,14 +16,14 @@ void confirmClearAllSales(BuildContext context) {
     context: context,
     builder: (ctx) => AlertDialog(
       backgroundColor: HomeColors.cardBackground,
-      title: const Text('Delete all sales?', style: TextStyle(color: Colors.white)),
-      content: const Text(
+      title: Text('Delete all sales?', style: TextStyle(color: HomeColors.textPrimary)),
+      content: Text(
           'This permanently removes your entire sales history. This can\'t be undone.',
-          style: TextStyle(color: AppColors.label)),
+          style: TextStyle(color: HomeColors.textSecondary)),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(ctx).pop(),
-          child: const Text('Cancel', style: TextStyle(color: AppColors.label)),
+          child: Text('Cancel', style: TextStyle(color: HomeColors.textSecondary)),
         ),
         TextButton(
           onPressed: () {
@@ -47,7 +47,7 @@ class SalesHistoryScreen extends StatelessWidget {
       builder: (context, _) {
         final sales = SalesStore.instance.sales; // newest first
         return Scaffold(
-          backgroundColor: AppColors.background,
+          backgroundColor: HomeColors.scaffoldBackground,
           body: SafeArea(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -58,16 +58,17 @@ class SalesHistoryScreen extends StatelessWidget {
                     children: [
                       IconButton(
                         onPressed: () => Navigator.of(context).pop(),
-                        icon: const Icon(Icons.chevron_left, color: Colors.white),
+                        icon: Icon(Icons.chevron_left, color: HomeColors.textPrimary),
                         style: IconButton.styleFrom(
                           backgroundColor: HomeColors.cardBackground,
+                          side: BorderSide(color: HomeColors.cardBorder),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         ),
                       ),
-                      const Expanded(
+                      Expanded(
                         child: Text('Sales History',
                             textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700)),
+                            style: TextStyle(color: HomeColors.textPrimary, fontSize: 18, fontWeight: FontWeight.w700)),
                       ),
                       if (sales.isNotEmpty)
                         IconButton(
@@ -75,6 +76,7 @@ class SalesHistoryScreen extends StatelessWidget {
                           icon: const Icon(Icons.delete_sweep_outlined, color: AppColors.error),
                           style: IconButton.styleFrom(
                             backgroundColor: HomeColors.cardBackground,
+                            side: BorderSide(color: HomeColors.cardBorder),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
                         )
@@ -112,11 +114,11 @@ class SalesHistoryScreen extends StatelessWidget {
                                         child: const Icon(Icons.receipt_long_outlined, size: 48, color: AppColors.purpleLight),
                                       ),
                                       const SizedBox(height: 16),
-                                      const Text('No sales recorded yet',
-                                          style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700)),
+                                      Text('No sales recorded yet',
+                                          style: TextStyle(color: HomeColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w700)),
                                       const SizedBox(height: 6),
-                                      const Text('Complete a sale from POS to see it here.',
-                                          style: TextStyle(color: AppColors.label, fontSize: 13)),
+                                      Text('Complete a sale from POS to see it here.',
+                                          style: TextStyle(color: HomeColors.textSecondary, fontSize: 13)),
                                     ],
                                   ),
                                 ),
@@ -162,16 +164,16 @@ class _HistorySummaryCard extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Row(
+              Row(
                 children: [
-                  Icon(Icons.account_balance_wallet_outlined, size: 14, color: AppColors.label),
-                  SizedBox(width: 5),
-                  Text('All-time revenue', style: TextStyle(color: AppColors.label, fontSize: 12, fontWeight: FontWeight.w600)),
+                  Icon(Icons.account_balance_wallet_outlined, size: 14, color: HomeColors.textSecondary),
+                  const SizedBox(width: 5),
+                  Text('All-time revenue', style: TextStyle(color: HomeColors.textSecondary, fontSize: 12, fontWeight: FontWeight.w600)),
                 ],
               ),
               const SizedBox(height: 6),
               Text('₱${total.toStringAsFixed(2)}',
-                  style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w900)),
+                  style: TextStyle(color: HomeColors.textPrimary, fontSize: 22, fontWeight: FontWeight.w900)),
             ],
           ),
           Container(
@@ -182,11 +184,11 @@ class _HistorySummaryCard extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              const Row(
+              Row(
                 children: [
-                  Icon(Icons.receipt_rounded, size: 14, color: AppColors.purpleLight),
-                  SizedBox(width: 5),
-                  Text('Total sales', style: TextStyle(color: AppColors.label, fontSize: 12, fontWeight: FontWeight.w600)),
+                  const Icon(Icons.receipt_rounded, size: 14, color: AppColors.purpleLight),
+                  const SizedBox(width: 5),
+                  Text('Total sales', style: TextStyle(color: HomeColors.textSecondary, fontSize: 12, fontWeight: FontWeight.w600)),
                 ],
               ),
               const SizedBox(height: 6),
@@ -209,14 +211,14 @@ class _SaleCard extends StatelessWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: HomeColors.cardBackground,
-        title: const Text('Delete sale?', style: TextStyle(color: Colors.white)),
-        content: const Text(
+        title: Text('Delete sale?', style: TextStyle(color: HomeColors.textPrimary)),
+        content: Text(
             'This removes the sale from your history. It will not add the items back to stock.',
-            style: TextStyle(color: AppColors.label)),
+            style: TextStyle(color: HomeColors.textSecondary)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel', style: TextStyle(color: AppColors.label)),
+            child: Text('Cancel', style: TextStyle(color: HomeColors.textSecondary)),
           ),
           TextButton(
             onPressed: () {
@@ -249,12 +251,12 @@ class _SaleCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: AppColors.fieldBackground,
+                  color: HomeColors.cardElevated,
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: HomeColors.cardBorder),
                 ),
                 child: Text(formatDateTime(sale.date),
-                    style: const TextStyle(color: AppColors.label, fontSize: 11, fontWeight: FontWeight.w600)),
+                    style: TextStyle(color: HomeColors.textSecondary, fontSize: 11, fontWeight: FontWeight.w600)),
               ),
               Row(
                 children: [
@@ -291,7 +293,7 @@ class _SaleCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          const Divider(color: HomeColors.cardBorder, height: 1),
+          Divider(color: HomeColors.cardBorder, height: 1),
           const SizedBox(height: 10),
           ...sale.items.map((item) => Padding(
                 padding: const EdgeInsets.only(bottom: 6),
@@ -304,7 +306,7 @@ class _SaleCard extends StatelessWidget {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                             decoration: BoxDecoration(
-                              color: AppColors.fieldBackground,
+                              color: HomeColors.cardElevated,
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text('x${item.quantity}',
@@ -315,13 +317,13 @@ class _SaleCard extends StatelessWidget {
                             child: Text(item.product.name,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
+                                style: TextStyle(color: HomeColors.textPrimary, fontSize: 13, fontWeight: FontWeight.w600)),
                           ),
                         ],
                       ),
                     ),
                     Text('₱${item.subtotal.toStringAsFixed(2)}',
-                        style: const TextStyle(color: AppColors.label, fontSize: 12, fontWeight: FontWeight.w600)),
+                        style: TextStyle(color: HomeColors.textSecondary, fontSize: 12, fontWeight: FontWeight.w600)),
                   ],
                 ),
               )),

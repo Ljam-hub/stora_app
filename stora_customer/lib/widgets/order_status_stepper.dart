@@ -37,7 +37,7 @@ class OrderStatusStepper extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.cardElevated.withValues(alpha: 0.7),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+        border: Border.all(color: AppColors.cardBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -45,9 +45,9 @@ class OrderStatusStepper extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'Live Order Status',
-                style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w800, letterSpacing: -0.2),
+                style: TextStyle(color: AppColors.textPrimary, fontSize: 13, fontWeight: FontWeight.w800, letterSpacing: -0.2),
               ),
               if (order.expiresAt != null && status == 'pending')
                 Container(
@@ -146,13 +146,13 @@ class OrderStatusStepper extends StatelessWidget {
                 border: Border.all(color: const Color(0xFF00E676).withValues(alpha: 0.4)),
               ),
               child: Row(
-                children: const [
-                  Icon(Icons.check_circle_rounded, color: Color(0xFF00E676), size: 20),
-                  SizedBox(width: 10),
+                children: [
+                  const Icon(Icons.check_circle_rounded, color: Color(0xFF00E676), size: 20),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: Text(
                       'Your order is prepared and ready for pickup at the store! 🎉',
-                      style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700),
+                      style: TextStyle(color: AppColors.textPrimary, fontSize: 12, fontWeight: FontWeight.w700),
                     ),
                   ),
                 ],
@@ -168,13 +168,13 @@ class OrderStatusStepper extends StatelessWidget {
                 border: Border.all(color: AppColors.primary.withValues(alpha: 0.35)),
               ),
               child: Row(
-                children: const [
-                  Icon(Icons.shopping_bag_outlined, color: AppColors.primaryLight, size: 18),
-                  SizedBox(width: 10),
+                children: [
+                  const Icon(Icons.shopping_bag_outlined, color: AppColors.primaryLight, size: 18),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: Text(
                       'Order accepted! The store is currently preparing and packing your items.',
-                      style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w500),
+                      style: TextStyle(color: AppColors.textSecondary, fontSize: 12, fontWeight: FontWeight.w500),
                     ),
                   ),
                 ],
@@ -198,7 +198,7 @@ class OrderStatusStepper extends StatelessWidget {
                       order.declineReason != null && order.declineReason!.isNotEmpty
                           ? 'Reason: ${order.declineReason}'
                           : 'Store was unable to fulfill this order.',
-                      style: const TextStyle(color: Colors.white, fontSize: 11),
+                      style: TextStyle(color: AppColors.textPrimary, fontSize: 11),
                     ),
                   ),
                 ],
@@ -228,7 +228,7 @@ class OrderStatusStepper extends StatelessWidget {
                       if (order.counterPrice != null)
                         Text(
                           'New: ₱${order.counterPrice!.toStringAsFixed(2)}',
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 13),
+                          style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w900, fontSize: 13),
                         ),
                     ],
                   ),
@@ -237,7 +237,7 @@ class OrderStatusStepper extends StatelessWidget {
                       padding: const EdgeInsets.only(top: 4),
                       child: Text(
                         'Note: ${order.counterNotes}',
-                        style: const TextStyle(color: Colors.white70, fontSize: 11),
+                        style: TextStyle(color: AppColors.textSecondary, fontSize: 11),
                       ),
                     ),
                 ],
@@ -301,7 +301,7 @@ class _StepNode extends StatelessWidget {
         Text(
           title,
           style: TextStyle(
-            color: isActive ? Colors.white : AppColors.textMuted,
+            color: isActive ? AppColors.textPrimary : AppColors.textMuted,
             fontSize: 10,
             fontWeight: isActive ? FontWeight.w800 : FontWeight.w500,
             letterSpacing: -0.1,

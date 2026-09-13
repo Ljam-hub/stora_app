@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:sqflite/sqflite.dart';
 import '../storage/session_manager.dart';
 
@@ -8,7 +8,16 @@ class CustomerThemeController extends ChangeNotifier {
 
   ThemeMode _themeMode = ThemeMode.dark;
   ThemeMode get themeMode => _themeMode;
-  bool get isDarkMode => _themeMode == ThemeMode.dark;
+  bool get isDarkMode {
+    if (_themeMode == ThemeMode.system) {
+      try {
+        return WidgetsBinding.instance.platformDispatcher.platformBrightness == Brightness.dark;
+      } catch (_) {
+        return true;
+      }
+    }
+    return _themeMode == ThemeMode.dark;
+  }
 
   Future<void> init() async {
     try {

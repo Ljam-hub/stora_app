@@ -26,7 +26,7 @@ class _SalesAnalyticsScreenState extends State<SalesAnalyticsScreen> {
         final isPremium = AccountStatusStore.instance.isPremium;
         if (!isPremium) {
           return Scaffold(
-            backgroundColor: AppColors.background,
+            backgroundColor: HomeColors.scaffoldBackground,
             body: SafeArea(
               child: Column(
                 children: [
@@ -36,17 +36,17 @@ class _SalesAnalyticsScreenState extends State<SalesAnalyticsScreen> {
                       children: [
                         IconButton(
                           onPressed: () => Navigator.of(context).pop(),
-                          icon: const Icon(Icons.chevron_left, color: Colors.white),
+                          icon: Icon(Icons.chevron_left, color: HomeColors.textPrimary),
                           style: IconButton.styleFrom(
                             backgroundColor: HomeColors.cardBackground,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
                         ),
-                        const Expanded(
+                        Expanded(
                           child: Text(
                             'Sales Analytics',
                             textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700),
+                            style: TextStyle(color: HomeColors.textPrimary, fontSize: 18, fontWeight: FontWeight.w700),
                           ),
                         ),
                         const SizedBox(width: 40),
@@ -70,15 +70,15 @@ class _SalesAnalyticsScreenState extends State<SalesAnalyticsScreen> {
                               child: const Icon(Icons.insights_rounded, color: Colors.amber, size: 54),
                             ),
                             const SizedBox(height: 24),
-                            const Text(
+                            Text(
                               'Premium Feature',
-                              style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800),
+                              style: TextStyle(color: HomeColors.textPrimary, fontSize: 22, fontWeight: FontWeight.w800),
                             ),
                             const SizedBox(height: 10),
-                            const Text(
+                            Text(
                               'Sales Analytics & Reports provide in-depth charts for 7-day and 30-day revenue trends, best-selling product breakdowns, and order volume insights.\n\nUpgrade to Premium to unlock full analytics.',
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: AppColors.label, fontSize: 14, height: 1.5),
+                              style: TextStyle(color: HomeColors.textSecondary, fontSize: 14, height: 1.5),
                             ),
                             const SizedBox(height: 28),
                             ElevatedButton.icon(
@@ -153,7 +153,7 @@ class _SalesAnalyticsScreenState extends State<SalesAnalyticsScreen> {
           ..sort((a, b) => b.value.compareTo(a.value));
 
         return Scaffold(
-          backgroundColor: AppColors.background,
+          backgroundColor: HomeColors.scaffoldBackground,
           body: SafeArea(
             child: SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 30),
@@ -165,17 +165,17 @@ class _SalesAnalyticsScreenState extends State<SalesAnalyticsScreen> {
                     children: [
                       IconButton(
                         onPressed: () => Navigator.of(context).pop(),
-                        icon: const Icon(Icons.chevron_left, color: Colors.white),
+                        icon: Icon(Icons.chevron_left, color: HomeColors.textPrimary),
                         style: IconButton.styleFrom(
                           backgroundColor: HomeColors.cardBackground,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         ),
                       ),
-                      const Expanded(
+                      Expanded(
                         child: Text(
                           'Sales Analytics',
                           textAlign: TextAlign.center,
-                          style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700),
+                          style: TextStyle(color: HomeColors.textPrimary, fontSize: 18, fontWeight: FontWeight.w700),
                         ),
                       ),
                       const SizedBox(width: 40),
@@ -252,9 +252,9 @@ class _SalesAnalyticsScreenState extends State<SalesAnalyticsScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text(
+                            Text(
                               'Revenue (Past 7 Days)',
-                              style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                              style: TextStyle(color: HomeColors.textPrimary, fontSize: 14, fontWeight: FontWeight.bold),
                             ),
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -288,7 +288,7 @@ class _SalesAnalyticsScreenState extends State<SalesAnalyticsScreen> {
                                     Text(
                                       '₱${total.toStringAsFixed(0)}',
                                       style: TextStyle(
-                                        color: isToday ? AppColors.purpleLight : Colors.white60,
+                                        color: isToday ? AppColors.purpleLight : HomeColors.textSecondary,
                                         fontSize: 9,
                                         fontWeight: FontWeight.bold,
                                       ),
@@ -308,7 +308,7 @@ class _SalesAnalyticsScreenState extends State<SalesAnalyticsScreen> {
                                   Text(
                                     d['day'] as String,
                                     style: TextStyle(
-                                      color: isToday ? Colors.white : AppColors.label,
+                                      color: isToday ? HomeColors.textPrimary : HomeColors.textSecondary,
                                       fontSize: 11,
                                       fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
                                     ),
@@ -328,9 +328,9 @@ class _SalesAnalyticsScreenState extends State<SalesAnalyticsScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
+                      Text(
                         'Top Selling Products',
-                        style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w800),
+                        style: TextStyle(color: HomeColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w800),
                       ),
                       // Filter chips (7d / 30d / All)
                       Row(
@@ -367,10 +367,10 @@ class _SalesAnalyticsScreenState extends State<SalesAnalyticsScreen> {
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(color: HomeColors.cardBorder),
                       ),
-                      child: const Center(
+                      child: Center(
                         child: Text(
                           'No sales recorded in this period yet.',
-                          style: TextStyle(color: AppColors.label, fontSize: 13),
+                          style: TextStyle(color: HomeColors.textSecondary, fontSize: 13),
                         ),
                       ),
                     )
@@ -407,7 +407,7 @@ class _SalesAnalyticsScreenState extends State<SalesAnalyticsScreen> {
                                 child: Text(
                                   '#${i + 1}',
                                   style: TextStyle(
-                                    color: i < 3 ? AppColors.purpleLight : AppColors.label,
+                                    color: i < 3 ? AppColors.purpleLight : HomeColors.textSecondary,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 12,
                                   ),
@@ -420,20 +420,20 @@ class _SalesAnalyticsScreenState extends State<SalesAnalyticsScreen> {
                                   children: [
                                     Text(
                                       name,
-                                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13),
+                                      style: TextStyle(color: HomeColors.textPrimary, fontWeight: FontWeight.w700, fontSize: 13),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                     Text(
                                       '$qty units sold',
-                                      style: const TextStyle(color: AppColors.label, fontSize: 11),
+                                      style: TextStyle(color: HomeColors.textSecondary, fontSize: 11),
                                     ),
                                   ],
                                 ),
                               ),
                               Text(
                                 '₱${revenue.toStringAsFixed(2)}',
-                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 13),
+                                style: TextStyle(color: HomeColors.textPrimary, fontWeight: FontWeight.w800, fontSize: 13),
                               ),
                             ],
                           ),
@@ -481,14 +481,14 @@ class _MetricCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(title, style: const TextStyle(color: AppColors.label, fontSize: 11, fontWeight: FontWeight.w600)),
+              Text(title, style: TextStyle(color: HomeColors.textSecondary, fontSize: 11, fontWeight: FontWeight.w600)),
               Icon(icon, color: accentColor, size: 16),
             ],
           ),
           const SizedBox(height: 8),
-          Text(amount, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w900)),
+          Text(amount, style: TextStyle(color: HomeColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w900)),
           const SizedBox(height: 4),
-          Text(subtitle, style: const TextStyle(color: AppColors.hint, fontSize: 10)),
+          Text(subtitle, style: TextStyle(color: HomeColors.textMuted, fontSize: 10)),
         ],
       ),
     );
@@ -516,7 +516,7 @@ class _FilterChip extends StatelessWidget {
         child: Text(
           label,
           style: TextStyle(
-            color: selected ? Colors.white : AppColors.label,
+            color: selected ? Colors.white : HomeColors.textSecondary,
             fontSize: 11,
             fontWeight: selected ? FontWeight.bold : FontWeight.w500,
           ),

@@ -26,17 +26,17 @@ class _PendingOrdersScreenState extends State<PendingOrdersScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: HomeColors.background,
       appBar: AppBar(
-        backgroundColor: AppColors.background,
+        backgroundColor: HomeColors.background,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+          icon: Icon(Icons.arrow_back_ios_new_rounded, color: HomeColors.textPrimary, size: 20),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text(
+        title: Text(
           'Customer Orders',
-          style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700),
+          style: TextStyle(color: HomeColors.textPrimary, fontSize: 18, fontWeight: FontWeight.w700),
         ),
       ),
       body: AnimatedBuilder(
@@ -66,7 +66,7 @@ class _PendingOrdersScreenState extends State<PendingOrdersScreen> {
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.cloud_off_rounded, color: HomeColors.dangerText, size: 48),
+                            Icon(Icons.cloud_off_rounded, color: HomeColors.dangerText, size: 48),
                             const SizedBox(height: 12),
                             Text(
                               store.error!,
@@ -147,16 +147,16 @@ class _PendingOrdersScreenState extends State<PendingOrdersScreen> {
                           const SizedBox(height: 16),
                           Text(
                             _filter == 'pending' ? 'No pending orders' : 'No orders found',
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: HomeColors.textPrimary,
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
                           const SizedBox(height: 6),
-                          const Text(
+                          Text(
                             'Incoming customer carts will appear here.',
-                            style: TextStyle(color: AppColors.label, fontSize: 13),
+                            style: TextStyle(color: HomeColors.textSecondary, fontSize: 13),
                           ),
                         ],
                       ),
@@ -405,12 +405,12 @@ class _OrderCardState extends State<_OrderCard> {
         builder: (ctx, setDialogState) => AlertDialog(
           backgroundColor: HomeColors.cardBackground,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Text('Decline Order', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700)),
+          title: Text('Decline Order', style: TextStyle(color: HomeColors.textPrimary, fontSize: 18, fontWeight: FontWeight.w700)),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text('Select reason for customer:', style: TextStyle(color: AppColors.label, fontSize: 13)),
+              Text('Select reason for customer:', style: TextStyle(color: HomeColors.textSecondary, fontSize: 13)),
               const SizedBox(height: 10),
               RadioGroup<String>(
                 groupValue: selectedReason,
@@ -420,7 +420,7 @@ class _OrderCardState extends State<_OrderCard> {
                     dense: true,
                     contentPadding: EdgeInsets.zero,
                     activeColor: AppColors.purpleLight,
-                    title: Text(r, style: const TextStyle(color: Colors.white, fontSize: 14)),
+                    title: Text(r, style: TextStyle(color: HomeColors.textPrimary, fontSize: 14)),
                     value: r,
                   )).toList(),
                 ),
@@ -429,10 +429,10 @@ class _OrderCardState extends State<_OrderCard> {
                 const SizedBox(height: 8),
                 TextField(
                   controller: controller,
-                  style: const TextStyle(color: Colors.white, fontSize: 14),
+                  style: TextStyle(color: HomeColors.textPrimary, fontSize: 14),
                   decoration: InputDecoration(
                     hintText: 'Enter reason...',
-                    hintStyle: const TextStyle(color: AppColors.label),
+                    hintStyle: TextStyle(color: HomeColors.textSecondary),
                     filled: true,
                     fillColor: HomeColors.cardElevated,
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
@@ -491,25 +491,25 @@ class _OrderCardState extends State<_OrderCard> {
       builder: (ctx) => AlertDialog(
         backgroundColor: HomeColors.cardBackground,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Propose Counter-Offer', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700)),
+        title: Text('Propose Counter-Offer', style: TextStyle(color: HomeColors.textPrimary, fontSize: 18, fontWeight: FontWeight.w700)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text(
+            Text(
               'Suggest modifications or adjusted pricing to the customer:',
-              style: TextStyle(color: AppColors.label, fontSize: 13),
+              style: TextStyle(color: HomeColors.textSecondary, fontSize: 13),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: notesController,
               maxLines: 2,
-              style: const TextStyle(color: Colors.white, fontSize: 14),
+              style: TextStyle(color: HomeColors.textPrimary, fontSize: 14),
               decoration: InputDecoration(
                 labelText: 'Notes for Customer *',
-                labelStyle: const TextStyle(color: AppColors.label),
+                labelStyle: TextStyle(color: HomeColors.textSecondary),
                 hintText: 'e.g. Medium size substituted, ₱20 discount',
-                hintStyle: const TextStyle(color: Colors.white24),
+                hintStyle: TextStyle(color: HomeColors.textSecondary),
                 filled: true,
                 fillColor: HomeColors.cardElevated,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
@@ -519,10 +519,10 @@ class _OrderCardState extends State<_OrderCard> {
             TextField(
               controller: priceController,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              style: const TextStyle(color: Colors.white, fontSize: 14),
+              style: TextStyle(color: HomeColors.textPrimary, fontSize: 14),
               decoration: InputDecoration(
                 labelText: 'Adjusted Total (₱)',
-                labelStyle: const TextStyle(color: AppColors.label),
+                labelStyle: TextStyle(color: HomeColors.textSecondary),
                 filled: true,
                 fillColor: HomeColors.cardElevated,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),

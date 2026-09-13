@@ -802,19 +802,29 @@ class ChatMessageSerializer(serializers.ModelSerializer):
         return f"{obj.recipient.first_name} {obj.recipient.last_name}".strip() or obj.recipient.business_name or obj.recipient.username
 
     def get_sender_avatar_url(self, obj):
-        if obj.sender and getattr(obj.sender, "avatar", None):
-            req = self.context.get("request")
-            if req:
-                return req.build_absolute_uri(obj.sender.avatar.url)
-            return obj.sender.avatar.url
+        if not obj.sender:
+            return None
+        req = self.context.get("request")
+        if getattr(obj.sender, "avatar", None):
+            return req.build_absolute_uri(obj.sender.avatar.url) if req else obj.sender.avatar.url
+        if obj.sender.role == "admin" or obj.sender.is_superuser or obj.sender.is_staff:
+            from api.views import get_support_user
+            sup = get_support_user()
+            if sup and sup.avatar:
+                return req.build_absolute_uri(sup.avatar.url) if req else sup.avatar.url
         return None
 
     def get_recipient_avatar_url(self, obj):
-        if obj.recipient and getattr(obj.recipient, "avatar", None):
-            req = self.context.get("request")
-            if req:
-                return req.build_absolute_uri(obj.recipient.avatar.url)
-            return obj.recipient.avatar.url
+        if not obj.recipient:
+            return None
+        req = self.context.get("request")
+        if getattr(obj.recipient, "avatar", None):
+            return req.build_absolute_uri(obj.recipient.avatar.url) if req else obj.recipient.avatar.url
+        if obj.recipient.role == "admin" or obj.recipient.is_superuser or obj.recipient.is_staff:
+            from api.views import get_support_user
+            sup = get_support_user()
+            if sup and sup.avatar:
+                return req.build_absolute_uri(sup.avatar.url) if req else sup.avatar.url
         return None
 
     def get_order_title(self, obj):

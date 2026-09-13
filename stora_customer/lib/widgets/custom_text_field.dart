@@ -46,7 +46,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
           alignment: Alignment.centerLeft,
           child: Text(
             widget.label,
-            style: const TextStyle(
+            style: TextStyle(
               color: AppColors.textSecondary,
               fontSize: 13,
               fontWeight: FontWeight.w500,
@@ -62,7 +62,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
           readOnly: widget.readOnly,
           validator: widget.validator,
           onChanged: widget.onChanged,
-          style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
+          style: TextStyle(color: AppColors.textPrimary, fontSize: 14),
           decoration: InputDecoration(
             hintText: widget.hint,
             prefixIcon: widget.prefixIcon != null
@@ -84,7 +84,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
                                 padding: EdgeInsets.zero,
                                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                               ),
-                              icon: const Icon(
+                              icon: Icon(
                                 Icons.close_rounded,
                                 color: AppColors.textMuted,
                                 size: 18,

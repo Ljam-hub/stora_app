@@ -63,11 +63,11 @@ class _ShopScreenState extends State<ShopScreen> {
           children: [
             Text(
               'Hi, ${auth.greetingName}',
-              style: const TextStyle(fontSize: 14, color: AppColors.textSecondary, fontWeight: FontWeight.normal),
+              style: TextStyle(fontSize: 14, color: AppColors.textSecondary, fontWeight: FontWeight.normal),
             ),
-            const Text(
+            Text(
               'Browse Stores',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
             ),
           ],
         ),
@@ -79,7 +79,7 @@ class _ShopScreenState extends State<ShopScreen> {
               right: 6,
               borderColor: AppColors.cardBackground,
               child: IconButton(
-                icon: const Icon(Icons.chat_bubble_outline_rounded, color: Colors.white),
+                icon: Icon(Icons.chat_bubble_outline_rounded, color: AppColors.textPrimary),
                 tooltip: 'Message Store',
                 onPressed: () {
                   final store = catalog.selectedStore!;
@@ -102,7 +102,7 @@ class _ShopScreenState extends State<ShopScreen> {
             right: 6,
             borderColor: AppColors.cardBackground,
             child: IconButton(
-              icon: const Icon(Icons.shopping_cart_outlined, color: Colors.white),
+              icon: Icon(Icons.shopping_cart_outlined, color: AppColors.textPrimary),
               onPressed: widget.onGoToCart,
             ),
           ),
@@ -123,7 +123,7 @@ class _ShopScreenState extends State<ShopScreen> {
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.2),
+                      color: Colors.black.withValues(alpha: 0.1),
                       blurRadius: 10,
                       offset: const Offset(0, 3),
                     ),
@@ -132,14 +132,14 @@ class _ShopScreenState extends State<ShopScreen> {
                 child: TextField(
                   controller: _searchController,
                   onChanged: (val) => catalog.setSearchQuery(val),
-                  style: const TextStyle(color: Colors.white, fontSize: 14),
+                  style: TextStyle(color: AppColors.textPrimary, fontSize: 14),
                   decoration: InputDecoration(
                     hintText: 'Search products by name or barcode...',
-                    hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+                    hintStyle: TextStyle(color: AppColors.textMuted, fontSize: 13),
                     prefixIcon: const Icon(Icons.search_rounded, color: AppColors.primary, size: 20),
                     suffixIcon: _searchController.text.isNotEmpty
                         ? IconButton(
-                            icon: const Icon(Icons.clear_rounded, color: AppColors.textMuted, size: 18),
+                            icon: Icon(Icons.clear_rounded, color: AppColors.textMuted, size: 18),
                             onPressed: () {
                               _searchController.clear();
                               catalog.setSearchQuery('');
@@ -151,11 +151,11 @@ class _ShopScreenState extends State<ShopScreen> {
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+                      borderSide: BorderSide(color: AppColors.cardBorder),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+                      borderSide: BorderSide(color: AppColors.cardBorder),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
@@ -250,13 +250,13 @@ class _ShopScreenState extends State<ShopScreen> {
                           checkmarkColor: AppColors.primary,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                           labelStyle: TextStyle(
-                            color: isSelected ? Colors.white : AppColors.textSecondary,
+                            color: isSelected ? AppColors.primary : AppColors.textSecondary,
                             fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                             fontSize: 12,
                           ),
                           backgroundColor: AppColors.cardBackground,
                           side: BorderSide(
-                            color: isSelected ? AppColors.primary : Colors.white.withValues(alpha: 0.08),
+                            color: isSelected ? AppColors.primary : AppColors.cardBorder,
                           ),
                         ),
                       );
@@ -273,13 +273,13 @@ class _ShopScreenState extends State<ShopScreen> {
                         checkmarkColor: AppColors.primary,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                         labelStyle: TextStyle(
-                          color: isSelected ? Colors.white : AppColors.textSecondary,
+                          color: isSelected ? AppColors.primary : AppColors.textSecondary,
                           fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                           fontSize: 12,
                         ),
                         backgroundColor: AppColors.cardBackground,
                         side: BorderSide(
-                          color: isSelected ? AppColors.primary : Colors.white.withValues(alpha: 0.08),
+                          color: isSelected ? AppColors.primary : AppColors.cardBorder,
                         ),
                       ),
                     );
@@ -329,14 +329,14 @@ class _ShopScreenState extends State<ShopScreen> {
                           children: [
                             Text(
                               catalog.selectedStore!.displayName,
-                              style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                              style: TextStyle(color: AppColors.textPrimary, fontSize: 13, fontWeight: FontWeight.bold),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
                             const SizedBox(height: 2),
                             Text(
                               'Have questions about inventory?',
-                              style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 11),
+                              style: TextStyle(color: AppColors.textSecondary, fontSize: 11),
                             ),
                           ],
                         ),

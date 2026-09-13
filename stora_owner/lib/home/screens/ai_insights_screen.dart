@@ -108,15 +108,15 @@ class _AiInsightsScreenState extends State<AiInsightsScreen> {
               child: const Icon(Icons.auto_awesome_rounded, color: AppColors.purpleLight, size: 54),
             ),
             const SizedBox(height: 24),
-            const Text(
+            Text(
               'Premium Feature',
-              style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800),
+              style: TextStyle(color: HomeColors.textPrimary, fontSize: 22, fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 10),
-            const Text(
+            Text(
               'AI Store Insights analyzes your inventory and sales to provide smart restock alerts, revenue drivers, and growth recommendations.\n\nUpgrade to Premium to unlock full AI capabilities.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: AppColors.label, fontSize: 14, height: 1.5),
+              style: TextStyle(color: HomeColors.textSecondary, fontSize: 14, height: 1.5),
             ),
             const SizedBox(height: 28),
             ElevatedButton.icon(
@@ -146,28 +146,28 @@ class _AiInsightsScreenState extends State<AiInsightsScreen> {
     final isPremium = AccountStatusStore.instance.isPremium;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: HomeColors.background,
       appBar: AppBar(
-        backgroundColor: AppColors.background,
+        backgroundColor: HomeColors.background,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+          icon: Icon(Icons.arrow_back_ios_new_rounded, color: HomeColors.textPrimary, size: 20),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.auto_awesome_rounded, color: AppColors.purpleLight, size: 20),
-            SizedBox(width: 8),
+            const Icon(Icons.auto_awesome_rounded, color: AppColors.purpleLight, size: 20),
+            const SizedBox(width: 8),
             Text(
               'AI Store Insights',
-              style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800),
+              style: TextStyle(color: HomeColors.textPrimary, fontSize: 18, fontWeight: FontWeight.w800),
             ),
           ],
         ),
         actions: [
           if (isPremium)
             IconButton(
-              icon: const Icon(Icons.refresh_rounded, color: AppColors.label),
+              icon: Icon(Icons.refresh_rounded, color: HomeColors.textSecondary),
               onPressed: _loadInsights,
             ),
         ],
@@ -188,7 +188,7 @@ class _AiInsightsScreenState extends State<AiInsightsScreen> {
                         Text(
                           _error!,
                           textAlign: TextAlign.center,
-                          style: const TextStyle(color: Colors.white70, fontSize: 14),
+                          style: TextStyle(color: HomeColors.textSecondary, fontSize: 14),
                         ),
                         const SizedBox(height: 16),
                         ElevatedButton.icon(
@@ -213,7 +213,7 @@ class _AiInsightsScreenState extends State<AiInsightsScreen> {
                           children: [
                             Container(
                               padding: const EdgeInsets.all(20),
-                              decoration: const BoxDecoration(
+                              decoration: BoxDecoration(
                                 color: HomeColors.cardElevated,
                                 shape: BoxShape.circle,
                               ),
@@ -221,15 +221,15 @@ class _AiInsightsScreenState extends State<AiInsightsScreen> {
                                   color: HomeColors.successText, size: 48),
                             ),
                             const SizedBox(height: 16),
-                            const Text(
+                            Text(
                               'Everything looks great!',
-                              style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700),
+                              style: TextStyle(color: HomeColors.textPrimary, fontSize: 18, fontWeight: FontWeight.w700),
                             ),
                             const SizedBox(height: 8),
-                            const Text(
+                            Text(
                               'No critical stock alerts or issues detected right now. Keep recording sales to receive deeper AI recommendations.',
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: AppColors.label, fontSize: 13, height: 1.4),
+                              style: TextStyle(color: HomeColors.textSecondary, fontSize: 13, height: 1.4),
                             ),
                           ],
                         ),
@@ -287,10 +287,10 @@ class _AiInsightsScreenState extends State<AiInsightsScreen> {
                             ),
                           ),
                           const SizedBox(height: 20),
-                          const Text(
+                          Text(
                             'RECOMMENDATIONS',
                             style: TextStyle(
-                              color: AppColors.label,
+                              color: HomeColors.textSecondary,
                               fontSize: 11,
                               fontWeight: FontWeight.w700,
                               letterSpacing: 1.2,
@@ -416,7 +416,7 @@ class _InsightCard extends StatelessWidget {
               ],
             ),
           ),
-          const Divider(height: 1, color: HomeColors.cardBorder),
+          Divider(height: 1, color: HomeColors.cardBorder),
           // Content
           Padding(
             padding: const EdgeInsets.all(16),
@@ -425,8 +425,8 @@ class _InsightCard extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: HomeColors.textPrimary,
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
                     letterSpacing: -0.2,
@@ -435,8 +435,8 @@ class _InsightCard extends StatelessWidget {
                 const SizedBox(height: 6),
                 Text(
                   description,
-                  style: const TextStyle(
-                    color: AppColors.label,
+                  style: TextStyle(
+                    color: HomeColors.textSecondary,
                     fontSize: 13,
                     height: 1.45,
                   ),

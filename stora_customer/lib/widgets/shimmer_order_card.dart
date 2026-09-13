@@ -55,7 +55,7 @@ class ShimmerOrderCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 10),
-            const Divider(color: AppColors.cardBorder),
+            Divider(color: AppColors.cardBorder),
             const SizedBox(height: 10),
             // Item rows
             for (var i = 0; i < 2; i++) ...[

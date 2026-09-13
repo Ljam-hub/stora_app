@@ -9,6 +9,7 @@ import '../../providers/chat_provider.dart';
 import '../../providers/order_provider.dart';
 import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
+import '../../theme/theme_controller.dart';
 import '../../utils/date_utils.dart';
 
 class CustomerChatScreen extends StatefulWidget {
@@ -71,8 +72,15 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
   @override
   void initState() {
     super.initState();
+    try {
+      final cached = context.read<ChatProvider>().getCachedMessages(widget.storeOwnerId);
+      if (cached != null && cached.isNotEmpty) {
+        _messages = cached;
+        _loading = false;
+      }
+    } catch (_) {}
     _fetchBlockStatus();
-    _fetchMessages();
+    _fetchMessages(silent: _messages.isNotEmpty);
     _pollTimer = Timer.periodic(const Duration(seconds: 4), (_) {
       if (mounted) _fetchMessages(silent: true);
     });
@@ -103,6 +111,9 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
     try {
       final msgs = await CustomerApiService.instance.fetchMessages(widget.storeOwnerId);
       if (mounted) {
+        try {
+          context.read<ChatProvider>().cacheMessages(widget.storeOwnerId, msgs);
+        } catch (_) {}
         setState(() {
           _messages = msgs;
           _error = null;
@@ -160,14 +171,14 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
                     backgroundColor: Color(0xFF064E3B),
                     child: Icon(Icons.copy_rounded, color: Color(0xFF34D399), size: 18),
                   ),
-                  title: const Text('Copy Text', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 15)),
-                  subtitle: const Text('Copy message text to clipboard', style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
+                  title: Text('Copy Text', style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w600, fontSize: 15)),
+                  subtitle: Text('Copy message text to clipboard', style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
                   onTap: () {
                     Navigator.pop(ctx);
                     Clipboard.setData(ClipboardData(text: text));
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Row(
+                      SnackBar(
+                        content: const Row(
                           children: [
                             Icon(Icons.check_circle_rounded, color: Color(0xFF34D399), size: 18),
                             SizedBox(width: 8),
@@ -175,7 +186,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
                           ],
                         ),
                         backgroundColor: AppColors.cardBackground,
-                        duration: Duration(seconds: 2),
+                        duration: const Duration(seconds: 2),
                       ),
                     );
                   },
@@ -187,9 +198,9 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
                     backgroundColor: Color(0xFF2E1F4D),
                     child: Icon(Icons.undo_rounded, color: AppColors.primaryLight, size: 18),
                   ),
-                  title: const Text('Unsend for everyone',
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 15)),
-                  subtitle: const Text(
+                  title: Text('Unsend for everyone',
+                      style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w600, fontSize: 15)),
+                  subtitle: Text(
                     'Unsend message for all participants',
                     style: TextStyle(color: AppColors.textMuted, fontSize: 12),
                   ),
@@ -200,22 +211,22 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
                       builder: (dCtx) => AlertDialog(
                         backgroundColor: AppColors.cardBackground,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        title: const Row(
+                        title: Row(
                           children: [
-                            Icon(Icons.undo_rounded, color: AppColors.primaryLight, size: 22),
-                            SizedBox(width: 10),
+                            const Icon(Icons.undo_rounded, color: AppColors.primaryLight, size: 22),
+                            const SizedBox(width: 10),
                             Text('Unsend Message?',
-                                style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
+                                style: TextStyle(color: AppColors.textPrimary, fontSize: 17, fontWeight: FontWeight.bold)),
                           ],
                         ),
                         content: Text(
                           'This message will be unsent for both you and ${widget.storeName}.',
-                          style: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
+                          style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
                         ),
                         actions: [
                           TextButton(
                             onPressed: () => Navigator.of(dCtx).pop(false),
-                            child: const Text('Cancel', style: TextStyle(color: AppColors.textMuted)),
+                            child: Text('Cancel', style: TextStyle(color: AppColors.textMuted)),
                           ),
                           ElevatedButton(
                             style: ElevatedButton.styleFrom(
@@ -246,10 +257,10 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
                             }
                           });
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Message unsent', style: TextStyle(color: Colors.white)),
+                            SnackBar(
+                              content: const Text('Message unsent', style: TextStyle(color: Colors.white)),
                               backgroundColor: AppColors.cardElevated,
-                              duration: Duration(seconds: 2),
+                              duration: const Duration(seconds: 2),
                             ),
                           );
                         }
@@ -268,14 +279,14 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
                 ),
               if (msgId != null)
                 ListTile(
-                  leading: const CircleAvatar(
+                  leading: CircleAvatar(
                     radius: 18,
                     backgroundColor: AppColors.dangerBg,
-                    child: Icon(Icons.delete_outline_rounded, color: AppColors.danger, size: 18),
+                    child: const Icon(Icons.delete_outline_rounded, color: AppColors.danger, size: 18),
                   ),
                   title: const Text('Remove for you',
                       style: TextStyle(color: AppColors.danger, fontWeight: FontWeight.w600, fontSize: 15)),
-                  subtitle: const Text(
+                  subtitle: Text(
                     'Remove this message for you only (the other person can still see it)',
                     style: TextStyle(color: AppColors.textMuted, fontSize: 12),
                   ),
@@ -286,22 +297,22 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
                       builder: (dCtx) => AlertDialog(
                         backgroundColor: AppColors.cardBackground,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        title: const Row(
+                        title: Row(
                           children: [
-                            Icon(Icons.delete_outline_rounded, color: AppColors.danger, size: 22),
-                            SizedBox(width: 10),
+                            const Icon(Icons.delete_outline_rounded, color: AppColors.danger, size: 22),
+                            const SizedBox(width: 10),
                             Text('Remove for you?',
-                                style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
+                                style: TextStyle(color: AppColors.textPrimary, fontSize: 17, fontWeight: FontWeight.bold)),
                           ],
                         ),
                         content: Text(
                           'This will remove the message from your chat only. ${widget.storeName} can still see it.',
-                          style: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
+                          style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
                         ),
                         actions: [
                           TextButton(
                             onPressed: () => Navigator.of(dCtx).pop(false),
-                            child: const Text('Cancel', style: TextStyle(color: AppColors.textMuted)),
+                            child: Text('Cancel', style: TextStyle(color: AppColors.textMuted)),
                           ),
                           ElevatedButton(
                             style: ElevatedButton.styleFrom(
@@ -324,10 +335,10 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
                             _messages.removeWhere((m) => m['id'] == msgId);
                           });
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Message removed for you', style: TextStyle(color: Colors.white)),
+                            SnackBar(
+                              content: const Text('Message removed for you', style: TextStyle(color: Colors.white)),
                               backgroundColor: AppColors.cardElevated,
-                              duration: Duration(seconds: 2),
+                              duration: const Duration(seconds: 2),
                             ),
                           );
                         }
@@ -522,10 +533,10 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
                               children: [
                                 Text(
                                   'Report ${widget.storeName}',
-                                  style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold),
+                                  style: TextStyle(color: AppColors.textPrimary, fontSize: 17, fontWeight: FontWeight.bold),
                                 ),
                                 const SizedBox(height: 2),
-                                const Text(
+                                Text(
                                   'Reports are sent to platform administrators for investigation.',
                                   style: TextStyle(color: AppColors.textMuted, fontSize: 12),
                                 ),
@@ -535,9 +546,9 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
                         ],
                       ),
                       const SizedBox(height: 20),
-                      const Text(
+                      Text(
                         'Violation Reason',
-                        style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
+                        style: TextStyle(color: AppColors.textPrimary, fontSize: 13, fontWeight: FontWeight.w600),
                       ),
                       const SizedBox(height: 8),
                       Container(
@@ -552,8 +563,8 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
                             value: selectedReason,
                             dropdownColor: AppColors.cardElevated,
                             isExpanded: true,
-                            style: const TextStyle(color: Colors.white, fontSize: 14),
-                            icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.textMuted),
+                            style: TextStyle(color: AppColors.textPrimary, fontSize: 14),
+                            icon: Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.textMuted),
                             items: reasons.map((r) {
                               return DropdownMenuItem<String>(
                                 value: r['value'],
@@ -571,29 +582,29 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      const Text(
+                      Text(
                         'Explanation / Details (Optional)',
-                        style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
+                        style: TextStyle(color: AppColors.textPrimary, fontSize: 13, fontWeight: FontWeight.w600),
                       ),
                       const SizedBox(height: 8),
                       TextField(
                         controller: descriptionController,
                         maxLines: 3,
                         enabled: !isSubmitting,
-                        style: const TextStyle(color: Colors.white, fontSize: 14),
+                        style: TextStyle(color: AppColors.textPrimary, fontSize: 14),
                         decoration: InputDecoration(
                           hintText: 'Describe what happened in detail for the platform admin...',
-                          hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+                          hintStyle: TextStyle(color: AppColors.textMuted, fontSize: 13),
                           filled: true,
                           fillColor: AppColors.cardElevated,
                           contentPadding: const EdgeInsets.all(12),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: AppColors.cardBorder),
+                            borderSide: BorderSide(color: AppColors.cardBorder),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: AppColors.cardBorder),
+                            borderSide: BorderSide(color: AppColors.cardBorder),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -608,11 +619,11 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
                             child: OutlinedButton(
                               onPressed: isSubmitting ? null : () => Navigator.of(ctx).pop(),
                               style: OutlinedButton.styleFrom(
-                                side: const BorderSide(color: AppColors.cardBorder),
+                                side: BorderSide(color: AppColors.cardBorder),
                                 padding: const EdgeInsets.symmetric(vertical: 13),
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                               ),
-                              child: const Text('Cancel', style: TextStyle(color: AppColors.textMuted)),
+                              child: Text('Cancel', style: TextStyle(color: AppColors.textMuted)),
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -685,21 +696,21 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.cardBackground,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.delete_outline_rounded, color: AppColors.danger, size: 22),
-            SizedBox(width: 10),
-            Text('Delete Conversation?', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
+            const Icon(Icons.delete_outline_rounded, color: AppColors.danger, size: 22),
+            const SizedBox(width: 10),
+            Text('Delete Conversation?', style: TextStyle(color: AppColors.textPrimary, fontSize: 17, fontWeight: FontWeight.bold)),
           ],
         ),
         content: Text(
           'Are you sure you want to delete the conversation with ${widget.storeName}? This will only be removed for you; the other person can still see it unless they delete it too.',
-          style: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
+          style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel', style: TextStyle(color: AppColors.textMuted)),
+            child: Text('Cancel', style: TextStyle(color: AppColors.textMuted)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -750,16 +761,22 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
         title: Row(
           children: [
             if (_isSupportChat)
-              Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF97316).withValues(alpha: 0.15),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0xFFF97316).withValues(alpha: 0.5), width: 1.5),
-                ),
-                child: const Icon(Icons.support_agent_rounded, color: Color(0xFFF97316), size: 22),
-              )
+              (widget.storeAvatarUrl != null && widget.storeAvatarUrl!.isNotEmpty)
+                  ? CircleAvatar(
+                      radius: 19,
+                      backgroundColor: const Color(0xFFF97316).withValues(alpha: 0.15),
+                      backgroundImage: NetworkImage(widget.storeAvatarUrl!),
+                    )
+                  : Container(
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF97316).withValues(alpha: 0.15),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: const Color(0xFFF97316).withValues(alpha: 0.5), width: 1.5),
+                      ),
+                      child: const Icon(Icons.support_agent_rounded, color: Color(0xFFF97316), size: 22),
+                    )
             else
               CircleAvatar(
                 radius: 19,
@@ -781,7 +798,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
                       Flexible(
                         child: Text(
                           _isSupportChat ? 'STORA Support' : widget.storeName,
-                          style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                          style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.bold),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
@@ -825,7 +842,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
         ),
         actions: [
           PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert_rounded, color: Colors.white70),
+            icon: Icon(Icons.more_vert_rounded, color: AppColors.textPrimary),
             color: AppColors.cardElevated,
             onSelected: (val) {
               if (val == 'report') _showReportDialog();
@@ -959,20 +976,26 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 if (_isSupportChat)
-                                  Container(
-                                    width: 76,
-                                    height: 76,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color: const Color(0xFFF97316).withValues(alpha: 0.15),
-                                      border: Border.all(color: const Color(0xFFF97316).withValues(alpha: 0.5), width: 2),
-                                    ),
-                                    child: const Icon(
-                                      Icons.support_agent_rounded,
-                                      color: Color(0xFFF97316),
-                                      size: 42,
-                                    ),
-                                  )
+                                  (widget.storeAvatarUrl != null && widget.storeAvatarUrl!.isNotEmpty)
+                                      ? CircleAvatar(
+                                          radius: 38,
+                                          backgroundColor: const Color(0xFFF97316).withValues(alpha: 0.15),
+                                          backgroundImage: NetworkImage(widget.storeAvatarUrl!),
+                                        )
+                                      : Container(
+                                          width: 76,
+                                          height: 76,
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            color: const Color(0xFFF97316).withValues(alpha: 0.15),
+                                            border: Border.all(color: const Color(0xFFF97316).withValues(alpha: 0.5), width: 2),
+                                          ),
+                                          child: const Icon(
+                                            Icons.support_agent_rounded,
+                                            color: Color(0xFFF97316),
+                                            size: 42,
+                                          ),
+                                        )
                                 else
                                   CircleAvatar(
                                     radius: 38,
@@ -985,9 +1008,9 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
                                         : null,
                                   ),
                                 const SizedBox(height: 14),
-                                Text(_isSupportChat ? 'Message STORA Support' : 'Message ${widget.storeName}', style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                                Text(_isSupportChat ? 'Message STORA Support' : 'Message ${widget.storeName}', style: TextStyle(color: AppColors.textPrimary, fontSize: 18, fontWeight: FontWeight.bold)),
                                 const SizedBox(height: 4),
-                                Text(_isSupportChat ? 'Ask questions, report issues, or get help with your account' : 'Ask questions about products, orders, or delivery', style: const TextStyle(color: AppColors.textMuted, fontSize: 13)),
+                                Text(_isSupportChat ? 'Ask questions, report issues, or get help with your account' : 'Ask questions about products, orders, or delivery', style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
                               ],
                             ),
                           )
@@ -1120,16 +1143,22 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
                                             children: [
                                               if (!isMe) ...[
                                                 if (_isSupportChat)
-                                                  Container(
-                                                    width: 28,
-                                                    height: 28,
-                                                    decoration: BoxDecoration(
-                                                      shape: BoxShape.circle,
-                                                      color: const Color(0xFFF97316).withValues(alpha: 0.15),
-                                                      border: Border.all(color: const Color(0xFFF97316).withValues(alpha: 0.5), width: 1),
-                                                    ),
-                                                    child: const Icon(Icons.support_agent_rounded, color: Color(0xFFF97316), size: 16),
-                                                  )
+                                                  (msgAvatar != null && msgAvatar.isNotEmpty)
+                                                      ? CircleAvatar(
+                                                          radius: 14,
+                                                          backgroundColor: const Color(0xFFF97316).withValues(alpha: 0.15),
+                                                          backgroundImage: NetworkImage(msgAvatar),
+                                                        )
+                                                      : Container(
+                                                          width: 28,
+                                                          height: 28,
+                                                          decoration: BoxDecoration(
+                                                            shape: BoxShape.circle,
+                                                            color: const Color(0xFFF97316).withValues(alpha: 0.15),
+                                                            border: Border.all(color: const Color(0xFFF97316).withValues(alpha: 0.5), width: 1),
+                                                          ),
+                                                          child: const Icon(Icons.support_agent_rounded, color: Color(0xFFF97316), size: 16),
+                                                        )
                                                 else
                                                   CircleAvatar(
                                                     radius: 14,
@@ -1146,10 +1175,10 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
                                               Container(
                                                 constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.74),
                                                 decoration: BoxDecoration(
-                                                  color: Colors.white.withValues(alpha: 0.05),
+                                                  color: AppColors.cardElevated.withValues(alpha: 0.5),
                                                   borderRadius: BorderRadius.circular(14),
                                                   border: Border.all(
-                                                    color: Colors.white12,
+                                                    color: AppColors.cardBorder,
                                                     width: 1,
                                                   ),
                                                 ),
@@ -1157,12 +1186,12 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
                                                 child: Row(
                                                   mainAxisSize: MainAxisSize.min,
                                                   children: [
-                                                    const Icon(Icons.undo_rounded, size: 14, color: AppColors.textMuted),
+                                                    Icon(Icons.undo_rounded, size: 14, color: AppColors.textMuted),
                                                     const SizedBox(width: 6),
                                                     Flexible(
                                                       child: Text(
                                                         isMe ? 'You unsent a message' : '$otherPartyName unsent a message',
-                                                        style: const TextStyle(
+                                                        style: TextStyle(
                                                           color: AppColors.textMuted,
                                                           fontSize: 13,
                                                           fontStyle: FontStyle.italic,
@@ -1206,16 +1235,22 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
                                             if (!isMe) ...[
                                               if (isLastOfCluster)
                                                 _isSupportChat
-                                                    ? Container(
-                                                        width: 28,
-                                                        height: 28,
-                                                        decoration: BoxDecoration(
-                                                          shape: BoxShape.circle,
-                                                          color: const Color(0xFFF97316).withValues(alpha: 0.15),
-                                                          border: Border.all(color: const Color(0xFFF97316).withValues(alpha: 0.5), width: 1),
-                                                        ),
-                                                        child: const Icon(Icons.support_agent_rounded, color: Color(0xFFF97316), size: 16),
-                                                      )
+                                                    ? ((msgAvatar != null && msgAvatar.isNotEmpty)
+                                                        ? CircleAvatar(
+                                                            radius: 14,
+                                                            backgroundColor: const Color(0xFFF97316).withValues(alpha: 0.15),
+                                                            backgroundImage: NetworkImage(msgAvatar),
+                                                          )
+                                                        : Container(
+                                                            width: 28,
+                                                            height: 28,
+                                                            decoration: BoxDecoration(
+                                                              shape: BoxShape.circle,
+                                                              color: const Color(0xFFF97316).withValues(alpha: 0.15),
+                                                              border: Border.all(color: const Color(0xFFF97316).withValues(alpha: 0.5), width: 1),
+                                                            ),
+                                                            child: const Icon(Icons.support_agent_rounded, color: Color(0xFFF97316), size: 16),
+                                                          ))
                                                     : CircleAvatar(
                                                         radius: 14,
                                                         backgroundColor: AppColors.cardElevated,
@@ -1243,6 +1278,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
                                                   decoration: BoxDecoration(
                                                     gradient: isMe ? AppColors.purpleGradient : null,
                                                     color: isMe ? null : AppColors.cardElevated,
+                                                    border: !isMe && !CustomerThemeController.instance.isDarkMode ? Border.all(color: AppColors.cardBorder) : null,
                                                     borderRadius: BorderRadius.only(
                                                       topLeft: const Radius.circular(16),
                                                       topRight: const Radius.circular(16),
@@ -1250,7 +1286,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
                                                       bottomRight: isMe ? Radius.circular(isLastOfCluster ? 4 : 16) : const Radius.circular(16),
                                                     ),
                                                     boxShadow: [
-                                                      BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 4, offset: const Offset(0, 2)),
+                                                      BoxShadow(color: Colors.black.withValues(alpha: CustomerThemeController.instance.isDarkMode ? 0.15 : 0.05), blurRadius: 4, offset: const Offset(0, 2)),
                                                     ],
                                                   ),
                                                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -1305,7 +1341,11 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
                                                       if (text.isNotEmpty)
                                                         Text(
                                                           text,
-                                                          style: const TextStyle(color: Colors.white, fontSize: 14.5, height: 1.3),
+                                                          style: TextStyle(
+                                                            color: isMe ? Colors.white : AppColors.textPrimary,
+                                                            fontSize: 14.5,
+                                                            height: 1.3,
+                                                          ),
                                                         ),
                                                     ],
                                                   ),
@@ -1322,8 +1362,8 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
                                             isTapped && timeDisplay.isNotEmpty
                                                 ? '$timeDisplay • ${(msg['is_read'] == true) ? 'Seen' : 'Delivered'}'
                                                 : ((msg['is_read'] == true) ? 'Seen' : 'Delivered'),
-                                            style: const TextStyle(
-                                              color: Colors.white54,
+                                            style: TextStyle(
+                                              color: AppColors.textMuted,
                                               fontSize: 11,
                                             ),
                                           ),
@@ -1333,8 +1373,8 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
                                           padding: const EdgeInsets.only(top: 2, left: 36, bottom: 4),
                                           child: Text(
                                             timeDisplay,
-                                            style: const TextStyle(
-                                              color: Colors.white54,
+                                            style: TextStyle(
+                                              color: AppColors.textMuted,
                                               fontSize: 11,
                                             ),
                                           ),
@@ -1374,7 +1414,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
                     ],
                   ),
                   const SizedBox(width: 12),
-                  const Text('Photo ready to send', style: TextStyle(color: Colors.white70, fontSize: 13)),
+                  Text('Photo ready to send', style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
                 ],
               ),
             ),
@@ -1390,24 +1430,29 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
                 separatorBuilder: (context, index) => const SizedBox(width: 8),
                 itemBuilder: (context, i) {
                   final item = _isSupportChat ? _supportQuickReplies[i] : _customerQuickReplies[i];
+                  final isDark = CustomerThemeController.instance.isDarkMode;
                   return InkWell(
                     borderRadius: BorderRadius.circular(20),
                     onTap: () => _onQuickReplyTap(item['text'] as String),
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                       decoration: BoxDecoration(
-                        color: AppColors.cardElevated,
+                        color: isDark ? AppColors.cardElevated : const Color(0xFFF3E8FF),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: AppColors.primary.withValues(alpha: 0.4)),
+                        border: Border.all(color: const Color(0xFF8B5CF6).withValues(alpha: isDark ? 0.4 : 0.6)),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(item['icon'] as IconData, color: AppColors.primaryLight, size: 14),
+                          Icon(item['icon'] as IconData, color: isDark ? AppColors.primaryLight : const Color(0xFF7C3AED), size: 14),
                           const SizedBox(width: 6),
                           Text(
                             item['text'] as String,
-                            style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w500),
+                            style: TextStyle(
+                              color: isDark ? Colors.white : const Color(0xFF6B21A8),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ],
                       ),
@@ -1419,7 +1464,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
           if (!_isBlocked)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 color: AppColors.cardBackground,
                 border: Border(top: BorderSide(color: AppColors.cardBorder, width: 1)),
               ),
@@ -1438,22 +1483,22 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
                       onPressed: () => setState(() => _showQuickReplies = !_showQuickReplies),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.camera_alt_outlined, color: AppColors.textSecondary, size: 22),
+                      icon: Icon(Icons.camera_alt_outlined, color: AppColors.textSecondary, size: 22),
                       onPressed: _sending ? null : () => _pickImage(ImageSource.camera),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.photo_library_outlined, color: AppColors.textSecondary, size: 22),
+                      icon: Icon(Icons.photo_library_outlined, color: AppColors.textSecondary, size: 22),
                       onPressed: _sending ? null : () => _pickImage(ImageSource.gallery),
                     ),
                     Expanded(
                       child: TextField(
                         controller: _textController,
-                        style: const TextStyle(color: Colors.white, fontSize: 14),
+                        style: TextStyle(color: AppColors.textPrimary, fontSize: 14),
                         minLines: 1,
                         maxLines: 4,
                         decoration: InputDecoration(
                           hintText: 'Type a message...',
-                          hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 14),
+                          hintStyle: TextStyle(color: AppColors.textMuted, fontSize: 14),
                           filled: true,
                           fillColor: AppColors.cardElevated,
                           contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),

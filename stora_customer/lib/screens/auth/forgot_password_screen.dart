@@ -213,7 +213,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> with Widget
             children: [
               Text(
                 _codeSent ? 'Enter Reset Code' : 'Forgot Password?',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
                   color: AppColors.textPrimary,
@@ -224,7 +224,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> with Widget
                 _codeSent
                     ? 'Enter the reset code sent to your email and choose a new password.'
                     : 'Enter your registered email address and we will send you a reset code.',
-                style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
+                style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
               ),
               const SizedBox(height: 28),
 

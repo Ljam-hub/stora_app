@@ -244,16 +244,10 @@ class _MainShellState extends State<MainShell> {
                   color: AppColors.navBackground.withValues(alpha: 0.72),
                   borderRadius: BorderRadius.circular(28),
                   border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.12),
+                    color: AppColors.cardBorder,
                     width: 1,
                   ),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Color(0x60000000),
-                      blurRadius: 20,
-                      offset: Offset(0, 8),
-                    ),
-                  ],
+                  boxShadow: AppColors.cardShadow,
                 ),
                 child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,

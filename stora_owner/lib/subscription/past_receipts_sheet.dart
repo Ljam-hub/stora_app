@@ -94,17 +94,17 @@ class _PastReceiptsSheetState extends State<PastReceiptsSheet> {
                   child: const Icon(Icons.receipt_long_rounded, color: Color(0xFF34D399), size: 24),
                 ),
                 const SizedBox(width: 14),
-                const Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         'Past Subscription Receipts',
-                        style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold),
+                        style: TextStyle(color: HomeColors.textPrimary, fontSize: 17, fontWeight: FontWeight.bold),
                       ),
                       Text(
                         'Only approved subscriptions generate official receipts',
-                        style: TextStyle(color: Color(0xFFCBD5E1), fontSize: 12),
+                        style: TextStyle(color: HomeColors.textSecondary, fontSize: 12),
                       ),
                     ],
                   ),
@@ -145,7 +145,7 @@ class _PastReceiptsSheetState extends State<PastReceiptsSheet> {
             Text(
               _error!,
               textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.white70, fontSize: 13),
+              style: TextStyle(color: HomeColors.textSecondary, fontSize: 13),
             ),
             const SizedBox(height: 16),
             ElevatedButton(
@@ -178,16 +178,16 @@ class _PastReceiptsSheetState extends State<PastReceiptsSheet> {
                 child: const Icon(Icons.receipt_long_outlined, color: Color(0xFFC084FC), size: 44),
               ),
               const SizedBox(height: 14),
-              const Text(
+              Text(
                 'No Past Subscription Receipts',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                style: TextStyle(color: HomeColors.textPrimary, fontSize: 16, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 6),
-              const Text(
+              Text(
                 'Receipts are generated after your GCash payment proof is reviewed and accepted by the admin. Unverified or pending proofs will not show receipts in advance.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Color(0xFFCBD5E1), fontSize: 12.5, height: 1.4),
+                style: TextStyle(color: HomeColors.textSecondary, fontSize: 12.5, height: 1.4),
               ),
             ],
           ),
@@ -221,16 +221,10 @@ class _PastReceiptsSheetState extends State<PastReceiptsSheet> {
           child: Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: const Color(0xFF1F172E),
+              color: HomeColors.cardElevated,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFA855F7).withValues(alpha: 0.35), width: 1.2),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFFA855F7).withValues(alpha: 0.06),
-                  blurRadius: 10,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+              border: Border.all(color: HomeColors.cardBorder, width: 1.2),
+              boxShadow: HomeColors.cardShadow,
             ),
             child: Row(
               children: [
@@ -248,19 +242,19 @@ class _PastReceiptsSheetState extends State<PastReceiptsSheet> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Stora Premium (Monthly)',
-                        style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700),
+                        style: TextStyle(color: HomeColors.textPrimary, fontSize: 14, fontWeight: FontWeight.w700),
                       ),
                       const SizedBox(height: 3),
                       Text(
                         'Ref: $ref',
-                        style: const TextStyle(color: Color(0xFFC4B5FD), fontSize: 12, fontWeight: FontWeight.w500),
+                        style: const TextStyle(color: AppColors.purpleLight, fontSize: 12, fontWeight: FontWeight.w500),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         formatManilaShortDateTime(date),
-                        style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 11),
+                        style: TextStyle(color: HomeColors.textMuted, fontSize: 11),
                       ),
                     ],
                   ),
@@ -270,7 +264,7 @@ class _PastReceiptsSheetState extends State<PastReceiptsSheet> {
                   children: [
                     Text(
                       'PHP ${amountNum.toStringAsFixed(2)}',
-                      style: const TextStyle(color: Color(0xFF4ADE80), fontSize: 15, fontWeight: FontWeight.w800),
+                      style: TextStyle(color: HomeColors.successText, fontSize: 15, fontWeight: FontWeight.w800),
                     ),
                     const SizedBox(height: 6),
                     Container(

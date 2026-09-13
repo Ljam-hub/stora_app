@@ -16,6 +16,7 @@ import '../stores/inventory_store.dart';
 import '../stores/orders_store.dart';
 import '../stores/sales_store.dart';
 import '../theme/home_colors.dart';
+import '../theme/theme_mode_controller.dart';
 import '../widgets/notification_badge.dart';
 
 /// App shell — bottom nav with 5 tabs including Chat. "Add / Edit product" and "Sales
@@ -193,16 +194,16 @@ class _StoraShellState extends State<StoraShell> {
           builder: (ctx) => AlertDialog(
             backgroundColor: HomeColors.cardBackground,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            title: const Row(
+            title: Row(
               children: [
-                Icon(Icons.campaign_rounded, color: AppColors.purpleLight),
-                SizedBox(width: 10),
-                Text('Price Update', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w700)),
+                const Icon(Icons.campaign_rounded, color: AppColors.purpleLight),
+                const SizedBox(width: 10),
+                Text('Price Update', style: TextStyle(color: HomeColors.textPrimary, fontSize: 17, fontWeight: FontWeight.w700)),
               ],
             ),
             content: Text(
               prompt,
-              style: const TextStyle(color: AppColors.label, fontSize: 14, height: 1.4),
+              style: TextStyle(color: HomeColors.textSecondary, fontSize: 14, height: 1.4),
             ),
             actions: [
               TextButton(
@@ -222,10 +223,11 @@ class _StoraShellState extends State<StoraShell> {
       animation: Listenable.merge([
         ChatStore.instance,
         InventoryStore.instance,
+        ThemeModeController.instance,
       ]),
       builder: (context, _) {
         return Scaffold(
-          backgroundColor: AppColors.background,
+          backgroundColor: HomeColors.background,
           body: IndexedStack(index: _index, children: _screens),
           bottomNavigationBar: _StoraNavBar(
             currentIndex: _index,
@@ -268,6 +270,7 @@ class _StoraNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = ThemeModeController.instance.isDarkMode;
     return Container(
       color: Colors.transparent,
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
@@ -280,21 +283,41 @@ class _StoraNavBar extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 6),
               decoration: BoxDecoration(
-                color: HomeColors.navBackground.withValues(alpha: 0.72),
+                color: isDark
+                    ? HomeColors.navBackground.withValues(alpha: 0.72)
+                    : Colors.white.withValues(alpha: 0.95),
                 borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: HomeColors.cardBorderLight.withValues(alpha: 0.5), width: 1),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.45),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
-                  ),
-                  BoxShadow(
-                    color: AppColors.purple.withValues(alpha: 0.08),
-                    blurRadius: 14,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
+                border: Border.all(
+                  color: isDark
+                      ? HomeColors.cardBorderLight.withValues(alpha: 0.5)
+                      : const Color(0xFFE2E8F0),
+                  width: 1,
+                ),
+                boxShadow: isDark
+                    ? [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.45),
+                          blurRadius: 20,
+                          offset: const Offset(0, 8),
+                        ),
+                        BoxShadow(
+                          color: AppColors.purple.withValues(alpha: 0.08),
+                          blurRadius: 14,
+                          offset: const Offset(0, 2),
+                        ),
+                      ]
+                    : [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.08),
+                          blurRadius: 20,
+                          offset: const Offset(0, 4),
+                        ),
+                        BoxShadow(
+                          color: AppColors.purple.withValues(alpha: 0.04),
+                          blurRadius: 10,
+                          offset: const Offset(0, 1),
+                        ),
+                      ],
               ),
               child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,

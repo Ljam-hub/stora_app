@@ -89,8 +89,8 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen>
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.cardBackground,
-        title: const Text('Leave Verification?', style: TextStyle(color: AppColors.textPrimary)),
-        content: const Text(
+        title: Text('Leave Verification?', style: TextStyle(color: AppColors.textPrimary)),
+        content: Text(
           'Your verification is in progress. If you go back to login, you will need to sign in again.',
           style: TextStyle(color: AppColors.textSecondary),
         ),
@@ -252,7 +252,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen>
                         ),
                       ),
                       const SizedBox(height: 20),
-                      const Text(
+                      Text(
                         'Confirm Email Ownership',
                         textAlign: TextAlign.center,
                         style: TextStyle(
@@ -262,7 +262,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen>
                         ),
                       ),
                       const SizedBox(height: 8),
-                      const Text(
+                      Text(
                         'We sent a 6-digit verification code to:',
                         textAlign: TextAlign.center,
                         style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
@@ -271,7 +271,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen>
                       Text(
                         widget.email,
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: AppColors.textPrimary,
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
@@ -290,8 +290,8 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen>
                           controller: _codeController,
                           keyboardType: TextInputType.number,
                           textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: AppColors.textPrimary,
                             fontSize: 28,
                             fontWeight: FontWeight.w800,
                             letterSpacing: 10,
@@ -306,7 +306,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen>
                           decoration: InputDecoration(
                             counterText: '',
                             hintText: '••••••',
-                            hintStyle: const TextStyle(
+                            hintStyle: TextStyle(
                               color: AppColors.textMuted,
                               fontSize: 28,
                               letterSpacing: 10,
@@ -334,7 +334,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen>
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Text(
+                          Text(
                             "Didn't receive code? ",
                             style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
                           ),
@@ -363,13 +363,13 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen>
                           ),
                         ],
                       ),
-                      const Divider(color: AppColors.cardBorder, height: 32),
+                      Divider(color: AppColors.cardBorder, height: 32),
 
                       // Back to Login
                       TextButton.icon(
                         onPressed: _confirmLeave,
-                        icon: const Icon(Icons.arrow_back, size: 16, color: AppColors.textSecondary),
-                        label: const Text(
+                        icon: Icon(Icons.arrow_back, size: 16, color: AppColors.textSecondary),
+                        label: Text(
                           'Back to Login',
                           style: TextStyle(
                             color: AppColors.textSecondary,

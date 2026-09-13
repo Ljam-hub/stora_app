@@ -43,6 +43,13 @@ class _StoraTextFieldState extends State<StoraTextField> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : const Color(0xFF0F172A);
+    final labelColor = isDark ? const Color(0xFFCBD5E1) : const Color(0xFF475569);
+    final hintColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+    final fieldBg = isDark ? AppColors.fieldBackground : const Color(0xFFF1F5F9);
+    final borderColor = isDark ? AppColors.fieldBorder : const Color(0xFFCBD5E1);
+
     Widget? suffix = widget.suffixIcon;
     if (widget.obscureText && suffix == null) {
       suffix = ValueListenableBuilder<TextEditingValue>(
@@ -60,9 +67,9 @@ class _StoraTextFieldState extends State<StoraTextField> {
                     padding: EdgeInsets.zero,
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.close_rounded,
-                    color: AppColors.label,
+                    color: labelColor,
                     size: 18,
                   ),
                   tooltip: 'Clear password',
@@ -80,7 +87,7 @@ class _StoraTextFieldState extends State<StoraTextField> {
                 ),
                 icon: Icon(
                   _obscured ? Icons.visibility_rounded : Icons.visibility_off_rounded,
-                  color: AppColors.label,
+                  color: labelColor,
                   size: 20,
                 ),
                 tooltip: _obscured ? 'Show password' : 'Hide password',
@@ -101,8 +108,8 @@ class _StoraTextFieldState extends State<StoraTextField> {
           alignment: Alignment.centerLeft,
           child: Text(
             widget.label.toUpperCase(),
-            style: const TextStyle(
-              color: AppColors.label,
+            style: TextStyle(
+              color: labelColor,
               fontSize: 11,
               fontWeight: FontWeight.w700,
               letterSpacing: 0.6,
@@ -116,20 +123,20 @@ class _StoraTextFieldState extends State<StoraTextField> {
           obscureText: _obscured,
           maxLines: _obscured ? 1 : widget.maxLines,
           keyboardType: widget.keyboardType,
-          style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500),
+          style: TextStyle(color: textColor, fontSize: 14, fontWeight: FontWeight.w500),
           validator: widget.validator,
           decoration: InputDecoration(
             hintText: widget.hint,
-            hintStyle: const TextStyle(color: AppColors.hint, fontSize: 13.5),
+            hintStyle: TextStyle(color: hintColor, fontSize: 13.5),
             filled: true,
-            fillColor: AppColors.fieldBackground,
+            fillColor: fieldBg,
             contentPadding:
                 const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             prefixIcon: widget.prefixIcon,
             suffixIcon: suffix,
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(color: AppColors.fieldBorder),
+              borderSide: BorderSide(color: borderColor),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),

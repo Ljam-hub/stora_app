@@ -93,7 +93,7 @@ class _SubscriptionStatusScreenState extends State<SubscriptionStatusScreen> {
     };
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: HomeColors.scaffoldBackground,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
@@ -104,23 +104,23 @@ class _SubscriptionStatusScreenState extends State<SubscriptionStatusScreen> {
                 children: [
                   IconButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.chevron_left, color: Colors.white),
+                    icon: Icon(Icons.chevron_left, color: HomeColors.textPrimary),
                     style: IconButton.styleFrom(
                       backgroundColor: HomeColors.cardBackground,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                   ),
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       'Subscription',
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700),
+                      style: TextStyle(color: HomeColors.textPrimary, fontSize: 18, fontWeight: FontWeight.w700),
                     ),
                   ),
                   IconButton(
                     tooltip: 'Past Receipts',
                     onPressed: () => PastReceiptsSheet.show(context),
-                    icon: const Icon(Icons.receipt_long_rounded, color: Colors.white, size: 20),
+                    icon: Icon(Icons.receipt_long_rounded, color: HomeColors.textPrimary, size: 20),
                     style: IconButton.styleFrom(
                       backgroundColor: HomeColors.cardBackground,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -130,12 +130,12 @@ class _SubscriptionStatusScreenState extends State<SubscriptionStatusScreen> {
                   IconButton(
                     onPressed: _loading ? null : _refreshStatus,
                     icon: _loading
-                        ? const SizedBox(
+                        ? SizedBox(
                             width: 18,
                             height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.label),
+                            child: CircularProgressIndicator(strokeWidth: 2, color: HomeColors.textPrimary),
                           )
-                        : const Icon(Icons.refresh_rounded, color: AppColors.label),
+                        : Icon(Icons.refresh_rounded, color: HomeColors.textPrimary),
                     style: IconButton.styleFrom(
                       backgroundColor: HomeColors.cardBackground,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -145,10 +145,10 @@ class _SubscriptionStatusScreenState extends State<SubscriptionStatusScreen> {
               ),
               const SizedBox(height: 20),
 
-              const Text(
+              Text(
                 'STATUS',
                 style: TextStyle(
-                  color: AppColors.label,
+                  color: HomeColors.textSecondary,
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 0.5,
@@ -178,7 +178,7 @@ class _SubscriptionStatusScreenState extends State<SubscriptionStatusScreen> {
                       children: [
                         Text(
                           status.headline,
-                          style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w700),
+                          style: TextStyle(color: HomeColors.textPrimary, fontSize: 17, fontWeight: FontWeight.w700),
                         ),
                         StatusChip(label: status.headline, color: chipColor, background: chipBg),
                       ],
@@ -186,13 +186,13 @@ class _SubscriptionStatusScreenState extends State<SubscriptionStatusScreen> {
                     const SizedBox(height: 4),
                     Text(
                       'Submitted ${_formatSubmitted(status.submittedAt)}',
-                      style: const TextStyle(color: Color(0xFFC4B5FD), fontSize: 12, fontWeight: FontWeight.w500),
+                      style: TextStyle(color: HomeColors.textSecondary, fontSize: 12, fontWeight: FontWeight.w500),
                     ),
                     if (status.referenceNumber != null && status.referenceNumber!.isNotEmpty) ...[
                       const SizedBox(height: 4),
                       Text(
                         'Ref: ${status.referenceNumber}',
-                        style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
+                        style: TextStyle(color: HomeColors.textMuted, fontSize: 12),
                       ),
                     ],
                     const SizedBox(height: 22),
@@ -247,7 +247,7 @@ class _SubscriptionStatusScreenState extends State<SubscriptionStatusScreen> {
                               Expanded(
                                 child: Text(
                                   'Awaiting admin verification. Once approved, your receipt and premium features will be unlocked.',
-                                  style: TextStyle(color: Color(0xFFFEF3C7), fontSize: 11.5, fontWeight: FontWeight.w500),
+                                  style: TextStyle(color: Color(0xFFD97706), fontSize: 11.5, fontWeight: FontWeight.w600),
                                 ),
                               ),
                             ],
@@ -270,7 +270,7 @@ class _SubscriptionStatusScreenState extends State<SubscriptionStatusScreen> {
                 const SizedBox(height: 12),
                 OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.white,
+                    foregroundColor: HomeColors.textPrimary,
                     backgroundColor: const Color(0xFF9333EA).withValues(alpha: 0.12),
                     side: const BorderSide(color: Color(0xFFA855F7), width: 1.2),
                     padding: const EdgeInsets.symmetric(vertical: 14),
@@ -278,7 +278,7 @@ class _SubscriptionStatusScreenState extends State<SubscriptionStatusScreen> {
                   ),
                   onPressed: () => PastReceiptsSheet.show(context),
                   icon: const Icon(Icons.receipt_long_rounded, color: Color(0xFFC084FC), size: 18),
-                  label: const Text('Past Subscription Receipts', style: TextStyle(fontWeight: FontWeight.w700)),
+                  label: Text('Past Subscription Receipts', style: TextStyle(color: HomeColors.textPrimary, fontWeight: FontWeight.w700)),
                 ),
               ] else if (status.isApproved) ...[
                 StoraGradientButton(
@@ -288,7 +288,7 @@ class _SubscriptionStatusScreenState extends State<SubscriptionStatusScreen> {
               ] else ...[
                 OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.white,
+                    foregroundColor: HomeColors.textPrimary,
                     backgroundColor: const Color(0xFF9333EA).withValues(alpha: 0.12),
                     side: const BorderSide(color: Color(0xFFA855F7), width: 1.2),
                     padding: const EdgeInsets.symmetric(vertical: 14),
@@ -296,7 +296,7 @@ class _SubscriptionStatusScreenState extends State<SubscriptionStatusScreen> {
                   ),
                   onPressed: () => PastReceiptsSheet.show(context),
                   icon: const Icon(Icons.receipt_long_rounded, color: Color(0xFFC084FC), size: 18),
-                  label: const Text('Past Subscription Receipts', style: TextStyle(fontWeight: FontWeight.w700)),
+                  label: Text('Past Subscription Receipts', style: TextStyle(color: HomeColors.textPrimary, fontWeight: FontWeight.w700)),
                 ),
               ],
             ],
@@ -350,7 +350,7 @@ class _StepRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isDone ? HomeColors.successText : AppColors.label;
+    final color = isDone ? HomeColors.successText : HomeColors.textSecondary;
     return IntrinsicHeight(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -384,7 +384,7 @@ class _StepRow extends StatelessWidget {
               style: TextStyle(
                 fontWeight: isDone ? FontWeight.w600 : FontWeight.w400,
                 fontSize: 13,
-                color: isDone ? Colors.white : AppColors.label,
+                color: isDone ? HomeColors.textPrimary : HomeColors.textSecondary,
               ),
             ),
           ),

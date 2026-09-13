@@ -39,9 +39,9 @@ class AlertsScreen extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 10),
-                        const Text(
+                        Text(
                           'Stock Alerts',
-                          style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800),
+                          style: TextStyle(color: HomeColors.textPrimary, fontSize: 18, fontWeight: FontWeight.w800),
                         ),
                       ],
                     ),
@@ -77,15 +77,15 @@ class AlertsScreen extends StatelessWidget {
                                 child: const Icon(Icons.verified_user_rounded, size: 52, color: HomeColors.successText),
                               ),
                               const SizedBox(height: 18),
-                              const Text(
+                              Text(
                                 'All inventory is healthy',
-                                style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w800),
+                                style: TextStyle(color: HomeColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w800),
                               ),
                               const SizedBox(height: 6),
-                              const Text(
+                              Text(
                                 'No items are currently below 5 units in stock.',
                                 textAlign: TextAlign.center,
-                                style: TextStyle(color: AppColors.label, fontSize: 13),
+                                style: TextStyle(color: HomeColors.textSecondary, fontSize: 13),
                               ),
                             ],
                           ),
@@ -141,12 +141,12 @@ class _AlertCard extends StatelessWidget {
                   product.name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700),
+                  style: TextStyle(color: HomeColors.textPrimary, fontSize: 14, fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 3),
                 Row(
                   children: [
-                    Text(product.category, style: const TextStyle(color: AppColors.label, fontSize: 12)),
+                    Text(product.category, style: TextStyle(color: HomeColors.textSecondary, fontSize: 12)),
                     const SizedBox(width: 6),
                     Text('• ₱${product.price.toStringAsFixed(2)}',
                         style: const TextStyle(color: AppColors.purpleLight, fontSize: 12, fontWeight: FontWeight.w700)),

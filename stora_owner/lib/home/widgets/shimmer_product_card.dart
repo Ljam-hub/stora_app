@@ -25,9 +25,9 @@ class ShimmerProductCard extends StatelessWidget {
             Expanded(
               flex: 5,
               child: Container(
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   color: HomeColors.cardElevated,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
                 ),
               ),
             ),

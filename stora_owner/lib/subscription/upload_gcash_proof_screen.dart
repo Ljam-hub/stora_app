@@ -277,7 +277,7 @@ class _UploadGcashProofScreenState extends State<UploadGcashProofScreen> {
     final hasQrCode = _qrCodeUrl != null && _qrCodeUrl!.isNotEmpty;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: HomeColors.scaffoldBackground,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 36),
@@ -289,20 +289,21 @@ class _UploadGcashProofScreenState extends State<UploadGcashProofScreen> {
                 children: [
                   IconButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.chevron_left, color: Colors.white),
+                    icon: Icon(Icons.chevron_left, color: HomeColors.textPrimary),
                     style: IconButton.styleFrom(
                       backgroundColor: HomeColors.cardBackground,
+                      side: BorderSide(color: HomeColors.cardBorder),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
                   ),
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       'Pay via GCash',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        color: Colors.white,
+                        color: HomeColors.textPrimary,
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
                       ),
@@ -311,9 +312,10 @@ class _UploadGcashProofScreenState extends State<UploadGcashProofScreen> {
                   IconButton(
                     tooltip: 'Past Receipts',
                     onPressed: () => PastReceiptsSheet.show(context),
-                    icon: const Icon(Icons.receipt_long_rounded, color: Colors.white, size: 20),
+                    icon: Icon(Icons.receipt_long_rounded, color: HomeColors.textPrimary, size: 20),
                     style: IconButton.styleFrom(
                       backgroundColor: HomeColors.cardBackground,
+                      side: BorderSide(color: HomeColors.cardBorder),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -347,7 +349,7 @@ class _UploadGcashProofScreenState extends State<UploadGcashProofScreen> {
                         const Text(
                           'AMOUNT TO SEND',
                           style: TextStyle(
-                            color: AppColors.label,
+                            color: Color(0xFFC084FC),
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
                             letterSpacing: 0.8,
@@ -396,7 +398,7 @@ class _UploadGcashProofScreenState extends State<UploadGcashProofScreen> {
                 decoration: BoxDecoration(
                   color: HomeColors.cardBackground,
                   borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: AppColors.fieldBorder),
+                  border: Border.all(color: HomeColors.cardBorder),
                 ),
                 child: Column(
                   children: [
@@ -430,10 +432,10 @@ class _UploadGcashProofScreenState extends State<UploadGcashProofScreen> {
                             ),
                           ),
                           const SizedBox(width: 10),
-                          const Text(
+                          Text(
                             'GCash Account Details',
                             style: TextStyle(
-                              color: Colors.white,
+                              color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF60A5FA) : const Color(0xFF005CEE),
                               fontSize: 13.5,
                               fontWeight: FontWeight.w700,
                             ),
@@ -451,10 +453,10 @@ class _UploadGcashProofScreenState extends State<UploadGcashProofScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text(
+                                Text(
                                   'ACCOUNT NAME',
                                   style: TextStyle(
-                                    color: AppColors.label,
+                                    color: HomeColors.textSecondary,
                                     fontSize: 11,
                                     fontWeight: FontWeight.w600,
                                     letterSpacing: 0.6,
@@ -472,8 +474,8 @@ class _UploadGcashProofScreenState extends State<UploadGcashProofScreen> {
                                     Flexible(
                                       child: Text(
                                         displayName,
-                                        style: const TextStyle(
-                                          color: Colors.white,
+                                        style: TextStyle(
+                                          color: HomeColors.textPrimary,
                                           fontSize: 16,
                                           fontWeight: FontWeight.w800,
                                           letterSpacing: 0.4,
@@ -487,10 +489,10 @@ class _UploadGcashProofScreenState extends State<UploadGcashProofScreen> {
                             ),
                           ),
                           IconButton(
-                            icon: const Icon(
+                            icon: Icon(
                               Icons.copy_rounded,
                               size: 18,
-                              color: AppColors.label,
+                              color: HomeColors.textSecondary,
                             ),
                             tooltip: 'Copy Name',
                             onPressed: () {
@@ -506,7 +508,7 @@ class _UploadGcashProofScreenState extends State<UploadGcashProofScreen> {
                       ),
                     ),
 
-                    const Divider(color: AppColors.fieldBorder, height: 1),
+                    Divider(color: HomeColors.cardBorder, height: 1),
 
                     // GCash Number Row
                     Padding(
@@ -517,10 +519,10 @@ class _UploadGcashProofScreenState extends State<UploadGcashProofScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text(
+                                Text(
                                   'GCASH NUMBER',
                                   style: TextStyle(
-                                    color: AppColors.label,
+                                    color: HomeColors.textSecondary,
                                     fontSize: 11,
                                     fontWeight: FontWeight.w600,
                                     letterSpacing: 0.6,
@@ -529,8 +531,8 @@ class _UploadGcashProofScreenState extends State<UploadGcashProofScreen> {
                                 const SizedBox(height: 4),
                                 Text(
                                   _gcashNumber,
-                                  style: const TextStyle(
-                                    color: Colors.white,
+                                  style: TextStyle(
+                                    color: HomeColors.textPrimary,
                                     fontSize: 17,
                                     fontWeight: FontWeight.w800,
                                     letterSpacing: 1.0,
@@ -590,25 +592,25 @@ class _UploadGcashProofScreenState extends State<UploadGcashProofScreen> {
                   decoration: BoxDecoration(
                     color: HomeColors.cardBackground,
                     borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: AppColors.fieldBorder),
+                    border: Border.all(color: HomeColors.cardBorder),
                   ),
                   child: Column(
                     children: [
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Row(
+                          Row(
                             children: [
-                              Icon(
+                              const Icon(
                                 Icons.qr_code_2_rounded,
                                 color: Color(0xFF00B0FF),
                                 size: 20,
                               ),
-                              SizedBox(width: 8),
+                              const SizedBox(width: 8),
                               Text(
                                 'OR SCAN QR CODE',
                                 style: TextStyle(
-                                  color: AppColors.label,
+                                  color: HomeColors.textSecondary,
                                   fontSize: 11,
                                   fontWeight: FontWeight.w700,
                                   letterSpacing: 0.6,
@@ -693,11 +695,11 @@ class _UploadGcashProofScreenState extends State<UploadGcashProofScreen> {
                         ),
                       ),
                       const SizedBox(height: 12),
-                      const Text(
+                      Text(
                         'Tap QR to enlarge • Accepts GCash, Maya & InstaPay',
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          color: AppColors.hint,
+                          color: HomeColors.textMuted,
                           fontSize: 11.5,
                           fontWeight: FontWeight.w500,
                         ),
@@ -709,10 +711,10 @@ class _UploadGcashProofScreenState extends State<UploadGcashProofScreen> {
               ],
 
               // Step 2: Upload Screenshot
-              const Text(
+              Text(
                 'UPLOAD SCREENSHOT',
                 style: TextStyle(
-                  color: AppColors.label,
+                  color: HomeColors.textSecondary,
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 0.6,
@@ -726,12 +728,12 @@ class _UploadGcashProofScreenState extends State<UploadGcashProofScreen> {
                   width: double.infinity,
                   height: 140,
                   decoration: BoxDecoration(
-                    color: AppColors.fieldBackground,
+                    color: HomeColors.cardElevated,
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
                       color: _screenshotBytes != null
                           ? const Color(0xFF00E676)
-                          : AppColors.fieldBorder,
+                          : HomeColors.cardBorder,
                       width: 1.3,
                     ),
                     image: _screenshotBytes != null
@@ -749,28 +751,28 @@ class _UploadGcashProofScreenState extends State<UploadGcashProofScreen> {
                           ),
                         )
                       : _screenshotBytes == null
-                          ? const Column(
+                          ? Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(
+                                const Icon(
                                   Icons.cloud_upload_rounded,
                                   color: Color(0xFFFF6B00),
                                   size: 28,
                                 ),
-                                SizedBox(height: 8),
+                                const SizedBox(height: 8),
                                 Text(
                                   '+ Attach GCash Receipt',
                                   style: TextStyle(
-                                    color: Colors.white,
+                                    color: HomeColors.textPrimary,
                                     fontSize: 13.5,
                                     fontWeight: FontWeight.w700,
                                   ),
                                 ),
-                                SizedBox(height: 4),
+                                const SizedBox(height: 4),
                                 Text(
                                   'Screenshot of completed transfer',
                                   style: TextStyle(
-                                    color: AppColors.hint,
+                                    color: HomeColors.textMuted,
                                     fontSize: 11.5,
                                   ),
                                 ),
@@ -803,7 +805,7 @@ class _UploadGcashProofScreenState extends State<UploadGcashProofScreen> {
               const SizedBox(height: 20),
 
               // Step 3: Reference Number
-              const FittedBox(
+              FittedBox(
                 fit: BoxFit.scaleDown,
                 alignment: Alignment.centerLeft,
                 child: Row(
@@ -812,17 +814,17 @@ class _UploadGcashProofScreenState extends State<UploadGcashProofScreen> {
                     Text(
                       'REFERENCE NUMBER',
                       style: TextStyle(
-                        color: AppColors.label,
+                        color: HomeColors.textSecondary,
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 0.6,
                       ),
                     ),
-                    SizedBox(width: 6),
+                    const SizedBox(width: 6),
                     Text(
                       '(OPTIONAL)',
                       style: TextStyle(
-                        color: AppColors.label,
+                        color: HomeColors.textMuted,
                         fontSize: 10,
                         fontWeight: FontWeight.w600,
                         letterSpacing: 0.5,
@@ -835,29 +837,29 @@ class _UploadGcashProofScreenState extends State<UploadGcashProofScreen> {
               TextFormField(
                 controller: _referenceController,
                 keyboardType: TextInputType.number,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: HomeColors.textPrimary,
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 0.5,
                 ),
                 decoration: InputDecoration(
                   hintText: 'e.g. 0002 104 552 991 (optional)',
-                  hintStyle: const TextStyle(color: AppColors.hint, fontSize: 13),
-                  prefixIcon: const Icon(
+                  hintStyle: TextStyle(color: HomeColors.textMuted, fontSize: 13),
+                  prefixIcon: Icon(
                     Icons.tag_rounded,
-                    color: AppColors.label,
+                    color: HomeColors.textSecondary,
                     size: 18,
                   ),
                   filled: true,
-                  fillColor: AppColors.fieldBackground,
+                  fillColor: HomeColors.cardElevated,
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: 16,
                     vertical: 14,
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(color: AppColors.fieldBorder),
+                    borderSide: BorderSide(color: HomeColors.cardBorder),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
@@ -887,15 +889,19 @@ class _UploadGcashProofScreenState extends State<UploadGcashProofScreen> {
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(color: const Color(0xFFC084FC).withValues(alpha: 0.6), width: 1.2),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.receipt_long_rounded, size: 18, color: Color(0xFFC084FC)),
-                        SizedBox(width: 8),
+                        Icon(
+                          Icons.receipt_long_rounded,
+                          size: 18,
+                          color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFFC084FC) : const Color(0xFF7E22CE),
+                        ),
+                        const SizedBox(width: 8),
                         Text(
                           'View Past Subscription Receipts',
                           style: TextStyle(
-                            color: Color(0xFFE9D5FF),
+                            color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFFE9D5FF) : const Color(0xFF7E22CE),
                             fontWeight: FontWeight.w700,
                             fontSize: 13.5,
                           ),

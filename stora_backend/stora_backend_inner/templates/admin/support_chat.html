@@ -553,6 +553,19 @@
     display: none !important;
   }
 
+  .stora-spinner-small {
+    width: 18px;
+    height: 18px;
+    border: 2px solid rgba(255, 143, 61, 0.25);
+    border-top-color: #FF8F3D;
+    border-radius: 50%;
+    animation: stora-spin 0.6s linear infinite;
+    display: inline-block;
+  }
+  @keyframes stora-spin {
+    to { transform: rotate(360deg); }
+  }
+
   .stora-chat-header {
     flex-shrink: 0 !important;
     padding: 12px 20px;
@@ -1145,7 +1158,10 @@
     }
   }
 
+  const messagesCache = {};
+  const partnerCache = {};
   let lastConvosJson = '';
+
   async function loadConversations() {
     try {
       const res = await fetch("{% url 'admin:support_conversations_api' %}");
@@ -1155,6 +1171,9 @@
       if (newJson !== lastConvosJson) {
         lastConvosJson = newJson;
         conversationsData = data.conversations || [];
+        conversationsData.forEach(c => {
+          partnerCache[c.user_id] = c;
+        });
         renderConversations();
         updateUnreadTotal();
       }
@@ -1285,8 +1304,10 @@
   }
 
   async function selectUser(userId) {
+    if (activeUserId === userId && document.getElementById('active-chat') && !document.getElementById('active-chat').classList.contains('is-hidden')) {
+      return;
+    }
     activeUserId = userId;
-    lastMessagesJson = '';
     renderConversations();
 
     const emptyState = document.getElementById('empty-state');
@@ -1300,19 +1321,50 @@
       activeChat.style.setProperty('display', 'flex', 'important');
     }
 
+    // 1. INSTANT 0ms: Render chat header from memory immediately
+    const partner = partnerCache[userId] || conversationsData.find(c => c.user_id === userId);
+    if (partner) {
+      renderChatHeader(partner);
+    }
+
+    // 2. INSTANT 0ms: Render messages from cache if available
+    if (messagesCache[userId]) {
+      renderMessagesStream(messagesCache[userId], true);
+    } else {
+      const stream = document.getElementById('messages-stream');
+      if (stream) {
+        stream.innerHTML = '<div style="margin: auto; display: flex; align-items: center; gap: 10px; color: #9CA3AF; font-size: 13.5px;"><div class="stora-spinner-small"></div> Loading conversation...</div>';
+      }
+      lastMessagesJson = '';
+    }
+
+    // 3. Clear unread badge locally for immediate feedback
+    updateConversationsUnreadLocally(userId);
+
+    // 4. Fetch latest messages in the background
     await loadActiveMessages(true);
   }
 
   async function loadActiveMessages(forceScroll = false) {
     if (!activeUserId) return;
+    const currentFetchingId = activeUserId;
     try {
-      const res = await fetch(`{% url 'admin:support_messages_api' %}?user_id=${activeUserId}`);
+      const res = await fetch(`{% url 'admin:support_messages_api' %}?user_id=${currentFetchingId}`);
       if (!res.ok) return;
       const data = await res.json();
-      renderChatHeader(data.partner);
-      renderMessagesStream(data.messages, forceScroll);
 
-      updateConversationsUnreadLocally(activeUserId);
+      messagesCache[currentFetchingId] = data.messages || [];
+      if (data.partner) {
+        partnerCache[currentFetchingId] = data.partner;
+      }
+
+      if (activeUserId === currentFetchingId) {
+        if (data.partner) {
+          renderChatHeader(data.partner);
+        }
+        renderMessagesStream(data.messages, forceScroll);
+        updateConversationsUnreadLocally(currentFetchingId);
+      }
     } catch (e) {
       console.error("Failed to load messages", e);
     }
@@ -1485,6 +1537,7 @@
         }
       });
       if (res.ok) {
+        delete messagesCache[activeUserId];
         lastMessagesJson = '';
         await loadActiveMessages(true);
         lastConvosJson = '';
@@ -1509,6 +1562,7 @@
         }
       });
       if (res.ok) {
+        delete messagesCache[activeUserId];
         lastMessagesJson = '';
         await loadActiveMessages(true);
         lastConvosJson = '';
@@ -1538,6 +1592,8 @@
         }
       });
       if (res.ok) {
+        delete messagesCache[activeUserId];
+        delete partnerCache[activeUserId];
         activeUserId = null;
         lastMessagesJson = '';
         const activeChat = document.getElementById('active-chat');
@@ -1620,6 +1676,7 @@
       if (res.ok) {
         input.value = '';
         clearAttachment();
+        delete messagesCache[activeUserId];
         lastMessagesJson = '';
         await loadActiveMessages(true);
         lastConvosJson = '';

@@ -129,7 +129,7 @@ class ProductCard extends StatelessWidget {
                             product.storeName!,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: AppColors.textMuted,
                               fontSize: 11,
                               fontWeight: FontWeight.w500,
@@ -140,7 +140,7 @@ class ProductCard extends StatelessWidget {
                           product.name,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: AppColors.textPrimary,
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
@@ -158,8 +158,8 @@ class ProductCard extends StatelessWidget {
                             alignment: Alignment.centerLeft,
                             child: Text(
                               product.formattedPrice,
-                              style: const TextStyle(
-                                color: Colors.white,
+                              style: TextStyle(
+                                color: AppColors.textPrimary,
                                 fontSize: 15,
                                 fontWeight: FontWeight.w900,
                                 letterSpacing: -0.3,
@@ -184,17 +184,17 @@ class ProductCard extends StatelessWidget {
                                 InkWell(
                                   onTap: () => cart.decrement(product.id),
                                   borderRadius: const BorderRadius.horizontal(left: Radius.circular(15)),
-                                  child: const Padding(
-                                    padding: EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                                    child: Icon(Icons.remove, size: 13, color: Colors.white),
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                                    child: Icon(Icons.remove, size: 13, color: AppColors.textPrimary),
                                   ),
                                 ),
                                 Padding(
                                   padding: const EdgeInsets.symmetric(horizontal: 4),
                                   child: Text(
                                     '$inCartQty',
-                                    style: const TextStyle(
-                                      color: Colors.white,
+                                    style: TextStyle(
+                                      color: AppColors.textPrimary,
                                       fontWeight: FontWeight.w800,
                                       fontSize: 12,
                                     ),
@@ -203,9 +203,9 @@ class ProductCard extends StatelessWidget {
                                 InkWell(
                                   onTap: () => cart.increment(product.id),
                                   borderRadius: const BorderRadius.horizontal(right: Radius.circular(15)),
-                                  child: const Padding(
-                                    padding: EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                                    child: Icon(Icons.add, size: 13, color: Colors.white),
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                                    child: Icon(Icons.add, size: 13, color: AppColors.textPrimary),
                                   ),
                                 ),
                               ],

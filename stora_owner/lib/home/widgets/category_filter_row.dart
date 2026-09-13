@@ -29,7 +29,7 @@ class CategoryChip extends StatelessWidget {
         child: Text(
           label,
           style: TextStyle(
-            color: selected ? Colors.white : AppColors.label,
+            color: selected ? Colors.white : HomeColors.textSecondary,
             fontSize: 12,
             fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
           ),
@@ -93,9 +93,9 @@ class CategoryFilterRow extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: HomeColors.cardBackground,
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: AppColors.fieldBorder),
+                  border: Border.all(color: HomeColors.cardBorder),
                 ),
-                child: const Icon(Icons.tune_rounded, size: 16, color: AppColors.label),
+                child: Icon(Icons.tune_rounded, size: 16, color: HomeColors.textSecondary),
               ),
             ),
         ];
@@ -121,15 +121,15 @@ class ManageCategoriesDialog extends StatelessWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: HomeColors.cardBackground,
-        title: const Text('Delete category?', style: TextStyle(color: Colors.white)),
+        title: Text('Delete category?', style: TextStyle(color: HomeColors.textPrimary)),
         content: Text(
           'Products already using "$cat" will keep it, but it won\'t be selectable for new products.',
-          style: const TextStyle(color: AppColors.label),
+          style: TextStyle(color: HomeColors.textSecondary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel', style: TextStyle(color: AppColors.label)),
+            child: Text('Cancel', style: TextStyle(color: HomeColors.textSecondary)),
           ),
           TextButton(
             onPressed: () {
@@ -151,20 +151,20 @@ class ManageCategoriesDialog extends StatelessWidget {
         final store = CategoryStore.instance;
         return AlertDialog(
           backgroundColor: HomeColors.cardBackground,
-          title: const Text('Manage categories', style: TextStyle(color: Colors.white)),
+          title: Text('Manage categories', style: TextStyle(color: HomeColors.textPrimary)),
           content: SizedBox(
             width: double.maxFinite,
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxHeight: 360),
               child: store.categories.isEmpty
-                  ? const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 20),
-                      child: Text('No categories yet', style: TextStyle(color: AppColors.label)),
+                  ? Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 20),
+                      child: Text('No categories yet', style: TextStyle(color: HomeColors.textSecondary)),
                     )
                   : ListView.separated(
                       shrinkWrap: true,
                       itemCount: store.categories.length,
-                      separatorBuilder: (_, _) => const Divider(color: AppColors.fieldBorder, height: 1),
+                      separatorBuilder: (_, _) => Divider(color: HomeColors.cardBorder, height: 1),
                       itemBuilder: (context, i) {
                         final cat = store.categories[i];
                         final hidden = store.isHidden(cat);
@@ -176,7 +176,7 @@ class ManageCategoriesDialog extends StatelessWidget {
                                 child: Text(
                                   cat,
                                   style: TextStyle(
-                                    color: hidden ? AppColors.label : Colors.white,
+                                    color: hidden ? HomeColors.textSecondary : HomeColors.textPrimary,
                                     fontSize: 14,
                                   ),
                                 ),
@@ -186,7 +186,7 @@ class ManageCategoriesDialog extends StatelessWidget {
                                 onPressed: () => store.toggleHidden(cat),
                                 icon: Icon(
                                   hidden ? Icons.visibility_off_rounded : Icons.visibility_rounded,
-                                  color: AppColors.label,
+                                  color: HomeColors.textSecondary,
                                   size: 20,
                                 ),
                               ),

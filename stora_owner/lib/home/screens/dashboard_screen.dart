@@ -94,7 +94,7 @@ class DashboardScreen extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text('Hi, ${AuthStore.instance.greetingName}',
-                              style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800, letterSpacing: -0.3)),
+                              style: TextStyle(color: HomeColors.textPrimary, fontSize: 20, fontWeight: FontWeight.w800, letterSpacing: -0.3)),
                           const SizedBox(height: 2),
                           Row(
                             children: [
@@ -108,7 +108,7 @@ class DashboardScreen extends StatelessWidget {
                               ),
                               const SizedBox(width: 6),
                               Text(formatFriendlyDate(DateTime.now()),
-                                  style: const TextStyle(color: AppColors.label, fontSize: 12, fontWeight: FontWeight.w500)),
+                                  style: TextStyle(color: HomeColors.textSecondary, fontSize: 12, fontWeight: FontWeight.w500)),
                             ],
                           ),
                         ],
@@ -120,7 +120,7 @@ class DashboardScreen extends StatelessWidget {
                           builder: (_) => const ProfileScreen(),
                         ),
                       ),
-                      icon: const Icon(Icons.settings_outlined, color: AppColors.label, size: 22),
+                      icon: Icon(Icons.settings_outlined, color: HomeColors.textSecondary, size: 22),
                     ),
                   ],
                 ),
@@ -197,8 +197,8 @@ class DashboardScreen extends StatelessWidget {
                                     children: [
                                       Row(
                                         children: [
-                                          const Text('AI Insights',
-                                              style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700)),
+                                          Text('AI Insights',
+                                              style: TextStyle(color: HomeColors.textPrimary, fontSize: 13, fontWeight: FontWeight.w700)),
                                           if (!AccountStatusStore.instance.isPremium) ...[
                                             const SizedBox(width: 5),
                                             Container(
@@ -223,8 +223,8 @@ class DashboardScreen extends StatelessWidget {
                                           ],
                                         ],
                                       ),
-                                      const Text('Smart store tips',
-                                          style: TextStyle(color: AppColors.label, fontSize: 11)),
+                                      Text('Smart store tips',
+                                          style: TextStyle(color: HomeColors.textSecondary, fontSize: 11)),
                                     ],
                                   ),
                                 ),
@@ -257,14 +257,14 @@ class DashboardScreen extends StatelessWidget {
                                   child: const Icon(Icons.location_on_rounded, color: Color(0xFF38BDF8), size: 16),
                                 ),
                                 const SizedBox(width: 10),
-                                const Expanded(
+                                Expanded(
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Text('Store Map',
-                                          style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700)),
+                                          style: TextStyle(color: HomeColors.textPrimary, fontSize: 13, fontWeight: FontWeight.w700)),
                                       Text('Pin your location',
-                                          style: TextStyle(color: AppColors.label, fontSize: 11)),
+                                          style: TextStyle(color: HomeColors.textSecondary, fontSize: 11)),
                                     ],
                                   ),
                                 ),
@@ -314,8 +314,8 @@ class DashboardScreen extends StatelessWidget {
                               children: [
                                 Row(
                                   children: [
-                                    const Text('Sales Analytics & Reports',
-                                        style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700)),
+                                    Text('Sales Analytics & Reports',
+                                        style: TextStyle(color: HomeColors.textPrimary, fontSize: 13, fontWeight: FontWeight.w700)),
                                     if (!AccountStatusStore.instance.isPremium) ...[
                                       const SizedBox(width: 6),
                                       Container(
@@ -340,12 +340,12 @@ class DashboardScreen extends StatelessWidget {
                                     ],
                                   ],
                                 ),
-                                const Text('View 7-day revenue charts & top sellers',
-                                    style: TextStyle(color: AppColors.label, fontSize: 11)),
+                                Text('View 7-day revenue charts & top sellers',
+                                    style: TextStyle(color: HomeColors.textSecondary, fontSize: 11)),
                               ],
                             ),
                           ),
-                          const Icon(Icons.chevron_right_rounded, color: AppColors.label, size: 20),
+                          Icon(Icons.chevron_right_rounded, color: HomeColors.textSecondary, size: 20),
                         ],
                       ),
                     ),
@@ -376,7 +376,7 @@ class DashboardScreen extends StatelessWidget {
                           badgeColor: AppColors.error,
                           badgeBg: HomeColors.dangerBg,
                           value: '$lowStockCount',
-                          valueColor: lowStockCount > 0 ? AppColors.error : Colors.white,
+                          valueColor: lowStockCount > 0 ? AppColors.error : HomeColors.textPrimary,
                         ),
                       ),
                     ],
@@ -659,7 +659,7 @@ class _StatCard extends StatelessWidget {
   final Color badgeColor;
   final Color badgeBg;
   final String value;
-  final Color valueColor;
+  final Color? valueColor;
   const _StatCard({
     required this.title,
     required this.icon,
@@ -667,7 +667,7 @@ class _StatCard extends StatelessWidget {
     required this.badgeColor,
     required this.badgeBg,
     required this.value,
-    this.valueColor = Colors.white,
+    this.valueColor,
   });
 
   @override
@@ -712,7 +712,7 @@ class _StatCard extends StatelessWidget {
             title,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(color: AppColors.label, fontSize: 13, fontWeight: FontWeight.w600),
+            style: TextStyle(color: HomeColors.textSecondary, fontSize: 13, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 6),
           FittedBox(
@@ -720,7 +720,7 @@ class _StatCard extends StatelessWidget {
             alignment: Alignment.centerLeft,
             child: Text(
               value,
-              style: TextStyle(color: valueColor, fontSize: 26, fontWeight: FontWeight.w900, letterSpacing: -0.5),
+              style: TextStyle(color: valueColor ?? HomeColors.textPrimary, fontSize: 26, fontWeight: FontWeight.w900, letterSpacing: -0.5),
             ),
           ),
         ],
@@ -751,12 +751,12 @@ class _FreePlanCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Row(
+              Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.workspace_premium_outlined, size: 16, color: AppColors.purpleLight),
-                  SizedBox(width: 6),
-                  Text('Free plan', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700)),
+                  const Icon(Icons.workspace_premium_outlined, size: 16, color: AppColors.purpleLight),
+                  const SizedBox(width: 6),
+                  Text('Free plan', style: TextStyle(color: HomeColors.textPrimary, fontSize: 14, fontWeight: FontWeight.w700)),
                 ],
               ),
               const SizedBox(width: 8),
@@ -766,7 +766,7 @@ class _FreePlanCard extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: AppColors.fieldBackground,
+                      color: HomeColors.cardElevated,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: HomeColors.cardBorder),
                     ),
@@ -787,7 +787,7 @@ class _FreePlanCard extends StatelessWidget {
             child: LinearProgressIndicator(
               value: progress,
               minHeight: 7,
-              backgroundColor: AppColors.fieldBorder,
+              backgroundColor: HomeColors.cardBorder,
               valueColor: AlwaysStoppedAnimation(progress >= 1.0 ? AppColors.error : AppColors.purple),
             ),
           ),
@@ -800,7 +800,7 @@ class _FreePlanCard extends StatelessWidget {
                   daysLeft > 0
                       ? 'Upgrade to Premium to unlock unlimited items.'
                       : 'Free trial ended. Upgrade to add more products.',
-                  style: const TextStyle(color: AppColors.label, fontSize: 12),
+                  style: TextStyle(color: HomeColors.textSecondary, fontSize: 12),
                 ),
               ),
               GestureDetector(
@@ -841,7 +841,7 @@ class _OutlinedAction extends StatelessWidget {
         ),
         style: OutlinedButton.styleFrom(
           backgroundColor: HomeColors.cardBackground,
-          side: const BorderSide(color: HomeColors.cardBorderLight),
+          side: BorderSide(color: HomeColors.cardBorderLight),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         ),
       ),
@@ -891,12 +891,12 @@ class _IncomingOrdersCard extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: hasPending ? AppColors.purpleLight.withValues(alpha: 0.18) : Colors.white10,
+                  color: hasPending ? AppColors.purpleLight.withValues(alpha: 0.18) : HomeColors.surfaceHover,
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Icon(
                   Icons.shopping_bag_outlined,
-                  color: hasPending ? AppColors.purpleLight : AppColors.label,
+                  color: hasPending ? AppColors.purpleLight : HomeColors.textSecondary,
                   size: 22,
                 ),
               ),
@@ -913,8 +913,8 @@ class _IncomingOrdersCard extends StatelessWidget {
                           hasPending ? '$pendingCount Incoming ${pendingCount == 1 ? 'Order' : 'Orders'}' : 'Customer Orders',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: HomeColors.textPrimary,
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
                             letterSpacing: -0.2,
@@ -948,7 +948,7 @@ class _IncomingOrdersCard extends StatelessWidget {
                         ? 'Tap to review, accept, or counter-offer'
                         : 'Review incoming customer carts and orders',
                     style: TextStyle(
-                      color: hasPending ? AppColors.purpleLight : AppColors.label,
+                      color: hasPending ? AppColors.purpleLight : HomeColors.textSecondary,
                       fontSize: 12,
                       fontWeight: hasPending ? FontWeight.w600 : FontWeight.w400,
                     ),
@@ -964,7 +964,7 @@ class _IncomingOrdersCard extends StatelessWidget {
               ),
               child: Icon(
                 Icons.arrow_forward_ios_rounded,
-                color: hasPending ? AppColors.purpleLight : AppColors.label,
+                color: hasPending ? AppColors.purpleLight : HomeColors.textSecondary,
                 size: 14,
               ),
             ),
@@ -995,22 +995,22 @@ void _showPremiumFeatureDialog(BuildContext context, {required String featureNam
             child: const Icon(Icons.workspace_premium_rounded, color: Colors.amber, size: 22),
           ),
           const SizedBox(width: 12),
-          const Expanded(
+          Expanded(
             child: Text(
               'Premium Feature',
-              style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800),
+              style: TextStyle(color: HomeColors.textPrimary, fontSize: 18, fontWeight: FontWeight.w800),
             ),
           ),
         ],
       ),
       content: Text(
         '$featureName is exclusive to Premium subscribers. Upgrade now to unlock advanced analytics, smart AI store recommendations, and unlimited products.',
-        style: const TextStyle(color: AppColors.label, fontSize: 13, height: 1.4),
+        style: TextStyle(color: HomeColors.textSecondary, fontSize: 13, height: 1.4),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(ctx).pop(),
-          child: const Text('Not Now', style: TextStyle(color: AppColors.label)),
+          child: Text('Not Now', style: TextStyle(color: HomeColors.textSecondary)),
         ),
         ElevatedButton(
           style: ElevatedButton.styleFrom(

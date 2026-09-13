@@ -149,14 +149,14 @@ class _SetStoreLocationScreenState extends State<SetStoreLocationScreen> {
           _message = 'Store location pinned successfully! Customers can now find you on their map.';
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             behavior: SnackBarBehavior.floating,
             backgroundColor: HomeColors.successBg,
             content: Row(
               children: [
-                Icon(Icons.check_circle_rounded, color: HomeColors.successText),
-                SizedBox(width: 10),
-                Text('Location saved and visible on map!', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                const Icon(Icons.check_circle_rounded, color: HomeColors.successText),
+                const SizedBox(width: 10),
+                Text('Location saved and visible on map!', style: TextStyle(color: HomeColors.textPrimary, fontWeight: FontWeight.bold)),
               ],
             ),
           ),
@@ -277,7 +277,7 @@ class _SetStoreLocationScreenState extends State<SetStoreLocationScreen> {
                 Expanded(
                   child: Text(
                     'GPS locked: ${position.latitude.toStringAsFixed(5)}, ${position.longitude.toStringAsFixed(5)}',
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                    style: TextStyle(color: HomeColors.successText, fontWeight: FontWeight.bold, fontSize: 13),
                   ),
                 ),
               ],
@@ -305,23 +305,23 @@ class _SetStoreLocationScreenState extends State<SetStoreLocationScreen> {
         backgroundColor: HomeColors.cardBackground,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          side: const BorderSide(color: HomeColors.cardBorder),
+          side: BorderSide(color: HomeColors.cardBorder),
         ),
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.location_off_rounded, color: Color(0xFFFFA726), size: 24),
-            SizedBox(width: 10),
-            Text('Location Is Turned Off', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
+            const Icon(Icons.location_off_rounded, color: Color(0xFFFFA726), size: 24),
+            const SizedBox(width: 10),
+            Text('Location Is Turned Off', style: TextStyle(color: HomeColors.textPrimary, fontSize: 17, fontWeight: FontWeight.bold)),
           ],
         ),
-        content: const Text(
+        content: Text(
           'Your device Location (GPS) is currently disabled. Please turn it on in device settings so Stora can detect your store coordinates.',
-          style: TextStyle(color: AppColors.label, fontSize: 14, height: 1.4),
+          style: TextStyle(color: HomeColors.textSecondary, fontSize: 14, height: 1.4),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel', style: TextStyle(color: AppColors.label)),
+            child: Text('Cancel', style: TextStyle(color: HomeColors.textSecondary)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -347,23 +347,23 @@ class _SetStoreLocationScreenState extends State<SetStoreLocationScreen> {
         backgroundColor: HomeColors.cardBackground,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          side: const BorderSide(color: HomeColors.cardBorder),
+          side: BorderSide(color: HomeColors.cardBorder),
         ),
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.security_rounded, color: Color(0xFFFFA726), size: 24),
-            SizedBox(width: 10),
-            Text('Permission Needed', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
+            const Icon(Icons.security_rounded, color: Color(0xFFFFA726), size: 24),
+            const SizedBox(width: 10),
+            Text('Permission Needed', style: TextStyle(color: HomeColors.textPrimary, fontSize: 17, fontWeight: FontWeight.bold)),
           ],
         ),
-        content: const Text(
+        content: Text(
           'Location permission is permanently denied for Stora. Please enable Location in Android App Settings.',
-          style: TextStyle(color: AppColors.label, fontSize: 14, height: 1.4),
+          style: TextStyle(color: HomeColors.textSecondary, fontSize: 14, height: 1.4),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel', style: TextStyle(color: AppColors.label)),
+            child: Text('Cancel', style: TextStyle(color: HomeColors.textSecondary)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -461,21 +461,21 @@ class _SetStoreLocationScreenState extends State<SetStoreLocationScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: HomeColors.background,
       appBar: AppBar(
-        backgroundColor: AppColors.background,
+        backgroundColor: HomeColors.background,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+          icon: Icon(Icons.arrow_back_ios_new_rounded, color: HomeColors.textPrimary, size: 20),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.location_on_rounded, color: AppColors.purpleLight, size: 20),
-            SizedBox(width: 8),
+            const Icon(Icons.location_on_rounded, color: AppColors.purpleLight, size: 20),
+            const SizedBox(width: 8),
             Text(
               'Set Store Location',
-              style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800),
+              style: TextStyle(color: HomeColors.textPrimary, fontSize: 18, fontWeight: FontWeight.w800),
             ),
           ],
         ),
@@ -581,7 +581,7 @@ class _SetStoreLocationScreenState extends State<SetStoreLocationScreen> {
                                 SizedBox(width: 6),
                                 Text(
                                   'GPS Coordinate Mapping',
-                                  style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w600),
+                                  style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
                                 ),
                               ],
                             ),
@@ -624,14 +624,14 @@ class _SetStoreLocationScreenState extends State<SetStoreLocationScreen> {
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(color: HomeColors.cardBorder),
                     ),
-                    child: const Row(
+                    child: Row(
                       children: [
-                        Icon(Icons.visibility_outlined, color: AppColors.purpleLight, size: 20),
-                        SizedBox(width: 12),
+                        const Icon(Icons.visibility_outlined, color: AppColors.purpleLight, size: 20),
+                        const SizedBox(width: 12),
                         Expanded(
                           child: Text(
                             'Customers browsing the Stora Customer app will see your store marker and can order directly from you.',
-                            style: TextStyle(color: AppColors.label, fontSize: 12, height: 1.4),
+                            style: TextStyle(color: HomeColors.textSecondary, fontSize: 12, height: 1.4),
                           ),
                         ),
                       ],
@@ -640,10 +640,10 @@ class _SetStoreLocationScreenState extends State<SetStoreLocationScreen> {
                   const SizedBox(height: 20),
 
                   // Quick City Presets
-                  const Text(
+                  Text(
                     'QUICK PRESETS (PHILIPPINES)',
                     style: TextStyle(
-                      color: AppColors.label,
+                      color: HomeColors.textSecondary,
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 1.1,
@@ -663,8 +663,8 @@ class _SetStoreLocationScreenState extends State<SetStoreLocationScreen> {
                             avatar: const Icon(Icons.place_rounded, size: 14, color: AppColors.purpleLight),
                             label: Text(loc['label'] as String),
                             backgroundColor: HomeColors.cardBackground,
-                            side: const BorderSide(color: HomeColors.cardBorder),
-                            labelStyle: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
+                            side: BorderSide(color: HomeColors.cardBorder),
+                            labelStyle: TextStyle(color: HomeColors.textPrimary, fontSize: 12, fontWeight: FontWeight.w600),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                             onPressed: () => _applyQuickLocation(loc),
                           ),
@@ -675,10 +675,10 @@ class _SetStoreLocationScreenState extends State<SetStoreLocationScreen> {
                   const SizedBox(height: 22),
 
                   // Address Input
-                  const Text(
+                  Text(
                     'STORE PHYSICAL ADDRESS',
                     style: TextStyle(
-                      color: AppColors.label,
+                      color: HomeColors.textSecondary,
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 1.1,
@@ -687,10 +687,10 @@ class _SetStoreLocationScreenState extends State<SetStoreLocationScreen> {
                   const SizedBox(height: 8),
                   TextField(
                     controller: _addressController,
-                    style: const TextStyle(color: Colors.white, fontSize: 14),
+                    style: TextStyle(color: HomeColors.textPrimary, fontSize: 14),
                     decoration: InputDecoration(
                       hintText: 'e.g., 123 Bgy. Santo Cristo, Sari-Sari Store Row',
-                      hintStyle: const TextStyle(color: AppColors.label),
+                      hintStyle: TextStyle(color: HomeColors.textMuted),
                       prefixIcon: const Icon(Icons.home_work_outlined, color: AppColors.purpleLight),
                       suffixIcon: _isGeocodingAddress
                           ? const Padding(
@@ -706,11 +706,11 @@ class _SetStoreLocationScreenState extends State<SetStoreLocationScreen> {
                       fillColor: HomeColors.cardBackground,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
-                        borderSide: const BorderSide(color: HomeColors.cardBorder),
+                        borderSide: BorderSide(color: HomeColors.cardBorder),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
-                        borderSide: const BorderSide(color: HomeColors.cardBorder),
+                        borderSide: BorderSide(color: HomeColors.cardBorder),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
@@ -727,26 +727,26 @@ class _SetStoreLocationScreenState extends State<SetStoreLocationScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
+                            Text(
                               'LATITUDE',
-                              style: TextStyle(color: AppColors.label, fontSize: 11, fontWeight: FontWeight.w700),
+                              style: TextStyle(color: HomeColors.textSecondary, fontSize: 11, fontWeight: FontWeight.w700),
                             ),
                             const SizedBox(height: 6),
                             TextField(
                               controller: _latController,
                               onChanged: _onLatLngChanged,
                               keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                              style: const TextStyle(color: Colors.white, fontSize: 13),
+                              style: TextStyle(color: HomeColors.textPrimary, fontSize: 13),
                               decoration: InputDecoration(
                                 filled: true,
                                 fillColor: HomeColors.cardBackground,
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(14),
-                                  borderSide: const BorderSide(color: HomeColors.cardBorder),
+                                  borderSide: BorderSide(color: HomeColors.cardBorder),
                                 ),
                                 enabledBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(14),
-                                  borderSide: const BorderSide(color: HomeColors.cardBorder),
+                                  borderSide: BorderSide(color: HomeColors.cardBorder),
                                 ),
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(14),
@@ -762,26 +762,26 @@ class _SetStoreLocationScreenState extends State<SetStoreLocationScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
+                            Text(
                               'LONGITUDE',
-                              style: TextStyle(color: AppColors.label, fontSize: 11, fontWeight: FontWeight.w700),
+                              style: TextStyle(color: HomeColors.textSecondary, fontSize: 11, fontWeight: FontWeight.w700),
                             ),
                             const SizedBox(height: 6),
                             TextField(
                               controller: _lngController,
                               onChanged: _onLatLngChanged,
                               keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                              style: const TextStyle(color: Colors.white, fontSize: 13),
+                              style: TextStyle(color: HomeColors.textPrimary, fontSize: 13),
                               decoration: InputDecoration(
                                 filled: true,
                                 fillColor: HomeColors.cardBackground,
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(14),
-                                  borderSide: const BorderSide(color: HomeColors.cardBorder),
+                                  borderSide: BorderSide(color: HomeColors.cardBorder),
                                 ),
                                 enabledBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(14),
-                                  borderSide: const BorderSide(color: HomeColors.cardBorder),
+                                  borderSide: BorderSide(color: HomeColors.cardBorder),
                                 ),
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(14),
@@ -810,9 +810,10 @@ class _SetStoreLocationScreenState extends State<SetStoreLocationScreen> {
                       child: Text(
                         _message!,
                         style: TextStyle(
-                          color: _isError ? const Color(0xFFFF9B9B) : const Color(0xFFA7F3D0),
+                          color: _isError ? AppColors.error : HomeColors.successText,
                           fontSize: 12,
                           height: 1.4,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),

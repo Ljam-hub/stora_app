@@ -69,17 +69,17 @@ class SubscriptionReceiptModal {
                       child: const Icon(Icons.receipt_long_rounded, color: Color(0xFF34D399), size: 24),
                     ),
                     const SizedBox(width: 14),
-                    const Expanded(
+                    Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             'Subscription Receipt',
-                            style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold),
+                            style: TextStyle(color: HomeColors.textPrimary, fontSize: 17, fontWeight: FontWeight.bold),
                           ),
                           Text(
                             'Official digital proof of payment',
-                            style: TextStyle(color: Color(0xFFCBD5E1), fontSize: 12),
+                            style: TextStyle(color: HomeColors.textSecondary, fontSize: 12),
                           ),
                         ],
                       ),
@@ -90,29 +90,23 @@ class SubscriptionReceiptModal {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1A1326),
+                    color: HomeColors.cardElevated,
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: const Color(0xFFA855F7).withValues(alpha: 0.4), width: 1.2),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFFA855F7).withValues(alpha: 0.08),
-                        blurRadius: 16,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
+                    border: Border.all(color: HomeColors.cardBorder, width: 1.2),
+                    boxShadow: HomeColors.cardShadow,
                   ),
                   child: Column(
                     children: [
                       _receiptRow('Plan', planName),
-                      Divider(color: const Color(0xFFA855F7).withValues(alpha: 0.2), height: 16),
-                      _receiptRow('Status', 'PAID & ACTIVE', valueColor: const Color(0xFF34D399), isBold: true),
-                      Divider(color: const Color(0xFFA855F7).withValues(alpha: 0.2), height: 16),
-                      _receiptRow('Amount', amountFormatted, valueColor: const Color(0xFF4ADE80), isBold: true),
-                      Divider(color: const Color(0xFFA855F7).withValues(alpha: 0.2), height: 16),
+                      Divider(color: HomeColors.cardBorder, height: 16),
+                      _receiptRow('Status', 'PAID & ACTIVE', valueColor: HomeColors.successText, isBold: true),
+                      Divider(color: HomeColors.cardBorder, height: 16),
+                      _receiptRow('Amount', amountFormatted, valueColor: HomeColors.successText, isBold: true),
+                      Divider(color: HomeColors.cardBorder, height: 16),
                       _receiptRow('Payment Method', 'GCash'),
-                      Divider(color: const Color(0xFFA855F7).withValues(alpha: 0.2), height: 16),
+                      Divider(color: HomeColors.cardBorder, height: 16),
                       _receiptRow('Reference #', ref),
-                      Divider(color: const Color(0xFFA855F7).withValues(alpha: 0.2), height: 16),
+                      Divider(color: HomeColors.cardBorder, height: 16),
                       _receiptRow('Date', formatManilaShortDateTime(date)),
                     ],
                   ),
@@ -123,7 +117,7 @@ class SubscriptionReceiptModal {
                     Expanded(
                       child: OutlinedButton.icon(
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.white,
+                          foregroundColor: HomeColors.textPrimary,
                           backgroundColor: const Color(0xFF9333EA).withValues(alpha: 0.12),
                           side: BorderSide(color: const Color(0xFFA855F7).withValues(alpha: 0.7), width: 1.2),
                           padding: const EdgeInsets.symmetric(vertical: 14),
@@ -149,7 +143,7 @@ class SubscriptionReceiptModal {
                     Expanded(
                       child: OutlinedButton.icon(
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.white,
+                          foregroundColor: HomeColors.textPrimary,
                           backgroundColor: const Color(0xFF9333EA).withValues(alpha: 0.12),
                           side: BorderSide(color: const Color(0xFFA855F7).withValues(alpha: 0.7), width: 1.2),
                           padding: const EdgeInsets.symmetric(vertical: 14),
@@ -210,11 +204,11 @@ class SubscriptionReceiptModal {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: const TextStyle(color: Color(0xFFC4B5FD), fontSize: 13, fontWeight: FontWeight.w500)),
+        Text(label, style: TextStyle(color: HomeColors.textSecondary, fontSize: 13, fontWeight: FontWeight.w500)),
         Text(
           value,
           style: TextStyle(
-            color: valueColor ?? Colors.white,
+            color: valueColor ?? HomeColors.textPrimary,
             fontSize: 13,
             fontWeight: isBold ? FontWeight.bold : FontWeight.w500,
           ),

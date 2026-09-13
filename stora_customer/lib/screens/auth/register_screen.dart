@@ -83,7 +83,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Text(
+                  Text(
                     'Join Stora',
                     style: TextStyle(
                       fontSize: 24,
@@ -92,7 +92,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                   ),
                   const SizedBox(height: 6),
-                  const Text(
+                  Text(
                     'Create your account to order items from nearby stores',
                     style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
                   ),
@@ -176,7 +176,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Text(
+                      Text(
                         'Already have an account?',
                         style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
                       ),

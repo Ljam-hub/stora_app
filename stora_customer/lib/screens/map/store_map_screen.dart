@@ -207,8 +207,8 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
               const Divider(height: 1),
               Flexible(
                 child: stores.isEmpty
-                    ? const Padding(
-                        padding: EdgeInsets.all(32.0),
+                    ? Padding(
+                        padding: const EdgeInsets.all(32.0),
                         child: Center(
                           child: Text(
                             'No stores found.',
@@ -246,7 +246,7 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
                               s.address.isNotEmpty ? s.address : dist,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+                              style: TextStyle(fontSize: 12, color: AppColors.textMuted),
                             ),
                             trailing: ElevatedButton(
                               onPressed: () {
@@ -531,7 +531,7 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
                           ? 'Try searching with another term or clear the filter.'
                           : 'Be the first to introduce local merchants to Stora.',
                       textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+                      style: TextStyle(fontSize: 12, color: AppColors.textMuted),
                     ),
                     const SizedBox(height: 16),
                     Row(
@@ -958,7 +958,7 @@ class _StoreCarouselCard extends StatelessWidget {
                       style: const TextStyle(color: AppColors.primaryLight, fontSize: 11, fontWeight: FontWeight.w700),
                     ),
                     const SizedBox(width: 6),
-                    Container(width: 3, height: 3, decoration: const BoxDecoration(color: AppColors.textMuted, shape: BoxShape.circle)),
+                    Container(width: 3, height: 3, decoration: BoxDecoration(color: AppColors.textMuted, shape: BoxShape.circle)),
                     const SizedBox(width: 6),
                     const Text('Open', style: TextStyle(color: AppColors.success, fontSize: 11, fontWeight: FontWeight.w700)),
                   ],
@@ -967,7 +967,7 @@ class _StoreCarouselCard extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     store.address,
-                    style: const TextStyle(color: AppColors.textMuted, fontSize: 11),
+                    style: TextStyle(color: AppColors.textMuted, fontSize: 11),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),

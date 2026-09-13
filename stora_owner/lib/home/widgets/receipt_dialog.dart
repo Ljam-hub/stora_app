@@ -158,8 +158,8 @@ class _ReceiptDialogState extends State<ReceiptDialog> {
                   Expanded(
                     child: OutlinedButton.icon(
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        side: const BorderSide(color: HomeColors.cardBorder),
+                        foregroundColor: HomeColors.textPrimary,
+                        side: BorderSide(color: HomeColors.cardBorder),
                         backgroundColor: HomeColors.cardBackground,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),

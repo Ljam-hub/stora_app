@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../models/product_model.dart';
 import '../../providers/cart_provider.dart';
 import '../../theme/app_theme.dart';
+import '../../theme/theme_controller.dart';
 import '../../widgets/gradient_button.dart';
 import '../../widgets/product_image.dart';
 import '../chat/customer_chat_screen.dart';
@@ -29,9 +30,9 @@ class _ProductDetailSheetState extends State<ProductDetailSheet> {
     final maxAvailable = product.stock;
 
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: AppColors.cardBackground,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: SafeArea(
         top: false,
@@ -101,11 +102,11 @@ class _ProductDetailSheetState extends State<ProductDetailSheet> {
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Icon(Icons.storefront_outlined, size: 14, color: AppColors.textSecondary),
+                                Icon(Icons.storefront_outlined, size: 14, color: AppColors.textSecondary),
                                 const SizedBox(width: 4),
                                 Text(
                                   product.storeName!,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     color: AppColors.textSecondary,
                                     fontSize: 12,
                                   ),
@@ -139,7 +140,7 @@ class _ProductDetailSheetState extends State<ProductDetailSheet> {
                     // Product Name
                     Text(
                       product.name,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                         color: AppColors.textPrimary,
@@ -200,7 +201,7 @@ class _ProductDetailSheetState extends State<ProductDetailSheet> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
+                            Text(
                               'About this product',
                               style: TextStyle(
                                 color: AppColors.textSecondary,
@@ -211,7 +212,7 @@ class _ProductDetailSheetState extends State<ProductDetailSheet> {
                             const SizedBox(height: 4),
                             Text(
                               product.bio,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: AppColors.textPrimary,
                                 fontSize: 14,
                                 height: 1.4,
@@ -228,7 +229,7 @@ class _ProductDetailSheetState extends State<ProductDetailSheet> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
+                          Text(
                             'Quantity',
                             style: TextStyle(
                               color: AppColors.textSecondary,
@@ -285,9 +286,9 @@ class _ProductDetailSheetState extends State<ProductDetailSheet> {
                           if (!added && cart.isNotEmpty && cart.storeId != product.ownerId) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: const Text(
+                                content: Text(
                                   'Your cart contains items from another store. Clear cart first?',
-                                  style: TextStyle(color: Colors.white),
+                                  style: TextStyle(color: AppColors.textPrimary),
                                 ),
                                 backgroundColor: AppColors.cardElevated,
                                 action: SnackBarAction(
@@ -312,7 +313,11 @@ class _ProductDetailSheetState extends State<ProductDetailSheet> {
                                     Expanded(
                                       child: Text(
                                         'Added $_quantity "${product.name}" to cart',
-                                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13),
+                                        style: TextStyle(
+                                          color: CustomerThemeController.instance.isDarkMode ? Colors.white : const Color(0xFF065F46),
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 13,
+                                        ),
                                       ),
                                     ),
                                   ],
@@ -336,7 +341,7 @@ class _ProductDetailSheetState extends State<ProductDetailSheet> {
                           color: AppColors.cardElevated,
                           borderRadius: BorderRadius.circular(14),
                         ),
-                        child: const Center(
+                        child: Center(
                           child: Text(
                             'Currently Unavailable',
                             style: TextStyle(
@@ -367,7 +372,7 @@ class _ProductDetailSheetState extends State<ProductDetailSheet> {
                         icon: const Icon(Icons.chat_bubble_outline_rounded, size: 16, color: AppColors.primaryLight),
                         label: Text(
                           'Chat with ${product.storeName ?? "Store"}',
-                          style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
+                          style: TextStyle(color: AppColors.textPrimary, fontSize: 13, fontWeight: FontWeight.w600),
                         ),
                         style: OutlinedButton.styleFrom(
                           side: BorderSide(color: AppColors.primary.withValues(alpha: 0.4)),

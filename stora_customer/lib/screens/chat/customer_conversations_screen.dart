@@ -57,21 +57,21 @@ class _CustomerConversationsScreenState extends State<CustomerConversationsScree
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.cardBackground,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.delete_outline_rounded, color: AppColors.danger, size: 22),
-            SizedBox(width: 10),
-            Text('Delete Conversation?', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
+            const Icon(Icons.delete_outline_rounded, color: AppColors.danger, size: 22),
+            const SizedBox(width: 10),
+            Text('Delete Conversation?', style: TextStyle(color: AppColors.textPrimary, fontSize: 17, fontWeight: FontWeight.bold)),
           ],
         ),
         content: Text(
           'Are you sure you want to delete the conversation with $storeName? This will only be removed for you; the other person can still see it unless they delete it too.',
-          style: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
+          style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel', style: TextStyle(color: AppColors.textMuted)),
+            child: Text('Cancel', style: TextStyle(color: AppColors.textMuted)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -150,7 +150,13 @@ class _CustomerConversationsScreenState extends State<CustomerConversationsScree
     }
   }
 
-  Widget _buildSupportCard() {
+  Widget _buildSupportCard(ChatProvider chatProvider) {
+    final supportConvo = chatProvider.conversations.firstWhere(
+      (c) => c['is_support'] == true,
+      orElse: () => const {},
+    );
+    final supportAvatar = supportConvo['avatar_url']?.toString();
+    final hasSupportAvatar = supportAvatar != null && supportAvatar.isNotEmpty;
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 10),
       decoration: BoxDecoration(
@@ -181,16 +187,22 @@ class _CustomerConversationsScreenState extends State<CustomerConversationsScree
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             child: Row(
               children: [
-                Container(
-                  width: 42,
-                  height: 42,
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.25),
-                    shape: BoxShape.circle,
-                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.6)),
-                  ),
-                  child: const Icon(Icons.support_agent_rounded, color: AppColors.primary, size: 24),
-                ),
+                hasSupportAvatar
+                    ? CircleAvatar(
+                        radius: 21,
+                        backgroundColor: AppColors.primary.withValues(alpha: 0.25),
+                        backgroundImage: NetworkImage(supportAvatar),
+                      )
+                    : Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.25),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: AppColors.primary.withValues(alpha: 0.6)),
+                        ),
+                        child: const Icon(Icons.support_agent_rounded, color: AppColors.primary, size: 24),
+                      ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -217,7 +229,7 @@ class _CustomerConversationsScreenState extends State<CustomerConversationsScree
                         ],
                       ),
                       const SizedBox(height: 2),
-                      const Text(
+                      Text(
                         'Orders, delivery & customer assistance',
                         style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
                       ),
@@ -280,14 +292,14 @@ class _CustomerConversationsScreenState extends State<CustomerConversationsScree
             child: TextField(
               controller: _searchController,
               onChanged: (val) => setState(() => _searchQuery = val),
-              style: const TextStyle(color: Colors.white, fontSize: 14),
+              style: TextStyle(color: AppColors.textPrimary, fontSize: 14),
               decoration: InputDecoration(
                 hintText: 'Search stores or messages...',
-                hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 14),
-                prefixIcon: const Icon(Icons.search_rounded, color: AppColors.textMuted, size: 20),
+                hintStyle: TextStyle(color: AppColors.textMuted, fontSize: 14),
+                prefixIcon: Icon(Icons.search_rounded, color: AppColors.textMuted, size: 20),
                 suffixIcon: _searchQuery.isNotEmpty
                     ? IconButton(
-                        icon: const Icon(Icons.clear_rounded, color: AppColors.textMuted, size: 18),
+                        icon: Icon(Icons.clear_rounded, color: AppColors.textMuted, size: 18),
                         onPressed: () {
                           _searchController.clear();
                           setState(() => _searchQuery = '');
@@ -299,7 +311,7 @@ class _CustomerConversationsScreenState extends State<CustomerConversationsScree
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+                  borderSide: BorderSide(color: AppColors.cardBorder),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
@@ -315,7 +327,7 @@ class _CustomerConversationsScreenState extends State<CustomerConversationsScree
 
           // Pinned Support Card
           if (_searchQuery.trim().isEmpty || 'stora support'.contains(_searchQuery.trim().toLowerCase()))
-            _buildSupportCard(),
+            _buildSupportCard(chatProvider),
 
           // Conversation list
           Expanded(
@@ -417,20 +429,26 @@ class _CustomerConversationsScreenState extends State<CustomerConversationsScree
                                           children: [
                                             // Avatar
                                             if (isSupport)
-                                              Container(
-                                                width: 52,
-                                                height: 52,
-                                                decoration: BoxDecoration(
-                                                  shape: BoxShape.circle,
-                                                  color: const Color(0xFFF97316).withValues(alpha: 0.15),
-                                                  border: Border.all(color: const Color(0xFFF97316).withValues(alpha: 0.5), width: 1.5),
-                                                ),
-                                                child: const Icon(
-                                                  Icons.support_agent_rounded,
-                                                  color: Color(0xFFF97316),
-                                                  size: 28,
-                                                ),
-                                              )
+                                              (avatarUrl != null && avatarUrl.isNotEmpty)
+                                                  ? CircleAvatar(
+                                                      radius: 26,
+                                                      backgroundColor: const Color(0xFFF97316).withValues(alpha: 0.15),
+                                                      backgroundImage: NetworkImage(avatarUrl),
+                                                    )
+                                                  : Container(
+                                                      width: 52,
+                                                      height: 52,
+                                                      decoration: BoxDecoration(
+                                                        shape: BoxShape.circle,
+                                                        color: const Color(0xFFF97316).withValues(alpha: 0.15),
+                                                        border: Border.all(color: const Color(0xFFF97316).withValues(alpha: 0.5), width: 1.5),
+                                                      ),
+                                                      child: const Icon(
+                                                        Icons.support_agent_rounded,
+                                                        color: Color(0xFFF97316),
+                                                        size: 28,
+                                                      ),
+                                                    )
                                             else
                                               CircleAvatar(
                                                 radius: 26,
@@ -483,7 +501,7 @@ class _CustomerConversationsScreenState extends State<CustomerConversationsScree
                                                       const SizedBox(width: 8),
                                                       Text(
                                                         timeText,
-                                                        style: const TextStyle(
+                                                        style: TextStyle(
                                                           color: AppColors.textMuted,
                                                           fontSize: 11,
                                                         ),
@@ -497,7 +515,7 @@ class _CustomerConversationsScreenState extends State<CustomerConversationsScree
                                                         child: Text(
                                                           lastMsg.isNotEmpty ? lastMsg : 'Tap to chat with store',
                                                           style: TextStyle(
-                                                            color: unreadCount > 0 ? Colors.white : AppColors.textSecondary,
+                                                            color: unreadCount > 0 ? AppColors.textPrimary : AppColors.textSecondary,
                                                             fontSize: 13,
                                                             fontWeight: unreadCount > 0 ? FontWeight.w600 : FontWeight.normal,
                                                           ),
@@ -519,7 +537,7 @@ class _CustomerConversationsScreenState extends State<CustomerConversationsScree
                                               ),
                                             ),
                                             PopupMenuButton<String>(
-                                              icon: const Icon(
+                                              icon: Icon(
                                                 Icons.more_vert_rounded,
                                                 color: AppColors.textMuted,
                                                 size: 20,

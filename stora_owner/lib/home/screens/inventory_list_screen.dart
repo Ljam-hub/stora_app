@@ -73,7 +73,7 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
             .toList();
 
         return Scaffold(
-          backgroundColor: AppColors.background,
+          backgroundColor: HomeColors.background,
           body: SafeArea(
             child: Column(
               children: [
@@ -81,21 +81,21 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
                   padding: const EdgeInsets.fromLTRB(20, 14, 20, 4),
                   child: Row(
                     children: [
-                      const Expanded(
+                      Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
                               'Inventory',
                               style: TextStyle(
-                                color: Colors.white,
+                                color: HomeColors.textPrimary,
                                 fontSize: 22,
                                 fontWeight: FontWeight.w800,
                                 letterSpacing: -0.5,
                               ),
                             ),
-                            SizedBox(height: 2),
-                            Text(
+                            const SizedBox(height: 2),
+                            const Text(
                               'Manage products and stock levels',
                               style: TextStyle(color: AppColors.label, fontSize: 12),
                             ),
@@ -110,7 +110,7 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
                   child: TextField(
                     controller: _searchController,
                     onChanged: (v) => setState(() => _query = v),
-                    style: const TextStyle(color: Colors.white, fontSize: 14),
+                    style: TextStyle(color: HomeColors.textPrimary, fontSize: 14),
                     decoration: InputDecoration(
                       hintText: 'Search products by name or barcode...',
                       hintStyle: const TextStyle(color: AppColors.hint, fontSize: 14),
@@ -138,7 +138,7 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
                       contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
-                        borderSide: const BorderSide(color: HomeColors.cardBorder),
+                        borderSide: BorderSide(color: HomeColors.cardBorder),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
@@ -203,7 +203,7 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
                                         Text(
                                           _query.isNotEmpty ? 'No products match "$_query"' : 'No products in inventory yet',
                                           textAlign: TextAlign.center,
-                                          style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700),
+                                          style: TextStyle(color: HomeColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w700),
                                         ),
                                         const SizedBox(height: 8),
                                         Text(
@@ -211,7 +211,7 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
                                               ? 'Try searching with a different keyword or barcode'
                                               : 'Tap the button below to add your first product.',
                                           textAlign: TextAlign.center,
-                                          style: const TextStyle(color: AppColors.label, fontSize: 13),
+                                          style: TextStyle(color: HomeColors.textSecondary, fontSize: 13),
                                         ),
                                         if (_query.isEmpty) ...[
                                           const SizedBox(height: 20),
@@ -321,13 +321,13 @@ void confirmDeleteProduct(BuildContext context, Product product) {
     context: context,
     builder: (ctx) => AlertDialog(
       backgroundColor: HomeColors.cardBackground,
-      title: const Text('Delete product?', style: TextStyle(color: Colors.white)),
+      title: Text('Delete product?', style: TextStyle(color: HomeColors.textPrimary)),
       content: Text('This will remove "${product.name}" from your inventory. This can\'t be undone.',
-          style: const TextStyle(color: AppColors.label)),
+          style: TextStyle(color: HomeColors.textSecondary)),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(ctx).pop(),
-          child: const Text('Cancel', style: TextStyle(color: AppColors.label)),
+          child: Text('Cancel', style: TextStyle(color: HomeColors.textSecondary)),
         ),
         TextButton(
           onPressed: () async {
@@ -426,7 +426,7 @@ class ProductCard extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text('LOW (${product.stock})',
-                                  style: const TextStyle(color: HomeColors.warningText, fontSize: 8, fontWeight: FontWeight.w900)),
+                                  style: TextStyle(color: HomeColors.warningText, fontSize: 8, fontWeight: FontWeight.w900)),
                             ),
                           ),
                       ],
@@ -437,14 +437,14 @@ class ProductCard extends StatelessWidget {
                     product.name,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700, height: 1.2),
+                    style: TextStyle(color: HomeColors.textPrimary, fontSize: 13, fontWeight: FontWeight.w700, height: 1.2),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     product.category,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(color: AppColors.label, fontSize: 11),
+                    style: TextStyle(color: HomeColors.textSecondary, fontSize: 11),
                   ),
                   const SizedBox(height: 6),
                   Row(
@@ -477,7 +477,7 @@ class ProductCard extends StatelessWidget {
                               padding: const EdgeInsets.symmetric(horizontal: 6),
                               child: Text('${product.stock}',
                                   style: TextStyle(
-                                      color: isOutOfStock ? AppColors.error : isLowStock ? HomeColors.warningText : Colors.white,
+                                      color: isOutOfStock ? AppColors.error : isLowStock ? HomeColors.warningText : HomeColors.textPrimary,
                                       fontSize: 12,
                                       fontWeight: FontWeight.w800)),
                             ),

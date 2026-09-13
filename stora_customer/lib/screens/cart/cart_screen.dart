@@ -39,7 +39,7 @@ class CartScreen extends StatelessWidget {
                     actions: [
                       TextButton(
                         onPressed: () => Navigator.pop(ctx),
-                        child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+                        child: Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
                       ),
                       TextButton(
                         onPressed: () {
@@ -113,7 +113,7 @@ class CartScreen extends StatelessWidget {
                 // Cart Summary & Checkout Button
                 Container(
                   padding: const EdgeInsets.all(20),
-                  decoration: const BoxDecoration(
+                  decoration: BoxDecoration(
                     color: AppColors.cardBackground,
                     border: Border(top: BorderSide(color: AppColors.cardBorder)),
                   ),
@@ -126,12 +126,12 @@ class CartScreen extends StatelessWidget {
                           children: [
                             Text(
                               'Subtotal (${cart.totalItemCount} items)',
-                              style: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
+                              style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
                             ),
                             Text(
                               cart.formattedTotal,
-                              style: const TextStyle(
-                                color: Colors.white,
+                              style: TextStyle(
+                                color: AppColors.textPrimary,
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
                               ),

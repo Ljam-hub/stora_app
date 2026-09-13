@@ -107,6 +107,13 @@ class StoraAdminSite(AdminSite):
             support_avatar = request.build_absolute_uri(request.user.avatar.url)
         elif sup and sup.avatar:
             support_avatar = request.build_absolute_uri(sup.avatar.url)
+        else:
+            admin_with_avatar = User.objects.filter(
+                Q(role=User.ROLE_ADMIN) | Q(is_superuser=True) | Q(is_staff=True),
+                is_active=True
+            ).exclude(avatar="").exclude(avatar__isnull=True).first()
+            if admin_with_avatar and admin_with_avatar.avatar:
+                support_avatar = request.build_absolute_uri(admin_with_avatar.avatar.url)
 
         context = {
             **self.each_context(request),
@@ -124,32 +131,47 @@ class StoraAdminSite(AdminSite):
     def support_conversations_api(self, request):
         from api.models import ChatMessage
         from accounts.models import User
+        from django.db.models import Count
 
         admin_users = User.objects.filter(Q(role=User.ROLE_ADMIN) | Q(is_superuser=True) | Q(is_staff=True))
         admin_ids = list(admin_users.values_list("id", flat=True))
 
-        # Distinct partner user IDs who ever messaged admin or whom admin messaged
-        sent_to_admin = ChatMessage.objects.filter(recipient_id__in=admin_ids).exclude(deleted_by_users=request.user).values_list("sender_id", flat=True)
-        received_from_admin = ChatMessage.objects.filter(sender_id__in=admin_ids).exclude(deleted_by_users=request.user).values_list("recipient_id", flat=True)
-        partner_ids = (set(sent_to_admin) | set(received_from_admin)) - set(admin_ids)
+        # 1. Batch pre-fetch all latest messages involving admin
+        recent_admin_messages = (
+            ChatMessage.objects.filter(
+                Q(recipient_id__in=admin_ids) | Q(sender_id__in=admin_ids)
+            )
+            .exclude(deleted_by_users=request.user)
+            .order_by("-created_at")
+        )
+        last_msg_map = {}
+        for msg in recent_admin_messages:
+            pid = msg.sender_id if msg.recipient_id in admin_ids else msg.recipient_id
+            if pid not in admin_ids and pid not in last_msg_map:
+                last_msg_map[pid] = msg
 
-        all_users = User.objects.exclude(id__in=admin_ids).filter(is_active=True)
-
-        conversations = []
-        for partner in all_users:
-            has_chatted = partner.id in partner_ids
-
-            last_msg = ChatMessage.objects.filter(
-                (Q(sender=partner) & Q(recipient_id__in=admin_ids)) |
-                (Q(sender_id__in=admin_ids) & Q(recipient=partner))
-            ).exclude(deleted_by_users=request.user).order_by("-created_at").first()
-
-            unread_count = ChatMessage.objects.filter(
-                sender=partner,
+        # 2. Batch pre-fetch unread counts for admin grouped by sender_id
+        unread_counts_raw = (
+            ChatMessage.objects.filter(
                 recipient_id__in=admin_ids,
                 is_read=False,
                 is_unsent=False,
-            ).exclude(deleted_by_users=request.user).count()
+            )
+            .exclude(deleted_by_users=request.user)
+            .values("sender_id")
+            .annotate(count=Count("id"))
+        )
+        unread_map = {row["sender_id"]: row["count"] for row in unread_counts_raw}
+
+        partner_ids = set(last_msg_map.keys())
+        all_users = User.objects.exclude(id__in=admin_ids).filter(is_active=True)
+
+        now_dt = timezone.localtime(timezone.now())
+        conversations = []
+        for partner in all_users:
+            has_chatted = partner.id in partner_ids
+            last_msg = last_msg_map.get(partner.id)
+            unread_count = unread_map.get(partner.id, 0)
 
             avatar_url = request.build_absolute_uri(partner.avatar.url) if partner.avatar else None
 
@@ -176,7 +198,6 @@ class StoraAdminSite(AdminSite):
             if last_msg and last_msg.created_at:
                 local_dt = timezone.localtime(last_msg.created_at)
                 last_msg_at_iso = local_dt.isoformat()
-                now_dt = timezone.localtime(timezone.now())
                 if local_dt.date() == now_dt.date():
                     last_msg_time = local_dt.strftime("%I:%M %p").lstrip("0")
                 elif local_dt.year == now_dt.year:
@@ -227,12 +248,14 @@ class StoraAdminSite(AdminSite):
         admin_users = User.objects.filter(Q(role=User.ROLE_ADMIN) | Q(is_superuser=True) | Q(is_staff=True))
         admin_ids = list(admin_users.values_list("id", flat=True))
 
-        # Mark all incoming messages from this user to admin as read
-        ChatMessage.objects.filter(
+        # Only run UPDATE if unread messages exist to avoid SQLite write-lock contention
+        unread_qs = ChatMessage.objects.filter(
             sender=partner,
             recipient_id__in=admin_ids,
             is_read=False,
-        ).update(is_read=True)
+        )
+        if unread_qs.exists():
+            unread_qs.update(is_read=True)
 
         support_avatar = request.build_absolute_uri(request.user.avatar.url) if request.user.avatar else None
         if not support_avatar:
@@ -240,6 +263,13 @@ class StoraAdminSite(AdminSite):
             sup = get_support_user()
             if sup and sup.avatar:
                 support_avatar = request.build_absolute_uri(sup.avatar.url)
+        if not support_avatar:
+            admin_with_avatar = User.objects.filter(
+                Q(role=User.ROLE_ADMIN) | Q(is_superuser=True) | Q(is_staff=True),
+                is_active=True
+            ).exclude(avatar="").exclude(avatar__isnull=True).first()
+            if admin_with_avatar and admin_with_avatar.avatar:
+                support_avatar = request.build_absolute_uri(admin_with_avatar.avatar.url)
 
         partner_avatar = request.build_absolute_uri(partner.avatar.url) if partner.avatar else None
         partner_name = partner.get_display_name() if hasattr(partner, "get_display_name") else ""
@@ -249,7 +279,7 @@ class StoraAdminSite(AdminSite):
         messages_qs = ChatMessage.objects.filter(
             (Q(sender=partner) & Q(recipient_id__in=admin_ids)) |
             (Q(sender_id__in=admin_ids) & Q(recipient=partner))
-        ).exclude(deleted_by_users=request.user).order_by("created_at")
+        ).exclude(deleted_by_users=request.user).select_related("sender", "recipient").order_by("created_at")
 
         msg_list = []
         for m in messages_qs:
@@ -374,8 +404,20 @@ class StoraAdminSite(AdminSite):
 
     def support_avatar_api(self, request):
         user = request.user
+        from api.views import get_support_user
+        support = get_support_user()
+
         if request.method == "GET":
             avatar_url = request.build_absolute_uri(user.avatar.url) if user.avatar else None
+            if not avatar_url and support and support.avatar:
+                avatar_url = request.build_absolute_uri(support.avatar.url)
+            if not avatar_url:
+                admin_with_avatar = User.objects.filter(
+                    Q(role=User.ROLE_ADMIN) | Q(is_superuser=True) | Q(is_staff=True),
+                    is_active=True
+                ).exclude(avatar="").exclude(avatar__isnull=True).first()
+                if admin_with_avatar and admin_with_avatar.avatar:
+                    avatar_url = request.build_absolute_uri(admin_with_avatar.avatar.url)
             return JsonResponse({"avatar_url": avatar_url, "email": user.email, "name": user.get_display_name()})
 
         if request.method == "POST":
@@ -388,6 +430,13 @@ class StoraAdminSite(AdminSite):
                         pass
                     user.avatar = None
                     user.save(update_fields=["avatar"])
+                if support and support.id != user.id and support.avatar:
+                    try:
+                        support.avatar.delete(save=False)
+                    except Exception:
+                        pass
+                    support.avatar = None
+                    support.save(update_fields=["avatar"])
                 return JsonResponse({"status": "success", "avatar_url": None})
 
             new_avatar = request.FILES.get("avatar")
@@ -397,11 +446,9 @@ class StoraAdminSite(AdminSite):
             user.avatar = new_avatar
             user.save(update_fields=["avatar"])
 
-            # Also ensure designated support account has this avatar if different
-            from api.views import get_support_user
-            support = get_support_user()
-            if support and support.id != user.id and not support.avatar:
-                support.avatar = new_avatar
+            # Also ensure designated support account has this avatar synced
+            if support and support.id != user.id:
+                support.avatar = user.avatar
                 support.save(update_fields=["avatar"])
 
             avatar_url = request.build_absolute_uri(user.avatar.url) if user.avatar else None

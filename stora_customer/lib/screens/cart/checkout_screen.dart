@@ -163,7 +163,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     Text(
                       'Order #$orderId has been submitted to the store. You will receive real-time updates as the owner accepts or prepares your order.',
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
                         color: AppColors.textSecondary,
                         height: 1.5,
@@ -224,14 +224,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
+                              Text(
                                 'Ordering from',
                                 style: TextStyle(color: AppColors.textMuted, fontSize: 11),
                               ),
                               Text(
                                 cart.storeName!,
-                                style: const TextStyle(
-                                  color: Colors.white,
+                                style: TextStyle(
+                                  color: AppColors.textPrimary,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 15,
                                 ),
@@ -246,10 +246,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 ],
 
                 // Delivery Info Section
-                const Text(
+                Text(
                   'Delivery Information',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: AppColors.textPrimary,
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
@@ -305,10 +305,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Order Summary',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: AppColors.textPrimary,
                           fontWeight: FontWeight.bold,
                           fontSize: 15,
                         ),
@@ -322,24 +322,24 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                             children: [
                               Text(
                                 '${i.quantity}x ${i.product.name}',
-                                style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                                style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
                               ),
                               Text(
                                 i.formattedSubtotal,
-                                style: const TextStyle(color: Colors.white, fontSize: 13),
+                                style: TextStyle(color: AppColors.textPrimary, fontSize: 13),
                               ),
                             ],
                           ),
                         ),
                       ),
-                      const Divider(height: 20, color: AppColors.cardBorder),
+                      Divider(height: 20, color: AppColors.cardBorder),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
+                          Text(
                             'Total Amount',
                             style: TextStyle(
-                              color: Colors.white,
+                              color: AppColors.textPrimary,
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                             ),

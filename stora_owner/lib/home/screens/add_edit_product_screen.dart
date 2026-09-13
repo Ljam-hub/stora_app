@@ -165,13 +165,13 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: HomeColors.cardBackground,
-        title: const Text('Delete product?', style: TextStyle(color: Colors.white)),
+        title: Text('Delete product?', style: TextStyle(color: HomeColors.textPrimary)),
         content: Text('This will remove "${product.name}" from your inventory. This can\'t be undone.',
-            style: const TextStyle(color: AppColors.label)),
+            style: TextStyle(color: HomeColors.textSecondary)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel', style: TextStyle(color: AppColors.label)),
+            child: Text('Cancel', style: TextStyle(color: HomeColors.textSecondary)),
           ),
           TextButton(
             onPressed: () async {
@@ -199,7 +199,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
   Widget build(BuildContext context) {
     final isEditing = widget.existing != null;
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: HomeColors.scaffoldBackground,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
@@ -212,7 +212,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                   children: [
                     IconButton(
                       onPressed: () => Navigator.of(context).pop(),
-                      icon: const Icon(Icons.chevron_left, color: Colors.white),
+                      icon: Icon(Icons.chevron_left, color: HomeColors.textPrimary),
                       style: IconButton.styleFrom(
                         backgroundColor: HomeColors.cardBackground,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -222,7 +222,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                       child: Text(
                         isEditing ? 'Edit product' : 'Add product',
                         textAlign: TextAlign.center,
-                        style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700),
+                        style: TextStyle(color: HomeColors.textPrimary, fontSize: 18, fontWeight: FontWeight.w700),
                       ),
                     ),
                     if (isEditing)
@@ -337,20 +337,20 @@ class _CategoryPickerState extends State<_CategoryPicker> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: HomeColors.cardBackground,
-        title: const Text('New category', style: TextStyle(color: Colors.white)),
+        title: Text('New category', style: TextStyle(color: HomeColors.textPrimary)),
         content: TextField(
           controller: controller,
           autofocus: true,
-          style: const TextStyle(color: Colors.white),
-          decoration: const InputDecoration(
+          style: TextStyle(color: HomeColors.textPrimary),
+          decoration: InputDecoration(
             hintText: 'e.g. Frozen Goods',
-            hintStyle: TextStyle(color: AppColors.hint),
+            hintStyle: TextStyle(color: HomeColors.textSecondary),
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel', style: TextStyle(color: AppColors.label)),
+            child: Text('Cancel', style: TextStyle(color: HomeColors.textSecondary)),
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(controller.text.trim()),
@@ -377,25 +377,25 @@ class _CategoryPickerState extends State<_CategoryPicker> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('CATEGORY',
-                style: TextStyle(color: AppColors.label, fontSize: 12, fontWeight: FontWeight.w600, letterSpacing: 0.5)),
+            Text('CATEGORY',
+                style: TextStyle(color: HomeColors.textSecondary, fontSize: 12, fontWeight: FontWeight.w600, letterSpacing: 0.5)),
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
               key: ValueKey('${dropdownValue}_${categories.length}'),
               initialValue: dropdownValue,
               dropdownColor: HomeColors.cardBackground,
               isExpanded: true,
-              style: const TextStyle(color: Colors.white, fontSize: 15),
-              icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.label),
+              style: TextStyle(color: HomeColors.textPrimary, fontSize: 15),
+              icon: Icon(Icons.keyboard_arrow_down_rounded, color: HomeColors.textSecondary),
               decoration: InputDecoration(
                 filled: true,
-                fillColor: AppColors.fieldBackground,
+                fillColor: HomeColors.cardElevated,
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 hintText: 'Select a category',
-                hintStyle: const TextStyle(color: AppColors.hint),
+                hintStyle: TextStyle(color: HomeColors.textSecondary),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(color: AppColors.fieldBorder),
+                  borderSide: BorderSide(color: HomeColors.cardBorder),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
@@ -443,7 +443,7 @@ class _BarcodeField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const FittedBox(
+        FittedBox(
           fit: BoxFit.scaleDown,
           alignment: Alignment.centerLeft,
           child: Row(
@@ -452,17 +452,17 @@ class _BarcodeField extends StatelessWidget {
               Text(
                 'BARCODE',
                 style: TextStyle(
-                  color: AppColors.label,
+                  color: HomeColors.textSecondary,
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 0.6,
                 ),
               ),
-              SizedBox(width: 6),
+              const SizedBox(width: 6),
               Text(
                 '(OPTIONAL)',
                 style: TextStyle(
-                  color: AppColors.label,
+                  color: HomeColors.textSecondary,
                   fontSize: 10,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 0.5,
@@ -474,12 +474,12 @@ class _BarcodeField extends StatelessWidget {
         const SizedBox(height: 8),
         TextFormField(
           controller: controller,
-          style: const TextStyle(color: Colors.white, fontSize: 14),
+          style: TextStyle(color: HomeColors.textPrimary, fontSize: 14),
           decoration: InputDecoration(
             hintText: 'Enter or scan barcode (optional)',
-            hintStyle: const TextStyle(color: AppColors.hint, fontSize: 13),
+            hintStyle: TextStyle(color: HomeColors.textSecondary, fontSize: 13),
             filled: true,
-            fillColor: AppColors.fieldBackground,
+            fillColor: HomeColors.cardElevated,
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             suffixIcon: IconButton(
               icon: const Icon(Icons.qr_code_scanner_rounded, color: AppColors.purpleLight),
@@ -487,7 +487,7 @@ class _BarcodeField extends StatelessWidget {
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(color: AppColors.fieldBorder),
+              borderSide: BorderSide(color: HomeColors.cardBorder),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
