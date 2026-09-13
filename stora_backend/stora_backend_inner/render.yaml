@@ -32,12 +32,15 @@ services:
       - key: EMAIL_USE_TLS
         value: "True"
       - key: EMAIL_HOST_USER
-        value: "osiallj@gmail.com"
+        sync: false
       - key: EMAIL_HOST_PASSWORD
-        value: "kworofuerbnejybp"
+        sync: false
       - key: DEFAULT_FROM_EMAIL
-        value: "STORA <osiallj@gmail.com>"
-      # Set these manually in the Render dashboard:
+        sync: false
+      # Set these securely in the Render dashboard:
+      # - EMAIL_HOST_USER           (e.g., your verified Gmail / Brevo sender)
+      # - EMAIL_HOST_PASSWORD       (e.g., your 16-digit Google App Password)
+      # - DEFAULT_FROM_EMAIL        (e.g., STORA <your-email@gmail.com>)
       # - DATABASE_URL              (your Supabase connection string)
       # - CLOUDINARY_URL            (from your Cloudinary account)
       # - FIREBASE_CREDENTIALS_JSON (minified service account JSON for FCM push notifications)
