@@ -16,8 +16,19 @@ from django.core.mail import send_mail
 from datetime import timedelta
 import math
 from django.utils import timezone
+from django.db.models import Q, Count, Sum, Avg
 
 logger = logging.getLogger(__name__)
+
+
+def _safe_avatar_url(request, user):
+    if not user or not getattr(user, "avatar", None):
+        return None
+    try:
+        url = user.avatar.url
+        return request.build_absolute_uri(url) if (url and request) else url
+    except Exception:
+        return None
 
 from accounts.models import (
     AIInsight,
@@ -1024,7 +1035,7 @@ def list_stores(request):
         if user_lat is not None and user_lng is not None:
             distance_km = round(_haversine_km(user_lat, user_lng, lat, lng), 2)
 
-        avatar_url = request.build_absolute_uri(owner.avatar.url) if owner.avatar else None
+        avatar_url = _safe_avatar_url(request, owner)
         stores_data.append({
             "id": owner.id,
             "business_name": owner.business_name,
@@ -1451,22 +1462,22 @@ def list_conversations(request):
             prefix = "You: " if last_msg_is_me else ""
             last_message_text = f"{prefix}{last_msg.message}"
 
-        avatar_url = request.build_absolute_uri(partner.avatar.url) if partner.avatar else None
+        avatar_url = _safe_avatar_url(request, partner)
         partner_role = partner.role
         is_support_partner = partner.role == User.ROLE_ADMIN or partner.is_superuser or partner.is_staff
         if is_support_partner:
             partner_name = "STORA Support"
             if not avatar_url:
                 sup = get_support_user()
-                if sup and sup.avatar:
-                    avatar_url = request.build_absolute_uri(sup.avatar.url)
+                if sup:
+                    avatar_url = _safe_avatar_url(request, sup)
             if not avatar_url:
                 admin_with_avatar = User.objects.filter(
                     Q(role=User.ROLE_ADMIN) | Q(is_superuser=True) | Q(is_staff=True),
                     is_active=True
                 ).exclude(avatar="").exclude(avatar__isnull=True).first()
-                if admin_with_avatar and admin_with_avatar.avatar:
-                    avatar_url = request.build_absolute_uri(admin_with_avatar.avatar.url)
+                if admin_with_avatar:
+                    avatar_url = _safe_avatar_url(request, admin_with_avatar)
         elif partner.role == User.ROLE_OWNER:
             partner_name = partner.business_name or f"{partner.first_name} {partner.last_name}".strip() or partner.username
         else:
@@ -1536,14 +1547,14 @@ def support_contact(request):
     if not support:
         return Response({"error": "Support account not configured."}, status=status.HTTP_404_NOT_FOUND)
 
-    avatar_url = request.build_absolute_uri(support.avatar.url) if support.avatar else None
+    avatar_url = _safe_avatar_url(request, support)
     if not avatar_url:
         admin_with_avatar = User.objects.filter(
             Q(role=User.ROLE_ADMIN) | Q(is_superuser=True) | Q(is_staff=True),
             is_active=True
         ).exclude(avatar="").exclude(avatar__isnull=True).first()
-        if admin_with_avatar and admin_with_avatar.avatar:
-            avatar_url = request.build_absolute_uri(admin_with_avatar.avatar.url)
+        if admin_with_avatar:
+            avatar_url = _safe_avatar_url(request, admin_with_avatar)
 
     unread_count = ChatMessage.objects.filter(
         sender=support,
@@ -1763,7 +1774,7 @@ def list_store_customers(request):
     for c in customers:
         name = f"{c.first_name} {c.last_name}".strip() or c.business_name or c.username or c.email
         order_count = Order.objects.filter(owner=user, customer=c).count()
-        avatar_url = request.build_absolute_uri(c.avatar.url) if c.avatar else None
+        avatar_url = _safe_avatar_url(request, c)
         result.append({
             "id": c.id,
             "name": name,

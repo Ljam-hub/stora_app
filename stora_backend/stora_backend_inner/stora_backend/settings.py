@@ -30,6 +30,18 @@ elif DEBUG:
 else:
     ALLOWED_HOSTS = [".onrender.com", "localhost", "127.0.0.1"]
 
+# Handle reverse proxy SSL termination on Render / cloud providers
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://*.onrender.com",
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+]
+_env_csrf = os.getenv("CSRF_TRUSTED_ORIGINS")
+if _env_csrf:
+    CSRF_TRUSTED_ORIGINS += [o.strip() for o in _env_csrf.split(",") if o.strip()]
+
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",

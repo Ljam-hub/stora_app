@@ -52,11 +52,14 @@ class UserSerializer(serializers.ModelSerializer):
         read_only_fields = ("id", "is_email_verified", "is_premium", "premium_until", "date_joined", "avatar_url", "is_blocked", "block_reason")
 
     def get_avatar_url(self, obj):
-        if obj.avatar:
-            request = self.context.get("request")
-            if request:
-                return request.build_absolute_uri(obj.avatar.url)
-            return obj.avatar.url
+        if getattr(obj, "avatar", None):
+            try:
+                request = self.context.get("request")
+                if request:
+                    return request.build_absolute_uri(obj.avatar.url)
+                return obj.avatar.url
+            except Exception:
+                return None
         return None
 
 
@@ -262,11 +265,14 @@ class ProductSerializer(serializers.ModelSerializer):
         }
 
     def get_store_avatar_url(self, obj):
-        if obj.owner and obj.owner.avatar:
-            request = self.context.get("request")
-            if request:
-                return request.build_absolute_uri(obj.owner.avatar.url)
-            return obj.owner.avatar.url
+        if obj.owner and getattr(obj.owner, "avatar", None):
+            try:
+                request = self.context.get("request")
+                if request:
+                    return request.build_absolute_uri(obj.owner.avatar.url)
+                return obj.owner.avatar.url
+            except Exception:
+                return None
         return None
 
     def to_representation(self, instance):
@@ -629,19 +635,25 @@ class OrderSerializer(serializers.ModelSerializer):
         return ""
 
     def get_customer_avatar_url(self, obj):
-        if obj.customer and obj.customer.avatar:
-            request = self.context.get("request")
-            if request:
-                return request.build_absolute_uri(obj.customer.avatar.url)
-            return obj.customer.avatar.url
+        if obj.customer and getattr(obj.customer, "avatar", None):
+            try:
+                request = self.context.get("request")
+                if request:
+                    return request.build_absolute_uri(obj.customer.avatar.url)
+                return obj.customer.avatar.url
+            except Exception:
+                return None
         return None
 
     def get_store_avatar_url(self, obj):
-        if obj.owner and obj.owner.avatar:
-            request = self.context.get("request")
-            if request:
-                return request.build_absolute_uri(obj.owner.avatar.url)
-            return obj.owner.avatar.url
+        if obj.owner and getattr(obj.owner, "avatar", None):
+            try:
+                request = self.context.get("request")
+                if request:
+                    return request.build_absolute_uri(obj.owner.avatar.url)
+                return obj.owner.avatar.url
+            except Exception:
+                return None
         return None
 
     def get_latest_message(self, obj):
@@ -806,12 +818,18 @@ class ChatMessageSerializer(serializers.ModelSerializer):
             return None
         req = self.context.get("request")
         if getattr(obj.sender, "avatar", None):
-            return req.build_absolute_uri(obj.sender.avatar.url) if req else obj.sender.avatar.url
+            try:
+                return req.build_absolute_uri(obj.sender.avatar.url) if req else obj.sender.avatar.url
+            except Exception:
+                pass
         if obj.sender.role == "admin" or obj.sender.is_superuser or obj.sender.is_staff:
-            from api.views import get_support_user
-            sup = get_support_user()
-            if sup and sup.avatar:
-                return req.build_absolute_uri(sup.avatar.url) if req else sup.avatar.url
+            try:
+                from api.views import get_support_user
+                sup = get_support_user()
+                if sup and getattr(sup, "avatar", None):
+                    return req.build_absolute_uri(sup.avatar.url) if req else sup.avatar.url
+            except Exception:
+                pass
         return None
 
     def get_recipient_avatar_url(self, obj):
@@ -819,12 +837,18 @@ class ChatMessageSerializer(serializers.ModelSerializer):
             return None
         req = self.context.get("request")
         if getattr(obj.recipient, "avatar", None):
-            return req.build_absolute_uri(obj.recipient.avatar.url) if req else obj.recipient.avatar.url
+            try:
+                return req.build_absolute_uri(obj.recipient.avatar.url) if req else obj.recipient.avatar.url
+            except Exception:
+                pass
         if obj.recipient.role == "admin" or obj.recipient.is_superuser or obj.recipient.is_staff:
-            from api.views import get_support_user
-            sup = get_support_user()
-            if sup and sup.avatar:
-                return req.build_absolute_uri(sup.avatar.url) if req else sup.avatar.url
+            try:
+                from api.views import get_support_user
+                sup = get_support_user()
+                if sup and getattr(sup, "avatar", None):
+                    return req.build_absolute_uri(sup.avatar.url) if req else sup.avatar.url
+            except Exception:
+                pass
         return None
 
     def get_order_title(self, obj):
@@ -834,10 +858,13 @@ class ChatMessageSerializer(serializers.ModelSerializer):
 
     def get_image_url(self, obj):
         if obj.image:
-            request = self.context.get("request")
-            if request:
-                return request.build_absolute_uri(obj.image.url)
-            return obj.image.url
+            try:
+                request = self.context.get("request")
+                if request:
+                    return request.build_absolute_uri(obj.image.url)
+                return obj.image.url
+            except Exception:
+                return None
         return None
 
 

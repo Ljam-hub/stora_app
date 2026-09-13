@@ -11,11 +11,33 @@ unread badge API (`/admin/support/api/unread-count/`).
 """
 from datetime import timedelta
 from django.contrib.admin import AdminSite
-from django.db.models import Sum, Q
+from django.db.models import Sum, Q, Count
 from django.http import JsonResponse, HttpResponseBadRequest
 from django.shortcuts import render, get_object_or_404
 from django.urls import path
 from django.utils import timezone
+from accounts.models import User
+from api.models import ChatMessage
+
+
+def _safe_avatar_url(request, user):
+    if not user or not getattr(user, "avatar", None):
+        return None
+    try:
+        url = user.avatar.url
+        return request.build_absolute_uri(url) if (url and request) else url
+    except Exception:
+        return None
+
+
+def _safe_image_url(request, image_field):
+    if not image_field:
+        return None
+    try:
+        url = image_field.url
+        return request.build_absolute_uri(url) if (url and request) else url
+    except Exception:
+        return None
 
 
 class StoraAdminSite(AdminSite):
@@ -102,18 +124,16 @@ class StoraAdminSite(AdminSite):
     def support_chat_view(self, request):
         from api.views import get_support_user
         sup = get_support_user()
-        support_avatar = None
-        if request.user.avatar:
-            support_avatar = request.build_absolute_uri(request.user.avatar.url)
-        elif sup and sup.avatar:
-            support_avatar = request.build_absolute_uri(sup.avatar.url)
-        else:
+        support_avatar = _safe_avatar_url(request, request.user)
+        if not support_avatar and sup:
+            support_avatar = _safe_avatar_url(request, sup)
+        if not support_avatar:
             admin_with_avatar = User.objects.filter(
                 Q(role=User.ROLE_ADMIN) | Q(is_superuser=True) | Q(is_staff=True),
                 is_active=True
             ).exclude(avatar="").exclude(avatar__isnull=True).first()
-            if admin_with_avatar and admin_with_avatar.avatar:
-                support_avatar = request.build_absolute_uri(admin_with_avatar.avatar.url)
+            if admin_with_avatar:
+                support_avatar = _safe_avatar_url(request, admin_with_avatar)
 
         context = {
             **self.each_context(request),
@@ -173,7 +193,7 @@ class StoraAdminSite(AdminSite):
             last_msg = last_msg_map.get(partner.id)
             unread_count = unread_map.get(partner.id, 0)
 
-            avatar_url = request.build_absolute_uri(partner.avatar.url) if partner.avatar else None
+            avatar_url = _safe_avatar_url(request, partner)
 
             name = partner.get_display_name() if hasattr(partner, "get_display_name") else ""
             if not name:
@@ -257,21 +277,21 @@ class StoraAdminSite(AdminSite):
         if unread_qs.exists():
             unread_qs.update(is_read=True)
 
-        support_avatar = request.build_absolute_uri(request.user.avatar.url) if request.user.avatar else None
+        support_avatar = _safe_avatar_url(request, request.user)
         if not support_avatar:
             from api.views import get_support_user
             sup = get_support_user()
-            if sup and sup.avatar:
-                support_avatar = request.build_absolute_uri(sup.avatar.url)
+            if sup:
+                support_avatar = _safe_avatar_url(request, sup)
         if not support_avatar:
             admin_with_avatar = User.objects.filter(
                 Q(role=User.ROLE_ADMIN) | Q(is_superuser=True) | Q(is_staff=True),
                 is_active=True
             ).exclude(avatar="").exclude(avatar__isnull=True).first()
-            if admin_with_avatar and admin_with_avatar.avatar:
-                support_avatar = request.build_absolute_uri(admin_with_avatar.avatar.url)
+            if admin_with_avatar:
+                support_avatar = _safe_avatar_url(request, admin_with_avatar)
 
-        partner_avatar = request.build_absolute_uri(partner.avatar.url) if partner.avatar else None
+        partner_avatar = _safe_avatar_url(request, partner)
         partner_name = partner.get_display_name() if hasattr(partner, "get_display_name") else ""
         if not partner_name:
             partner_name = partner.business_name if partner.role == "owner" and partner.business_name else f"{partner.first_name} {partner.last_name}".strip() or partner.username
@@ -284,7 +304,7 @@ class StoraAdminSite(AdminSite):
         msg_list = []
         for m in messages_qs:
             is_support_reply = m.sender_id in admin_ids
-            image_url = request.build_absolute_uri(m.image.url) if m.image else None
+            image_url = _safe_image_url(request, m.image)
             local_dt = timezone.localtime(m.created_at) if m.created_at else None
             time_display = local_dt.strftime("%I:%M %p").lstrip("0") if local_dt else ""
             full_display = (local_dt.strftime("%b %d, %Y ") + time_display) if local_dt else ""
@@ -408,16 +428,16 @@ class StoraAdminSite(AdminSite):
         support = get_support_user()
 
         if request.method == "GET":
-            avatar_url = request.build_absolute_uri(user.avatar.url) if user.avatar else None
-            if not avatar_url and support and support.avatar:
-                avatar_url = request.build_absolute_uri(support.avatar.url)
+            avatar_url = _safe_avatar_url(request, user)
+            if not avatar_url and support:
+                avatar_url = _safe_avatar_url(request, support)
             if not avatar_url:
                 admin_with_avatar = User.objects.filter(
                     Q(role=User.ROLE_ADMIN) | Q(is_superuser=True) | Q(is_staff=True),
                     is_active=True
                 ).exclude(avatar="").exclude(avatar__isnull=True).first()
-                if admin_with_avatar and admin_with_avatar.avatar:
-                    avatar_url = request.build_absolute_uri(admin_with_avatar.avatar.url)
+                if admin_with_avatar:
+                    avatar_url = _safe_avatar_url(request, admin_with_avatar)
             return JsonResponse({"avatar_url": avatar_url, "email": user.email, "name": user.get_display_name()})
 
         if request.method == "POST":
@@ -451,7 +471,7 @@ class StoraAdminSite(AdminSite):
                 support.avatar = user.avatar
                 support.save(update_fields=["avatar"])
 
-            avatar_url = request.build_absolute_uri(user.avatar.url) if user.avatar else None
+            avatar_url = _safe_avatar_url(request, user)
             return JsonResponse({"status": "success", "avatar_url": avatar_url})
 
         return HttpResponseBadRequest("GET or POST required")
@@ -487,8 +507,8 @@ class StoraAdminSite(AdminSite):
         except Exception:
             pass
 
-        image_url = request.build_absolute_uri(chat_msg.image.url) if chat_msg.image else None
-        support_avatar = request.build_absolute_uri(request.user.avatar.url) if request.user.avatar else None
+        image_url = _safe_image_url(request, chat_msg.image)
+        support_avatar = _safe_avatar_url(request, request.user)
         local_dt = timezone.localtime(chat_msg.created_at) if chat_msg.created_at else None
         time_display = local_dt.strftime("%I:%M %p").lstrip("0") if local_dt else ""
         full_display = (local_dt.strftime("%b %d, %Y ") + time_display) if local_dt else ""

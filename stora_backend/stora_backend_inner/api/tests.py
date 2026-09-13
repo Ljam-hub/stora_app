@@ -1395,6 +1395,81 @@ class CustomerNameAndEmailDisplayTests(APITestCase):
         self.assertIn("payment_proofs", status_res.data)
 
 
+class SupportCenterAndChatSerializerTests(APITestCase):
+    def setUp(self):
+        self.admin = User.objects.create_superuser(
+            username="admin@stora.app",
+            email="admin@stora.app",
+            password="adminpassword123",
+            role=User.ROLE_ADMIN,
+        )
+        self.customer = User.objects.create_user(
+            username="customer@stora.app",
+            email="customer@stora.app",
+            password="customerpassword123",
+            role=User.ROLE_CUSTOMER,
+            first_name="Customer",
+            last_name="User",
+        )
+
+    def test_get_support_user_and_support_contact(self):
+        from api.views import get_support_user
+        sup = get_support_user()
+        self.assertIsNotNone(sup)
+        self.assertEqual(sup.email, self.admin.email)
+
+        self.client.force_authenticate(user=self.customer)
+        res = self.client.get("/api/support/contact/")
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.data["name"], "STORA Support")
+        self.assertIsNone(res.data["avatar_url"])
+
+    def test_chat_message_serializer_with_no_avatars(self):
+        from api.models import ChatMessage
+        from api.serializers import ChatMessageSerializer
+
+        msg_to_support = ChatMessage.objects.create(
+            sender=self.customer,
+            recipient=self.admin,
+            message="Need help with my order",
+        )
+        data = ChatMessageSerializer(msg_to_support).data
+        self.assertEqual(data["sender_name"], "Customer User")
+        self.assertEqual(data["recipient_name"], "STORA Support")
+        self.assertIsNone(data["sender_avatar_url"])
+        self.assertIsNone(data["recipient_avatar_url"])
+
+        msg_from_support = ChatMessage.objects.create(
+            sender=self.admin,
+            recipient=self.customer,
+            message="How can we assist you?",
+        )
+        data2 = ChatMessageSerializer(msg_from_support).data
+        self.assertEqual(data2["sender_name"], "STORA Support")
+        self.assertEqual(data2["recipient_name"], "Customer User")
+        self.assertIsNone(data2["sender_avatar_url"])
+
+    def test_support_chat_view_and_avatar_api(self):
+        from django.test import RequestFactory
+        from stora_backend.admin_site import stora_admin_site
+
+        rf = RequestFactory()
+        req = rf.get("/admin/support/")
+        req.user = self.admin
+        res = stora_admin_site.support_chat_view(req)
+        self.assertEqual(res.status_code, 200)
+
+        req2 = rf.get("/admin/support/api/avatar/")
+        req2.user = self.admin
+        res2 = stora_admin_site.support_avatar_api(req2)
+        self.assertEqual(res2.status_code, 200)
+
+        req3 = rf.get("/admin/support/api/conversations/")
+        req3.user = self.admin
+        res3 = stora_admin_site.support_conversations_api(req3)
+        self.assertEqual(res3.status_code, 200)
+
+
 
 
 

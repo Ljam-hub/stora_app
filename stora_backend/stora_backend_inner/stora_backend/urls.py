@@ -121,7 +121,18 @@ def release_info_api(request):
 
 
 def root_status(request):
-    info = get_github_release_info()
+    try:
+        info = get_github_release_info()
+    except Exception as exc:
+        logger.warning("Could not get release info: %s", exc)
+        info = {
+            "tag_name": DEFAULT_RELEASE_TAG,
+            "customer_apk_size": DEFAULT_CUSTOMER_SIZE,
+            "customer_download_url": DEFAULT_CUSTOMER_URL,
+            "owner_apk_size": DEFAULT_OWNER_SIZE,
+            "owner_download_url": DEFAULT_OWNER_URL,
+        }
+
     # If requested by a browser, render the modern Stora Backend Portal
     accept = request.headers.get("Accept", "")
     if "text/html" in accept and request.GET.get("format") != "json":
@@ -132,7 +143,10 @@ def root_status(request):
             "owner_apk_size": info.get("owner_apk_size", DEFAULT_OWNER_SIZE),
             "owner_download_url": info.get("owner_download_url", DEFAULT_OWNER_URL),
         }
-        return render(request, "portal.html", context)
+        try:
+            return render(request, "portal.html", context)
+        except Exception as exc:
+            logger.error("Failed to render portal.html: %s", exc)
 
     return JsonResponse({
         "status": "ok",
@@ -142,6 +156,30 @@ def root_status(request):
         "admin_url": "/admin/",
         "release": info,
     })
+
+
+def custom_500_handler(request):
+    accept = request.headers.get("Accept", "")
+    if "text/html" not in accept or request.path.startswith("/api/"):
+        return JsonResponse(
+            {"error": "Internal Server Error", "detail": "An unexpected server condition occurred. Please try again later."},
+            status=500,
+        )
+    return render(request, "500.html", status=500)
+
+
+def custom_404_handler(request, exception=None):
+    accept = request.headers.get("Accept", "")
+    if "text/html" not in accept or request.path.startswith("/api/"):
+        return JsonResponse(
+            {"error": "Not Found", "detail": "The requested resource was not found."},
+            status=404,
+        )
+    return render(request, "404.html", status=404)
+
+
+handler500 = custom_500_handler
+handler404 = custom_404_handler
 
 
 urlpatterns = [
