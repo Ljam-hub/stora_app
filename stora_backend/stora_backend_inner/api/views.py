@@ -85,30 +85,58 @@ def _tokens_for(user, request=None):
 def send_verification_email(user, code_obj):
     html_content = f"""
     <!DOCTYPE html>
-    <html>
-    <body style="font-family: Arial, sans-serif; background-color: #141018; color: #FFFFFF; padding: 24px;">
-      <div style="max-width: 480px; margin: 0 auto; background-color: #1F1A28; border-radius: 16px; padding: 28px; border: 1px solid #332A40;">
-        <div style="text-align: center; margin-bottom: 20px;">
-          <h1 style="color: #FFFFFF; font-size: 24px; font-weight: 800; margin: 0;">STORA.</h1>
-          <p style="color: #9B87F5; font-size: 13px; margin: 4px 0 0 0;">Verify your email address</p>
-        </div>
-        <h2 style="color: #FFFFFF; font-size: 18px;">Welcome to STORA!</h2>
-        <p style="color: #8E8798; font-size: 14px; line-height: 1.5;">
-          Thank you for signing up. Please enter the 6-digit verification code below in the app to confirm your account (<strong>{user.email}</strong>):
-        </p>
-        <div style="text-align: center; margin: 24px 0;">
-          <div style="display: inline-block; background-color: #141018; border: 2px solid #9B87F5; border-radius: 12px; padding: 14px 28px;">
-            <span style="font-size: 32px; font-weight: 800; letter-spacing: 6px; color: #B9A9FF;">{code_obj.code}</span>
-          </div>
-        </div>
-        <p style="color: #8E8798; font-size: 13px;">
-          This code will expire in <strong>15 minutes</strong>. If you didn't request this, please disregard this email.
-        </p>
-        <hr style="border: 0; border-top: 1px solid #332A40; margin: 20px 0;" />
-        <p style="color: #6E6678; font-size: 12px; text-align: center; margin: 0;">
-          &copy; STORA. All rights reserved.
-        </p>
-      </div>
+    <html lang="en">
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Verify Email</title>
+    </head>
+    <body style="margin: 0; padding: 0; background-color: #141018; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%;">
+      <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="background-color: #141018; width: 100%; margin: 0; padding: 24px 12px;">
+        <tr>
+          <td align="center" style="padding: 0;">
+            <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="width: 100%; max-width: 440px; background-color: #1F1A28; border-radius: 16px; border: 1px solid #332A40; margin: 0 auto;">
+              <tr>
+                <td style="padding: 28px 20px;">
+                  <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0">
+                    <tr>
+                      <td align="center" style="padding-bottom: 20px;">
+                        <h1 style="color: #FFFFFF; font-size: 24px; font-weight: 800; margin: 0; letter-spacing: 0.5px;">STORA.</h1>
+                        <p style="color: #9B87F5; font-size: 13px; margin: 4px 0 0 0; font-weight: 500;">Verify your email address</p>
+                      </td>
+                    </tr>
+                  </table>
+                  <h2 style="color: #FFFFFF; font-size: 18px; margin: 0 0 10px 0; font-weight: 700;">Welcome to STORA!</h2>
+                  <p style="color: #9E97A9; font-size: 14px; line-height: 1.5; margin: 0 0 20px 0;">
+                    Thank you for signing up. Please enter the 6-digit verification code below in the app to confirm your account (<strong style="color: #FFFFFF;">{user.email}</strong>):
+                  </p>
+                  <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="width: 100%; margin: 0 0 20px 0;">
+                    <tr>
+                      <td align="center" style="background-color: #141018; border: 2px solid #9B87F5; border-radius: 12px; padding: 16px 12px;">
+                        <div style="font-size: 32px; font-weight: 800; letter-spacing: 6px; color: #B9A9FF; text-align: center;">
+                          {code_obj.code}
+                        </div>
+                      </td>
+                    </tr>
+                  </table>
+                  <p style="color: #8E8798; font-size: 13px; line-height: 1.5; margin: 0 0 20px 0;">
+                    This code will expire in <strong style="color: #D1D5DB;">15 minutes</strong>. If you didn't request this, please disregard this email.
+                  </p>
+                  <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0">
+                    <tr>
+                      <td style="border-top: 1px solid #332A40; padding-top: 16px;">
+                        <p style="color: #6E6678; font-size: 12px; text-align: center; margin: 0;">
+                          &copy; STORA. All rights reserved.
+                        </p>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
     </body>
     </html>
     """
@@ -507,8 +535,18 @@ def account_status(request):
         "gcash_name": config.gcash_name,
         "qr_code": qr_code_url,
         "latest_payment_proof": latest_proof,
+        "payment_proofs": user.payment_proofs.all() if hasattr(user, "payment_proofs") else [],
     }
     return Response(AccountStatusSerializer(data).data)
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def subscription_receipts(request):
+    if getattr(request.user, "role", "owner") != "owner" and not request.user.is_superuser and not request.user.is_staff:
+        raise PermissionDenied("Only store owners have subscription receipts.")
+    proofs = request.user.payment_proofs.filter(status=PaymentProof.STATUS_APPROVED).order_by("-reviewed_at", "-submitted_at") if hasattr(request.user, "payment_proofs") else PaymentProof.objects.none()
+    return Response(PaymentProofSerializer(proofs, many=True).data)
 
 
 @api_view(["GET"])
@@ -538,8 +576,8 @@ def upload_payment_proof(request):
     def _async_post_payment_proof():
         try:
             notify_admin(
-                title="New Payment Proof Submitted 💳",
-                body=f"₱{proof.amount:.2f} (Ref: {proof.reference_number}) from {request.user.business_name or request.user.email}",
+                title="New Subscription Payment Proof 💳",
+                body=f"₱{proof.amount:.2f} (Ref: {proof.reference_number}) from {request.user.business_name or request.user.email} - Pending Admin Review",
                 data={"proof_id": str(proof.id), "action": "payment_proof_submitted", "user_id": str(request.user.id)},
             )
         except Exception as e:
@@ -549,17 +587,18 @@ def upload_payment_proof(request):
         if admin_recipient:
             try:
                 send_mail(
-                    subject=f"[STORA ADMIN] New Account Request: Payment Proof from {request.user.email}",
+                    subject=f"[STORA ADMIN] New Subscription Payment Proof: {request.user.email}",
                     message=(
                         f"Hello Admin,\n\n"
-                        f"A user has submitted a GCash subscription payment proof for account verification.\n\n"
+                        f"A store owner has submitted a GCash subscription payment proof for verification.\n\n"
                         f"User: {request.user.email} ({request.user.business_name})\n"
                         f"Reference Number: {proof.reference_number}\n"
                         f"Amount: ₱{proof.amount:.2f}\n"
-                        f"Submitted At: {proof.submitted_at.strftime('%Y-%m-%d %H:%M:%S')}\n\n"
-                        f"Please review and approve this request in the Stora Admin dashboard:\n"
+                        f"Submitted At: {proof.submitted_at.strftime('%Y-%m-%d %H:%M:%S')}\n"
+                        f"Status: Pending Admin Review\n\n"
+                        f"Review and approve or reject in the Stora Admin dashboard:\n"
                         f"/admin/accounts/paymentproof/\n\n"
-                        f"— STORA Automated Notification"
+                        f"— STORA Automated System"
                     ),
                     from_email=django_settings.DEFAULT_FROM_EMAIL,
                     recipient_list=[admin_recipient],
@@ -595,30 +634,58 @@ def forgot_password_request(request):
 
         html_content = f"""
         <!DOCTYPE html>
-        <html>
-        <body style="font-family: Arial, sans-serif; background-color: #141018; color: #FFFFFF; padding: 24px;">
-          <div style="max-width: 480px; margin: 0 auto; background-color: #1F1A28; border-radius: 16px; padding: 28px; border: 1px solid #332A40;">
-            <div style="text-align: center; margin-bottom: 20px;">
-              <h1 style="color: #FFFFFF; font-size: 24px; font-weight: 800; margin: 0;">STORA.</h1>
-              <p style="color: #9B87F5; font-size: 13px; margin: 4px 0 0 0;">Inventory made simple</p>
-            </div>
-            <h2 style="color: #FFFFFF; font-size: 18px;">Password Reset Code</h2>
-            <p style="color: #8E8798; font-size: 14px; line-height: 1.5;">
-              We received a request to reset your password for your STORA account (<strong>{user.email}</strong>).
-            </p>
-            <div style="text-align: center; margin: 24px 0;">
-              <div style="display: inline-block; background-color: #141018; border: 2px solid #9B87F5; border-radius: 12px; padding: 14px 28px;">
-                <span style="font-size: 26px; font-weight: 800; letter-spacing: 4px; color: #B9A9FF;">{token_obj.token}</span>
-              </div>
-            </div>
-            <p style="color: #8E8798; font-size: 13px;">
-              This code will expire in <strong>1 hour</strong>. If you didn't request a password reset, you can safely ignore this email.
-            </p>
-            <hr style="border: 0; border-top: 1px solid #332A40; margin: 20px 0;" />
-            <p style="color: #6E6678; font-size: 12px; text-align: center; margin: 0;">
-              &copy; STORA. All rights reserved.
-            </p>
-          </div>
+        <html lang="en">
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Password Reset</title>
+        </head>
+        <body style="margin: 0; padding: 0; background-color: #141018; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%;">
+          <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="background-color: #141018; width: 100%; margin: 0; padding: 24px 12px;">
+            <tr>
+              <td align="center" style="padding: 0;">
+                <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="width: 100%; max-width: 440px; background-color: #1F1A28; border-radius: 16px; border: 1px solid #332A40; margin: 0 auto;">
+                  <tr>
+                    <td style="padding: 28px 20px;">
+                      <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0">
+                        <tr>
+                          <td align="center" style="padding-bottom: 20px;">
+                            <h1 style="color: #FFFFFF; font-size: 24px; font-weight: 800; margin: 0; letter-spacing: 0.5px;">STORA.</h1>
+                            <p style="color: #9B87F5; font-size: 13px; margin: 4px 0 0 0; font-weight: 500;">Inventory made simple</p>
+                          </td>
+                        </tr>
+                      </table>
+                      <h2 style="color: #FFFFFF; font-size: 18px; margin: 0 0 10px 0; font-weight: 700;">Password Reset Code</h2>
+                      <p style="color: #9E97A9; font-size: 14px; line-height: 1.5; margin: 0 0 20px 0;">
+                        We received a request to reset your password for your STORA account (<strong style="color: #FFFFFF;">{user.email}</strong>).
+                      </p>
+                      <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="width: 100%; margin: 0 0 20px 0;">
+                        <tr>
+                          <td align="center" style="background-color: #141018; border: 2px solid #9B87F5; border-radius: 12px; padding: 14px 12px; word-break: break-all; word-wrap: break-word;">
+                            <div style="font-family: Consolas, 'Courier New', Courier, monospace; font-size: 15px; font-weight: 700; letter-spacing: 0.5px; color: #C4B5FD; line-height: 1.4; word-break: break-all; word-wrap: break-word;">
+                              {token_obj.token}
+                            </div>
+                          </td>
+                        </tr>
+                      </table>
+                      <p style="color: #8E8798; font-size: 13px; line-height: 1.5; margin: 0 0 20px 0;">
+                        This code will expire in <strong style="color: #D1D5DB;">1 hour</strong>. If you didn't request a password reset, you can safely ignore this email.
+                      </p>
+                      <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0">
+                        <tr>
+                          <td style="border-top: 1px solid #332A40; padding-top: 16px;">
+                            <p style="color: #6E6678; font-size: 12px; text-align: center; margin: 0;">
+                              &copy; STORA. All rights reserved.
+                            </p>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
         </body>
         </html>
         """
@@ -1338,7 +1405,8 @@ def list_conversations(request):
 
         avatar_url = request.build_absolute_uri(partner.avatar.url) if partner.avatar else None
         partner_role = partner.role
-        if partner.role == User.ROLE_ADMIN or partner.is_superuser or partner.is_staff:
+        is_support_partner = partner.role == User.ROLE_ADMIN or partner.is_superuser or partner.is_staff
+        if is_support_partner:
             partner_name = "STORA Support"
         elif partner.role == User.ROLE_OWNER:
             partner_name = partner.business_name or f"{partner.first_name} {partner.last_name}".strip() or partner.username
@@ -1365,6 +1433,7 @@ def list_conversations(request):
             "email": partner.email,
             "role": partner_role,
             "avatar_url": avatar_url,
+            "is_support": is_support_partner,
             "last_message": last_message_text,
             "last_message_is_me": last_msg_is_me,
             "last_message_at": last_msg.created_at.isoformat() if last_msg else None,

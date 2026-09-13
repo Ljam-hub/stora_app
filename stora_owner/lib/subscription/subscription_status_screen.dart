@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import '../auth/auth_store.dart';
 import '../data/api/api_client.dart';
 import '../data/models/account_status.dart';
-import '../home/services/receipt_service.dart';
 import '../stora_login/stora_login.dart';
+import 'past_receipts_sheet.dart';
+import 'subscription_receipt_modal.dart';
 import 'subscription_status.dart';
 import 'upload_gcash_proof_screen.dart';
 import '../home/theme/home_colors.dart';
@@ -181,21 +181,31 @@ class _SubscriptionStatusScreenState extends State<SubscriptionStatusScreen> {
 
                     if (status.isRejected) ...[
                       Container(
-                        padding: const EdgeInsets.all(12),
+                        padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
                           color: HomeColors.dangerBg,
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppColors.error.withValues(alpha: 0.4)),
                         ),
                         child: const Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Icon(Icons.info_outline_rounded, color: AppColors.error, size: 20),
-                            SizedBox(width: 10),
+                            Icon(Icons.error_outline_rounded, color: AppColors.error, size: 22),
+                            SizedBox(width: 12),
                             Expanded(
-                              child: Text(
-                                'Your submitted GCash proof could not be verified. Please check the reference number and screenshot, and submit again.',
-                                style: TextStyle(color: Colors.white, fontSize: 13),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Payment Proof Rejected',
+                                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                                  ),
+                                  SizedBox(height: 4),
+                                  Text(
+                                    'Your GCash payment proof was reviewed and could not be verified by the admin. Please verify your reference number, ensure the payment was sent to the correct GCash account, and submit a clear screenshot.',
+                                    style: TextStyle(color: Colors.white70, fontSize: 12.5, height: 1.4),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
@@ -204,10 +214,26 @@ class _SubscriptionStatusScreenState extends State<SubscriptionStatusScreen> {
                     ] else ...[
                       _StepTracker(currentStep: status.currentStep),
                       if (!status.isApproved) ...[
-                        const SizedBox(height: 4),
-                        const Text(
-                          'Usually completed within 24 hours.',
-                          style: TextStyle(color: AppColors.label, fontSize: 12),
+                        const SizedBox(height: 10),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: AppColors.fieldBackground,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: AppColors.fieldBorder),
+                          ),
+                          child: const Row(
+                            children: [
+                              Icon(Icons.hourglass_top_rounded, color: AppColors.purpleLight, size: 16),
+                              SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Awaiting admin verification. Once approved, your receipt and premium features will be unlocked.',
+                                  style: TextStyle(color: AppColors.label, fontSize: 11.5),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ],
@@ -223,18 +249,24 @@ class _SubscriptionStatusScreenState extends State<SubscriptionStatusScreen> {
                     MaterialPageRoute(builder: (_) => const UploadGcashProofScreen()),
                   ),
                 ),
-              ] else ...[
-                Opacity(
-                  opacity: status.isApproved ? 1 : 0.5,
-                  child: IgnorePointer(
-                    ignoring: !status.isApproved,
-                    child: StoraGradientButton(
-                      label: 'View receipt',
-                      onPressed: () => _showSubscriptionReceipt(context, status),
-                    ),
-                  ),
+              ] else if (status.isApproved) ...[
+                StoraGradientButton(
+                  label: 'View receipt',
+                  onPressed: () => _showSubscriptionReceipt(context, status),
                 ),
               ],
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.white,
+                  side: const BorderSide(color: AppColors.fieldBorder),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                ),
+                onPressed: () => PastReceiptsSheet.show(context),
+                icon: const Icon(Icons.receipt_long_rounded, color: AppColors.purpleLight, size: 18),
+                label: const Text('Past Subscription Receipts', style: TextStyle(fontWeight: FontWeight.w600)),
+              ),
             ],
           ),
         ),
@@ -243,198 +275,11 @@ class _SubscriptionStatusScreenState extends State<SubscriptionStatusScreen> {
   }
 
   void _showSubscriptionReceipt(BuildContext context, SubscriptionStatus status) {
-    final auth = AuthStore.instance;
-    final bName = (auth.businessName != null && auth.businessName!.trim().isNotEmpty)
-        ? auth.businessName!.trim()
-        : 'Stora Store';
-    final mail = (auth.email != null && auth.email!.trim().isNotEmpty)
-        ? auth.email!.trim()
-        : 'owner@example.com';
-    final ref = (status.referenceNumber != null && status.referenceNumber!.trim().isNotEmpty)
-        ? status.referenceNumber!.trim()
-        : 'SUB-${status.submittedAt.millisecondsSinceEpoch}';
-    final receiptAmount = status.amount ?? 100.0;
-    final amountFormatted = 'PHP ${receiptAmount.toStringAsFixed(2)}';
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: HomeColors.cardBackground,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: AppColors.fieldBorder,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: HomeColors.successBg,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(Icons.receipt_long_rounded, color: HomeColors.successText, size: 24),
-                    ),
-                    const SizedBox(width: 14),
-                    const Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Subscription Receipt',
-                            style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold),
-                          ),
-                          Text(
-                            'Official digital proof of payment',
-                            style: TextStyle(color: AppColors.label, fontSize: 12),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppColors.fieldBackground,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: AppColors.fieldBorder),
-                  ),
-                  child: Column(
-                    children: [
-                      _receiptRow('Plan', 'Stora Premium (Monthly)'),
-                      const Divider(color: AppColors.fieldBorder, height: 16),
-                      _receiptRow('Status', 'PAID & ACTIVE', valueColor: HomeColors.successText),
-                      const Divider(color: AppColors.fieldBorder, height: 16),
-                      _receiptRow('Amount', amountFormatted, isBold: true),
-                      const Divider(color: AppColors.fieldBorder, height: 16),
-                      _receiptRow('Payment Method', 'GCash'),
-                      const Divider(color: AppColors.fieldBorder, height: 16),
-                      _receiptRow('Reference #', ref),
-                      const Divider(color: AppColors.fieldBorder, height: 16),
-                      _receiptRow('Date', formatManilaShortDateTime(status.submittedAt)),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.white,
-                          side: const BorderSide(color: AppColors.fieldBorder),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        onPressed: () async {
-                          Navigator.pop(ctx);
-                          await ReceiptService.instance.printSubscriptionReceipt(
-                            businessName: bName,
-                            email: mail,
-                            planName: 'Stora Premium - Monthly',
-                            amount: receiptAmount,
-                            referenceNumber: ref,
-                            date: status.submittedAt,
-                            expiresAt: status.submittedAt.add(const Duration(days: 30)),
-                          );
-                        },
-                        icon: const Icon(Icons.print_rounded, size: 18),
-                        label: const Text('Print'),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.white,
-                          side: const BorderSide(color: AppColors.fieldBorder),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        onPressed: () async {
-                          Navigator.pop(ctx);
-                          await ReceiptService.instance.shareSubscriptionReceipt(
-                            businessName: bName,
-                            email: mail,
-                            planName: 'Stora Premium - Monthly',
-                            amount: receiptAmount,
-                            referenceNumber: ref,
-                            date: status.submittedAt,
-                            expiresAt: status.submittedAt.add(const Duration(days: 30)),
-                          );
-                        },
-                        icon: const Icon(Icons.share_rounded, size: 18),
-                        label: const Text('Share'),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                StoraGradientButton(
-                  label: 'Save PDF Receipt',
-                  onPressed: () async {
-                    Navigator.pop(ctx);
-                    try {
-                      final file = await ReceiptService.instance.saveSubscriptionReceiptToFile(
-                        businessName: bName,
-                        email: mail,
-                        planName: 'Stora Premium - Monthly',
-                        amount: receiptAmount,
-                        referenceNumber: ref,
-                        date: status.submittedAt,
-                        expiresAt: status.submittedAt.add(const Duration(days: 30)),
-                      );
-                      if (context.mounted) {
-                        showStoraSnackBar(context, 'Receipt saved to: ${file.path}', isError: false);
-                      }
-                    } catch (e) {
-                      if (context.mounted) {
-                        showStoraSnackBar(context, 'Failed to save receipt: $e');
-                      }
-                    }
-                  },
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  static Widget _receiptRow(String label, String value, {Color? valueColor, bool isBold = false}) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(label, style: const TextStyle(color: AppColors.label, fontSize: 13)),
-        Text(
-          value,
-          style: TextStyle(
-            color: valueColor ?? Colors.white,
-            fontSize: 13,
-            fontWeight: isBold ? FontWeight.bold : FontWeight.w500,
-          ),
-        ),
-      ],
+    SubscriptionReceiptModal.show(
+      context,
+      amount: status.amount ?? 100.0,
+      referenceNumber: status.referenceNumber ?? '',
+      date: status.submittedAt,
     );
   }
 }

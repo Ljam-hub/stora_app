@@ -1352,6 +1352,49 @@ class CustomerNameAndEmailDisplayTests(APITestCase):
         self.assertEqual(res.status_code, 403)
         self.assertTrue(ChatMessage.objects.filter(id=m.id).exists())
 
+    def test_subscription_receipts_only_returns_approved(self):
+        from accounts.models import PaymentProof
+        from decimal import Decimal
+        from django.utils import timezone
+
+        # Create 3 proofs: pending, rejected, approved
+        pending_proof = PaymentProof.objects.create(
+            user=self.owner,
+            reference_number="REF-PENDING",
+            amount=Decimal("100.00"),
+            status=PaymentProof.STATUS_PENDING,
+            screenshot="payment_proofs/pending.jpg",
+        )
+        rejected_proof = PaymentProof.objects.create(
+            user=self.owner,
+            reference_number="REF-REJECTED",
+            amount=Decimal("100.00"),
+            status=PaymentProof.STATUS_REJECTED,
+            screenshot="payment_proofs/rejected.jpg",
+            reviewed_at=timezone.now(),
+        )
+        approved_proof = PaymentProof.objects.create(
+            user=self.owner,
+            reference_number="REF-APPROVED",
+            amount=Decimal("100.00"),
+            status=PaymentProof.STATUS_APPROVED,
+            screenshot="payment_proofs/approved.jpg",
+            reviewed_at=timezone.now(),
+        )
+
+        self.client.force_authenticate(user=self.owner)
+        res = self.client.get("/api/subscription/receipts/")
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(len(res.data), 1)
+        self.assertEqual(res.data[0]["reference_number"], "REF-APPROVED")
+        self.assertEqual(res.data[0]["status"], "approved")
+
+        # Check account status serializer includes latest proof status
+        status_res = self.client.get("/api/subscription/status/")
+        self.assertEqual(status_res.status_code, 200)
+        self.assertIn("payment_proofs", status_res.data)
+
+
 
 
 

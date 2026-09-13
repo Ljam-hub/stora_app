@@ -51,10 +51,15 @@ class _StoraTextFieldState extends State<StoraTextField> {
           return Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (value.text.isNotEmpty)
+              if (value.text.isNotEmpty) ...[
                 IconButton(
                   padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                  constraints: const BoxConstraints(minWidth: 36, minHeight: 36, maxWidth: 36, maxHeight: 36),
+                  style: IconButton.styleFrom(
+                    shape: const CircleBorder(),
+                    padding: EdgeInsets.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
                   icon: const Icon(
                     Icons.close_rounded,
                     color: AppColors.label,
@@ -63,9 +68,16 @@ class _StoraTextFieldState extends State<StoraTextField> {
                   tooltip: 'Clear password',
                   onPressed: () => widget.controller.clear(),
                 ),
+                const SizedBox(width: 4),
+              ],
               IconButton(
-                padding: const EdgeInsets.only(right: 8),
-                constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 36, minHeight: 36, maxWidth: 36, maxHeight: 36),
+                style: IconButton.styleFrom(
+                  shape: const CircleBorder(),
+                  padding: EdgeInsets.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
                 icon: Icon(
                   _obscured ? Icons.visibility_rounded : Icons.visibility_off_rounded,
                   color: AppColors.label,
@@ -74,6 +86,7 @@ class _StoraTextFieldState extends State<StoraTextField> {
                 tooltip: _obscured ? 'Show password' : 'Hide password',
                 onPressed: () => setState(() => _obscured = !_obscured),
               ),
+              const SizedBox(width: 8),
             ],
           );
         },

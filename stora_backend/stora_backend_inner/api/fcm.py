@@ -291,3 +291,82 @@ def notify_new_chat_message(chat_msg):
     except Exception as e:
         logger.warning("Failed to dispatch chat message notification: %s", e)
         return False
+
+
+def notify_subscription_proof_status(proof, action: str) -> bool:
+    """
+    Sends a push notification and email to the store owner when their subscription
+    payment proof is accepted/approved or rejected by an admin.
+    """
+    try:
+        owner = proof.user
+        if not owner:
+            return False
+
+        from django.core.mail import send_mail
+
+        if action == "approved":
+            title = "Subscription Payment Approved! 🎉"
+            body = (
+                f"Your GCash payment proof (Ref: {proof.reference_number}) for ₱{proof.amount:.2f} has been approved! "
+                f"Your premium plan is now active for 31 days."
+            )
+            email_subject = "STORA — Subscription Payment Approved! Premium Active"
+            email_message = (
+                f"Hello {owner.first_name or owner.business_name or 'Store Owner'},\n\n"
+                f"Great news! Your subscription payment proof has been accepted and approved by our team.\n\n"
+                f"Reference Number: {proof.reference_number}\n"
+                f"Amount: ₱{proof.amount:.2f}\n"
+                f"Status: Approved & Active\n"
+                f"Premium Validity: 31 Days\n\n"
+                f"You can view, save, or print your official subscription receipt directly from the Stora app under Profile > Subscription.\n\n"
+                f"Thank you for powering your business with STORA!\n\n"
+                f"— The STORA Team"
+            )
+        else:
+            title = "Subscription Payment Proof Rejected ❌"
+            body = (
+                f"Your GCash payment proof (Ref: {proof.reference_number}) for ₱{proof.amount:.2f} could not be verified. "
+                f"Please check the details or submit a new proof in the app."
+            )
+            email_subject = "STORA — Subscription Payment Proof Update"
+            email_message = (
+                f"Hello {owner.first_name or owner.business_name or 'Store Owner'},\n\n"
+                f"We were unable to verify your submitted GCash payment proof (Ref: {proof.reference_number}).\n\n"
+                f"Reason: Invalid reference number, mismatching amount, or unreadable receipt screenshot.\n\n"
+                f"Please open the Stora app, check your reference number and payment screenshot, and resubmit.\n\n"
+                f"If you need any help, feel free to contact STORA Support directly inside the app.\n\n"
+                f"— The STORA Team"
+            )
+
+        # 1. Send push notification if owner has FCM token
+        if getattr(owner, "fcm_token", None):
+            data_payload = {
+                "type": f"subscription_{action}",
+                "proof_id": str(proof.id),
+                "status": action,
+                "channel_id": "stora_owner_alerts",
+                "title": title,
+                "body": body,
+            }
+            send_push_notification(owner.fcm_token, title, body, data_payload)
+
+        # 2. Send email notification to owner
+        if owner.email:
+            try:
+                from_email = getattr(settings, "DEFAULT_FROM_EMAIL", None) or "STORA <support@stora.app>"
+                send_mail(
+                    subject=email_subject,
+                    message=email_message,
+                    from_email=from_email,
+                    recipient_list=[owner.email],
+                    fail_silently=True,
+                )
+            except Exception as mail_err:
+                logger.warning("Failed to send subscription status email: %s", mail_err)
+
+        return True
+    except Exception as e:
+        logger.warning("Failed to notify owner of subscription status: %s", e)
+        return False
+

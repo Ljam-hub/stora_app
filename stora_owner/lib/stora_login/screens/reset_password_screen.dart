@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../data/api/api_client.dart';
 import '../theme/app_colors.dart';
 import '../utils/snackbar.dart';
@@ -14,7 +15,7 @@ class ResetPasswordScreen extends StatefulWidget {
   State<ResetPasswordScreen> createState() => _ResetPasswordScreenState();
 }
 
-class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
+class _ResetPasswordScreenState extends State<ResetPasswordScreen> with WidgetsBindingObserver {
   final _formKey = GlobalKey<FormState>();
   final _tokenController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -22,11 +23,82 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   bool _busy = false;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkClipboardForToken();
+    });
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _tokenController.dispose();
     _passwordController.dispose();
     _confirmController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _checkClipboardForToken();
+    }
+  }
+
+  String _extractResetToken(String text) {
+    final trimmed = text.trim();
+    final uuidRegex = RegExp(r'[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}');
+    final match = uuidRegex.firstMatch(trimmed);
+    if (match != null) {
+      return match.group(0)!;
+    }
+    final tokenRegex = RegExp(r'^[0-9a-zA-Z-]{6,36}$');
+    if (tokenRegex.hasMatch(trimmed)) {
+      return trimmed;
+    }
+    return '';
+  }
+
+  Future<void> _checkClipboardForToken() async {
+    try {
+      final data = await Clipboard.getData('text/plain');
+      final text = data?.text?.trim() ?? '';
+      final token = _extractResetToken(text);
+      if (token.isNotEmpty && _tokenController.text != token) {
+        setState(() {
+          _tokenController.text = token;
+        });
+        if (mounted) {
+          showStoraSnackBar(context, 'Reset token auto-pasted from clipboard', isError: false);
+        }
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _pasteFromClipboard() async {
+    try {
+      final data = await Clipboard.getData('text/plain');
+      final text = data?.text?.trim() ?? '';
+      final token = _extractResetToken(text);
+      if (token.isNotEmpty) {
+        setState(() {
+          _tokenController.text = token;
+        });
+        if (mounted) {
+          showStoraSnackBar(context, 'Reset token pasted from clipboard', isError: false);
+        }
+      } else if (text.isNotEmpty) {
+        setState(() {
+          _tokenController.text = text;
+        });
+      } else {
+        if (mounted) {
+          showStoraSnackBar(context, 'Clipboard is empty');
+        }
+      }
+    } catch (_) {}
   }
 
   String? _validateToken(String? v) {
@@ -144,6 +216,17 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                         hint: 'Paste the code from your email',
                         controller: _tokenController,
                         prefixIcon: const Icon(Icons.pin_outlined, color: AppColors.label, size: 20),
+                        suffixIcon: IconButton(
+                          icon: const Icon(Icons.content_paste_rounded, color: AppColors.primaryLight, size: 20),
+                          tooltip: 'Paste from clipboard',
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(minWidth: 36, minHeight: 36, maxWidth: 36, maxHeight: 36),
+                          style: IconButton.styleFrom(
+                            shape: const CircleBorder(),
+                            padding: EdgeInsets.zero,
+                          ),
+                          onPressed: _pasteFromClipboard,
+                        ),
                         validator: _validateToken,
                       ),
                       const SizedBox(height: 18),

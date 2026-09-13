@@ -49,6 +49,9 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
   String? _selectedImageName;
   int? _tappedMessageId;
 
+  bool get _isSupportChat =>
+      widget.isSupport || widget.storeName.trim().toLowerCase().contains('stora support');
+
   static const List<Map<String, dynamic>> _customerQuickReplies = [
     {'icon': Icons.inventory_2_outlined, 'text': 'Is this item in stock and available?'},
     {'icon': Icons.schedule_rounded, 'text': 'What are your store hours today?'},
@@ -88,7 +91,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
   }
 
   Future<void> _fetchBlockStatus() async {
-    if (widget.isSupport) return;
+    if (_isSupportChat) return;
     try {
       final blocked = await CustomerApiService.instance.checkBlockStatus(widget.storeOwnerId);
       if (mounted) setState(() => _isBlocked = blocked);
@@ -746,16 +749,16 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
         titleSpacing: 0,
         title: Row(
           children: [
-            if (widget.isSupport)
+            if (_isSupportChat)
               Container(
                 width: 38,
                 height: 38,
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.2),
+                  color: const Color(0xFFF97316).withValues(alpha: 0.15),
                   shape: BoxShape.circle,
-                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.5)),
+                  border: Border.all(color: const Color(0xFFF97316).withValues(alpha: 0.5), width: 1.5),
                 ),
-                child: const Icon(Icons.support_agent_rounded, color: AppColors.primary, size: 22),
+                child: const Icon(Icons.support_agent_rounded, color: Color(0xFFF97316), size: 22),
               )
             else
               CircleAvatar(
@@ -777,24 +780,39 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
                     children: [
                       Flexible(
                         child: Text(
-                          widget.isSupport ? 'STORA Support' : widget.storeName,
+                          _isSupportChat ? 'STORA Support' : widget.storeName,
                           style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      if (widget.isSupport) ...[
+                      if (_isSupportChat) ...[
                         const SizedBox(width: 6),
-                        const Icon(Icons.verified_rounded, color: AppColors.secondaryLight, size: 16),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF97316).withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: const Text(
+                            'OFFICIAL',
+                            style: TextStyle(
+                              color: Color(0xFFF97316),
+                              fontSize: 9,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.4,
+                            ),
+                          ),
+                        ),
                       ],
                     ],
                   ),
                   Text(
-                    widget.isSupport
+                    _isSupportChat
                         ? 'Official Support · Online'
                         : (_isBlocked ? 'Blocked by store' : 'Store Owner'),
                     style: TextStyle(
-                      color: widget.isSupport
-                          ? AppColors.secondaryLight
+                      color: _isSupportChat
+                          ? const Color(0xFFF97316)
                           : (_isBlocked ? AppColors.danger : AppColors.secondaryLight),
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
@@ -814,7 +832,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
               if (val == 'delete') _deleteConversation();
             },
             itemBuilder: (ctx) => [
-              if (!widget.isSupport)
+              if (!_isSupportChat)
                 const PopupMenuItem(
                   value: 'report',
                   child: Row(
@@ -940,20 +958,36 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                CircleAvatar(
-                                  radius: 38,
-                                  backgroundColor: AppColors.cardElevated,
-                                  backgroundImage: (widget.storeAvatarUrl != null && widget.storeAvatarUrl!.isNotEmpty)
-                                      ? NetworkImage(widget.storeAvatarUrl!)
-                                      : null,
-                                  child: (widget.storeAvatarUrl == null || widget.storeAvatarUrl!.isEmpty)
-                                      ? const Icon(Icons.storefront_rounded, color: AppColors.primary, size: 44)
-                                      : null,
-                                ),
+                                if (_isSupportChat)
+                                  Container(
+                                    width: 76,
+                                    height: 76,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: const Color(0xFFF97316).withValues(alpha: 0.15),
+                                      border: Border.all(color: const Color(0xFFF97316).withValues(alpha: 0.5), width: 2),
+                                    ),
+                                    child: const Icon(
+                                      Icons.support_agent_rounded,
+                                      color: Color(0xFFF97316),
+                                      size: 42,
+                                    ),
+                                  )
+                                else
+                                  CircleAvatar(
+                                    radius: 38,
+                                    backgroundColor: AppColors.cardElevated,
+                                    backgroundImage: (widget.storeAvatarUrl != null && widget.storeAvatarUrl!.isNotEmpty)
+                                        ? NetworkImage(widget.storeAvatarUrl!)
+                                        : null,
+                                    child: (widget.storeAvatarUrl == null || widget.storeAvatarUrl!.isEmpty)
+                                        ? const Icon(Icons.storefront_rounded, color: AppColors.primary, size: 44)
+                                        : null,
+                                  ),
                                 const SizedBox(height: 14),
-                                Text('Message ${widget.storeName}', style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                                Text(_isSupportChat ? 'Message STORA Support' : 'Message ${widget.storeName}', style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
                                 const SizedBox(height: 4),
-                                const Text('Ask questions about products, orders, or delivery', style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
+                                Text(_isSupportChat ? 'Ask questions, report issues, or get help with your account' : 'Ask questions about products, orders, or delivery', style: const TextStyle(color: AppColors.textMuted, fontSize: 13)),
                               ],
                             ),
                           )
@@ -985,7 +1019,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
                                   final rawImg = msg['image'] as String?;
                                   final orderId = msg['order'] as int?;
                                   final createdAt = msg['created_at'] as String?;
-                                  final otherPartyName = widget.isSupport
+                                  final otherPartyName = _isSupportChat
                                       ? 'STORA Support'
                                       : (widget.storeName.trim().isNotEmpty ? widget.storeName.trim() : 'Store');
 
@@ -1085,16 +1119,28 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
                                             mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
                                             children: [
                                               if (!isMe) ...[
-                                                CircleAvatar(
-                                                  radius: 14,
-                                                  backgroundColor: AppColors.cardElevated,
-                                                  backgroundImage: (msgAvatar != null && msgAvatar.isNotEmpty)
-                                                      ? NetworkImage(msgAvatar)
-                                                      : null,
-                                                  child: (msgAvatar == null || msgAvatar.isEmpty)
-                                                      ? const Icon(Icons.storefront_rounded, color: AppColors.primary, size: 14)
-                                                      : null,
-                                                ),
+                                                if (_isSupportChat)
+                                                  Container(
+                                                    width: 28,
+                                                    height: 28,
+                                                    decoration: BoxDecoration(
+                                                      shape: BoxShape.circle,
+                                                      color: const Color(0xFFF97316).withValues(alpha: 0.15),
+                                                      border: Border.all(color: const Color(0xFFF97316).withValues(alpha: 0.5), width: 1),
+                                                    ),
+                                                    child: const Icon(Icons.support_agent_rounded, color: Color(0xFFF97316), size: 16),
+                                                  )
+                                                else
+                                                  CircleAvatar(
+                                                    radius: 14,
+                                                    backgroundColor: AppColors.cardElevated,
+                                                    backgroundImage: (msgAvatar != null && msgAvatar.isNotEmpty)
+                                                        ? NetworkImage(msgAvatar)
+                                                        : null,
+                                                    child: (msgAvatar == null || msgAvatar.isEmpty)
+                                                        ? const Icon(Icons.storefront_rounded, color: AppColors.primary, size: 14)
+                                                        : null,
+                                                  ),
                                                 const SizedBox(width: 8),
                                               ],
                                               Container(
@@ -1159,16 +1205,27 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
                                           children: [
                                             if (!isMe) ...[
                                               if (isLastOfCluster)
-                                                CircleAvatar(
-                                                  radius: 14,
-                                                  backgroundColor: AppColors.cardElevated,
-                                                  backgroundImage: (msgAvatar != null && msgAvatar.isNotEmpty)
-                                                      ? NetworkImage(msgAvatar)
-                                                      : null,
-                                                  child: (msgAvatar == null || msgAvatar.isEmpty)
-                                                      ? const Icon(Icons.storefront_rounded, color: AppColors.primary, size: 14)
-                                                      : null,
-                                                )
+                                                _isSupportChat
+                                                    ? Container(
+                                                        width: 28,
+                                                        height: 28,
+                                                        decoration: BoxDecoration(
+                                                          shape: BoxShape.circle,
+                                                          color: const Color(0xFFF97316).withValues(alpha: 0.15),
+                                                          border: Border.all(color: const Color(0xFFF97316).withValues(alpha: 0.5), width: 1),
+                                                        ),
+                                                        child: const Icon(Icons.support_agent_rounded, color: Color(0xFFF97316), size: 16),
+                                                      )
+                                                    : CircleAvatar(
+                                                        radius: 14,
+                                                        backgroundColor: AppColors.cardElevated,
+                                                        backgroundImage: (msgAvatar != null && msgAvatar.isNotEmpty)
+                                                            ? NetworkImage(msgAvatar)
+                                                            : null,
+                                                        child: (msgAvatar == null || msgAvatar.isEmpty)
+                                                            ? const Icon(Icons.storefront_rounded, color: AppColors.primary, size: 14)
+                                                            : null,
+                                                      )
                                               else
                                                 const SizedBox(width: 28),
                                               const SizedBox(width: 8),
@@ -1329,10 +1386,10 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 12),
-                itemCount: widget.isSupport ? _supportQuickReplies.length : _customerQuickReplies.length,
+                itemCount: _isSupportChat ? _supportQuickReplies.length : _customerQuickReplies.length,
                 separatorBuilder: (context, index) => const SizedBox(width: 8),
                 itemBuilder: (context, i) {
-                  final item = widget.isSupport ? _supportQuickReplies[i] : _customerQuickReplies[i];
+                  final item = _isSupportChat ? _supportQuickReplies[i] : _customerQuickReplies[i];
                   return InkWell(
                     borderRadius: BorderRadius.circular(20),
                     onTap: () => _onQuickReplyTap(item['text'] as String),

@@ -19,6 +19,7 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   bool _uploadingAvatar = false;
+  bool _isOpeningSupport = false;
 
   Future<void> _pickAndUploadAvatar() async {
     final auth = context.read<AuthProvider>();
@@ -532,12 +533,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _openSupportChat() async {
+    if (_isOpeningSupport) return;
+    _isOpeningSupport = true;
     try {
       final contact = await CustomerApiService.instance.getSupportContact();
       if (!mounted) return;
       final supportId = (contact?['id'] as num?)?.toInt() ?? 1;
       final supportName = (contact?['name'] as String?) ?? 'STORA Support';
-      Navigator.of(context).push(
+      await Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) => CustomerChatScreen(
             storeOwnerId: supportId,
@@ -554,6 +557,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
             backgroundColor: AppColors.danger,
           ),
         );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isOpeningSupport = false);
       }
     }
   }

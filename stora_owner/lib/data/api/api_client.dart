@@ -488,6 +488,12 @@ class ApiClient {
     }
   }
 
+  Future<List<dynamic>> getSubscriptionReceipts() async {
+    final response = await _send('GET', '/subscription/receipts/');
+    if (response.statusCode != 200) _throw(response);
+    return jsonDecode(response.body) as List<dynamic>;
+  }
+
 
   // ---------- Forgot password ----------
 

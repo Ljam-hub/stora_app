@@ -48,6 +48,7 @@ urlpatterns = [
     path("subscription/status/", views.account_status, name="subscription_status"),
     path("subscription/config/", views.subscription_config, name="subscription_config"),
     path("subscription/upload-proof/", views.upload_payment_proof, name="upload_payment_proof"),
+    path("subscription/receipts/", views.subscription_receipts, name="subscription_receipts"),
 
     # Products & Inventory
     path("products/barcode/<str:code>/", views.barcode_lookup, name="barcode_lookup"),

@@ -495,6 +495,7 @@ class AccountStatusSerializer(serializers.Serializer):
     gcash_name = serializers.CharField()
     qr_code = serializers.CharField(allow_null=True, required=False)
     latest_payment_proof = PaymentProofSerializer(allow_null=True, required=False)
+    payment_proofs = PaymentProofSerializer(many=True, required=False)
 
 
 class ForgotPasswordSerializer(serializers.Serializer):

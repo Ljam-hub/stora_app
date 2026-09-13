@@ -199,22 +199,39 @@ class PaymentProofAdmin(admin.ModelAdmin):
 
     @admin.action(description="Approve selected payment proofs (Grants 31 Days Premium)")
     def approve_selected(self, request, queryset):
+        from api.fcm import notify_subscription_proof_status
         count = 0
         for proof in queryset:
             proof.approve()
+            notify_subscription_proof_status(proof, "approved")
             count += 1
         self.message_user(request, f"Approved {count} payment proof(s). Premium access granted for 31 days.")
 
     @admin.action(description="Reject selected payment proofs")
     def reject_selected(self, request, queryset):
+        from api.fcm import notify_subscription_proof_status
         now = timezone.now()
-        count = queryset.update(status=PaymentProof.STATUS_REJECTED, reviewed_at=now)
+        count = 0
+        for proof in queryset:
+            proof.status = PaymentProof.STATUS_REJECTED
+            proof.reviewed_at = now
+            proof.save(update_fields=["status", "reviewed_at"])
+            notify_subscription_proof_status(proof, "rejected")
+            count += 1
         self.message_user(request, f"Rejected {count} payment proof(s).")
 
     def save_model(self, request, obj, form, change):
+        from api.fcm import notify_subscription_proof_status
         if obj.status == PaymentProof.STATUS_APPROVED:
             if not change or form.initial.get("status") != PaymentProof.STATUS_APPROVED:
                 obj.approve()
+                notify_subscription_proof_status(obj, "approved")
+                return
+        elif obj.status == PaymentProof.STATUS_REJECTED:
+            if not change or form.initial.get("status") != PaymentProof.STATUS_REJECTED:
+                obj.reviewed_at = timezone.now()
+                super().save_model(request, obj, form, change)
+                notify_subscription_proof_status(obj, "rejected")
                 return
         super().save_model(request, obj, form, change)
 

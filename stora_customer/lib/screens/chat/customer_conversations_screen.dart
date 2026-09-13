@@ -21,6 +21,7 @@ class CustomerConversationsScreen extends StatefulWidget {
 class _CustomerConversationsScreenState extends State<CustomerConversationsScreen> {
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
+  bool _isNavigating = false;
 
   @override
   void initState() {
@@ -114,6 +115,8 @@ class _CustomerConversationsScreenState extends State<CustomerConversationsScree
   }
 
   Future<void> _openSupportChat() async {
+    if (_isNavigating) return;
+    _isNavigating = true;
     try {
       final contact = await CustomerApiService.instance.getSupportContact();
       if (!mounted) return;
@@ -129,7 +132,7 @@ class _CustomerConversationsScreenState extends State<CustomerConversationsScree
         ),
       );
       if (mounted) {
-        context.read<ChatProvider>().fetchConversations();
+        context.read<ChatProvider>().fetchConversations(isSilent: true);
       }
     } catch (e) {
       if (mounted) {
@@ -139,6 +142,10 @@ class _CustomerConversationsScreenState extends State<CustomerConversationsScree
             backgroundColor: AppColors.danger,
           ),
         );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isNavigating = false);
       }
     }
   }
@@ -373,142 +380,176 @@ class _CustomerConversationsScreenState extends State<CustomerConversationsScree
                                 ),
                               ),
                               confirmDismiss: (_) => _confirmDeleteConversation(storeOwnerId, storeName),
-                              child: Material(
-                                color: AppColors.cardBackground,
-                                borderRadius: BorderRadius.circular(16),
-                                child: InkWell(
-                                  borderRadius: BorderRadius.circular(16),
-                                  onLongPress: () => _confirmDeleteConversation(storeOwnerId, storeName),
-                                  onTap: () async {
-                                    await Navigator.of(context).push(
-                                      MaterialPageRoute(
-                                        builder: (_) => CustomerChatScreen(
-                                          storeOwnerId: storeOwnerId,
-                                          storeName: storeName,
-                                          storeAvatarUrl: avatarUrl,
-                                        ),
-                                      ),
-                                    );
-                                    if (context.mounted) {
-                                      context.read<ChatProvider>().fetchConversations(isSilent: true);
-                                    }
-                                  },
-                                  child: Container(
-                                    padding: const EdgeInsets.all(14),
-                                    decoration: BoxDecoration(
+                              child: Builder(
+                                builder: (context) {
+                                  final isSupport = conv['is_support'] == true ||
+                                      conv['role'] == 'admin' ||
+                                      storeName.trim().toLowerCase().contains('stora support');
+
+                                  return Material(
+                                    color: AppColors.cardBackground,
+                                    borderRadius: BorderRadius.circular(16),
+                                    child: InkWell(
                                       borderRadius: BorderRadius.circular(16),
-                                      border: Border.all(
-                                        color: unreadCount > 0
-                                            ? AppColors.primary.withValues(alpha: 0.3)
-                                            : Colors.white.withValues(alpha: 0.06),
-                                      ),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        AppNotificationBadge(
-                                          count: unreadCount,
-                                          top: -2,
-                                          right: -2,
-                                          borderColor: AppColors.cardBackground,
-                                          child: CircleAvatar(
-                                            radius: 24,
-                                            backgroundColor: AppColors.cardElevated,
-                                            backgroundImage: (avatarUrl != null && avatarUrl.isNotEmpty)
-                                                ? NetworkImage(avatarUrl)
-                                                : null,
-                                            child: (avatarUrl == null || avatarUrl.isEmpty)
-                                                ? const Icon(Icons.storefront_rounded, color: AppColors.primary, size: 24)
-                                                : null,
+                                      onTap: () {
+                                        if (_isNavigating) return;
+                                        _isNavigating = true;
+                                        final chatProvider = context.read<ChatProvider>();
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) => CustomerChatScreen(
+                                              storeOwnerId: storeOwnerId,
+                                              storeName: isSupport ? 'STORA Support' : storeName,
+                                              storeAvatarUrl: avatarUrl,
+                                              isSupport: isSupport,
+                                            ),
                                           ),
-                                        ),
-                                        const SizedBox(width: 14),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              Row(
-                                                children: [
-                                                  Expanded(
-                                                    child: Text(
-                                                      storeName,
-                                                      style: TextStyle(
-                                                        color: Colors.white,
-                                                        fontSize: 15,
-                                                        fontWeight: unreadCount > 0 ? FontWeight.w800 : FontWeight.w600,
-                                                      ),
-                                                      maxLines: 1,
-                                                      overflow: TextOverflow.ellipsis,
-                                                    ),
-                                                  ),
-                                                  if (timeText.isNotEmpty)
-                                                    Text(
-                                                      timeText,
-                                                      style: TextStyle(
-                                                        color: unreadCount > 0 ? const Color(0xFFEF4444) : AppColors.textMuted,
-                                                        fontSize: 11.5,
-                                                        fontWeight: unreadCount > 0 ? FontWeight.w700 : FontWeight.normal,
-                                                      ),
-                                                    ),
-                                                ],
+                                        ).then((_) {
+                                          if (!mounted) return;
+                                          setState(() => _isNavigating = false);
+                                          chatProvider.fetchConversations(isSilent: true);
+                                        });
+                                      },
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(12),
+                                        child: Row(
+                                          children: [
+                                            // Avatar
+                                            if (isSupport)
+                                              Container(
+                                                width: 52,
+                                                height: 52,
+                                                decoration: BoxDecoration(
+                                                  shape: BoxShape.circle,
+                                                  color: const Color(0xFFF97316).withValues(alpha: 0.15),
+                                                  border: Border.all(color: const Color(0xFFF97316).withValues(alpha: 0.5), width: 1.5),
+                                                ),
+                                                child: const Icon(
+                                                  Icons.support_agent_rounded,
+                                                  color: Color(0xFFF97316),
+                                                  size: 28,
+                                                ),
+                                              )
+                                            else
+                                              CircleAvatar(
+                                                radius: 26,
+                                                backgroundColor: AppColors.cardElevated,
+                                                backgroundImage: (avatarUrl != null && avatarUrl.isNotEmpty)
+                                                    ? NetworkImage(avatarUrl)
+                                                    : null,
+                                                child: (avatarUrl == null || avatarUrl.isEmpty)
+                                                    ? const Icon(Icons.storefront_rounded, color: AppColors.primary, size: 28)
+                                                    : null,
                                               ),
-                                              const SizedBox(height: 4),
-                                              Row(
+                                            const SizedBox(width: 12),
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
                                                 children: [
-                                                  Expanded(
-                                                    child: Text(
-                                                      lastMsg.isNotEmpty ? lastMsg : 'Tap to chat with store',
-                                                      style: TextStyle(
-                                                        color: unreadCount > 0 ? Colors.white : AppColors.textSecondary,
-                                                        fontSize: 13,
-                                                        fontWeight: unreadCount > 0 ? FontWeight.w600 : FontWeight.normal,
+                                                  Row(
+                                                    children: [
+                                                      Flexible(
+                                                        child: Text(
+                                                          isSupport ? 'STORA Support' : storeName,
+                                                          style: const TextStyle(
+                                                            color: Colors.white,
+                                                            fontWeight: FontWeight.w600,
+                                                            fontSize: 15,
+                                                          ),
+                                                          maxLines: 1,
+                                                          overflow: TextOverflow.ellipsis,
+                                                        ),
                                                       ),
-                                                      maxLines: 1,
-                                                      overflow: TextOverflow.ellipsis,
-                                                    ),
+                                                      if (isSupport) ...[
+                                                        const SizedBox(width: 6),
+                                                        Container(
+                                                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                                          decoration: BoxDecoration(
+                                                            color: const Color(0xFFF97316).withValues(alpha: 0.2),
+                                                            borderRadius: BorderRadius.circular(4),
+                                                          ),
+                                                          child: const Text(
+                                                            'OFFICIAL',
+                                                            style: TextStyle(
+                                                              color: Color(0xFFF97316),
+                                                              fontSize: 9,
+                                                              fontWeight: FontWeight.w800,
+                                                              letterSpacing: 0.4,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ],
+                                                      const SizedBox(width: 8),
+                                                      Text(
+                                                        timeText,
+                                                        style: const TextStyle(
+                                                          color: AppColors.textMuted,
+                                                          fontSize: 11,
+                                                        ),
+                                                      ),
+                                                    ],
                                                   ),
-                                                  if (unreadCount > 0)
-                                                    Padding(
-                                                      padding: const EdgeInsets.only(left: 8),
-                                                      child: AppNotificationBadge(
-                                                        count: unreadCount,
-                                                        borderColor: AppColors.cardBackground,
+                                                  const SizedBox(height: 4),
+                                                  Row(
+                                                    children: [
+                                                      Expanded(
+                                                        child: Text(
+                                                          lastMsg.isNotEmpty ? lastMsg : 'Tap to chat with store',
+                                                          style: TextStyle(
+                                                            color: unreadCount > 0 ? Colors.white : AppColors.textSecondary,
+                                                            fontSize: 13,
+                                                            fontWeight: unreadCount > 0 ? FontWeight.w600 : FontWeight.normal,
+                                                          ),
+                                                          maxLines: 1,
+                                                          overflow: TextOverflow.ellipsis,
+                                                        ),
                                                       ),
-                                                    ),
-                                                ],
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        PopupMenuButton<String>(
-                                          icon: const Icon(
-                                            Icons.more_vert_rounded,
-                                            color: AppColors.textMuted,
-                                            size: 20,
-                                          ),
-                                          color: AppColors.cardElevated,
-                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                          onSelected: (val) {
-                                            if (val == 'delete') {
-                                              _confirmDeleteConversation(storeOwnerId, storeName);
-                                            }
-                                          },
-                                          itemBuilder: (_) => [
-                                            const PopupMenuItem(
-                                              value: 'delete',
-                                              child: Row(
-                                                children: [
-                                                  Icon(Icons.delete_outline_rounded, color: AppColors.danger, size: 18),
-                                                  SizedBox(width: 8),
-                                                  Text('Delete Convo', style: TextStyle(color: AppColors.danger, fontSize: 13)),
+                                                      if (unreadCount > 0)
+                                                        Padding(
+                                                          padding: const EdgeInsets.only(left: 8),
+                                                          child: AppNotificationBadge(
+                                                            count: unreadCount,
+                                                            borderColor: AppColors.cardBackground,
+                                                          ),
+                                                        ),
+                                                    ],
+                                                  ),
                                                 ],
                                               ),
                                             ),
+                                            PopupMenuButton<String>(
+                                              icon: const Icon(
+                                                Icons.more_vert_rounded,
+                                                color: AppColors.textMuted,
+                                                size: 20,
+                                              ),
+                                              color: AppColors.cardElevated,
+                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                              onSelected: (val) {
+                                                if (val == 'delete') {
+                                                  _confirmDeleteConversation(storeOwnerId, storeName);
+                                                }
+                                              },
+                                              itemBuilder: (_) => [
+                                                const PopupMenuItem(
+                                                  value: 'delete',
+                                                  child: Row(
+                                                    children: [
+                                                      Icon(Icons.delete_outline_rounded, color: AppColors.danger, size: 18),
+                                                      SizedBox(width: 8),
+                                                      Text('Delete Convo', style: TextStyle(color: AppColors.danger, fontSize: 13)),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
                                           ],
                                         ),
-                                      ],
+                                      ),
                                     ),
-                                  ),
-                                ),
+                                  );
+                                },
                               ),
                             );
                           },

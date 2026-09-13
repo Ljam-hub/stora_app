@@ -26,6 +26,7 @@ class _OwnerChatScreenState extends State<OwnerChatScreen> {
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
   Timer? _pollTimer;
+  bool _isNavigating = false;
 
   @override
   void initState() {
@@ -76,12 +77,14 @@ class _OwnerChatScreenState extends State<OwnerChatScreen> {
   }
 
   Future<void> _openSupportChat() async {
+    if (_isNavigating) return;
+    _isNavigating = true;
     try {
       final support = await ApiClient.instance.getSupportContact();
       if (!mounted) return;
       if (support != null) {
         final supportId = ((support['id'] ?? support['user_id']) as num?)?.toInt() ?? 1;
-        Navigator.of(context).push(
+        await Navigator.of(context).push(
           MaterialPageRoute(
             builder: (_) => OwnerChatThreadScreen(
               customerId: supportId,
@@ -91,7 +94,10 @@ class _OwnerChatScreenState extends State<OwnerChatScreen> {
               isSupport: true,
             ),
           ),
-        ).then((_) => _loadConversations(silent: true));
+        );
+        if (mounted) {
+          _loadConversations(silent: true);
+        }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Support service is currently unavailable.')),
@@ -102,6 +108,10 @@ class _OwnerChatScreenState extends State<OwnerChatScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to reach support: $e')),
         );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isNavigating = false);
       }
     }
   }
@@ -207,8 +217,8 @@ class _OwnerChatScreenState extends State<OwnerChatScreen> {
           ],
         ),
         content: Text(
-          'Are you sure you want to delete all messages with $customerName? This cannot be undone.',
-          style: const TextStyle(color: Colors.white70, fontSize: 14),
+          'Are you sure you want to delete the conversation with $customerName? This will only be removed for you; the other person can still see it unless they delete it too.',
+          style: const TextStyle(color: Colors.white70, fontSize: 13, height: 1.4),
         ),
         actions: [
           TextButton(
@@ -528,9 +538,13 @@ class _OwnerChatScreenState extends State<OwnerChatScreen> {
                               itemBuilder: (context, index) {
                                 final conv = _filteredConversations[index];
                                 final customerId = (conv['id'] ?? conv['user_id']) as int? ?? 0;
-                                final customerName = (conv['name'] as String?)?.isNotEmpty == true
-                                    ? conv['name'] as String
-                                    : 'Customer #$customerId';
+                                final rawName = (conv['name'] as String?)?.trim() ?? '';
+                                final isSupport = conv['is_support'] == true ||
+                                    conv['role'] == 'admin' ||
+                                    rawName.toLowerCase().contains('stora support');
+                                final customerName = isSupport
+                                    ? 'STORA Support'
+                                    : (rawName.isNotEmpty ? rawName : 'Customer #$customerId');
                                 final lastMessage = conv['last_message'] as String? ?? '';
                                 final unreadCount = (conv['unread_count'] as int?) ?? 0;
                                 final lastMessageAt = conv['last_message_at'] as String?;
@@ -575,6 +589,8 @@ class _OwnerChatScreenState extends State<OwnerChatScreen> {
                                     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                                     onLongPress: () => _confirmDeleteConversation(customerId, customerName),
                                     onTap: () async {
+                                      if (_isNavigating) return;
+                                      _isNavigating = true;
                                       await Navigator.of(context).push(
                                         MaterialPageRoute(
                                           builder: (_) => OwnerChatThreadScreen(
@@ -582,30 +598,49 @@ class _OwnerChatScreenState extends State<OwnerChatScreen> {
                                             customerName: customerName,
                                             customerEmail: conv['email'] as String?,
                                             customerAvatarUrl: avatarUrl,
+                                            isSupport: isSupport,
                                           ),
                                         ),
                                       );
-                                      _loadConversations(silent: true);
+                                      if (mounted) {
+                                        setState(() => _isNavigating = false);
+                                        _loadConversations(silent: true);
+                                      }
                                     },
                                     leading: AppNotificationBadge(
                                       count: unreadCount,
                                       top: -2,
                                       right: -2,
                                       borderColor: const Color(0xFF1B1428),
-                                      child: CircleAvatar(
-                                        radius: 28,
-                                        backgroundColor: const Color(0xFF3A3B3C),
-                                        backgroundImage: (avatarUrl != null && avatarUrl.isNotEmpty)
-                                            ? NetworkImage(avatarUrl)
-                                            : null,
-                                        child: (avatarUrl == null || avatarUrl.isEmpty)
-                                            ? const Icon(Icons.person, color: Colors.white, size: 34)
-                                            : null,
-                                      ),
+                                      child: isSupport
+                                          ? Container(
+                                              width: 56,
+                                              height: 56,
+                                              decoration: BoxDecoration(
+                                                shape: BoxShape.circle,
+                                                color: const Color(0xFFF97316).withValues(alpha: 0.15),
+                                                border: Border.all(color: const Color(0xFFF97316).withValues(alpha: 0.5), width: 1.5),
+                                              ),
+                                              child: const Icon(
+                                                Icons.support_agent_rounded,
+                                                color: Color(0xFFF97316),
+                                                size: 30,
+                                              ),
+                                            )
+                                          : CircleAvatar(
+                                              radius: 28,
+                                              backgroundColor: const Color(0xFF3A3B3C),
+                                              backgroundImage: (avatarUrl != null && avatarUrl.isNotEmpty)
+                                                  ? NetworkImage(avatarUrl)
+                                                  : null,
+                                              child: (avatarUrl == null || avatarUrl.isEmpty)
+                                                  ? const Icon(Icons.person, color: Colors.white, size: 34)
+                                                  : null,
+                                            ),
                                     ),
                                     title: Row(
                                       children: [
-                                        Expanded(
+                                        Flexible(
                                           child: Text(
                                             customerName,
                                             style: TextStyle(
@@ -617,6 +652,26 @@ class _OwnerChatScreenState extends State<OwnerChatScreen> {
                                             overflow: TextOverflow.ellipsis,
                                           ),
                                         ),
+                                        if (isSupport) ...[
+                                          const SizedBox(width: 6),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFFF97316).withValues(alpha: 0.2),
+                                              borderRadius: BorderRadius.circular(4),
+                                            ),
+                                            child: const Text(
+                                              'OFFICIAL',
+                                              style: TextStyle(
+                                                color: Color(0xFFF97316),
+                                                fontSize: 9,
+                                                fontWeight: FontWeight.w800,
+                                                letterSpacing: 0.4,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                        const Spacer(),
                                         if (timeDisplay.isNotEmpty)
                                           Text(
                                             timeDisplay,
@@ -733,6 +788,9 @@ class _OwnerChatThreadScreenState extends State<OwnerChatThreadScreen> {
   String? _selectedImageName;
   int? _tappedMessageId;
 
+  bool get _isSupportChat =>
+      widget.isSupport || widget.customerName.trim().toLowerCase().contains('stora support');
+
   static const List<Map<String, dynamic>> _quickReplies = [
     {'icon': Icons.waving_hand_rounded, 'text': 'Hello! How can I help you today?'},
     {'icon': Icons.inventory_2_outlined, 'text': 'Your order is prepared and ready!'},
@@ -769,7 +827,7 @@ class _OwnerChatThreadScreenState extends State<OwnerChatThreadScreen> {
   }
 
   Future<void> _fetchBlockStatus() async {
-    if (widget.isSupport) return;
+    if (_isSupportChat) return;
     try {
       final blocked = await ApiClient.instance.checkBlockStatus(widget.customerId);
       if (mounted) setState(() => _isBlocked = blocked);
@@ -1391,8 +1449,8 @@ class _OwnerChatThreadScreenState extends State<OwnerChatThreadScreen> {
           ],
         ),
         content: Text(
-          'Are you sure you want to delete all messages with ${widget.customerName}? This cannot be undone.',
-          style: const TextStyle(color: Colors.white70, fontSize: 14),
+          'Are you sure you want to delete the conversation with ${widget.customerName}? This will only be removed for you; the other person can still see it unless they delete it too.',
+          style: const TextStyle(color: Colors.white70, fontSize: 13, height: 1.4),
         ),
         actions: [
           TextButton(
@@ -1447,16 +1505,28 @@ class _OwnerChatThreadScreenState extends State<OwnerChatThreadScreen> {
         titleSpacing: 0,
         title: Row(
           children: [
-            CircleAvatar(
-              radius: 19,
-              backgroundColor: widget.isSupport ? AppColors.primary.withValues(alpha: 0.2) : const Color(0xFF3A3B3C),
-              backgroundImage: (widget.customerAvatarUrl != null && widget.customerAvatarUrl!.isNotEmpty)
-                  ? NetworkImage(widget.customerAvatarUrl!)
-                  : null,
-              child: (widget.customerAvatarUrl == null || widget.customerAvatarUrl!.isEmpty)
-                  ? Icon(widget.isSupport ? Icons.support_agent_rounded : Icons.person, color: widget.isSupport ? AppColors.primary : Colors.white, size: 22)
-                  : null,
-            ),
+            if (_isSupportChat)
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF97316).withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: const Color(0xFFF97316).withValues(alpha: 0.5), width: 1.5),
+                ),
+                child: const Icon(Icons.support_agent_rounded, color: Color(0xFFF97316), size: 22),
+              )
+            else
+              CircleAvatar(
+                radius: 19,
+                backgroundColor: const Color(0xFF3A3B3C),
+                backgroundImage: (widget.customerAvatarUrl != null && widget.customerAvatarUrl!.isNotEmpty)
+                    ? NetworkImage(widget.customerAvatarUrl!)
+                    : null,
+                child: (widget.customerAvatarUrl == null || widget.customerAvatarUrl!.isEmpty)
+                    ? const Icon(Icons.person, color: Colors.white, size: 22)
+                    : null,
+              ),
             const SizedBox(width: 10),
             Expanded(
               child: Column(
@@ -1466,27 +1536,42 @@ class _OwnerChatThreadScreenState extends State<OwnerChatThreadScreen> {
                     children: [
                       Flexible(
                         child: Text(
-                          widget.customerName,
+                          _isSupportChat ? 'STORA Support' : widget.customerName,
                           style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      if (widget.isSupport) ...[
-                        const SizedBox(width: 4),
-                        const Icon(Icons.verified_rounded, color: AppColors.primary, size: 16),
+                      if (_isSupportChat) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF97316).withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: const Text(
+                            'OFFICIAL',
+                            style: TextStyle(
+                              color: Color(0xFFF97316),
+                              fontSize: 9,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.4,
+                            ),
+                          ),
+                        ),
                       ],
                     ],
                   ),
                   Text(
-                    widget.isSupport
-                        ? 'Official Support • Active'
+                    _isSupportChat
+                        ? 'Official Support • Online'
                         : (_isBlocked
                             ? 'Blocked'
                             : ((widget.customerEmail != null && widget.customerEmail!.isNotEmpty)
                                 ? widget.customerEmail!
                                 : 'Customer')),
                     style: TextStyle(
-                      color: widget.isSupport ? const Color(0xFF10B981) : (_isBlocked ? HomeColors.dangerText : AppColors.label),
+                      color: _isSupportChat ? const Color(0xFFF97316) : (_isBlocked ? HomeColors.dangerText : AppColors.label),
                       fontSize: 11,
                       fontWeight: FontWeight.w500,
                     ),
@@ -1507,7 +1592,7 @@ class _OwnerChatThreadScreenState extends State<OwnerChatThreadScreen> {
               if (val == 'delete') _deleteConversation();
             },
             itemBuilder: (ctx) => [
-              if (!widget.isSupport) ...[
+              if (!_isSupportChat) ...[
                 const PopupMenuItem(
                   value: 'report',
                   child: Row(
@@ -1531,13 +1616,13 @@ class _OwnerChatThreadScreenState extends State<OwnerChatThreadScreen> {
                     children: [
                       Icon(
                         _isBlocked ? Icons.lock_open_rounded : Icons.block_rounded,
-                        color: _isBlocked ? HomeColors.successText : HomeColors.dangerText,
+                        color: _isBlocked ? Colors.green : HomeColors.dangerText,
                         size: 20,
                       ),
                       const SizedBox(width: 10),
                       Text(
                         _isBlocked ? 'Unblock Customer' : 'Block Customer',
-                        style: TextStyle(color: _isBlocked ? HomeColors.successText : HomeColors.dangerText),
+                        style: TextStyle(color: _isBlocked ? Colors.green : HomeColors.dangerText),
                       ),
                     ],
                   ),
@@ -1554,7 +1639,7 @@ class _OwnerChatThreadScreenState extends State<OwnerChatThreadScreen> {
                     ),
                     const SizedBox(width: 10),
                     Text(
-                      widget.isSupport ? 'Clear Conversation' : 'Delete Conversation',
+                      _isSupportChat ? 'Clear Conversation' : 'Delete Conversation',
                       style: const TextStyle(color: HomeColors.dangerText),
                     ),
                   ],
@@ -1655,20 +1740,38 @@ class _OwnerChatThreadScreenState extends State<OwnerChatThreadScreen> {
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                CircleAvatar(
-                                  radius: 38,
-                                  backgroundColor: const Color(0xFF3A3B3C),
-                                  backgroundImage: (widget.customerAvatarUrl != null && widget.customerAvatarUrl!.isNotEmpty)
-                                      ? NetworkImage(widget.customerAvatarUrl!)
-                                      : null,
-                                  child: (widget.customerAvatarUrl == null || widget.customerAvatarUrl!.isEmpty)
-                                      ? const Icon(Icons.person, color: Colors.white, size: 44)
-                                      : null,
-                                ),
+                                if (_isSupportChat)
+                                  Container(
+                                    width: 76,
+                                    height: 76,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: const Color(0xFFF97316).withValues(alpha: 0.15),
+                                      border: Border.all(color: const Color(0xFFF97316).withValues(alpha: 0.5), width: 1.5),
+                                    ),
+                                    child: const Icon(Icons.support_agent_rounded, color: Color(0xFFF97316), size: 44),
+                                  )
+                                else
+                                  CircleAvatar(
+                                    radius: 38,
+                                    backgroundColor: const Color(0xFF3A3B3C),
+                                    backgroundImage: (widget.customerAvatarUrl != null && widget.customerAvatarUrl!.isNotEmpty)
+                                        ? NetworkImage(widget.customerAvatarUrl!)
+                                        : null,
+                                    child: (widget.customerAvatarUrl == null || widget.customerAvatarUrl!.isEmpty)
+                                        ? const Icon(Icons.person, color: Colors.white, size: 44)
+                                        : null,
+                                  ),
                                 const SizedBox(height: 14),
-                                Text(widget.customerName, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                                Text(
+                                  _isSupportChat ? 'STORA Support' : widget.customerName,
+                                  style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                                ),
                                 const SizedBox(height: 4),
-                                const Text('You\'re connected on Stora', style: TextStyle(color: AppColors.label, fontSize: 13)),
+                                Text(
+                                  _isSupportChat ? 'Official STORA Help & Support Desk' : 'You\'re connected on Stora',
+                                  style: const TextStyle(color: AppColors.label, fontSize: 13),
+                                ),
                               ],
                             ),
                           )
@@ -1804,17 +1907,29 @@ class _OwnerChatThreadScreenState extends State<OwnerChatThreadScreen> {
                                             crossAxisAlignment: CrossAxisAlignment.end,
                                             mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
                                             children: [
-                                              if (!isMe) ...[
-                                                CircleAvatar(
-                                                  radius: 14,
-                                                  backgroundColor: const Color(0xFF3A3B3C),
-                                                  backgroundImage: (widget.customerAvatarUrl != null && widget.customerAvatarUrl!.isNotEmpty)
-                                                      ? NetworkImage(widget.customerAvatarUrl!)
-                                                      : null,
-                                                  child: (widget.customerAvatarUrl == null || widget.customerAvatarUrl!.isEmpty)
-                                                      ? const Icon(Icons.person, color: Colors.white, size: 16)
-                                                      : null,
-                                                ),
+                                               if (!isMe) ...[
+                                                if (_isSupportChat)
+                                                  Container(
+                                                    width: 28,
+                                                    height: 28,
+                                                    decoration: BoxDecoration(
+                                                      shape: BoxShape.circle,
+                                                      color: const Color(0xFFF97316).withValues(alpha: 0.15),
+                                                      border: Border.all(color: const Color(0xFFF97316).withValues(alpha: 0.5), width: 1),
+                                                    ),
+                                                    child: const Icon(Icons.support_agent_rounded, color: Color(0xFFF97316), size: 16),
+                                                  )
+                                                else
+                                                  CircleAvatar(
+                                                    radius: 14,
+                                                    backgroundColor: const Color(0xFF3A3B3C),
+                                                    backgroundImage: (widget.customerAvatarUrl != null && widget.customerAvatarUrl!.isNotEmpty)
+                                                        ? NetworkImage(widget.customerAvatarUrl!)
+                                                        : null,
+                                                    child: (widget.customerAvatarUrl == null || widget.customerAvatarUrl!.isEmpty)
+                                                        ? const Icon(Icons.person, color: Colors.white, size: 16)
+                                                        : null,
+                                                  ),
                                                 const SizedBox(width: 8),
                                               ],
                                               Container(
@@ -1835,7 +1950,7 @@ class _OwnerChatThreadScreenState extends State<OwnerChatThreadScreen> {
                                                     const SizedBox(width: 6),
                                                     Flexible(
                                                       child: Text(
-                                                        isMe ? 'You unsent a message' : '${widget.customerName} unsent a message',
+                                                        isMe ? 'You unsent a message' : '${_isSupportChat ? 'STORA Support' : widget.customerName} unsent a message',
                                                         style: const TextStyle(
                                                           color: AppColors.label,
                                                           fontSize: 13,
@@ -1879,16 +1994,27 @@ class _OwnerChatThreadScreenState extends State<OwnerChatThreadScreen> {
                                           children: [
                                             if (!isMe) ...[
                                               if (isLastOfCluster)
-                                                CircleAvatar(
-                                                  radius: 14,
-                                                  backgroundColor: const Color(0xFF3A3B3C),
-                                                  backgroundImage: (widget.customerAvatarUrl != null && widget.customerAvatarUrl!.isNotEmpty)
-                                                      ? NetworkImage(widget.customerAvatarUrl!)
-                                                      : null,
-                                                  child: (widget.customerAvatarUrl == null || widget.customerAvatarUrl!.isEmpty)
-                                                      ? const Icon(Icons.person, color: Colors.white, size: 16)
-                                                      : null,
-                                                )
+                                                _isSupportChat
+                                                    ? Container(
+                                                        width: 28,
+                                                        height: 28,
+                                                        decoration: BoxDecoration(
+                                                          shape: BoxShape.circle,
+                                                          color: const Color(0xFFF97316).withValues(alpha: 0.15),
+                                                          border: Border.all(color: const Color(0xFFF97316).withValues(alpha: 0.5), width: 1),
+                                                        ),
+                                                        child: const Icon(Icons.support_agent_rounded, color: Color(0xFFF97316), size: 16),
+                                                      )
+                                                    : CircleAvatar(
+                                                        radius: 14,
+                                                        backgroundColor: const Color(0xFF3A3B3C),
+                                                        backgroundImage: (widget.customerAvatarUrl != null && widget.customerAvatarUrl!.isNotEmpty)
+                                                            ? NetworkImage(widget.customerAvatarUrl!)
+                                                            : null,
+                                                        child: (widget.customerAvatarUrl == null || widget.customerAvatarUrl!.isEmpty)
+                                                            ? const Icon(Icons.person, color: Colors.white, size: 16)
+                                                            : null,
+                                                      )
                                               else
                                                 const SizedBox(width: 28),
                                               const SizedBox(width: 8),
@@ -2049,10 +2175,10 @@ class _OwnerChatThreadScreenState extends State<OwnerChatThreadScreen> {
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 12),
-                itemCount: (widget.isSupport ? _supportQuickReplies : _quickReplies).length,
+                itemCount: (_isSupportChat ? _supportQuickReplies : _quickReplies).length,
                 separatorBuilder: (context, index) => const SizedBox(width: 8),
                 itemBuilder: (context, i) {
-                  final item = (widget.isSupport ? _supportQuickReplies : _quickReplies)[i];
+                  final item = (_isSupportChat ? _supportQuickReplies : _quickReplies)[i];
                   return InkWell(
                     borderRadius: BorderRadius.circular(20),
                     onTap: () => _onQuickReplyTap(item['text'] as String),

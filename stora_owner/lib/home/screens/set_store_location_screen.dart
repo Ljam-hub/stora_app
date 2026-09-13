@@ -27,6 +27,7 @@ class _SetStoreLocationScreenState extends State<SetStoreLocationScreen> {
   bool _isLoading = true;
   bool _isSaving = false;
   bool _isDetectingLocation = false;
+  bool _isGeocodingAddress = false;
   String? _message;
   bool _isError = false;
 
@@ -381,7 +382,8 @@ class _SetStoreLocationScreenState extends State<SetStoreLocationScreen> {
     );
   }
 
-  Future<void> _tryReverseGeocode(double lat, double lng) async {
+  Future<void> _tryReverseGeocode(double lat, double lng, {bool force = true}) async {
+    if (mounted) setState(() => _isGeocodingAddress = true);
     try {
       final uri = Uri.parse(
         'https://nominatim.openstreetmap.org/reverse?format=json&lat=$lat&lon=$lng&zoom=18&addressdetails=1',
@@ -389,30 +391,59 @@ class _SetStoreLocationScreenState extends State<SetStoreLocationScreen> {
       final response = await http.get(uri, headers: {
         'User-Agent': 'StoraApp/1.0 (com.example.stora)',
         'Accept': 'application/json',
-      }).timeout(const Duration(seconds: 4));
+      }).timeout(const Duration(seconds: 5));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        final displayName = data['display_name'] as String?;
-        if (displayName != null && mounted) {
-          if (_addressController.text.trim().isEmpty) {
+        String resolvedAddress = '';
+
+        if (data['address'] is Map<String, dynamic>) {
+          final addr = data['address'] as Map<String, dynamic>;
+          final parts = <String>[];
+          final street = addr['road'] ?? addr['pedestrian'] ?? addr['street'] ?? addr['suburb'];
+          if (street != null && street.toString().isNotEmpty) parts.add(street.toString());
+          final village = addr['village'] ?? addr['neighbourhood'] ?? addr['quarter'] ?? addr['residential'];
+          if (village != null && village.toString().isNotEmpty && !parts.contains(village.toString())) parts.add(village.toString());
+          final city = addr['city'] ?? addr['town'] ?? addr['municipality'] ?? addr['county'];
+          if (city != null && city.toString().isNotEmpty && !parts.contains(city.toString())) parts.add(city.toString());
+          final state = addr['state'] ?? addr['region'] ?? addr['province'];
+          if (state != null && state.toString().isNotEmpty && !parts.contains(state.toString())) parts.add(state.toString());
+          final country = addr['country'];
+          if (country != null && country.toString().isNotEmpty && !parts.contains(country.toString())) parts.add(country.toString());
+
+          if (parts.isNotEmpty) {
+            resolvedAddress = parts.join(', ');
+          }
+        }
+
+        if (resolvedAddress.isEmpty) {
+          resolvedAddress = (data['display_name'] as String?) ?? '';
+        }
+
+        if (resolvedAddress.isNotEmpty && mounted) {
+          if (force || _addressController.text.trim().isEmpty) {
             setState(() {
-              _addressController.text = displayName;
+              _addressController.text = resolvedAddress;
             });
           }
         }
       }
     } catch (_) {
       // Non-critical, ignore
+    } finally {
+      if (mounted) {
+        setState(() => _isGeocodingAddress = false);
+      }
     }
   }
 
   void _onMapTap(TapPosition tapPosition, LatLng point) {
     setState(() {
       _currentMapPosition = point;
-      _latController.text = point.latitude.toString();
-      _lngController.text = point.longitude.toString();
+      _latController.text = point.latitude.toStringAsFixed(6);
+      _lngController.text = point.longitude.toStringAsFixed(6);
     });
+    _tryReverseGeocode(point.latitude, point.longitude, force: true);
   }
 
   void _onLatLngChanged(String value) {
@@ -661,6 +692,16 @@ class _SetStoreLocationScreenState extends State<SetStoreLocationScreen> {
                       hintText: 'e.g., 123 Bgy. Santo Cristo, Sari-Sari Store Row',
                       hintStyle: const TextStyle(color: AppColors.label),
                       prefixIcon: const Icon(Icons.home_work_outlined, color: AppColors.purpleLight),
+                      suffixIcon: _isGeocodingAddress
+                          ? const Padding(
+                              padding: EdgeInsets.all(12),
+                              child: SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.purpleLight),
+                              ),
+                            )
+                          : null,
                       filled: true,
                       fillColor: HomeColors.cardBackground,
                       border: OutlineInputBorder(

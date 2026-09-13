@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/custom_text_field.dart';
@@ -11,7 +12,7 @@ class ForgotPasswordScreen extends StatefulWidget {
   State<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
 }
 
-class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
+class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> with WidgetsBindingObserver {
   final _emailController = TextEditingController();
   final _codeController = TextEditingController();
   final _newPasswordController = TextEditingController();
@@ -20,11 +21,91 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   bool _isLoading = false;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _emailController.dispose();
     _codeController.dispose();
     _newPasswordController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && _codeSent) {
+      _checkClipboardForToken();
+    }
+  }
+
+  String _extractResetToken(String text) {
+    final trimmed = text.trim();
+    final uuidRegex = RegExp(r'[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}');
+    final match = uuidRegex.firstMatch(trimmed);
+    if (match != null) {
+      return match.group(0)!;
+    }
+    final tokenRegex = RegExp(r'^[0-9a-zA-Z-]{6,36}$');
+    if (tokenRegex.hasMatch(trimmed)) {
+      return trimmed;
+    }
+    return '';
+  }
+
+  Future<void> _checkClipboardForToken() async {
+    try {
+      final data = await Clipboard.getData('text/plain');
+      final text = data?.text?.trim() ?? '';
+      final token = _extractResetToken(text);
+      if (token.isNotEmpty && _codeController.text != token) {
+        setState(() {
+          _codeController.text = token;
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Reset token auto-pasted from clipboard'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _pasteFromClipboard() async {
+    try {
+      final data = await Clipboard.getData('text/plain');
+      final text = data?.text?.trim() ?? '';
+      final token = _extractResetToken(text);
+      if (token.isNotEmpty) {
+        setState(() {
+          _codeController.text = token;
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Reset token pasted from clipboard'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      } else if (text.isNotEmpty) {
+        setState(() {
+          _codeController.text = text;
+        });
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('No reset token found in clipboard.')),
+          );
+        }
+      }
+    } catch (_) {}
   }
 
   Future<void> _handleSendCode() async {
@@ -167,6 +248,18 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   label: 'Reset Code / Token',
                   hint: 'Paste the reset code here',
                   prefixIcon: Icons.vpn_key_outlined,
+                  suffix: IconButton(
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 36, minHeight: 36, maxWidth: 36, maxHeight: 36),
+                    style: IconButton.styleFrom(
+                      shape: const CircleBorder(),
+                      padding: EdgeInsets.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    icon: const Icon(Icons.content_paste_rounded, color: AppColors.primaryLight, size: 20),
+                    tooltip: 'Paste from clipboard',
+                    onPressed: _pasteFromClipboard,
+                  ),
                 ),
                 const SizedBox(height: 16),
                 CustomTextField(

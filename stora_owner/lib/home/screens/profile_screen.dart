@@ -13,6 +13,7 @@ import '../widgets/status_chip.dart';
 import '../../subscription/subscription_screen.dart';
 import '../../subscription/subscription_status_screen.dart';
 import '../../subscription/subscription_status.dart';
+import '../../subscription/past_receipts_sheet.dart';
 import '../theme/theme_mode_controller.dart';
 import 'owner_chat_screen.dart';
 
@@ -30,6 +31,7 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   bool _isUploadingAvatar = false;
+  bool _isOpeningSupport = false;
 
   Future<void> _pickAndUploadAvatar() async {
     final hasAvatar = AuthStore.instance.avatarUrl != null && AuthStore.instance.avatarUrl!.isNotEmpty;
@@ -268,17 +270,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         return Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            if (value.text.isNotEmpty)
+                            if (value.text.isNotEmpty) ...[
                               IconButton(
                                 padding: EdgeInsets.zero,
-                                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                                constraints: const BoxConstraints(minWidth: 36, minHeight: 36, maxWidth: 36, maxHeight: 36),
+                                style: IconButton.styleFrom(
+                                  shape: const CircleBorder(),
+                                  padding: EdgeInsets.zero,
+                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                ),
                                 icon: const Icon(Icons.close_rounded, color: AppColors.label, size: 18),
                                 tooltip: 'Clear password',
                                 onPressed: () => oldPasswordController.clear(),
                               ),
+                              const SizedBox(width: 4),
+                            ],
                             IconButton(
-                              padding: const EdgeInsets.only(right: 8),
-                              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(minWidth: 36, minHeight: 36, maxWidth: 36, maxHeight: 36),
+                              style: IconButton.styleFrom(
+                                shape: const CircleBorder(),
+                                padding: EdgeInsets.zero,
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
                               icon: Icon(
                                 obscureOld ? Icons.visibility_rounded : Icons.visibility_off_rounded,
                                 color: AppColors.label,
@@ -287,6 +301,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               tooltip: obscureOld ? 'Show password' : 'Hide password',
                               onPressed: () => setDialogState(() => obscureOld = !obscureOld),
                             ),
+                            const SizedBox(width: 8),
                           ],
                         );
                       },
@@ -310,17 +325,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         return Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            if (value.text.isNotEmpty)
+                            if (value.text.isNotEmpty) ...[
                               IconButton(
                                 padding: EdgeInsets.zero,
-                                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                                constraints: const BoxConstraints(minWidth: 36, minHeight: 36, maxWidth: 36, maxHeight: 36),
+                                style: IconButton.styleFrom(
+                                  shape: const CircleBorder(),
+                                  padding: EdgeInsets.zero,
+                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                ),
                                 icon: const Icon(Icons.close_rounded, color: AppColors.label, size: 18),
                                 tooltip: 'Clear password',
                                 onPressed: () => newPasswordController.clear(),
                               ),
+                              const SizedBox(width: 4),
+                            ],
                             IconButton(
-                              padding: const EdgeInsets.only(right: 8),
-                              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(minWidth: 36, minHeight: 36, maxWidth: 36, maxHeight: 36),
+                              style: IconButton.styleFrom(
+                                shape: const CircleBorder(),
+                                padding: EdgeInsets.zero,
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
                               icon: Icon(
                                 obscureNew ? Icons.visibility_rounded : Icons.visibility_off_rounded,
                                 color: AppColors.label,
@@ -329,6 +356,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               tooltip: obscureNew ? 'Show password' : 'Hide password',
                               onPressed: () => setDialogState(() => obscureNew = !obscureNew),
                             ),
+                            const SizedBox(width: 8),
                           ],
                         );
                       },
@@ -352,17 +380,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         return Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            if (value.text.isNotEmpty)
+                            if (value.text.isNotEmpty) ...[
                               IconButton(
                                 padding: EdgeInsets.zero,
-                                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                                constraints: const BoxConstraints(minWidth: 36, minHeight: 36, maxWidth: 36, maxHeight: 36),
+                                style: IconButton.styleFrom(
+                                  shape: const CircleBorder(),
+                                  padding: EdgeInsets.zero,
+                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                ),
                                 icon: const Icon(Icons.close_rounded, color: AppColors.label, size: 18),
                                 tooltip: 'Clear password',
                                 onPressed: () => confirmPasswordController.clear(),
                               ),
+                              const SizedBox(width: 4),
+                            ],
                             IconButton(
-                              padding: const EdgeInsets.only(right: 8),
-                              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(minWidth: 36, minHeight: 36, maxWidth: 36, maxHeight: 36),
+                              style: IconButton.styleFrom(
+                                shape: const CircleBorder(),
+                                padding: EdgeInsets.zero,
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
                               icon: Icon(
                                 obscureConfirm ? Icons.visibility_rounded : Icons.visibility_off_rounded,
                                 color: AppColors.label,
@@ -371,6 +411,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               tooltip: obscureConfirm ? 'Show password' : 'Hide password',
                               onPressed: () => setDialogState(() => obscureConfirm = !obscureConfirm),
                             ),
+                            const SizedBox(width: 8),
                           ],
                         );
                       },
@@ -444,6 +485,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _openSupportChat() async {
+    if (_isOpeningSupport) return;
+    _isOpeningSupport = true;
     try {
       final contact = await ApiClient.instance.getSupportContact();
       if (!mounted) return;
@@ -451,7 +494,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final supportName = (contact?['name'] as String?) ?? 'STORA Support';
       final supportAvatar = contact?['avatar_url'] as String?;
       final supportEmail = contact?['email'] as String?;
-      Navigator.of(context).push(
+      await Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) => OwnerChatThreadScreen(
             customerId: supportId,
@@ -466,6 +509,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (mounted) {
         showStoraSnackBar(context, 'Unable to connect to STORA Support: $e');
       }
+    } finally {
+      _isOpeningSupport = false;
     }
   }
 
@@ -481,13 +526,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
         final isPremium = account.isPremium;
         final isPending = account.latestPaymentProof?.isPending == true;
+        final isRejected = account.latestPaymentProof?.isRejected == true;
         final planLabel = isPremium
             ? 'Premium'
             : isPending
                 ? 'Pending · Premium'
-                : 'Free plan';
-        final planColor = isPremium ? HomeColors.successText : AppColors.purpleLight;
-        final planBg = isPremium ? HomeColors.successBg : AppColors.fieldBackground;
+                : isRejected
+                    ? 'Proof Rejected'
+                    : 'Free plan';
+        final planColor = isPremium
+            ? HomeColors.successText
+            : isRejected
+                ? AppColors.error
+                : AppColors.purpleLight;
+        final planBg = isPremium
+            ? HomeColors.successBg
+            : isRejected
+                ? HomeColors.dangerBg
+                : AppColors.fieldBackground;
 
         return Scaffold(
           backgroundColor: AppColors.background,
@@ -630,6 +686,51 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             ),
                           const SizedBox(height: 12),
                           StatusChip(label: planLabel, color: planColor, background: planBg),
+                          if (isRejected) ...[
+                            const SizedBox(height: 12),
+                            InkWell(
+                              onTap: () {
+                                final proof = account.latestPaymentProof;
+                                final proofAmount = (proof != null && proof.amount.isNotEmpty)
+                                    ? double.tryParse(proof.amount)
+                                    : null;
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => SubscriptionStatusScreen(
+                                      status: SubscriptionStatus.fromBackend(
+                                        proof?.status ?? 'rejected',
+                                        proof?.submittedAt ?? DateTime.now(),
+                                        referenceNumber: proof?.referenceNumber,
+                                        amount: proofAmount ?? account.monthlyPrice,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                              borderRadius: BorderRadius.circular(10),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: HomeColors.dangerBg,
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(color: AppColors.error.withValues(alpha: 0.4)),
+                                ),
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.error_outline_rounded, color: AppColors.error, size: 16),
+                                    SizedBox(width: 6),
+                                    Flexible(
+                                      child: Text(
+                                        'Payment proof rejected. Tap to resubmit.',
+                                        style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ),
@@ -678,6 +779,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         );
                       }
                     },
+                  ),
+                  _MenuTile(
+                    icon: Icons.receipt_long_rounded,
+                    label: 'Past Subscription Receipts',
+                    onTap: () => PastReceiptsSheet.show(context),
                   ),
                   _MenuTile(
                     icon: Icons.support_agent_rounded,
