@@ -1,9 +1,12 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../data/api/api_client.dart';
 import '../data/models/account_status.dart';
+import '../data/stores/account_status_store.dart';
 import '../stora_login/stora_login.dart';
 import 'past_receipts_sheet.dart';
 import 'subscription_receipt_modal.dart';
+import 'subscription_screen.dart';
 import 'subscription_status.dart';
 import 'upload_gcash_proof_screen.dart';
 import '../home/theme/home_colors.dart';
@@ -26,20 +29,93 @@ class SubscriptionStatusScreen extends StatefulWidget {
 class _SubscriptionStatusScreenState extends State<SubscriptionStatusScreen> {
   SubscriptionStatus? _status;
   bool _loading = false;
+  Timer? _pollTimer;
 
   @override
   void initState() {
     super.initState();
     _status = widget.status;
+    AccountStatusStore.instance.addListener(_onAccountStatusChanged);
     _refreshStatus();
+    _startPolling();
   }
 
-  Future<void> _refreshStatus() async {
-    setState(() => _loading = true);
+  @override
+  void dispose() {
+    _pollTimer?.cancel();
+    AccountStatusStore.instance.removeListener(_onAccountStatusChanged);
+    super.dispose();
+  }
+
+  void _onAccountStatusChanged() {
+    if (!mounted) return;
+    final accountStatus = AccountStatusStore.instance.status;
+    final proof = accountStatus.latestPaymentProof;
+    final rawAmount = proof?.amount;
+    final proofAmount = (rawAmount != null && rawAmount.isNotEmpty)
+        ? double.tryParse(rawAmount)
+        : null;
+    final actualAmount = proofAmount ?? accountStatus.monthlyPrice;
+
+    setState(() {
+      if (proof != null && (proof.isPending || proof.isRejected)) {
+        _status = SubscriptionStatus.fromBackend(
+          proof.status,
+          proof.submittedAt,
+          referenceNumber: proof.referenceNumber,
+          amount: actualAmount,
+        );
+        if (_status!.isApproved || _status!.isRejected) {
+          _pollTimer?.cancel();
+        }
+      } else if (accountStatus.isPremium) {
+        _status = SubscriptionStatus(
+          currentStep: SubscriptionStep.approved,
+          submittedAt: proof?.submittedAt ?? accountStatus.trialStartedAt ?? DateTime.now(),
+          referenceNumber: proof?.referenceNumber,
+          amount: actualAmount,
+        );
+        _pollTimer?.cancel();
+      } else if (proof != null) {
+        _status = SubscriptionStatus.fromBackend(
+          proof.status,
+          proof.submittedAt,
+          referenceNumber: proof.referenceNumber,
+          amount: actualAmount,
+        );
+        if (_status!.isApproved || _status!.isRejected) {
+          _pollTimer?.cancel();
+        }
+      } else {
+        _status = widget.status;
+      }
+    });
+  }
+
+  void _startPolling() {
+    _pollTimer?.cancel();
+    final isDone = _status != null && (_status!.isApproved || _status!.isRejected);
+    if (!isDone) {
+      _pollTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+        if (!mounted) return;
+        if (_status != null && (_status!.isApproved || _status!.isRejected)) {
+          _pollTimer?.cancel();
+          return;
+        }
+        _refreshStatus(background: true);
+      });
+    }
+  }
+
+  Future<void> _refreshStatus({bool background = false}) async {
+    if (!background) setState(() => _loading = true);
     try {
       final res = await ApiClient.instance.getSubscriptionStatus();
       final accountStatus = AccountStatus.fromJson(res);
       final proof = accountStatus.latestPaymentProof;
+
+      // Keep the global store updated as well
+      AccountStatusStore.instance.fetchStatus();
 
       if (mounted) {
         final rawAmount = proof?.amount;
@@ -49,13 +125,24 @@ class _SubscriptionStatusScreenState extends State<SubscriptionStatusScreen> {
         final actualAmount = proofAmount ?? accountStatus.monthlyPrice;
 
         setState(() {
-          if (accountStatus.isPremium) {
+          if (proof != null && (proof.isPending || proof.isRejected)) {
+            _status = SubscriptionStatus.fromBackend(
+              proof.status,
+              proof.submittedAt,
+              referenceNumber: proof.referenceNumber,
+              amount: actualAmount,
+            );
+            if (_status!.isApproved || _status!.isRejected) {
+              _pollTimer?.cancel();
+            }
+          } else if (accountStatus.isPremium) {
             _status = SubscriptionStatus(
               currentStep: SubscriptionStep.approved,
               submittedAt: proof?.submittedAt ?? accountStatus.trialStartedAt ?? DateTime.now(),
               referenceNumber: proof?.referenceNumber,
               amount: actualAmount,
             );
+            _pollTimer?.cancel();
           } else if (proof != null) {
             _status = SubscriptionStatus.fromBackend(
               proof.status,
@@ -63,6 +150,9 @@ class _SubscriptionStatusScreenState extends State<SubscriptionStatusScreen> {
               referenceNumber: proof.referenceNumber,
               amount: actualAmount,
             );
+            if (_status!.isApproved || _status!.isRejected) {
+              _pollTimer?.cancel();
+            }
           } else {
             _status = widget.status;
           }
@@ -71,7 +161,7 @@ class _SubscriptionStatusScreenState extends State<SubscriptionStatusScreen> {
     } catch (_) {
       // Keep displaying existing or fallback status on network error
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted && !background) setState(() => _loading = false);
     }
   }
 
@@ -205,23 +295,27 @@ class _SubscriptionStatusScreenState extends State<SubscriptionStatusScreen> {
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(color: const Color(0xFFF87171), width: 1.2),
                         ),
-                        child: const Row(
+                        child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Icon(Icons.error_outline_rounded, color: Color(0xFFF87171), size: 22),
-                            SizedBox(width: 12),
+                            const Icon(Icons.error_outline_rounded, color: Color(0xFFF87171), size: 22),
+                            const SizedBox(width: 12),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'Payment Proof Rejected',
-                                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                                    AccountStatusStore.instance.isPremium
+                                        ? 'Renewal Payment Proof Rejected'
+                                        : 'Payment Proof Rejected',
+                                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
                                   ),
-                                  SizedBox(height: 4),
+                                  const SizedBox(height: 4),
                                   Text(
-                                    'Your GCash payment proof was reviewed and could not be verified by the admin. Please verify your reference number, ensure the payment was sent to the correct GCash account, and submit a clear screenshot.',
-                                    style: TextStyle(color: Color(0xFFFEE2E2), fontSize: 12.5, height: 1.4),
+                                    AccountStatusStore.instance.isPremium
+                                        ? 'Your extension proof could not be verified. Note: Your current Premium subscription is still active (${AccountStatusStore.instance.daysLeft} days left). You can resubmit or dismiss this warning.'
+                                        : 'Your GCash payment proof was reviewed and could not be verified by the admin. Please verify your reference number, ensure the payment was sent to the correct GCash account, and submit a clear screenshot.',
+                                    style: const TextStyle(color: Color(0xFFFEE2E2), fontSize: 12.5, height: 1.4),
                                   ),
                                 ],
                               ),
@@ -262,12 +356,33 @@ class _SubscriptionStatusScreenState extends State<SubscriptionStatusScreen> {
 
               if (status.isRejected) ...[
                 StoraGradientButton(
-                  label: 'Resubmit payment proof',
+                  label: AccountStatusStore.instance.isPremium
+                      ? 'Resubmit renewal proof'
+                      : 'Resubmit payment proof',
                   onPressed: () => Navigator.of(context).pushReplacement(
                     MaterialPageRoute(builder: (_) => const UploadGcashProofScreen()),
                   ),
                 ),
                 const SizedBox(height: 12),
+                if (AccountStatusStore.instance.isPremium) ...[
+                  OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: HomeColors.textPrimary,
+                      backgroundColor: Colors.white.withValues(alpha: 0.05),
+                      side: BorderSide(color: HomeColors.cardBorder, width: 1.2),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    ),
+                    onPressed: () {
+                      final proof = AccountStatusStore.instance.status.latestPaymentProof;
+                      AccountStatusStore.instance.dismissRejectedProof(proof?.id);
+                      Navigator.of(context).pop();
+                    },
+                    icon: const Icon(Icons.check_circle_outline_rounded, color: Color(0xFF4ADE80), size: 18),
+                    label: Text('Dismiss & Keep Current Plan', style: TextStyle(color: HomeColors.textPrimary, fontWeight: FontWeight.w700)),
+                  ),
+                  const SizedBox(height: 12),
+                ],
                 OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
                     foregroundColor: HomeColors.textPrimary,
@@ -282,8 +397,23 @@ class _SubscriptionStatusScreenState extends State<SubscriptionStatusScreen> {
                 ),
               ] else if (status.isApproved) ...[
                 StoraGradientButton(
-                  label: 'Subscription Receipts',
+                  label: 'Extend / Renew Subscription',
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => SubscriptionScreen()),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: HomeColors.textPrimary,
+                    backgroundColor: const Color(0xFF9333EA).withValues(alpha: 0.12),
+                    side: const BorderSide(color: Color(0xFFA855F7), width: 1.2),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
                   onPressed: () => _showSubscriptionReceipt(context, status),
+                  icon: const Icon(Icons.receipt_long_rounded, color: Color(0xFFC084FC), size: 18),
+                  label: Text('Subscription Receipts', style: TextStyle(color: HomeColors.textPrimary, fontWeight: FontWeight.w700)),
                 ),
               ] else ...[
                 OutlinedButton.icon(

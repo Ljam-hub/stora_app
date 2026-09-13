@@ -197,7 +197,7 @@ class _FilterChip extends StatelessWidget {
           color: isSelected ? AppColors.purpleLight : HomeColors.cardElevated,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? AppColors.purpleLight : Colors.white10,
+            color: isSelected ? AppColors.purpleLight : HomeColors.cardBorder,
           ),
         ),
         child: Row(
@@ -206,7 +206,7 @@ class _FilterChip extends StatelessWidget {
             Text(
               label,
               style: TextStyle(
-                color: isSelected ? Colors.white : AppColors.label,
+                color: isSelected ? Colors.white : HomeColors.textSecondary,
                 fontSize: 13,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
               ),
@@ -585,7 +585,7 @@ class _OrderCardState extends State<_OrderCard> {
         color: HomeColors.cardBackground,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: isPending ? AppColors.purpleLight.withValues(alpha: 0.35) : Colors.white.withValues(alpha: 0.08),
+          color: isPending ? AppColors.purpleLight.withValues(alpha: 0.35) : HomeColors.cardBorder,
         ),
         boxShadow: isPending ? HomeColors.glowShadow(AppColors.purpleLight) : HomeColors.cardShadow,
       ),
@@ -618,8 +618,8 @@ class _OrderCardState extends State<_OrderCard> {
                         children: [
                           Text(
                             'Order #$orderId',
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: HomeColors.textPrimary,
                               fontSize: 15,
                               fontWeight: FontWeight.w800,
                               letterSpacing: -0.2,
@@ -656,7 +656,7 @@ class _OrderCardState extends State<_OrderCard> {
                       Text(
                         customerName,
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.85),
+                          color: HomeColors.textSecondary,
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                         ),
@@ -672,8 +672,8 @@ class _OrderCardState extends State<_OrderCard> {
                   children: [
                     Text(
                       '₱$totalAmount',
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: HomeColors.textPrimary,
                         fontSize: 17,
                         fontWeight: FontWeight.w800,
                         letterSpacing: -0.3,
@@ -735,7 +735,7 @@ class _OrderCardState extends State<_OrderCard> {
               decoration: BoxDecoration(
                 color: HomeColors.cardElevated.withValues(alpha: 0.6),
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+                border: Border.all(color: HomeColors.cardBorder),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -786,7 +786,7 @@ class _OrderCardState extends State<_OrderCard> {
                         const Icon(Icons.notes_rounded, color: Color(0xFFFFA726), size: 14),
                         const SizedBox(width: 8),
                         Expanded(
-                          child: Text('Note: "$notes"', style: const TextStyle(color: Colors.white70, fontSize: 12, fontStyle: FontStyle.italic)),
+                          child: Text('Note: "$notes"', style: TextStyle(color: HomeColors.textSecondary, fontSize: 12, fontStyle: FontStyle.italic)),
                         ),
                       ],
                     ),
@@ -848,7 +848,7 @@ class _OrderCardState extends State<_OrderCard> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.06),
+                      color: HomeColors.surfaceHover,
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
@@ -899,7 +899,7 @@ class _OrderCardState extends State<_OrderCard> {
                             children: [
                               Text(
                                 name,
-                                style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500),
+                                style: TextStyle(color: HomeColors.textPrimary, fontSize: 13, fontWeight: FontWeight.w500),
                               ),
                               Text(
                                 '₱$price each',
@@ -910,7 +910,7 @@ class _OrderCardState extends State<_OrderCard> {
                         ),
                         Text(
                           '₱$subtotal',
-                          style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w600),
+                          style: TextStyle(color: HomeColors.textSecondary, fontSize: 13, fontWeight: FontWeight.w600),
                         ),
                       ],
                     ),

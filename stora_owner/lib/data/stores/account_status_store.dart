@@ -11,11 +11,25 @@ class AccountStatusStore extends ChangeNotifier {
   String? _error;
   double? _lastKnownPrice;
   String? _priceChangePrompt;
+  int? _dismissedRejectedProofId;
 
   AccountStatus get status => _status;
   bool get loading => _loading;
   String? get error => _error;
   String? get priceChangePrompt => _priceChangePrompt;
+  int? get dismissedRejectedProofId => _dismissedRejectedProofId;
+
+  void dismissRejectedProof(int? proofId) {
+    if (proofId != null) {
+      _dismissedRejectedProofId = proofId;
+      notifyListeners();
+    }
+  }
+
+  bool isRejectedProofDismissed(int? proofId) {
+    if (proofId == null) return false;
+    return _dismissedRejectedProofId == proofId;
+  }
 
   bool get canAddProduct {
     if (_status.isPremium) return true;

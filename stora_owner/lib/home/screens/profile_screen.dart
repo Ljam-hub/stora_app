@@ -537,7 +537,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
         final isPremium = account.isPremium;
         final isPending = account.latestPaymentProof?.isPending == true;
-        final isRejected = account.latestPaymentProof?.isRejected == true;
+        final isRejected = account.latestPaymentProof?.isRejected == true &&
+            !AccountStatusStore.instance.isRejectedProofDismissed(account.latestPaymentProof?.id);
         final planLabel = isPremium
             ? 'Premium'
             : isPending
@@ -701,46 +702,63 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           StatusChip(label: planLabel, color: planColor, background: planBg),
                           if (isRejected) ...[
                             const SizedBox(height: 12),
-                            InkWell(
-                              onTap: () {
-                                final proof = account.latestPaymentProof;
-                                final proofAmount = (proof != null && proof.amount.isNotEmpty)
-                                    ? double.tryParse(proof.amount)
-                                    : null;
-                                Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (_) => SubscriptionStatusScreen(
-                                      status: SubscriptionStatus.fromBackend(
-                                        proof?.status ?? 'rejected',
-                                        proof?.submittedAt ?? DateTime.now(),
-                                        referenceNumber: proof?.referenceNumber,
-                                        amount: proofAmount ?? account.monthlyPrice,
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: HomeColors.dangerBg,
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: AppColors.error.withValues(alpha: 0.4)),
+                              ),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: InkWell(
+                                      onTap: () {
+                                        final proof = account.latestPaymentProof;
+                                        final proofAmount = (proof != null && proof.amount.isNotEmpty)
+                                            ? double.tryParse(proof.amount)
+                                            : null;
+                                        Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                            builder: (_) => SubscriptionStatusScreen(
+                                              status: SubscriptionStatus.fromBackend(
+                                                proof?.status ?? 'rejected',
+                                                proof?.submittedAt ?? DateTime.now(),
+                                                referenceNumber: proof?.referenceNumber,
+                                                amount: proofAmount ?? account.monthlyPrice,
+                                              ),
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Icon(Icons.error_outline_rounded, color: AppColors.error, size: 16),
+                                          const SizedBox(width: 6),
+                                          Flexible(
+                                            child: Text(
+                                              isPremium
+                                                  ? 'Renewal proof rejected. Tap to review.'
+                                                  : 'Payment proof rejected. Tap to resubmit.',
+                                              style: const TextStyle(color: AppColors.error, fontSize: 12, fontWeight: FontWeight.w600),
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ),
-                                );
-                              },
-                              borderRadius: BorderRadius.circular(10),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                decoration: BoxDecoration(
-                                  color: HomeColors.dangerBg,
-                                  borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(color: AppColors.error.withValues(alpha: 0.4)),
-                                ),
-                                child: const Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(Icons.error_outline_rounded, color: AppColors.error, size: 16),
-                                    SizedBox(width: 6),
-                                    Flexible(
-                                      child: Text(
-                                        'Payment proof rejected. Tap to resubmit.',
-                                        style: TextStyle(color: AppColors.error, fontSize: 12, fontWeight: FontWeight.w600),
-                                      ),
+                                  GestureDetector(
+                                    behavior: HitTestBehavior.opaque,
+                                    onTap: () {
+                                      AccountStatusStore.instance.dismissRejectedProof(account.latestPaymentProof?.id);
+                                    },
+                                    child: const Padding(
+                                      padding: EdgeInsets.only(left: 6, top: 2, bottom: 2),
+                                      child: Icon(Icons.close_rounded, size: 16, color: AppColors.error),
                                     ),
-                                  ],
-                                ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
@@ -765,7 +783,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     label: 'Subscription Plan',
                     onTap: () {
                       final proof = account.latestPaymentProof;
-                      if (proof != null) {
+                      if (!account.isPremium && proof != null && (proof.isPending || proof.isRejected)) {
                         final proofAmount = proof.amount.isNotEmpty
                             ? double.tryParse(proof.amount)
                             : null;

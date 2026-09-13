@@ -80,6 +80,50 @@ class SubscriptionScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 20),
 
+                  if (account.status.latestPaymentProof?.isRejected == true &&
+                      !account.isRejectedProofDismissed(account.status.latestPaymentProof?.id)) ...[
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 16),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: HomeColors.dangerBg,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.error.withValues(alpha: 0.4)),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(Icons.info_outline_rounded, color: AppColors.error, size: 18),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Renewal Proof Not Verified',
+                                  style: TextStyle(color: AppColors.error, fontWeight: FontWeight.bold, fontSize: 13),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Your extension proof was rejected. Your current Premium plan remains active ($daysLeft days left). Use the button below to resubmit whenever you are ready.',
+                                  style: TextStyle(color: HomeColors.textSecondary, fontSize: 12),
+                                ),
+                              ],
+                            ),
+                          ),
+                          GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: () => account.dismissRejectedProof(account.status.latestPaymentProof?.id),
+                            child: const Padding(
+                              padding: EdgeInsets.only(left: 6),
+                              child: Icon(Icons.close_rounded, size: 16, color: AppColors.error),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+
                   if (isPremium) ...[
                     // Premium Active Header
                     Container(

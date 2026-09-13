@@ -3,6 +3,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import '../api/api_client.dart';
+import '../stores/account_status_store.dart';
 import '../../home/stores/orders_store.dart';
 
 @pragma('vm:entry-point')
@@ -86,9 +87,20 @@ class OwnerNotificationService {
               'Foreground owner notification received: ${message.notification?.title ?? message.data['title']}');
 
           final action = message.data['action'];
+          final type = message.data['type'];
+          final status = message.data['status'];
           if (action == 'created') {
             // Automatically refresh owner orders list when a new order arrives
             OrdersStore.instance.fetchOrders();
+          }
+          if (type == 'subscription_approved' ||
+              type == 'subscription_rejected' ||
+              action == 'subscription_approved' ||
+              action == 'subscription_rejected' ||
+              status == 'approved' ||
+              status == 'rejected') {
+            // Automatically refresh account/subscription status when admin approves or rejects
+            AccountStatusStore.instance.fetchStatus();
           }
 
           // Show a system heads-up banner with sound even while the app is open
@@ -97,6 +109,44 @@ class OwnerNotificationService {
           // Also trigger in-app callback (SnackBar, order refresh, etc.)
           if (onForegroundMessageReceived != null) {
             onForegroundMessageReceived!(message);
+          }
+        });
+
+        // ── Notification tap handler (opened from background) ──
+        FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+          final action = message.data['action'];
+          final type = message.data['type'];
+          final status = message.data['status'];
+          if (action == 'created') {
+            OrdersStore.instance.fetchOrders();
+          }
+          if (type == 'subscription_approved' ||
+              type == 'subscription_rejected' ||
+              action == 'subscription_approved' ||
+              action == 'subscription_rejected' ||
+              status == 'approved' ||
+              status == 'rejected') {
+            AccountStatusStore.instance.fetchStatus();
+          }
+        });
+
+        // ── App opened from terminated state via notification ──
+        messaging.getInitialMessage().then((message) {
+          if (message != null) {
+            final action = message.data['action'];
+            final type = message.data['type'];
+            final status = message.data['status'];
+            if (action == 'created') {
+              OrdersStore.instance.fetchOrders();
+            }
+            if (type == 'subscription_approved' ||
+                type == 'subscription_rejected' ||
+                action == 'subscription_approved' ||
+                action == 'subscription_rejected' ||
+                status == 'approved' ||
+                status == 'rejected') {
+              AccountStatusStore.instance.fetchStatus();
+            }
           }
         });
       }
