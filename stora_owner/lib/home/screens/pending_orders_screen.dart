@@ -356,6 +356,7 @@ class _OrderCardState extends State<_OrderCard> {
   }
 
   Future<void> _handleAccept() async {
+    if (_isProcessing) return;
     setState(() => _isProcessing = true);
     try {
       await OrdersStore.instance.acceptOrder(orderId);
@@ -376,6 +377,7 @@ class _OrderCardState extends State<_OrderCard> {
   }
 
   Future<void> _handleMarkReady() async {
+    if (_isProcessing) return;
     setState(() => _isProcessing = true);
     try {
       await OrdersStore.instance.markOrderReady(orderId);
@@ -399,6 +401,7 @@ class _OrderCardState extends State<_OrderCard> {
     final controller = TextEditingController();
     String selectedReason = 'Out of stock';
     final standardReasons = ['Out of stock', 'Store closed', 'Outside delivery area', 'Custom reason'];
+    bool isSubmitting = false;
 
     showDialog(
       context: context,
@@ -454,6 +457,8 @@ class _OrderCardState extends State<_OrderCard> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               ),
               onPressed: () async {
+                if (isSubmitting) return;
+                isSubmitting = true;
                 final reason = selectedReason == 'Custom reason' ? controller.text.trim() : selectedReason;
                 Navigator.of(ctx).pop();
                 setState(() => _isProcessing = true);
@@ -486,6 +491,7 @@ class _OrderCardState extends State<_OrderCard> {
   void _showCounterDialog() {
     final notesController = TextEditingController();
     final priceController = TextEditingController(text: totalAmount);
+    bool isSubmitting = false;
 
     showDialog(
       context: context,
@@ -543,8 +549,10 @@ class _OrderCardState extends State<_OrderCard> {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
             onPressed: () async {
+              if (isSubmitting) return;
               final notes = notesController.text.trim();
               if (notes.isEmpty) return;
+              isSubmitting = true;
               final price = double.tryParse(priceController.text.trim());
               Navigator.of(ctx).pop();
               setState(() => _isProcessing = true);

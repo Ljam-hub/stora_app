@@ -19,26 +19,62 @@ class Sale {
   factory Sale.fromJson(Map<String, dynamic> json) {
     final itemsList = (json['items'] as List<dynamic>?) ?? [];
     final items = itemsList.map((itemJson) {
-      final map = itemJson as Map<String, dynamic>;
-      // Build a lightweight Product from the snapshot fields.
+      if (itemJson is! Map<String, dynamic>) {
+        return CartItem(
+          product: Product(
+            id: '',
+            name: 'Unknown Item',
+            category: '',
+            price: 0.0,
+            stock: 0,
+          ),
+          quantity: 1,
+        );
+      }
+      final map = itemJson;
+      final rawPrice = map['product_price'] ?? map['unit_price'];
+      final price = (rawPrice is num)
+          ? rawPrice.toDouble()
+          : (double.tryParse(rawPrice?.toString() ?? '0') ?? 0.0);
+      final rawQty = map['quantity'];
+      final quantity = (rawQty is num)
+          ? rawQty.toInt()
+          : (int.tryParse(rawQty?.toString() ?? '1') ?? 1);
       final product = Product(
         id: '',
-        name: map['product_name'] as String,
+        name: map['product_name']?.toString() ?? 'Unknown Item',
         category: '',
-        price: double.parse((map['product_price'] ?? map['unit_price']).toString()),
+        price: price,
         stock: 0,
       );
       return CartItem(
         product: product,
-        quantity: int.parse(map['quantity'].toString()),
+        quantity: quantity,
       );
     }).toList();
 
+    final rawDate = (json['date'] ?? json['created_at'])?.toString();
+    DateTime parsedDate;
+    if (rawDate != null && rawDate.isNotEmpty) {
+      try {
+        parsedDate = parseApiDateTime(rawDate);
+      } catch (_) {
+        parsedDate = DateTime.now();
+      }
+    } else {
+      parsedDate = DateTime.now();
+    }
+
+    final rawTotal = json['total'];
+    final total = (rawTotal is num)
+        ? rawTotal.toDouble()
+        : (double.tryParse(rawTotal?.toString() ?? '0') ?? 0.0);
+
     return Sale(
-      id: json['id'].toString(),
-      date: parseApiDateTime((json['date'] ?? json['created_at']) as String),
+      id: json['id']?.toString() ?? '',
+      date: parsedDate,
       items: items,
-      total: double.parse(json['total'].toString()),
+      total: total,
     );
   }
 

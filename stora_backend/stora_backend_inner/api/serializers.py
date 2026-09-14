@@ -227,12 +227,25 @@ class CategorySerializer(serializers.ModelSerializer):
         if not name:
             raise serializers.ValidationError("Category name is required.")
         owner = self.context["request"].user
-        qs = Category.objects.filter(owner=owner, name__iexact=name, is_archived=False)
         if self.instance:
-            qs = qs.exclude(pk=self.instance.pk)
-        if qs.exists():
-            raise serializers.ValidationError("You already have this category.")
+            if Category.objects.filter(owner=owner, name__iexact=name).exclude(pk=self.instance.pk).exists():
+                raise serializers.ValidationError("You already have a category with this name.")
+        else:
+            if Category.objects.filter(owner=owner, name__iexact=name, is_archived=False).exists():
+                raise serializers.ValidationError("You already have this category.")
         return name
+
+    def create(self, validated_data):
+        owner = validated_data.get("owner") or self.context["request"].user
+        name = validated_data.get("name")
+        existing = Category.objects.filter(owner=owner, name__iexact=name).first()
+        if existing:
+            existing.is_archived = False
+            existing.is_hidden = validated_data.get("is_hidden", False)
+            existing.name = name
+            existing.save()
+            return existing
+        return super().create(validated_data)
 
 
 class ProductSerializer(serializers.ModelSerializer):
@@ -296,7 +309,20 @@ class ProductSerializer(serializers.ModelSerializer):
         if value is None:
             return None
         value = value.strip()
-        return value or None
+        if not value:
+            return None
+        owner = None
+        if self.instance:
+            owner = self.instance.owner
+        elif "request" in self.context:
+            owner = self.context["request"].user
+        if owner:
+            qs = Product.objects.filter(owner=owner, barcode=value)
+            if self.instance:
+                qs = qs.exclude(pk=self.instance.pk)
+            if qs.exists():
+                raise serializers.ValidationError("A product with this barcode already exists in your store.")
+        return value
 
     def create(self, validated_data):
         owner = validated_data.pop("owner", None) or self.context["request"].user
@@ -549,6 +575,8 @@ class OrderItemSerializer(serializers.ModelSerializer):
 
 
 class OrderItemCreateSerializer(serializers.ModelSerializer):
+    quantity = serializers.IntegerField(min_value=1)
+
     class Meta:
         model = OrderItem
         fields = ("product", "product_name", "quantity", "unit_price")
@@ -697,13 +725,21 @@ class OrderSerializer(serializers.ModelSerializer):
         user = request.user
         return obj.chat_messages.filter(recipient=user, is_read=False, is_unsent=False).count()
 
+    def validate(self, attrs):
+        if self.instance is None:
+            items = attrs.get("items_data", [])
+            if not items:
+                raise serializers.ValidationError({"items_data": "Order must contain at least one item."})
+        return super().validate(attrs)
+
     def create(self, validated_data):
         items_data = validated_data.pop("items_data", [])
         request = self.context.get("request")
         customer = request.user if request and request.user.is_authenticated else None
-        order = Order.objects.create(customer=customer, **validated_data)
-        for item_data in items_data:
-            OrderItem.objects.create(order=order, **item_data)
+        with transaction.atomic():
+            order = Order.objects.create(customer=customer, **validated_data)
+            for item_data in items_data:
+                OrderItem.objects.create(order=order, **item_data)
         return order
 
 

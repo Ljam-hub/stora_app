@@ -32,19 +32,38 @@ class ProductModel {
   String get formattedPrice => '₱${price.toStringAsFixed(2)}';
 
   factory ProductModel.fromJson(Map<String, dynamic> json) {
+    int? parseId(dynamic val) {
+      if (val == null) return null;
+      if (val is int) return val;
+      if (val is num) return val.toInt();
+      if (val is Map && val['id'] != null) return parseId(val['id']);
+      return int.tryParse(val.toString());
+    }
+
+    final rawStock = json['stock'];
+    final parsedStock = (rawStock is num)
+        ? rawStock.toInt()
+        : (int.tryParse(rawStock?.toString() ?? '0') ??
+            (double.tryParse(rawStock?.toString() ?? '0')?.toInt() ?? 0));
+
+    final rawPrice = json['price'];
+    final parsedPrice = (rawPrice is num)
+        ? rawPrice.toDouble()
+        : (double.tryParse(rawPrice?.toString() ?? '0') ?? 0.0);
+
     return ProductModel(
-      id: json['id'] is int ? json['id'] as int : (int.tryParse(json['id']?.toString() ?? '0') ?? 0),
-      name: (json['name'] as String?) ?? '',
-      categoryId: json['category'] as int?,
-      categoryName: (json['category_name'] as String?) ?? '',
-      price: double.tryParse(json['price']?.toString() ?? '0') ?? 0.0,
-      stock: (json['stock'] as int?) ?? 0,
-      barcode: json['barcode'] as String?,
-      image: json['image'] as String?,
-      ownerId: json['owner'] as int?,
-      storeName: (json['store_name'] as String?) ?? '',
-      storeAvatarUrl: json['store_avatar_url'] as String?,
-      bio: (json['bio'] as String?) ?? '',
+      id: parseId(json['id']) ?? 0,
+      name: json['name']?.toString() ?? '',
+      categoryId: parseId(json['category']),
+      categoryName: (json['category_name'] ?? json['category'])?.toString() ?? '',
+      price: parsedPrice,
+      stock: parsedStock,
+      barcode: json['barcode']?.toString(),
+      image: json['image']?.toString(),
+      ownerId: parseId(json['owner']),
+      storeName: json['store_name']?.toString() ?? '',
+      storeAvatarUrl: json['store_avatar_url']?.toString(),
+      bio: json['bio']?.toString() ?? '',
     );
   }
 

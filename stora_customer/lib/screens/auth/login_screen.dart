@@ -28,10 +28,11 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _handleLogin() async {
+    final auth = context.read<AuthProvider>();
+    if (auth.isLoading) return;
     if (!_formKey.currentState!.validate()) return;
     FocusScope.of(context).unfocus();
 
-    final auth = context.read<AuthProvider>();
     final success = await auth.login(
       _emailController.text,
       _passwordController.text,
@@ -179,7 +180,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   GradientButton(
                     text: 'Sign In',
                     isLoading: auth.isLoading,
-                    onPressed: _handleLogin,
+                    onPressed: auth.isLoading ? null : _handleLogin,
                   ),
                   const SizedBox(height: 24),
 

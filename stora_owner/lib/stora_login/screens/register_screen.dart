@@ -48,6 +48,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Future<void> _submit() async {
+    if (_busy) return;
     final isValid = _formKey.currentState!.validate();
     if (!isValid) {
       showStoraSnackBar(context, 'Please fix the errors above');
@@ -206,7 +207,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         buttonKey: const Key('registerSubmitButton'),
                         label: 'Create account',
                         isLoading: _busy,
-                        onPressed: _submit,
+                        onPressed: _busy ? null : _submit,
                       ),
                     ],
                   ),

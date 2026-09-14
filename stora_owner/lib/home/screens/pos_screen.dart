@@ -62,6 +62,7 @@ class _PosScreenState extends State<PosScreen> {
   final _searchController = TextEditingController();
   String _query = '';
   String _selectedCategory = 'All';
+  bool _isCheckingOut = false;
 
   @override
   void dispose() {
@@ -149,11 +150,13 @@ class _PosScreenState extends State<PosScreen> {
   }
 
   Future<void> _checkout() async {
+    if (_isCheckingOut) return;
     final cart = CartStore.instance;
     if (cart.items.isEmpty) {
       showStoraSnackBar(context, 'Your cart is empty');
       return;
     }
+    setState(() => _isCheckingOut = true);
     final items = List<CartItem>.from(cart.items);
     final total = cart.total;
     Sale? recordedSale;
@@ -161,14 +164,20 @@ class _PosScreenState extends State<PosScreen> {
       recordedSale = await SalesStore.instance.recordSale(items, total);
       cart.clear();
       if (!mounted) return;
+      if (recordedSale.id.startsWith('local-')) {
+        showStoraSnackBar(context, 'Sale recorded offline', isError: false);
+      }
       ReceiptDialog.show(context, recordedSale);
     } on ApiException catch (e) {
       if (!mounted) return;
       showStoraSnackBar(context, e.message);
-    } catch (_) {
-      cart.clear();
+    } catch (e) {
       if (!mounted) return;
-      showStoraSnackBar(context, 'Sale recorded offline', isError: false);
+      showStoraSnackBar(context, 'Failed to complete sale: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isCheckingOut = false);
+      }
     }
   }
 
@@ -423,7 +432,11 @@ class _PosScreenState extends State<PosScreen> {
                     ],
                   ),
                   const SizedBox(height: 12),
-                  StoraGradientButton(label: 'CHECKOUT', onPressed: _checkout),
+                  StoraGradientButton(
+                    label: 'CHECKOUT',
+                    isLoading: _isCheckingOut,
+                    onPressed: (_isCheckingOut || cart.items.isEmpty) ? null : _checkout,
+                  ),
                 ],
               ),
             ),

@@ -44,6 +44,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   Future<void> _handlePlaceOrder() async {
+    if (_isSubmitting) return;
     if (!_formKey.currentState!.validate()) return;
     FocusScope.of(context).unfocus();
 
@@ -365,7 +366,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   text: 'Place Order (${cart.formattedTotal})',
                   icon: Icons.send_rounded,
                   isLoading: _isSubmitting,
-                  onPressed: _handlePlaceOrder,
+                  onPressed: _isSubmitting ? null : _handlePlaceOrder,
                 ),
                 const SizedBox(height: 20),
               ],

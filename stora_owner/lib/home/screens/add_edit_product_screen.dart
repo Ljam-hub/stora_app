@@ -93,6 +93,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
   }
 
   Future<void> _save() async {
+    if (_saving) return;
     if (widget.existing == null && !AccountStatusStore.instance.canAddProduct) {
       if (!mounted) return;
       Navigator.of(context).pushReplacement(
@@ -168,6 +169,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
   void _delete() {
     final product = widget.existing;
     if (product == null) return;
+    var isDeleting = false;
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -182,6 +184,8 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
           ),
           TextButton(
             onPressed: () async {
+              if (isDeleting) return;
+              isDeleting = true;
               final ok = await InventoryStore.instance.removeProduct(product.id);
               if (ctx.mounted) Navigator.of(ctx).pop();
               if (!mounted) return;

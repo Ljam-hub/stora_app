@@ -65,10 +65,14 @@ class CategoryStore extends ChangeNotifier {
     notifyListeners();
   }
 
+  final Set<String> _pendingCategoryAdditions = <String>{};
+
   Future<void> addCategory(String name) async {
     final trimmed = name.trim();
     if (trimmed.isEmpty) return;
-    if (_byName(trimmed) != null) return;
+    final lower = trimmed.toLowerCase();
+    if (_byName(trimmed) != null || _pendingCategoryAdditions.contains(lower)) return;
+    _pendingCategoryAdditions.add(lower);
     try {
       final json = await _api.createCategory(trimmed);
       final row = CategoryRow(
@@ -76,17 +80,23 @@ class CategoryStore extends ChangeNotifier {
         name: json['name'] as String,
         isHidden: json['is_hidden'] as bool? ?? false,
       );
-      _categories.add(row);
-      await _db.categoryDao.upsertCategory(
-        CategoriesCompanion(
-          id: Value(row.id),
-          name: Value(row.name),
-          isHidden: Value(row.isHidden),
-        ),
-      );
+      if (_byName(row.name) == null) {
+        _categories.add(row);
+        await _db.categoryDao.upsertCategory(
+          CategoriesCompanion(
+            id: Value(row.id),
+            name: Value(row.name),
+            isHidden: Value(row.isHidden),
+          ),
+        );
+      }
     } catch (_) {
       // Product save still sends category_name; the API will get-or-create.
-      _categories.add(CategoryRow(id: 'local-$trimmed', name: trimmed, isHidden: false));
+      if (_byName(trimmed) == null) {
+        _categories.add(CategoryRow(id: 'local-$trimmed', name: trimmed, isHidden: false));
+      }
+    } finally {
+      _pendingCategoryAdditions.remove(lower);
     }
     notifyListeners();
   }

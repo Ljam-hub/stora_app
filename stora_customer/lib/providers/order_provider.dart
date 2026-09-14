@@ -10,6 +10,7 @@ class OrderProvider extends ChangeNotifier {
   List<CustomerOrder> _orders = [];
   String _selectedStatusFilter = 'all';
   bool _isLoading = false;
+  bool _isPlacingOrder = false;
   String? _errorMessage;
 
   final Map<int, String> _knownStatuses = {};
@@ -58,7 +59,14 @@ class OrderProvider extends ChangeNotifier {
       final raw = await SessionManager.instance.getSetting('seen_orders_snapshot');
       if (raw != null && raw.isNotEmpty) {
         final decoded = jsonDecode(raw) as Map<String, dynamic>;
-        _persistedSeenStatuses = decoded.map((k, v) => MapEntry(int.parse(k), v.toString()));
+        final map = <int, String>{};
+        for (final entry in decoded.entries) {
+          final id = int.tryParse(entry.key);
+          if (id != null) {
+            map[id] = entry.value.toString();
+          }
+        }
+        _persistedSeenStatuses = map;
         notifyListeners();
       }
     } catch (e) {
@@ -311,6 +319,10 @@ class OrderProvider extends ChangeNotifier {
     String notes = '',
     required List<CustomerOrderItem> items,
   }) async {
+    if (_isPlacingOrder) {
+      throw Exception('An order is already being placed.');
+    }
+    _isPlacingOrder = true;
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -338,6 +350,8 @@ class OrderProvider extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
       rethrow;
+    } finally {
+      _isPlacingOrder = false;
     }
   }
 }

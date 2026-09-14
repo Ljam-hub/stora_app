@@ -13,6 +13,7 @@ class OrdersStore extends ChangeNotifier {
   bool _isLoading = false;
   String? _error;
   final Set<int> _knownOrderIds = {};
+  final Set<int> _processingOrderIds = <int>{};
   bool _hasInitialFetch = false;
   Timer? _pollingTimer;
 
@@ -21,6 +22,7 @@ class OrdersStore extends ChangeNotifier {
   List<Map<String, dynamic>> get orders => _orders;
   bool get isLoading => _isLoading;
   String? get error => _error;
+  bool isOrderProcessing(int orderId) => _processingOrderIds.contains(orderId);
 
   int get pendingCount =>
       _orders.where((o) => o['status'] == 'pending').length;
@@ -88,21 +90,39 @@ class OrdersStore extends ChangeNotifier {
   }
 
   Future<void> acceptOrder(int orderId) async {
-    await ApiClient.instance.acceptOrder(orderId);
-    // Reload products & sales to sync decremented stock & new sale record
-    await InventoryStore.instance.loadProducts();
-    await SalesStore.instance.loadSales();
-    await fetchOrders();
+    if (_processingOrderIds.contains(orderId)) return;
+    _processingOrderIds.add(orderId);
+    try {
+      await ApiClient.instance.acceptOrder(orderId);
+      // Reload products & sales to sync decremented stock & new sale record
+      await InventoryStore.instance.loadProducts();
+      await SalesStore.instance.loadSales();
+      await fetchOrders();
+    } finally {
+      _processingOrderIds.remove(orderId);
+    }
   }
 
   Future<void> markOrderReady(int orderId) async {
-    await ApiClient.instance.markOrderReady(orderId);
-    await fetchOrders();
+    if (_processingOrderIds.contains(orderId)) return;
+    _processingOrderIds.add(orderId);
+    try {
+      await ApiClient.instance.markOrderReady(orderId);
+      await fetchOrders();
+    } finally {
+      _processingOrderIds.remove(orderId);
+    }
   }
 
   Future<void> declineOrder(int orderId, {String reason = ''}) async {
-    await ApiClient.instance.declineOrder(orderId, reason: reason);
-    await fetchOrders();
+    if (_processingOrderIds.contains(orderId)) return;
+    _processingOrderIds.add(orderId);
+    try {
+      await ApiClient.instance.declineOrder(orderId, reason: reason);
+      await fetchOrders();
+    } finally {
+      _processingOrderIds.remove(orderId);
+    }
   }
 
   Future<void> counterOrder(
@@ -110,18 +130,25 @@ class OrdersStore extends ChangeNotifier {
     required String notes,
     double? counterPrice,
   }) async {
-    await ApiClient.instance.counterOrder(
-      orderId,
-      notes: notes,
-      counterPrice: counterPrice,
-    );
-    await fetchOrders();
+    if (_processingOrderIds.contains(orderId)) return;
+    _processingOrderIds.add(orderId);
+    try {
+      await ApiClient.instance.counterOrder(
+        orderId,
+        notes: notes,
+        counterPrice: counterPrice,
+      );
+      await fetchOrders();
+    } finally {
+      _processingOrderIds.remove(orderId);
+    }
   }
 
   void clear() {
     stopPolling();
     _orders.clear();
     _knownOrderIds.clear();
+    _processingOrderIds.clear();
     _hasInitialFetch = false;
     _error = null;
     _isLoading = false;

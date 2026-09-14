@@ -33,7 +33,14 @@ class SalesStore extends ChangeNotifier {
     notifyListeners();
   }
 
+  bool _recording = false;
+  bool get recording => _recording;
+
   Future<Sale> recordSale(List<CartItem> items, double total) async {
+    if (_recording) {
+      throw ApiException('A sale is already being processed.');
+    }
+    _recording = true;
     Sale sale;
     try {
       final created = Sale.fromJson(
@@ -41,7 +48,7 @@ class SalesStore extends ChangeNotifier {
           'items': items
               .map(
                 (item) => {
-                  'product': int.parse(item.product.id),
+                  'product': int.tryParse(item.product.id) ?? 0,
                   'quantity': item.quantity,
                 },
               )
@@ -59,6 +66,8 @@ class SalesStore extends ChangeNotifier {
       sale = await _recordOfflineSale(items, total);
     } catch (_) {
       sale = await _recordOfflineSale(items, total);
+    } finally {
+      _recording = false;
     }
     notifyListeners();
     return sale;

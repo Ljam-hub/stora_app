@@ -48,8 +48,14 @@ class InventoryStore extends ChangeNotifier {
     }
   }
 
+  bool _savingProduct = false;
+  final Set<String> _pendingProductDeletions = <String>{};
+
   Future<bool> addProduct(Product p) async {
-    p.stock = p.stock.clamp(0, kMaxStock);
+    if (_savingProduct) return false;
+    _savingProduct = true;
+    try {
+      p.stock = p.stock.clamp(0, kMaxStock);
 
     // Enforce cached plan limits before saving locally or online
     final accountStatus = AccountStatusStore.instance.status;
@@ -100,6 +106,9 @@ class InventoryStore extends ChangeNotifier {
     _error = null;
     notifyListeners();
     return true;
+    } finally {
+      _savingProduct = false;
+    }
   }
 
   Future<bool> updateProduct(Product p) async {
@@ -162,38 +171,44 @@ class InventoryStore extends ChangeNotifier {
   }
 
   Future<bool> removeProduct(String id) async {
-    final isLocal = id.startsWith('local-');
+    if (_pendingProductDeletions.contains(id)) return false;
+    _pendingProductDeletions.add(id);
+    try {
+      final isLocal = id.startsWith('local-');
 
-    if (!isLocal) {
-      try {
-        await _api.deleteProduct(id);
-      } on ApiException catch (e) {
-        if (e.statusCode == 404) {
-          // Already removed from server — continue with local deletion
-        } else if (e.statusCode != null && e.statusCode! < 500) {
-          _error = e.message;
-          notifyListeners();
-          return false;
+      if (!isLocal) {
+        try {
+          await _api.deleteProduct(id);
+        } on ApiException catch (e) {
+          if (e.statusCode == 404) {
+            // Already removed from server — continue with local deletion
+          } else if (e.statusCode != null && e.statusCode! < 500) {
+            _error = e.message;
+            notifyListeners();
+            return false;
+          }
+          // Network failure: fall through to delete locally and queue sync
+        } catch (_) {
+          // Network failure: fall through to delete locally and queue sync
         }
-        // Network failure: fall through to delete locally and queue sync
-      } catch (_) {
-        // Network failure: fall through to delete locally and queue sync
       }
-    }
 
-    _products.removeWhere((p) => p.id == id);
-    await _db.productDao.deleteProduct(id);
-    if (!isLocal) {
-      await _db.syncDao.enqueueSync(
-        entityType: 'product',
-        action: 'delete',
-        entityId: id,
-      );
+      _products.removeWhere((p) => p.id == id);
+      await _db.productDao.deleteProduct(id);
+      if (!isLocal) {
+        await _db.syncDao.enqueueSync(
+          entityType: 'product',
+          action: 'delete',
+          entityId: id,
+        );
+      }
+      _error = null;
+      notifyListeners();
+      AccountStatusStore.instance.fetchStatus();
+      return true;
+    } finally {
+      _pendingProductDeletions.remove(id);
     }
-    _error = null;
-    notifyListeners();
-    AccountStatusStore.instance.fetchStatus();
-    return true;
   }
 
 

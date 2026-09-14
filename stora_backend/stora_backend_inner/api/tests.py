@@ -1470,6 +1470,78 @@ class SupportCenterAndChatSerializerTests(APITestCase):
         self.assertEqual(res3.status_code, 200)
 
 
+class BugFixesAuditTestCase(APITestCase):
+    def setUp(self):
+        self.owner = User.objects.create_user(
+            username="audit_owner@gmail.com",
+            email="audit_owner@gmail.com",
+            password="testpassword123",
+            role=User.ROLE_OWNER,
+            business_name="Audit Store",
+            is_email_verified=True,
+        )
+        self.customer = User.objects.create_user(
+            username="audit_customer@gmail.com",
+            email="audit_customer@gmail.com",
+            password="testpassword123",
+            role=User.ROLE_CUSTOMER,
+            is_email_verified=True,
+        )
+
+    def test_category_resurrect_when_archived(self):
+        self.client.force_authenticate(user=self.owner)
+        cat = Category.objects.create(owner=self.owner, name="Bakery")
+        Product.objects.create(owner=self.owner, category=cat, name="Bread", price=50, stock=10)
+        # Delete category - since product exists, it gets soft-deleted (archived)
+        del_res = self.client.delete(f"/api/categories/{cat.id}/")
+        self.assertEqual(del_res.status_code, 204)
+        cat.refresh_from_db()
+        self.assertTrue(cat.is_archived)
+
+        # Now re-create category with same name
+        post_res = self.client.post("/api/categories/", {"name": "Bakery"}, format="json")
+        self.assertIn(post_res.status_code, (200, 201))
+        cat.refresh_from_db()
+        self.assertFalse(cat.is_archived)
+        self.assertFalse(cat.is_hidden)
+
+    def test_duplicate_barcode_returns_400(self):
+        self.client.force_authenticate(user=self.owner)
+        cat = Category.objects.create(owner=self.owner, name="Snacks")
+        Product.objects.create(owner=self.owner, category=cat, name="Chips", price=25, stock=10, barcode="123456789")
+
+        # Attempt to create another product with the same barcode
+        res = self.client.post(
+            "/api/products/",
+            {
+                "name": "Different Chips",
+                "category_name": "Snacks",
+                "price": 30,
+                "stock": 5,
+                "barcode": "123456789",
+            },
+            format="json",
+        )
+        self.assertEqual(res.status_code, 400)
+        self.assertIn("barcode", res.data)
+
+    def test_order_without_items_returns_400(self):
+        self.client.force_authenticate(user=self.customer)
+        res = self.client.post(
+            "/api/orders/",
+            {
+                "owner": self.owner.id,
+                "customer_name": "Audit Customer",
+                "customer_phone": "09123456789",
+                "items_data": [],
+            },
+            format="json",
+        )
+        self.assertEqual(res.status_code, 400)
+        self.assertIn("items_data", res.data)
+
+
+
 
 
 

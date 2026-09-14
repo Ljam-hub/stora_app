@@ -133,6 +133,8 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen>
   }
 
   Future<void> _handleVerify() async {
+    final auth = context.read<AuthProvider>();
+    if (auth.isLoading) return;
     final code = _codeController.text.trim();
     if (code.length != 6) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -145,7 +147,6 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen>
     }
 
     FocusScope.of(context).unfocus();
-    final auth = context.read<AuthProvider>();
     final success = await auth.verifyEmail(code, targetEmail: widget.email);
 
     if (mounted) {
@@ -326,7 +327,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen>
                       GradientButton(
                         text: 'Verify Account',
                         isLoading: auth.isLoading,
-                        onPressed: _handleVerify,
+                        onPressed: auth.isLoading ? null : _handleVerify,
                       ),
                       const SizedBox(height: 16),
 

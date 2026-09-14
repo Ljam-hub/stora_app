@@ -84,6 +84,7 @@ class _UploadGcashProofScreenState extends State<UploadGcashProofScreen> {
   }
 
   Future<void> _submit() async {
+    if (_submitting) return;
     if (_screenshotBytes == null) {
       showStoraSnackBar(context, 'Please attach your GCash screenshot');
       return;
@@ -875,7 +876,8 @@ class _UploadGcashProofScreenState extends State<UploadGcashProofScreen> {
               // Submit Button
               StoraGradientButton(
                 label: _submitting ? 'Submitting Proof...' : 'Submit for review',
-                onPressed: _submitting ? () {} : _submit,
+                isLoading: _submitting,
+                onPressed: _submitting ? null : _submit,
               ),
               const SizedBox(height: 16),
               Center(

@@ -32,6 +32,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _submit() async {
+    if (_busy) return;
     final isValid = _formKey.currentState!.validate();
     if (!isValid) {
       showStoraSnackBar(context, 'Please fix the errors above');
@@ -155,7 +156,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           buttonKey: const Key('loginSubmitButton'),
                           label: 'Log in',
                           isLoading: _busy,
-                          onPressed: _submit,
+                          onPressed: _busy ? null : _submit,
                         ),
                       ],
                     ),

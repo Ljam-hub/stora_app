@@ -167,6 +167,7 @@ class _ReceiptDialogState extends State<ReceiptDialog> {
                       onPressed: _isProcessing
                           ? null
                           : () async {
+                              if (_isProcessing) return;
                               setState(() => _isProcessing = true);
                               try {
                                 await ReceiptService.instance.shareReceipt(sale, businessName: businessName);
@@ -194,6 +195,7 @@ class _ReceiptDialogState extends State<ReceiptDialog> {
                       onPressed: _isProcessing
                           ? null
                           : () async {
+                              if (_isProcessing) return;
                               setState(() => _isProcessing = true);
                               try {
                                 await ReceiptService.instance.printReceipt(sale, businessName: businessName);

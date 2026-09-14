@@ -197,6 +197,7 @@ class _OrderCardState extends State<OrderCard> {
                               onPressed: isSubmitting
                                   ? null
                                   : () async {
+                                      if (isSubmitting) return;
                                       final messenger = ScaffoldMessenger.of(context);
                                       setSheetState(() => isSubmitting = true);
                                       try {

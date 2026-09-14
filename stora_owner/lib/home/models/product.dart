@@ -34,15 +34,26 @@ class Product {
       }
     }
 
+    final rawStock = json['stock'];
+    final parsedStock = (rawStock is num)
+        ? rawStock.toInt()
+        : (int.tryParse(rawStock?.toString() ?? '0') ??
+            (double.tryParse(rawStock?.toString() ?? '0')?.toInt() ?? 0));
+
+    final rawPrice = json['price'];
+    final parsedPrice = (rawPrice is num)
+        ? rawPrice.toDouble()
+        : (double.tryParse(rawPrice?.toString() ?? '0') ?? 0.0);
+
     return Product(
-      id: json['id'].toString(),
-      name: json['name'] as String,
-      category: (json['category_name'] as String?) ?? '',
-      price: double.parse(json['price'].toString()),
-      stock: int.parse(json['stock'].toString()),
-      barcode: json['barcode'] as String?,
+      id: json['id']?.toString() ?? '',
+      name: json['name']?.toString() ?? '',
+      category: (json['category_name'] ?? json['category'])?.toString() ?? '',
+      price: parsedPrice,
+      stock: parsedStock,
+      barcode: json['barcode']?.toString(),
       imageBytes: imageBytes,
-      bio: (json['bio'] as String?) ?? '',
+      bio: json['bio']?.toString() ?? '',
     );
   }
 

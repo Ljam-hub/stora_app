@@ -132,6 +132,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen>
   }
 
   Future<void> _handleVerify() async {
+    if (_isSubmitting) return;
     final code = _codeController.text.trim();
     if (code.length != 6) {
       showStoraSnackBar(context, 'Please enter the full 6-digit verification code.');
@@ -303,7 +304,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen>
                       StoraGradientButton(
                         label: 'Verify Account',
                         isLoading: _isSubmitting,
-                        onPressed: _handleVerify,
+                        onPressed: _isSubmitting ? null : _handleVerify,
                       ),
                       const SizedBox(height: 16),
 

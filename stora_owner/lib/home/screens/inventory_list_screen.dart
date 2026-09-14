@@ -330,6 +330,7 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
 }
 
 void confirmDeleteProduct(BuildContext context, Product product) {
+  var isDeleting = false;
   showDialog(
     context: context,
     builder: (ctx) => AlertDialog(
@@ -344,6 +345,8 @@ void confirmDeleteProduct(BuildContext context, Product product) {
         ),
         TextButton(
           onPressed: () async {
+            if (isDeleting) return;
+            isDeleting = true;
             final ok = await InventoryStore.instance.removeProduct(product.id);
             if (ctx.mounted) Navigator.of(ctx).pop();
             if (!ok && context.mounted) {

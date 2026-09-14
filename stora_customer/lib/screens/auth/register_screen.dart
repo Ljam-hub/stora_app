@@ -30,10 +30,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Future<void> _handleRegister() async {
+    final auth = context.read<AuthProvider>();
+    if (auth.isLoading) return;
     if (!_formKey.currentState!.validate()) return;
     FocusScope.of(context).unfocus();
 
-    final auth = context.read<AuthProvider>();
     final success = await auth.register(
       name: _nameController.text,
       email: _emailController.text,
@@ -168,7 +169,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   GradientButton(
                     text: 'Register Account',
                     isLoading: auth.isLoading,
-                    onPressed: _handleRegister,
+                    onPressed: auth.isLoading ? null : _handleRegister,
                   ),
                   const SizedBox(height: 20),
 
