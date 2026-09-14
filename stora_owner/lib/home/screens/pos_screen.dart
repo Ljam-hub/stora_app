@@ -109,16 +109,29 @@ class _PosScreenState extends State<PosScreen> {
     }
 
     if (matched != null) {
-      if (matched.stock <= 0) {
+      final product = matched;
+      if (product.stock <= 0) {
         if (!mounted) return;
-        showStoraSnackBar(context, '"${matched.name}" is out of stock');
+        showStoraSnackBar(context, '"${product.name}" is out of stock');
         return;
       }
-      CartStore.instance.add(matched);
+      final inCart = CartStore.instance.items.firstWhere(
+        (it) => it.product.id == product.id,
+        orElse: () => CartItem(product: product, quantity: 0),
+      );
+      if (inCart.quantity >= product.stock) {
+        if (!mounted) return;
+        showStoraSnackBar(
+          context,
+          'Maximum available stock for "${product.name}" (${product.stock}) already in cart',
+        );
+        return;
+      }
+      CartStore.instance.add(product);
       _searchController.clear();
       if (mounted) {
         setState(() => _query = '');
-        showStoraSnackBar(context, 'Added "${matched.name}" to cart', isError: false);
+        showStoraSnackBar(context, 'Added "${product.name}" to cart', isError: false);
       }
     } else {
       if (!mounted) return;
@@ -169,14 +182,21 @@ class _PosScreenState extends State<PosScreen> {
         ThemeModeController.instance,
       ]),
       builder: (context, _) {
-        final categoryFiltered = _selectedCategory == 'All'
+        final categoryFiltered = _selectedCategory.toLowerCase() == 'all'
             ? InventoryStore.instance.products
-            : InventoryStore.instance.products.where((p) => p.category == _selectedCategory).toList();
-        // Typing a search narrows further; picking a category with no
-        // search text browses every product in that category directly.
-        final results = _query.isEmpty
-            ? (_selectedCategory == 'All' ? const <Product>[] : categoryFiltered)
-            : categoryFiltered.where((p) => p.name.toLowerCase().contains(_query.toLowerCase())).toList();
+            : InventoryStore.instance.products
+                .where((p) => p.category.toLowerCase() == _selectedCategory.toLowerCase())
+                .toList();
+        // Typing a search narrows further; browsing a category or 'All'
+        // shows all matching products directly.
+        final queryLower = _query.trim().toLowerCase();
+        final results = queryLower.isEmpty
+            ? categoryFiltered
+            : categoryFiltered.where((p) {
+                final nameMatch = p.name.toLowerCase().contains(queryLower);
+                final barcodeMatch = p.barcode != null && p.barcode!.toLowerCase().contains(queryLower);
+                return nameMatch || barcodeMatch;
+              }).toList();
         final cart = CartStore.instance;
 
         final body = Column(
@@ -262,9 +282,38 @@ class _PosScreenState extends State<PosScreen> {
                   separatorBuilder: (_, _) => const SizedBox(width: 10),
                   itemBuilder: (context, i) {
                     final p = results[i];
+                    final freeLimit = AccountStatusStore.instance.productLimit > 0
+                        ? AccountStatusStore.instance.productLimit
+                        : 20;
+                    final allIdx = InventoryStore.instance.products.indexOf(p);
+                    final isLocked = !AccountStatusStore.instance.isPremium &&
+                        (allIdx >= freeLimit || (allIdx == -1 && i >= freeLimit));
                     return _PosProductCard(
                       product: p,
+                      isLocked: isLocked,
                       onTap: () {
+                        if (isLocked) {
+                          showStoraSnackBar(
+                            context,
+                            '"${p.name}" is locked. Upgrade to Premium to unlock all items.',
+                          );
+                          return;
+                        }
+                        if (p.stock <= 0) {
+                          showStoraSnackBar(context, '"${p.name}" is out of stock');
+                          return;
+                        }
+                        final inCart = cart.items.firstWhere(
+                          (it) => it.product.id == p.id,
+                          orElse: () => CartItem(product: p, quantity: 0),
+                        );
+                        if (inCart.quantity >= p.stock) {
+                          showStoraSnackBar(
+                            context,
+                            'Maximum available stock for "${p.name}" (${p.stock}) already in cart',
+                          );
+                          return;
+                        }
                         cart.add(p);
                         _searchController.clear();
                         setState(() => _query = '');
@@ -391,53 +440,99 @@ class _PosScreenState extends State<PosScreen> {
 
 class _PosProductCard extends StatelessWidget {
   final Product product;
+  final bool isLocked;
   final VoidCallback onTap;
-  const _PosProductCard({required this.product, required this.onTap});
+  const _PosProductCard({
+    required this.product,
+    required this.onTap,
+    this.isLocked = false,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final isOutOfStock = product.stock <= 0;
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        width: 116,
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: HomeColors.cardBackground,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: HomeColors.cardBorder),
-          boxShadow: HomeColors.cardShadow,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Expanded(
-              child: ProductImageWidget(
-                imageBytes: product.imageBytes,
-                productName: product.name,
-                category: product.category,
-                borderRadius: BorderRadius.circular(10),
-                iconSize: 20,
-              ),
+      child: Opacity(
+        opacity: isLocked ? 0.45 : (isOutOfStock ? 0.6 : 1.0),
+        child: Container(
+          width: 116,
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: HomeColors.cardBackground,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isOutOfStock ? AppColors.error.withValues(alpha: 0.3) : HomeColors.cardBorder,
             ),
-            const SizedBox(height: 6),
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerLeft,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(product.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(color: HomeColors.textPrimary, fontSize: 12, fontWeight: FontWeight.w700)),
-                  const SizedBox(height: 2),
-                  Text('₱${product.price.toStringAsFixed(2)}',
-                      style: TextStyle(color: HomeColors.accentText, fontSize: 11, fontWeight: FontWeight.w800)),
-                ],
+            boxShadow: HomeColors.cardShadow,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Expanded(
+                child: Stack(
+                  children: [
+                    Positioned.fill(
+                      child: ProductImageWidget(
+                        imageBytes: product.imageBytes,
+                        productName: product.name,
+                        category: product.category,
+                        borderRadius: BorderRadius.circular(10),
+                        iconSize: 20,
+                      ),
+                    ),
+                    if (isLocked)
+                      Positioned(
+                        top: 4,
+                        right: 4,
+                        child: Container(
+                          padding: const EdgeInsets.all(3),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.6),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.lock_rounded, color: Colors.white, size: 12),
+                        ),
+                      )
+                    else if (isOutOfStock)
+                      Positioned(
+                        top: 4,
+                        left: 4,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: HomeColors.dangerBg.withValues(alpha: 0.95),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: const Text(
+                            'NO STOCK',
+                            style: TextStyle(color: AppColors.error, fontSize: 7, fontWeight: FontWeight.w900),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: 6),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(product.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(color: HomeColors.textPrimary, fontSize: 12, fontWeight: FontWeight.w700)),
+                    const SizedBox(height: 2),
+                    Text('₱${product.price.toStringAsFixed(2)}',
+                        style: TextStyle(color: HomeColors.accentText, fontSize: 11, fontWeight: FontWeight.w800)),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -494,7 +589,16 @@ class _CartRow extends StatelessWidget {
           ),
           StockStepButton(
             icon: Icons.add,
-            onTap: () => CartStore.instance.incrementQty(item.product.id),
+            onTap: () {
+              if (item.quantity >= item.product.stock) {
+                showStoraSnackBar(
+                  context,
+                  'Maximum available stock for "${item.product.name}" (${item.product.stock}) reached',
+                );
+                return;
+              }
+              CartStore.instance.incrementQty(item.product.id);
+            },
           ),
           Padding(
             padding: const EdgeInsets.only(left: 8),

@@ -30,6 +30,16 @@ void main() {
       expect(CartStore.instance.items.length, 1);
       expect(CartStore.instance.items.first.quantity, 2);
       expect(CartStore.instance.total, 100.0);
+
+      // Decrement quantity
+      CartStore.instance.decrementQty(p.id);
+      expect(CartStore.instance.items.first.quantity, 1);
+      expect(CartStore.instance.total, 50.0);
+
+      // Decrement to zero removes item
+      CartStore.instance.decrementQty(p.id);
+      expect(CartStore.instance.items, isEmpty);
+      expect(CartStore.instance.total, 0.0);
     });
   });
 

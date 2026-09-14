@@ -70,11 +70,19 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
       ]),
       builder: (context, _) {
         final isPremium = AccountStatusStore.instance.isPremium;
-        final categoryFiltered = _selectedCategory == 'All'
+        final queryLower = _query.trim().toLowerCase();
+        final categoryFiltered = _selectedCategory.toLowerCase() == 'all'
             ? InventoryStore.instance.products
-            : InventoryStore.instance.products.where((p) => p.category == _selectedCategory).toList();
+            : InventoryStore.instance.products
+                .where((p) => p.category.toLowerCase() == _selectedCategory.toLowerCase())
+                .toList();
         final products = categoryFiltered
-            .where((p) => p.name.toLowerCase().contains(_query.toLowerCase()))
+            .where((p) {
+              if (queryLower.isEmpty) return true;
+              final nameMatch = p.name.toLowerCase().contains(queryLower);
+              final barcodeMatch = p.barcode != null && p.barcode!.toLowerCase().contains(queryLower);
+              return nameMatch || barcodeMatch;
+            })
             .toList();
 
         return Scaffold(
