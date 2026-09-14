@@ -117,7 +117,7 @@ class ProductImage extends StatelessWidget {
               ),
               boxShadow: AppColors.glowShadow(AppColors.primary, opacity: 0.2),
             ),
-            child: Icon(iconData, size: iconSize, color: AppColors.primaryLight),
+            child: Icon(iconData, size: iconSize, color: AppColors.accentText),
           ),
         ],
       ),

@@ -66,8 +66,8 @@ class CartItemTile extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   'Subtotal: ${item.formattedSubtotal}',
-                  style: const TextStyle(
-                    color: AppColors.primaryLight,
+                  style: TextStyle(
+                    color: AppColors.accentText,
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
                   ),
@@ -99,17 +99,17 @@ class CartItemTile extends StatelessWidget {
                     InkWell(
                       onTap: onDecrement,
                       borderRadius: const BorderRadius.horizontal(left: Radius.circular(8)),
-                      child: const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        child: Icon(Icons.remove, size: 16, color: Colors.white),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        child: Icon(Icons.remove, size: 16, color: AppColors.textPrimary),
                       ),
                     ),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 6),
                       child: Text(
                         '${item.quantity}',
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: AppColors.textPrimary,
                           fontWeight: FontWeight.bold,
                           fontSize: 13,
                         ),
@@ -124,7 +124,7 @@ class CartItemTile extends StatelessWidget {
                           Icons.add,
                           size: 16,
                           color: item.quantity < item.product.stock
-                              ? Colors.white
+                              ? AppColors.textPrimary
                               : AppColors.textMuted,
                         ),
                       ),

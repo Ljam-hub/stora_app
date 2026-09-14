@@ -32,6 +32,7 @@ class _OwnerChatScreenState extends State<OwnerChatScreen> {
   @override
   void initState() {
     super.initState();
+    ThemeModeController.instance.addListener(_onThemeChanged);
     _loadConversations();
     _pollTimer = Timer.periodic(const Duration(seconds: 6), (_) {
       if (mounted) _loadConversations(silent: true);
@@ -40,9 +41,14 @@ class _OwnerChatScreenState extends State<OwnerChatScreen> {
 
   @override
   void dispose() {
+    ThemeModeController.instance.removeListener(_onThemeChanged);
     _pollTimer?.cancel();
     _searchController.dispose();
     super.dispose();
+  }
+
+  void _onThemeChanged() {
+    if (mounted) setState(() {});
   }
 
   Future<void> _loadConversations({bool silent = false}) async {
@@ -171,9 +177,9 @@ class _OwnerChatScreenState extends State<OwnerChatScreen> {
                     children: [
                       Row(
                         children: [
-                          const Text(
+                          Text(
                             'STORA Store Support',
-                            style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                            style: TextStyle(color: HomeColors.textPrimary, fontSize: 14, fontWeight: FontWeight.bold),
                           ),
                           const SizedBox(width: 6),
                           Container(
@@ -187,9 +193,9 @@ class _OwnerChatScreenState extends State<OwnerChatScreen> {
                         ],
                       ),
                       const SizedBox(height: 2),
-                      const Text(
+                      Text(
                         'Direct help with store, billing & issues',
-                        style: TextStyle(color: AppColors.label, fontSize: 12),
+                        style: TextStyle(color: HomeColors.textSecondary, fontSize: 12),
                       ),
                     ],
                   ),
@@ -232,12 +238,12 @@ class _OwnerChatScreenState extends State<OwnerChatScreen> {
         ),
         content: Text(
           'Are you sure you want to delete the conversation with $customerName? This will only be removed for you; the other person can still see it unless they delete it too.',
-          style: const TextStyle(color: Colors.white70, fontSize: 13, height: 1.4),
+          style: TextStyle(color: HomeColors.textSecondary, fontSize: 13, height: 1.4),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel', style: TextStyle(color: AppColors.label)),
+            child: Text('Cancel', style: TextStyle(color: HomeColors.textSecondary)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -830,6 +836,7 @@ class _OwnerChatThreadScreenState extends State<OwnerChatThreadScreen> {
   @override
   void initState() {
     super.initState();
+    ThemeModeController.instance.addListener(_onThemeChanged);
     final cached = ChatStore.instance.getCachedMessages(widget.customerId);
     if (cached != null && cached.isNotEmpty) {
       _messages = cached;
@@ -844,11 +851,16 @@ class _OwnerChatThreadScreenState extends State<OwnerChatThreadScreen> {
 
   @override
   void dispose() {
+    ThemeModeController.instance.removeListener(_onThemeChanged);
     _pollTimer?.cancel();
     _textController.dispose();
     _scrollController.dispose();
     ChatStore.instance.fetchConversations(isSilent: true);
     super.dispose();
+  }
+
+  void _onThemeChanged() {
+    if (mounted) setState(() {});
   }
 
   Future<void> _fetchBlockStatus() async {
@@ -974,12 +986,12 @@ class _OwnerChatThreadScreenState extends State<OwnerChatThreadScreen> {
                           isMe
                               ? 'This message will be removed for both you and the customer.'
                               : 'Are you sure you want to delete this message?',
-                          style: const TextStyle(color: Colors.white70, fontSize: 14),
+                          style: TextStyle(color: HomeColors.textSecondary, fontSize: 14),
                         ),
                         actions: [
                           TextButton(
                             onPressed: () => Navigator.of(dCtx).pop(false),
-                            child: const Text('Cancel', style: TextStyle(color: AppColors.label)),
+                            child: Text('Cancel', style: TextStyle(color: HomeColors.textSecondary)),
                           ),
                           ElevatedButton(
                             style: ElevatedButton.styleFrom(
@@ -1048,17 +1060,17 @@ class _OwnerChatThreadScreenState extends State<OwnerChatThreadScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: HomeColors.cardBackground,
-        title: Text(willBlock ? 'Block Customer?' : 'Unblock Customer?', style: const TextStyle(color: Colors.white)),
+        title: Text(willBlock ? 'Block Customer?' : 'Unblock Customer?', style: TextStyle(color: HomeColors.textPrimary)),
         content: Text(
           willBlock
               ? 'Blocking ${widget.customerName} will prevent them from sending you messages and suppress notifications.'
               : 'Unblock ${widget.customerName} so they can message you again?',
-          style: const TextStyle(color: Colors.white70),
+          style: TextStyle(color: HomeColors.textSecondary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel', style: TextStyle(color: AppColors.label)),
+            child: Text('Cancel', style: TextStyle(color: HomeColors.textSecondary)),
           ),
           ElevatedButton(
             onPressed: () => Navigator.of(ctx).pop(true),
@@ -1476,12 +1488,12 @@ class _OwnerChatThreadScreenState extends State<OwnerChatThreadScreen> {
         ),
         content: Text(
           'Are you sure you want to delete the conversation with ${widget.customerName}? This will only be removed for you; the other person can still see it unless they delete it too.',
-          style: const TextStyle(color: Colors.white70, fontSize: 13, height: 1.4),
+          style: TextStyle(color: HomeColors.textSecondary, fontSize: 13, height: 1.4),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel', style: TextStyle(color: AppColors.label)),
+            child: Text('Cancel', style: TextStyle(color: HomeColors.textSecondary)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -1604,7 +1616,7 @@ class _OwnerChatThreadScreenState extends State<OwnerChatThreadScreen> {
                                 ? widget.customerEmail!
                                 : 'Customer')),
                     style: TextStyle(
-                      color: _isSupportChat ? const Color(0xFFF97316) : (_isBlocked ? HomeColors.dangerText : AppColors.label),
+                      color: _isSupportChat ? const Color(0xFFF97316) : (_isBlocked ? HomeColors.dangerText : HomeColors.textSecondary),
                       fontSize: 11,
                       fontWeight: FontWeight.w500,
                     ),
@@ -1617,7 +1629,7 @@ class _OwnerChatThreadScreenState extends State<OwnerChatThreadScreen> {
         ),
         actions: [
           PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert_rounded, color: Colors.white70),
+            icon: Icon(Icons.more_vert_rounded, color: HomeColors.textSecondary),
             color: HomeColors.cardElevated,
             onSelected: (val) {
               if (val == 'report') _showReportDialog();
@@ -1758,7 +1770,7 @@ class _OwnerChatThreadScreenState extends State<OwnerChatThreadScreen> {
                           children: [
                             Icon(Icons.error_outline_rounded, color: HomeColors.dangerText, size: 40),
                             const SizedBox(height: 8),
-                            Text(_error!, style: const TextStyle(color: Colors.white70)),
+                            Text(_error!, style: TextStyle(color: HomeColors.textSecondary)),
                             const SizedBox(height: 12),
                             ElevatedButton(
                               onPressed: () => _fetchMessages(),

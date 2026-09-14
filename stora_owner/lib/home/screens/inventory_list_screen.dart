@@ -6,6 +6,7 @@ import 'barcode_scanner_screen.dart';
 import '../models/product.dart';
 import '../stores/inventory_store.dart';
 import '../theme/home_colors.dart';
+import '../theme/theme_mode_controller.dart';
 import '../utils/constants.dart';
 import '../widgets/category_filter_row.dart';
 import '../widgets/product_image_widget.dart';
@@ -62,7 +63,11 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: Listenable.merge([InventoryStore.instance, AccountStatusStore.instance]),
+      animation: Listenable.merge([
+        InventoryStore.instance,
+        AccountStatusStore.instance,
+        ThemeModeController.instance,
+      ]),
       builder: (context, _) {
         final isPremium = AccountStatusStore.instance.isPremium;
         final categoryFiltered = _selectedCategory == 'All'
@@ -95,9 +100,9 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
                               ),
                             ),
                             const SizedBox(height: 2),
-                            const Text(
+                            Text(
                               'Manage products and stock levels',
-                              style: TextStyle(color: AppColors.label, fontSize: 12),
+                              style: TextStyle(color: HomeColors.textSecondary, fontSize: 12),
                             ),
                           ],
                         ),
@@ -455,7 +460,7 @@ class ProductCard extends StatelessWidget {
                           fit: BoxFit.scaleDown,
                           alignment: Alignment.centerLeft,
                           child: Text('₱${product.price.toStringAsFixed(2)}',
-                              style: const TextStyle(color: AppColors.purpleLight, fontSize: 13, fontWeight: FontWeight.w800)),
+                              style: TextStyle(color: HomeColors.accentText, fontSize: 13, fontWeight: FontWeight.w800)),
                         ),
                       ),
                       Container(

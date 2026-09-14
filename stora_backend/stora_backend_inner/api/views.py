@@ -1083,12 +1083,12 @@ def store_location(request):
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def ai_store_insights(request):
-    """Generate and return real-time AI store insights for the store owner."""
+    """Generate and return real-time business store insights for the store owner."""
     user = request.user
     if getattr(user, "role", "owner") != "owner":
-        raise PermissionDenied("Only store owners can access AI insights.")
+        raise PermissionDenied("Only store owners can access business insights.")
     if not getattr(user, "is_premium_active", False):
-        raise PermissionDenied("AI store insights are exclusive to Premium members.")
+        raise PermissionDenied("Business insights are exclusive to Premium members.")
 
     # 1. Gather store statistics
     products = list(Product.objects.filter(owner=user).select_related("category"))
@@ -1218,8 +1218,12 @@ def ai_store_insights(request):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def dismiss_ai_insight(request, pk):
-    """Mark an AI insight as dismissed."""
+    """Mark a business insight as dismissed."""
     return Response({"status": "dismissed", "id": pk})
+
+
+business_store_insights = ai_store_insights
+dismiss_business_insight = dismiss_ai_insight
 
 
 @api_view(["POST"])

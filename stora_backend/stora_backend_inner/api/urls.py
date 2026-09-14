@@ -55,9 +55,11 @@ urlpatterns = [
     path("stores/", views.list_stores, name="list_stores"),
     path("stores/my-location/", views.store_location, name="store_location"),
 
-    # AI Insights
+    # Business Insights
     path("ai/insights/", views.ai_store_insights, name="ai_store_insights"),
     path("ai/insights/<int:pk>/dismiss/", views.dismiss_ai_insight, name="dismiss_ai_insight"),
+    path("business/insights/", views.business_store_insights, name="business_store_insights"),
+    path("business/insights/<int:pk>/dismiss/", views.dismiss_business_insight, name="dismiss_business_insight"),
 
     # ViewSets (Categories, Products, Sales, Orders)
     path("", include(router.urls)),

@@ -613,7 +613,9 @@ class ApiClient {
     return _decode(response) as Map<String, dynamic>;
   }
 
-  // ---------- AI Store Insights ----------
+  // ---------- Business Store Insights ----------
+
+  Future<List<Map<String, dynamic>>> fetchBusinessInsights() => fetchAiInsights();
 
   Future<List<Map<String, dynamic>>> fetchAiInsights() async {
     final response = await _send('GET', '/ai/insights/');
@@ -624,6 +626,8 @@ class ApiClient {
     }
     return [];
   }
+
+  Future<void> dismissBusinessInsight(int insightId) => dismissAiInsight(insightId);
 
   Future<void> dismissAiInsight(int insightId) async {
     final response = await _send('POST', '/ai/insights/$insightId/dismiss/');

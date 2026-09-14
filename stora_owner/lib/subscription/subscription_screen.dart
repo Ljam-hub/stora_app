@@ -25,7 +25,7 @@ class SubscriptionScreen extends StatelessWidget {
   static const _features = [
     'Unlimited products & categories',
     'Sales analytics & revenue reports',
-    'AI store insights & recommendations',
+    'Business insights & recommendations',
     'Priority support & map discovery',
   ];
 

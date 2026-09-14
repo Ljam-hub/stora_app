@@ -166,7 +166,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         );
                       },
                       style: TextButton.styleFrom(
-                        foregroundColor: AppColors.primaryLight,
+                        foregroundColor: AppColors.accentText,
                         padding: EdgeInsets.zero,
                         visualDensity: VisualDensity.compact,
                       ),

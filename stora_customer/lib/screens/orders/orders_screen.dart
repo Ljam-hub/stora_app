@@ -33,6 +33,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
 
   @override
   Widget build(BuildContext context) {
+    context.watch<CustomerThemeController>();
     final orderProvider = context.watch<OrderProvider>();
 
     final filters = [
@@ -92,9 +93,9 @@ class _OrdersScreenState extends State<OrdersScreen> {
                       orderProvider.setFilter(f['id']!);
                     },
                     selectedColor: AppColors.cardElevated,
-                    checkmarkColor: AppColors.primaryLight,
+                    checkmarkColor: AppColors.accentText,
                     labelStyle: TextStyle(
-                      color: isSelected ? Colors.white : AppColors.textSecondary,
+                      color: isSelected ? AppColors.textPrimary : AppColors.textSecondary,
                       fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                       fontSize: 12,
                     ),

@@ -268,9 +268,98 @@ class StoreLocationAdmin(admin.ModelAdmin):
 
 @admin.register(AIInsight, site=stora_admin_site)
 class AIInsightAdmin(admin.ModelAdmin):
-    list_display = ("title", "owner", "category", "priority", "action_label", "is_dismissed", "created_at")
+    list_display = (
+        "title_display",
+        "store_owner_display",
+        "category_badge",
+        "priority_badge",
+        "action_display",
+        "status_badge",
+        "created_display",
+    )
     list_filter = ("category", "priority", "is_dismissed", "created_at")
-    search_fields = ("title", "description", "owner__email", "owner__business_name")
+    search_fields = ("title", "description", "owner__email", "owner__business_name", "action_label")
+    list_per_page = 25
+    ordering = ("-created_at",)
+
+    @admin.display(description="Insight Title", ordering="title")
+    def title_display(self, obj):
+        return format_html('<span style="font-weight: 700; color: #ffffff; font-size: 13px;">{}</span>', obj.title)
+
+    @admin.display(description="Store / Owner", ordering="owner__business_name")
+    def store_owner_display(self, obj):
+        owner = obj.owner
+        if not owner:
+            return "—"
+        business = owner.business_name or f"{owner.first_name} {owner.last_name}".strip() or owner.username
+        email = owner.email
+        return format_html(
+            '<div><span style="font-weight: 700; color: #8bd3ca; font-size: 13px; display: block;">{}</span><span style="font-size: 11px; color: #829396;">{}</span></div>',
+            business,
+            email,
+        )
+
+    @admin.display(description="Category", ordering="category")
+    def category_badge(self, obj):
+        palette = {
+            "inventory": ("rgba(56, 189, 248, 0.18)", "#38bdf8", "rgba(56, 189, 248, 0.4)"),
+            "sales": ("rgba(74, 222, 128, 0.18)", "#4ade80", "rgba(74, 222, 128, 0.4)"),
+            "pricing": ("rgba(168, 85, 247, 0.18)", "#c084fc", "rgba(168, 85, 247, 0.4)"),
+            "growth": ("rgba(251, 191, 36, 0.18)", "#fbbf24", "rgba(251, 191, 36, 0.4)"),
+        }
+        bg, color, border = palette.get(obj.category.lower(), ("rgba(255, 255, 255, 0.08)", "#e8edf0", "rgba(255, 255, 255, 0.15)"))
+        label = obj.get_category_display()
+        return format_html(
+            '<span style="background: {}; color: {}; border: 1px solid {}; padding: 3px 10px; border-radius: 6px; font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; display: inline-block;">{}</span>',
+            bg, color, border, label
+        )
+
+    @admin.display(description="Priority", ordering="priority")
+    def priority_badge(self, obj):
+        pri = (obj.priority or "medium").lower()
+        if pri == "high":
+            return format_html(
+                '<span style="background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.45); padding: 3px 10px; border-radius: 6px; font-weight: 800; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; display: inline-flex; align-items: center; gap: 5px;">'
+                '<span style="width: 6px; height: 6px; border-radius: 50%; background: #f87171;"></span>HIGH</span>'
+            )
+        elif pri == "medium":
+            return format_html(
+                '<span style="background: rgba(251, 191, 36, 0.18); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.4); padding: 3px 10px; border-radius: 6px; font-weight: 800; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; display: inline-flex; align-items: center; gap: 5px;">'
+                '<span style="width: 6px; height: 6px; border-radius: 50%; background: #fbbf24;"></span>MEDIUM</span>'
+            )
+        return format_html(
+            '<span style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); padding: 3px 10px; border-radius: 6px; font-weight: 800; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; display: inline-flex; align-items: center; gap: 5px;">'
+            '<span style="width: 6px; height: 6px; border-radius: 50%; background: #38bdf8;"></span>LOW</span>'
+        )
+
+    @admin.display(description="Action Target")
+    def action_display(self, obj):
+        if not obj.action_label:
+            return "—"
+        return format_html(
+            '<span style="background: rgba(255, 255, 255, 0.04); color: #f5f8f8; border: 1px solid #283439; padding: 3px 8px; border-radius: 6px; font-size: 11.5px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">{} &rarr; <strong style="color: #8bd3ca;">{}</strong></span>',
+            obj.action_label,
+            obj.action_target,
+        )
+
+    @admin.display(description="Status", ordering="is_dismissed")
+    def status_badge(self, obj):
+        if obj.is_dismissed:
+            return format_html(
+                '<span style="background: rgba(255, 255, 255, 0.06); color: #829396; border: 1px solid rgba(255, 255, 255, 0.1); padding: 3px 9px; border-radius: 6px; font-size: 11px; font-weight: 700; display: inline-block;">Dismissed</span>'
+            )
+        return format_html(
+            '<span style="background: rgba(16, 185, 129, 0.22); color: #34d399; border: 1px solid rgba(52, 211, 153, 0.5); padding: 3px 9px; border-radius: 6px; font-size: 11px; font-weight: 800; box-shadow: 0 0 8px rgba(16, 185, 129, 0.15); display: inline-block;">Active</span>'
+        )
+
+    @admin.display(description="Created", ordering="created_at")
+    def created_display(self, obj):
+        if obj.created_at:
+            return timezone.localtime(obj.created_at).strftime("%Y-%m-%d %H:%M")
+        return "—"
+
+
+BusinessInsightAdmin = AIInsightAdmin
 
 
 @admin.register(EmailVerificationCode, site=stora_admin_site)

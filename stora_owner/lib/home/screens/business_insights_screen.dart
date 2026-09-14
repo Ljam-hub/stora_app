@@ -4,20 +4,23 @@ import '../../data/stores/account_status_store.dart';
 import '../../stora_login/stora_login.dart';
 import '../../subscription/subscription_screen.dart';
 import '../theme/home_colors.dart';
+import '../theme/theme_mode_controller.dart';
 import 'inventory_list_screen.dart';
 import 'pending_orders_screen.dart';
 
 import 'sales_analytics_screen.dart';
 import 'set_store_location_screen.dart';
 
-class AiInsightsScreen extends StatefulWidget {
-  const AiInsightsScreen({super.key});
+class BusinessInsightsScreen extends StatefulWidget {
+  const BusinessInsightsScreen({super.key});
 
   @override
-  State<AiInsightsScreen> createState() => _AiInsightsScreenState();
+  State<BusinessInsightsScreen> createState() => _BusinessInsightsScreenState();
 }
 
-class _AiInsightsScreenState extends State<AiInsightsScreen> {
+typedef AiInsightsScreen = BusinessInsightsScreen;
+
+class _BusinessInsightsScreenState extends State<BusinessInsightsScreen> {
   bool _isLoading = true;
   String? _error;
   List<Map<String, dynamic>> _insights = [];
@@ -39,7 +42,7 @@ class _AiInsightsScreenState extends State<AiInsightsScreen> {
     });
 
     try {
-      final data = await ApiClient.instance.fetchAiInsights();
+      final data = await ApiClient.instance.fetchBusinessInsights();
       if (mounted) {
         setState(() {
           _insights = data;
@@ -114,7 +117,7 @@ class _AiInsightsScreenState extends State<AiInsightsScreen> {
             ),
             const SizedBox(height: 10),
             Text(
-              'AI Store Insights analyzes your inventory and sales to provide smart restock alerts, revenue drivers, and growth recommendations.\n\nUpgrade to Premium to unlock full AI capabilities.',
+              'Business Insights analyzes your inventory and sales to provide smart restock alerts, revenue drivers, and growth recommendations.\n\nUpgrade to Premium to unlock full capabilities.',
               textAlign: TextAlign.center,
               style: TextStyle(color: HomeColors.textSecondary, fontSize: 14, height: 1.5),
             ),
@@ -143,10 +146,13 @@ class _AiInsightsScreenState extends State<AiInsightsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isPremium = AccountStatusStore.instance.isPremium;
+    return AnimatedBuilder(
+      animation: Listenable.merge([ThemeModeController.instance, AccountStatusStore.instance]),
+      builder: (context, _) {
+        final isPremium = AccountStatusStore.instance.isPremium;
 
-    return Scaffold(
-      backgroundColor: HomeColors.background,
+        return Scaffold(
+          backgroundColor: HomeColors.background,
       appBar: AppBar(
         backgroundColor: HomeColors.background,
         elevation: 0,
@@ -159,7 +165,7 @@ class _AiInsightsScreenState extends State<AiInsightsScreen> {
             const Icon(Icons.auto_awesome_rounded, color: AppColors.purpleLight, size: 20),
             const SizedBox(width: 8),
             Text(
-              'AI Store Insights',
+              'Business Insights',
               style: TextStyle(color: HomeColors.textPrimary, fontSize: 18, fontWeight: FontWeight.w800),
             ),
           ],
@@ -227,7 +233,7 @@ class _AiInsightsScreenState extends State<AiInsightsScreen> {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              'No critical stock alerts or issues detected right now. Keep recording sales to receive deeper AI recommendations.',
+                              'No critical stock alerts or issues detected right now. Keep recording sales to receive deeper business recommendations.',
                               textAlign: TextAlign.center,
                               style: TextStyle(color: HomeColors.textSecondary, fontSize: 13, height: 1.4),
                             ),
@@ -243,7 +249,7 @@ class _AiInsightsScreenState extends State<AiInsightsScreen> {
                         physics: const AlwaysScrollableScrollPhysics(),
                         padding: const EdgeInsets.fromLTRB(18, 12, 18, 24),
                         children: [
-                          // Header banner matching Stitch AI Insights Screen
+                          // Header banner matching Stitch Business Insights Screen
                           Container(
                             padding: const EdgeInsets.all(18),
                             decoration: BoxDecoration(
@@ -304,6 +310,8 @@ class _AiInsightsScreenState extends State<AiInsightsScreen> {
                         ],
                       ),
                     ),
+        );
+      },
     );
   }
 }
@@ -345,20 +353,20 @@ class _InsightCard extends StatelessWidget {
     switch (category) {
       case 'sales':
         catIcon = Icons.trending_up_rounded;
-        catColor = const Color(0xFF38BDF8);
+        catColor = HomeColors.chartBlue;
         break;
       case 'pricing':
         catIcon = Icons.sell_rounded;
-        catColor = const Color(0xFFFBBF24);
+        catColor = HomeColors.chartYellow;
         break;
       case 'growth':
         catIcon = Icons.rocket_launch_rounded;
-        catColor = const Color(0xFFA78BFA);
+        catColor = HomeColors.chartPurple;
         break;
       case 'inventory':
       default:
         catIcon = Icons.inventory_2_rounded;
-        catColor = const Color(0xFF4ADE80);
+        catColor = HomeColors.chartGreen;
         break;
     }
 

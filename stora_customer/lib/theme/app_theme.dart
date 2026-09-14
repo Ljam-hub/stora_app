@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'theme_controller.dart';
+export 'theme_controller.dart';
 
 class AppColors {
   static bool get _isDark => CustomerThemeController.instance.isDarkMode;
@@ -18,13 +19,19 @@ class AppColors {
   static const primaryDark = Color(0xFFC2410C);
   static const primaryLight = Color(0xFFFB923C);
 
+  /// High-contrast primary accent text/icon color:
+  /// Bright peach/orange in dark mode, rich deep retail orange in light mode.
+  static Color get accentText => _isDark ? const Color(0xFFFB923C) : const Color(0xFFC2410C);
+
   static const secondary = Color(0xFF10B981);
   static const secondaryLight = Color(0xFF34D399);
 
   static const success = Color(0xFF10B981);
+  static Color get successText => _isDark ? const Color(0xFF34D399) : const Color(0xFF059669);
   static Color get successBg => _isDark ? const Color(0xFF059669) : const Color(0xFFD1FAE5);
 
   static const warning = Color(0xFFF59E0B);
+  static Color get warningText => _isDark ? const Color(0xFFFBBF24) : const Color(0xFFB45309);
   static Color get warningBg => _isDark ? const Color(0xFF332408) : const Color(0xFFFEF3C7);
 
   static const danger = Color(0xFFEF4444);

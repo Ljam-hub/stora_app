@@ -352,7 +352,7 @@ class _OrderCardState extends State<OrderCard> {
               decoration: BoxDecoration(
                 color: AppColors.cardElevated,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.primaryLight.withValues(alpha: 0.4)),
+                border: Border.all(color: AppColors.primary.withValues(alpha: 0.4)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -499,8 +499,8 @@ class _OrderCardState extends State<OrderCard> {
                 children: [
                   Text(
                     '${order.totalQuantity} ${order.totalQuantity == 1 ? "item" : "items"}${order.items.length > 1 && order.totalQuantity != order.items.length ? " (${order.items.length} products)" : ""}',
-                    style: const TextStyle(
-                      color: AppColors.primaryLight,
+                    style: TextStyle(
+                      color: AppColors.accentText,
                       fontWeight: FontWeight.w600,
                       fontSize: 13,
                     ),
@@ -616,13 +616,13 @@ class _OrderCardState extends State<OrderCard> {
                       top: -4,
                       right: -6,
                       minSize: 14,
-                      child: const Icon(Icons.chat_bubble_outline_rounded, size: 16, color: AppColors.primaryLight),
+                      child: Icon(Icons.chat_bubble_outline_rounded, size: 16, color: AppColors.accentText),
                     ),
                     label: Text(
                       order.unreadMessageCount > 0
                           ? 'Message Store (${order.unreadMessageCount} new)'
                           : 'Inquire / Message Store',
-                      style: const TextStyle(color: AppColors.primaryLight, fontSize: 13, fontWeight: FontWeight.w600),
+                      style: TextStyle(color: AppColors.accentText, fontSize: 13, fontWeight: FontWeight.w600),
                     ),
                     style: OutlinedButton.styleFrom(
                       side: const BorderSide(color: AppColors.primary),

@@ -19,6 +19,7 @@ class CartScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    context.watch<CustomerThemeController>();
     final cart = context.watch<CartProvider>();
 
     return Scaffold(
@@ -83,8 +84,8 @@ class CartScreen extends StatelessWidget {
                         const SizedBox(width: 8),
                         Text(
                           'Store: ${cart.storeName}',
-                          style: const TextStyle(
-                            color: AppColors.primaryLight,
+                          style: TextStyle(
+                            color: AppColors.accentText,
                             fontWeight: FontWeight.w600,
                             fontSize: 13,
                           ),

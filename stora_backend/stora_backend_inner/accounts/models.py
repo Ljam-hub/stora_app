@@ -335,8 +335,11 @@ class AIInsight(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+        verbose_name = "Business Insight"
+        verbose_name_plural = "Business Insights"
 
     def __str__(self):
-        return f"[{self.priority.upper()}] {self.title} - {self.owner.email}"
+        owner_name = getattr(self.owner, "business_name", None) or getattr(self.owner, "email", "User")
+        return f"[{self.priority.upper()}] {self.title} - {owner_name}"
 
 

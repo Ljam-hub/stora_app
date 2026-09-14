@@ -9,7 +9,6 @@ import '../../providers/chat_provider.dart';
 import '../../providers/order_provider.dart';
 import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
-import '../../theme/theme_controller.dart';
 import '../../utils/date_utils.dart';
 
 class CustomerChatScreen extends StatefulWidget {
@@ -193,10 +192,10 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
                 ),
               if (msgId != null && isMe)
                 ListTile(
-                  leading: const CircleAvatar(
+                  leading: CircleAvatar(
                     radius: 18,
-                    backgroundColor: Color(0xFF2E1F4D),
-                    child: Icon(Icons.undo_rounded, color: AppColors.primaryLight, size: 18),
+                    backgroundColor: AppColors.primary.withValues(alpha: 0.15),
+                    child: Icon(Icons.undo_rounded, color: AppColors.accentText, size: 18),
                   ),
                   title: Text('Unsend for everyone',
                       style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w600, fontSize: 15)),
@@ -213,7 +212,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                         title: Row(
                           children: [
-                            const Icon(Icons.undo_rounded, color: AppColors.primaryLight, size: 22),
+                            Icon(Icons.undo_rounded, color: AppColors.accentText, size: 22),
                             const SizedBox(width: 10),
                             Text('Unsend Message?',
                                 style: TextStyle(color: AppColors.textPrimary, fontSize: 17, fontWeight: FontWeight.bold)),
@@ -752,6 +751,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
 
   @override
   Widget build(BuildContext context) {
+    context.watch<CustomerThemeController>();
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -764,18 +764,18 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
               (widget.storeAvatarUrl != null && widget.storeAvatarUrl!.isNotEmpty)
                   ? CircleAvatar(
                       radius: 19,
-                      backgroundColor: const Color(0xFFF97316).withValues(alpha: 0.15),
+                      backgroundColor: AppColors.primary.withValues(alpha: 0.15),
                       backgroundImage: NetworkImage(widget.storeAvatarUrl!),
                     )
                   : Container(
                       width: 38,
                       height: 38,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF97316).withValues(alpha: 0.15),
+                        color: AppColors.primary.withValues(alpha: 0.15),
                         shape: BoxShape.circle,
-                        border: Border.all(color: const Color(0xFFF97316).withValues(alpha: 0.5), width: 1.5),
+                        border: Border.all(color: AppColors.primary.withValues(alpha: 0.5), width: 1.5),
                       ),
-                      child: const Icon(Icons.support_agent_rounded, color: Color(0xFFF97316), size: 22),
+                      child: Icon(Icons.support_agent_rounded, color: AppColors.accentText, size: 22),
                     )
             else
               CircleAvatar(
@@ -807,13 +807,13 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFF97316).withValues(alpha: 0.2),
+                            color: AppColors.primary.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(4),
                           ),
-                          child: const Text(
+                          child: Text(
                             'OFFICIAL',
                             style: TextStyle(
-                              color: Color(0xFFF97316),
+                              color: AppColors.accentText,
                               fontSize: 9,
                               fontWeight: FontWeight.w800,
                               letterSpacing: 0.4,
@@ -829,7 +829,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
                         : (_isBlocked ? 'Blocked by store' : 'Store Owner'),
                     style: TextStyle(
                       color: _isSupportChat
-                          ? const Color(0xFFF97316)
+                          ? AppColors.accentText
                           : (_isBlocked ? AppColors.danger : AppColors.secondaryLight),
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
@@ -896,37 +896,37 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
               decoration: BoxDecoration(
                 color: AppColors.cardElevated,
-                border: const Border(
-                  left: BorderSide(color: Color(0xFF10B981), width: 3.5),
-                  bottom: BorderSide(color: Colors.white10, width: 1),
+                border: Border(
+                  left: const BorderSide(color: Color(0xFF10B981), width: 3.5),
+                  bottom: BorderSide(color: AppColors.cardBorder, width: 1),
                 ),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.receipt_long_rounded, color: Color(0xFF34D399), size: 18),
+                  Icon(Icons.receipt_long_rounded, color: AppColors.successText, size: 18),
                   const SizedBox(width: 8),
                   Text(
                     'Order #${widget.initialOrderId}',
-                    style: const TextStyle(color: Colors.white, fontSize: 13.5, fontWeight: FontWeight.bold),
+                    style: TextStyle(color: AppColors.textPrimary, fontSize: 13.5, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(width: 8),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF064E3B),
+                      color: AppColors.successBg,
                       borderRadius: BorderRadius.circular(6),
                     ),
-                    child: const Text(
+                    child: Text(
                       'Active Order Chat',
-                      style: TextStyle(color: Color(0xFF34D399), fontSize: 10.5, fontWeight: FontWeight.bold),
+                      style: TextStyle(color: AppColors.successText, fontSize: 10.5, fontWeight: FontWeight.bold),
                     ),
                   ),
                   const Spacer(),
                   GestureDetector(
                     onTap: () => setState(() => _showOrderBanner = false),
-                    child: const Padding(
-                      padding: EdgeInsets.all(4.0),
-                      child: Icon(Icons.close_rounded, color: Colors.white54, size: 16),
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: Icon(Icons.close_rounded, color: AppColors.textSecondary, size: 16),
                     ),
                   ),
                 ],
@@ -960,7 +960,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
                           children: [
                             const Icon(Icons.error_outline_rounded, color: AppColors.danger, size: 40),
                             const SizedBox(height: 8),
-                            Text(_error!, style: const TextStyle(color: Colors.white70)),
+                            Text(_error!, style: TextStyle(color: AppColors.textSecondary)),
                             const SizedBox(height: 12),
                             ElevatedButton(
                               onPressed: () => _fetchMessages(),
@@ -1126,8 +1126,8 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
                                             child: Center(
                                               child: Text(
                                                 headerText,
-                                                style: const TextStyle(
-                                                  color: Colors.white54,
+                                                style: TextStyle(
+                                                  color: AppColors.textMuted,
                                                   fontSize: 11.5,
                                                   fontWeight: FontWeight.w600,
                                                   letterSpacing: 0.3,
@@ -1217,8 +1217,8 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
                                           child: Center(
                                             child: Text(
                                               headerText,
-                                              style: const TextStyle(
-                                                color: Colors.white54,
+                                              style: TextStyle(
+                                                color: AppColors.textMuted,
                                                 fontSize: 11.5,
                                                 fontWeight: FontWeight.w600,
                                                 letterSpacing: 0.3,
@@ -1476,7 +1476,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
                     IconButton(
                       icon: Icon(
                         _showQuickReplies ? Icons.bolt_rounded : Icons.bolt_outlined,
-                        color: _showQuickReplies ? AppColors.primaryLight : AppColors.textSecondary,
+                        color: _showQuickReplies ? AppColors.accentText : AppColors.textSecondary,
                         size: 22,
                       ),
                       tooltip: 'Quick Questions',

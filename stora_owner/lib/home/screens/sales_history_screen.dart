@@ -186,14 +186,14 @@ class _HistorySummaryCard extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  const Icon(Icons.receipt_rounded, size: 14, color: AppColors.purpleLight),
+                  Icon(Icons.receipt_rounded, size: 14, color: HomeColors.accentText),
                   const SizedBox(width: 5),
                   Text('Total sales', style: TextStyle(color: HomeColors.textSecondary, fontSize: 12, fontWeight: FontWeight.w600)),
                 ],
               ),
               const SizedBox(height: 6),
               Text('${sales.length}',
-                  style: const TextStyle(color: AppColors.purpleLight, fontSize: 22, fontWeight: FontWeight.w900)),
+                  style: TextStyle(color: HomeColors.accentText, fontSize: 22, fontWeight: FontWeight.w900)),
             ],
           ),
         ],
@@ -261,7 +261,7 @@ class _SaleCard extends StatelessWidget {
               Row(
                 children: [
                   Text('₱${sale.total.toStringAsFixed(2)}',
-                      style: const TextStyle(color: AppColors.purpleLight, fontSize: 16, fontWeight: FontWeight.w900)),
+                      style: TextStyle(color: HomeColors.accentText, fontSize: 16, fontWeight: FontWeight.w900)),
                   const SizedBox(width: 8),
                   GestureDetector(
                     onTap: () => ReceiptDialog.show(context, sale),
@@ -272,7 +272,7 @@ class _SaleCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(color: HomeColors.cardBorder),
                       ),
-                      child: const Icon(Icons.receipt_long_rounded, size: 16, color: AppColors.purpleLight),
+                      child: Icon(Icons.receipt_long_rounded, size: 16, color: HomeColors.accentText),
                     ),
                   ),
                   const SizedBox(width: 6),
@@ -310,7 +310,7 @@ class _SaleCard extends StatelessWidget {
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text('x${item.quantity}',
-                                style: const TextStyle(color: AppColors.purpleLight, fontSize: 11, fontWeight: FontWeight.w700)),
+                                style: TextStyle(color: HomeColors.accentText, fontSize: 11, fontWeight: FontWeight.w700)),
                           ),
                           const SizedBox(width: 8),
                           Expanded(

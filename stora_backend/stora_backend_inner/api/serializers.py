@@ -746,6 +746,9 @@ class AIInsightSerializer(serializers.ModelSerializer):
         read_only_fields = ("id", "created_at")
 
 
+BusinessInsightSerializer = AIInsightSerializer
+
+
 class ChatMessageSerializer(serializers.ModelSerializer):
     sender_id = serializers.IntegerField(source="sender.id", read_only=True)
     sender_name = serializers.SerializerMethodField()

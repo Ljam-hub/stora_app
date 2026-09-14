@@ -66,7 +66,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
           decoration: InputDecoration(
             hintText: widget.hint,
             prefixIcon: widget.prefixIcon != null
-                ? Icon(widget.prefixIcon, color: AppColors.primaryLight, size: 20)
+                ? Icon(widget.prefixIcon, color: AppColors.accentText, size: 20)
                 : null,
             suffixIcon: widget.isPassword
                 ? ValueListenableBuilder<TextEditingValue>(

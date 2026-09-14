@@ -256,7 +256,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> with Widget
                       padding: EdgeInsets.zero,
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
-                    icon: const Icon(Icons.content_paste_rounded, color: AppColors.primaryLight, size: 20),
+                    icon: Icon(Icons.content_paste_rounded, color: AppColors.accentText, size: 20),
                     tooltip: 'Paste from clipboard',
                     onPressed: _pasteFromClipboard,
                   ),
@@ -278,7 +278,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> with Widget
                 const SizedBox(height: 16),
                 TextButton(
                   onPressed: () => setState(() => _codeSent = false),
-                  child: const Text('Resend code to email', style: TextStyle(color: AppColors.primaryLight)),
+                  child: Text('Resend code to email', style: TextStyle(color: AppColors.accentText)),
                 ),
               ],
             ],

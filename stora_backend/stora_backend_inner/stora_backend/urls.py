@@ -106,11 +106,41 @@ def get_github_release_info():
 
 
 def download_customer(request):
+    source = request.GET.get("source", "").lower()
+    if source != "github":
+        try:
+            repo_root = Path(settings.BASE_DIR).parent.parent
+            local_apk = repo_root / "flutter-apk" / "Stora-Customer.apk"
+            if local_apk.exists():
+                from django.http import FileResponse
+                return FileResponse(
+                    open(local_apk, "rb"),
+                    as_attachment=True,
+                    filename="Stora-Customer.apk",
+                    content_type="application/vnd.android.package-archive",
+                )
+        except Exception as exc:
+            logger.warning("Could not serve local customer APK: %s", exc)
     info = get_github_release_info()
     return redirect(info.get("customer_download_url") or DEFAULT_CUSTOMER_URL)
 
 
 def download_owner(request):
+    source = request.GET.get("source", "").lower()
+    if source != "github":
+        try:
+            repo_root = Path(settings.BASE_DIR).parent.parent
+            local_apk = repo_root / "flutter-apk" / "Stora.apk"
+            if local_apk.exists():
+                from django.http import FileResponse
+                return FileResponse(
+                    open(local_apk, "rb"),
+                    as_attachment=True,
+                    filename="Stora.apk",
+                    content_type="application/vnd.android.package-archive",
+                )
+        except Exception as exc:
+            logger.warning("Could not serve local owner APK: %s", exc)
     info = get_github_release_info()
     return redirect(info.get("owner_download_url") or DEFAULT_OWNER_URL)
 

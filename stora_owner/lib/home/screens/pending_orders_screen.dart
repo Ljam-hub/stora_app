@@ -3,6 +3,7 @@ import '../../data/services/notification_service.dart';
 import '../../stora_login/theme/app_colors.dart';
 import '../stores/orders_store.dart';
 import '../theme/home_colors.dart';
+import '../theme/theme_mode_controller.dart';
 import '../widgets/notification_badge.dart';
 import 'owner_chat_screen.dart';
 
@@ -40,7 +41,7 @@ class _PendingOrdersScreenState extends State<PendingOrdersScreen> {
         ),
       ),
       body: AnimatedBuilder(
-        animation: OrdersStore.instance,
+        animation: Listenable.merge([OrdersStore.instance, ThemeModeController.instance]),
         builder: (context, _) {
           final store = OrdersStore.instance;
 

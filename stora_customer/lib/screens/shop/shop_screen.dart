@@ -51,6 +51,7 @@ class _ShopScreenState extends State<ShopScreen> {
 
   @override
   Widget build(BuildContext context) {
+    context.watch<CustomerThemeController>();
     final catalog = context.watch<CatalogProvider>();
     final cart = context.watch<CartProvider>();
     final chat = context.watch<ChatProvider>();
@@ -192,7 +193,7 @@ class _ShopScreenState extends State<ShopScreen> {
                           ),
                           backgroundColor: AppColors.cardBackground,
                           side: BorderSide(
-                            color: isSelected ? AppColors.primary : Colors.white.withValues(alpha: 0.08),
+                            color: isSelected ? AppColors.primary : AppColors.cardBorder,
                           ),
                         ),
                       );
@@ -205,7 +206,7 @@ class _ShopScreenState extends State<ShopScreen> {
                         avatar: Icon(
                           Icons.storefront_rounded,
                           size: 14,
-                          color: isSelected ? Colors.white : AppColors.primaryLight,
+                          color: isSelected ? Colors.white : AppColors.accentText,
                         ),
                         label: Text(store.displayName),
                         selected: isSelected,
@@ -219,7 +220,7 @@ class _ShopScreenState extends State<ShopScreen> {
                         ),
                         backgroundColor: AppColors.cardBackground,
                         side: BorderSide(
-                          color: isSelected ? AppColors.primary : Colors.white.withValues(alpha: 0.08),
+                          color: isSelected ? AppColors.primary : AppColors.cardBorder,
                         ),
                       ),
                     );

@@ -5,6 +5,8 @@ import 'theme_mode_controller.dart';
 class HomeColors {
   static bool get _isDark => ThemeModeController.instance.isDarkMode;
 
+  static const primary = Color(0xFFF97316);
+
   static Color get background => _isDark ? const Color(0xFF141018) : const Color(0xFFF8F9FA);
   static Color get scaffoldBackground => _isDark ? const Color(0xFF141018) : const Color(0xFFF8F9FA);
 
@@ -16,8 +18,18 @@ class HomeColors {
   static Color get cardBorderLight => _isDark ? const Color(0xFF4C3E63) : const Color(0xFFCBD5E1);
 
   static Color get textPrimary => _isDark ? Colors.white : const Color(0xFF0F172A);
-  static Color get textSecondary => _isDark ? const Color(0xFFCBD5E1) : const Color(0xFF475569);
+  static Color get textSecondary => _isDark ? const Color(0xFFCBD5E1) : const Color(0xFF334155);
   static Color get textMuted => _isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+
+  /// High-contrast primary accent text/icon color:
+  /// Bright peach/orange in dark mode, rich deep retail orange in light mode.
+  static Color get accentText => _isDark ? const Color(0xFFFB923C) : const Color(0xFFC2410C);
+
+  /// High-contrast theme-aware palette tokens for charts, badges, and categories
+  static Color get chartGreen => _isDark ? const Color(0xFF4ADE80) : const Color(0xFF15803D);
+  static Color get chartYellow => _isDark ? const Color(0xFFFBBF24) : const Color(0xFFB45309);
+  static Color get chartPurple => _isDark ? const Color(0xFFA78BFA) : const Color(0xFF7C3AED);
+  static Color get chartBlue => _isDark ? const Color(0xFF38BDF8) : const Color(0xFF0369A1);
 
   static const successText = Color(0xFF10B981);
   static Color get successBg => _isDark ? const Color(0xFF065F46) : const Color(0xFFD1FAE5);

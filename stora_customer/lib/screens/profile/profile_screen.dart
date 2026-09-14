@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
-import '../../theme/theme_controller.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../widgets/gradient_button.dart';
 import 'package:image_picker/image_picker.dart';
@@ -567,6 +566,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    context.watch<CustomerThemeController>();
     final auth = context.watch<AuthProvider>();
     final user = auth.currentUser;
 
@@ -687,10 +687,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 color: AppColors.primary.withValues(alpha: 0.15),
                                 borderRadius: BorderRadius.circular(6),
                               ),
-                              child: const Text(
+                              child: Text(
                                 'Customer Account',
                                 style: TextStyle(
-                                  color: AppColors.primaryLight,
+                                  color: AppColors.accentText,
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -699,13 +699,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             if (user?.isEmailVerified == true)
                               Row(
                                 mainAxisSize: MainAxisSize.min,
-                                children: const [
-                                  Icon(Icons.verified_rounded, color: AppColors.secondaryLight, size: 14),
-                                  SizedBox(width: 2),
+                                children: [
+                                  Icon(Icons.verified_rounded, color: AppColors.successText, size: 14),
+                                  const SizedBox(width: 2),
                                   Text(
                                     'Verified',
                                     style: TextStyle(
-                                      color: AppColors.secondaryLight,
+                                      color: AppColors.successText,
                                       fontSize: 11,
                                       fontWeight: FontWeight.w600,
                                     ),
@@ -751,7 +751,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.edit_outlined, color: AppColors.primaryLight),
+                    icon: Icon(Icons.edit_outlined, color: AppColors.accentText),
                     onPressed: _openEditProfileDialog,
                   ),
                 ],
@@ -775,7 +775,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     children: [
                       Row(
                         children: [
-                          const Icon(Icons.location_on_outlined, color: AppColors.primaryLight, size: 20),
+                          Icon(Icons.location_on_outlined, color: AppColors.accentText, size: 20),
                           const SizedBox(width: 8),
                           Text(
                             'Default Delivery Info',
@@ -790,7 +790,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       TextButton(
                         onPressed: _openEditDeliveryDialog,
                         style: TextButton.styleFrom(
-                          foregroundColor: AppColors.primaryLight,
+                          foregroundColor: AppColors.accentText,
                           padding: EdgeInsets.zero,
                           visualDensity: VisualDensity.compact,
                         ),

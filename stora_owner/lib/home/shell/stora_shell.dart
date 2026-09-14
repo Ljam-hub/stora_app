@@ -32,7 +32,7 @@ class StoraShell extends StatefulWidget {
 class _StoraShellState extends State<StoraShell> {
   int _index = 0;
 
-  late final List<Widget> _screens = [
+  List<Widget> _buildScreens() => [
     DashboardScreen(onNavigateToChat: () => setState(() => _index = 1)),
     const OwnerChatScreen(isTab: true),
     const InventoryListScreen(),
@@ -208,7 +208,7 @@ class _StoraShellState extends State<StoraShell> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(ctx).pop(),
-                child: const Text('Got it', style: TextStyle(color: AppColors.purpleLight, fontWeight: FontWeight.w700)),
+                child: Text('Got it', style: TextStyle(color: HomeColors.accentText, fontWeight: FontWeight.w700)),
               ),
             ],
           ),
@@ -228,7 +228,11 @@ class _StoraShellState extends State<StoraShell> {
       builder: (context, _) {
         return Scaffold(
           backgroundColor: HomeColors.background,
-          body: IndexedStack(index: _index, children: _screens),
+          body: IndexedStack(
+            key: ValueKey(ThemeModeController.instance.isDarkMode),
+            index: _index,
+            children: _buildScreens(),
+          ),
           bottomNavigationBar: _StoraNavBar(
             currentIndex: _index,
             onTap: (i) => setState(() => _index = i),

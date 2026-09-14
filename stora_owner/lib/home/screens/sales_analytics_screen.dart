@@ -6,6 +6,7 @@ import '../../subscription/subscription_screen.dart';
 import '../stores/inventory_store.dart';
 import '../stores/sales_store.dart';
 import '../theme/home_colors.dart';
+import '../theme/theme_mode_controller.dart';
 import '../utils/date_utils.dart';
 
 class SalesAnalyticsScreen extends StatefulWidget {
@@ -21,7 +22,12 @@ class _SalesAnalyticsScreenState extends State<SalesAnalyticsScreen> {
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: Listenable.merge([SalesStore.instance, InventoryStore.instance, AccountStatusStore.instance]),
+      animation: Listenable.merge([
+        SalesStore.instance,
+        InventoryStore.instance,
+        AccountStatusStore.instance,
+        ThemeModeController.instance,
+      ]),
       builder: (context, _) {
         final isPremium = AccountStatusStore.instance.isPremium;
         if (!isPremium) {
@@ -193,7 +199,7 @@ class _SalesAnalyticsScreenState extends State<SalesAnalyticsScreen> {
                           amount: '₱${todaysRevenue.toStringAsFixed(2)}',
                           subtitle: '${todaySales.length} orders today',
                           icon: Icons.today_rounded,
-                          accentColor: AppColors.purpleLight,
+                          accentColor: HomeColors.accentText,
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -203,7 +209,7 @@ class _SalesAnalyticsScreenState extends State<SalesAnalyticsScreen> {
                           amount: '₱${thisWeekRevenue.toStringAsFixed(2)}',
                           subtitle: '${thisWeekSales.length} orders',
                           icon: Icons.calendar_view_week_rounded,
-                          accentColor: const Color(0xFF4ADE80),
+                          accentColor: HomeColors.chartGreen,
                         ),
                       ),
                     ],
@@ -219,7 +225,7 @@ class _SalesAnalyticsScreenState extends State<SalesAnalyticsScreen> {
                           amount: '₱${thisMonthRevenue.toStringAsFixed(2)}',
                           subtitle: '${thisMonthSales.length} orders',
                           icon: Icons.calendar_month_rounded,
-                          accentColor: const Color(0xFF60A5FA),
+                          accentColor: HomeColors.chartBlue,
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -229,7 +235,7 @@ class _SalesAnalyticsScreenState extends State<SalesAnalyticsScreen> {
                           amount: '₱${allTimeRevenue.toStringAsFixed(2)}',
                           subtitle: '${sales.length} total orders',
                           icon: Icons.all_inclusive_rounded,
-                          accentColor: const Color(0xFFFBBF24),
+                          accentColor: HomeColors.chartYellow,
                         ),
                       ),
                     ],
@@ -265,7 +271,7 @@ class _SalesAnalyticsScreenState extends State<SalesAnalyticsScreen> {
                               ),
                               child: Text(
                                 'Peak: ₱${maxDayTotal.toStringAsFixed(0)}',
-                                style: const TextStyle(color: AppColors.purpleLight, fontSize: 11, fontWeight: FontWeight.w700),
+                                style: TextStyle(color: HomeColors.accentText, fontSize: 11, fontWeight: FontWeight.w700),
                               ),
                             ),
                           ],
@@ -288,7 +294,7 @@ class _SalesAnalyticsScreenState extends State<SalesAnalyticsScreen> {
                                     Text(
                                       '₱${total.toStringAsFixed(0)}',
                                       style: TextStyle(
-                                        color: isToday ? AppColors.purpleLight : HomeColors.textSecondary,
+                                        color: isToday ? HomeColors.accentText : HomeColors.textSecondary,
                                         fontSize: 9,
                                         fontWeight: FontWeight.bold,
                                       ),

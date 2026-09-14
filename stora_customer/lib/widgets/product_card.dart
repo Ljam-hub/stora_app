@@ -63,12 +63,12 @@ class ProductCard extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: AppColors.background.withValues(alpha: 0.85),
                           borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: Colors.white.withValues(alpha: 0.1), width: 0.8),
+                          border: Border.all(color: AppColors.cardBorder, width: 0.8),
                         ),
                         child: Text(
                           product.categoryName,
-                          style: const TextStyle(
-                            color: AppColors.primaryLight,
+                          style: TextStyle(
+                            color: AppColors.accentText,
                             fontSize: 10,
                             fontWeight: FontWeight.w700,
                           ),
@@ -101,7 +101,7 @@ class ProductCard extends StatelessWidget {
                         style: TextStyle(
                           color: product.isOutOfStock
                               ? AppColors.danger
-                              : (product.isLowStock ? AppColors.warning : AppColors.success),
+                              : (product.isLowStock ? AppColors.warningText : AppColors.successText),
                           fontSize: 9,
                           fontWeight: FontWeight.w800,
                         ),

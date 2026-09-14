@@ -32,7 +32,7 @@ class EmptyState extends StatelessWidget {
                 shape: BoxShape.circle,
                 border: Border.all(color: AppColors.cardBorder),
               ),
-              child: Icon(icon, size: 48, color: AppColors.primaryLight),
+              child: Icon(icon, size: 48, color: AppColors.accentText),
             ),
             const SizedBox(height: 20),
             Text(

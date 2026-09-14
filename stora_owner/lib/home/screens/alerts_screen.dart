@@ -3,6 +3,7 @@ import '../../stora_login/stora_login.dart';
 import '../models/product.dart';
 import '../stores/inventory_store.dart';
 import '../theme/home_colors.dart';
+import '../theme/theme_mode_controller.dart';
 import '../widgets/product_image_widget.dart';
 import 'add_edit_product_screen.dart';
 
@@ -12,7 +13,7 @@ class AlertsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: InventoryStore.instance,
+      animation: Listenable.merge([InventoryStore.instance, ThemeModeController.instance]),
       builder: (context, _) {
         final lowStock = InventoryStore.instance.lowStock;
         return SafeArea(
@@ -149,7 +150,7 @@ class _AlertCard extends StatelessWidget {
                     Text(product.category, style: TextStyle(color: HomeColors.textSecondary, fontSize: 12)),
                     const SizedBox(width: 6),
                     Text('• ₱${product.price.toStringAsFixed(2)}',
-                        style: const TextStyle(color: AppColors.purpleLight, fontSize: 12, fontWeight: FontWeight.w700)),
+                        style: TextStyle(color: HomeColors.accentText, fontSize: 12, fontWeight: FontWeight.w700)),
                   ],
                 ),
               ],
@@ -179,9 +180,9 @@ class _AlertCard extends StatelessWidget {
                 onTap: () => Navigator.of(context).push(
                   MaterialPageRoute(builder: (_) => AddEditProductScreen(existing: product)),
                 ),
-                child: const Text(
+                child: Text(
                   'Restock →',
-                  style: TextStyle(color: AppColors.purpleLight, fontSize: 11, fontWeight: FontWeight.w800),
+                  style: TextStyle(color: HomeColors.accentText, fontSize: 11, fontWeight: FontWeight.w800),
                 ),
               ),
             ],

@@ -210,9 +210,9 @@ class _CustomerConversationsScreenState extends State<CustomerConversationsScree
                     children: [
                       Row(
                         children: [
-                          const Text(
+                          Text(
                             'STORA Support',
-                            style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                            style: TextStyle(color: AppColors.textPrimary, fontSize: 14, fontWeight: FontWeight.bold),
                           ),
                           const SizedBox(width: 6),
                           Container(
@@ -261,6 +261,7 @@ class _CustomerConversationsScreenState extends State<CustomerConversationsScree
 
   @override
   Widget build(BuildContext context) {
+    context.watch<CustomerThemeController>();
     final chatProvider = context.watch<ChatProvider>();
     final conversations = chatProvider.conversations;
 
@@ -470,8 +471,8 @@ class _CustomerConversationsScreenState extends State<CustomerConversationsScree
                                                       Flexible(
                                                         child: Text(
                                                           isSupport ? 'STORA Support' : storeName,
-                                                          style: const TextStyle(
-                                                            color: Colors.white,
+                                                          style: TextStyle(
+                                                            color: AppColors.textPrimary,
                                                             fontWeight: FontWeight.w600,
                                                             fontSize: 15,
                                                           ),
@@ -484,13 +485,13 @@ class _CustomerConversationsScreenState extends State<CustomerConversationsScree
                                                         Container(
                                                           padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                                                           decoration: BoxDecoration(
-                                                            color: const Color(0xFFF97316).withValues(alpha: 0.2),
+                                                            color: AppColors.primary.withValues(alpha: 0.15),
                                                             borderRadius: BorderRadius.circular(4),
                                                           ),
-                                                          child: const Text(
+                                                          child: Text(
                                                             'OFFICIAL',
                                                             style: TextStyle(
-                                                              color: Color(0xFFF97316),
+                                                              color: AppColors.accentText,
                                                               fontSize: 9,
                                                               fontWeight: FontWeight.w800,
                                                               letterSpacing: 0.4,

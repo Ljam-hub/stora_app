@@ -9,6 +9,7 @@ import '../stores/category_store.dart';
 import 'barcode_scanner_screen.dart';
 import '../stores/inventory_store.dart';
 import '../theme/home_colors.dart';
+import '../theme/theme_mode_controller.dart';
 import '../utils/constants.dart';
 
 // NOTE: this file uses the `image_picker` package for product photos.
@@ -48,6 +49,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
   @override
   void initState() {
     super.initState();
+    ThemeModeController.instance.addListener(_onThemeChanged);
     final p = widget.existing;
     _nameController = TextEditingController(text: p?.name ?? '');
     _priceController = TextEditingController(text: p != null ? p.price.toStringAsFixed(2) : '');
@@ -60,12 +62,17 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
 
   @override
   void dispose() {
+    ThemeModeController.instance.removeListener(_onThemeChanged);
     _nameController.dispose();
     _priceController.dispose();
     _stockController.dispose();
     _barcodeController.dispose();
     _bioController.dispose();
     super.dispose();
+  }
+
+  void _onThemeChanged() {
+    if (mounted) setState(() {});
   }
 
   String? _required(String? v) => (v == null || v.trim().isEmpty) ? 'This field is required' : null;
@@ -354,7 +361,7 @@ class _CategoryPickerState extends State<_CategoryPicker> {
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(controller.text.trim()),
-            child: const Text('Add', style: TextStyle(color: AppColors.purpleLight, fontWeight: FontWeight.w700)),
+            child: Text('Add', style: TextStyle(color: HomeColors.accentText, fontWeight: FontWeight.w700)),
           ),
         ],
       ),
@@ -404,14 +411,14 @@ class _CategoryPickerState extends State<_CategoryPicker> {
               ),
               items: [
                 ...categories.map((c) => DropdownMenuItem(value: c, child: Text(c, overflow: TextOverflow.ellipsis))),
-                const DropdownMenuItem(
+                DropdownMenuItem(
                   value: _addNewValue,
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.add, size: 16, color: AppColors.purpleLight),
-                      SizedBox(width: 6),
-                      Text('Add new category', style: TextStyle(color: AppColors.purpleLight, fontWeight: FontWeight.w600)),
+                      Icon(Icons.add, size: 16, color: HomeColors.accentText),
+                      const SizedBox(width: 6),
+                      Text('Add new category', style: TextStyle(color: HomeColors.accentText, fontWeight: FontWeight.w600)),
                     ],
                   ),
                 ),

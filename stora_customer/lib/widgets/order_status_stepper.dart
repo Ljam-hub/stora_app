@@ -169,7 +169,7 @@ class OrderStatusStepper extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.shopping_bag_outlined, color: AppColors.primaryLight, size: 18),
+                  Icon(Icons.shopping_bag_outlined, color: AppColors.accentText, size: 18),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
@@ -218,11 +218,11 @@ class OrderStatusStepper extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.campaign_rounded, color: AppColors.primaryLight, size: 16),
+                      Icon(Icons.campaign_rounded, color: AppColors.accentText, size: 16),
                       const SizedBox(width: 8),
-                      const Text(
+                      Text(
                         'Store Counter-Offer',
-                        style: TextStyle(color: AppColors.primaryLight, fontWeight: FontWeight.bold, fontSize: 12),
+                        style: TextStyle(color: AppColors.accentText, fontWeight: FontWeight.bold, fontSize: 12),
                       ),
                       const Spacer(),
                       if (order.counterPrice != null)

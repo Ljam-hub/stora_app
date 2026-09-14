@@ -277,6 +277,7 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
 
   @override
   Widget build(BuildContext context) {
+    context.watch<CustomerThemeController>();
     final catalog = context.watch<CatalogProvider>();
     final allStores = catalog.stores;
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -951,16 +952,16 @@ class _StoreCarouselCard extends StatelessWidget {
                 const SizedBox(height: 3),
                 Row(
                   children: [
-                    const Icon(Icons.near_me_rounded, color: AppColors.primaryLight, size: 12),
+                    Icon(Icons.near_me_rounded, color: AppColors.accentText, size: 12),
                     const SizedBox(width: 4),
                     Text(
                       distText,
-                      style: const TextStyle(color: AppColors.primaryLight, fontSize: 11, fontWeight: FontWeight.w700),
+                      style: TextStyle(color: AppColors.accentText, fontSize: 11, fontWeight: FontWeight.w700),
                     ),
                     const SizedBox(width: 6),
                     Container(width: 3, height: 3, decoration: BoxDecoration(color: AppColors.textMuted, shape: BoxShape.circle)),
                     const SizedBox(width: 6),
-                    const Text('Open', style: TextStyle(color: AppColors.success, fontSize: 11, fontWeight: FontWeight.w700)),
+                    Text('Open', style: TextStyle(color: AppColors.successText, fontSize: 11, fontWeight: FontWeight.w700)),
                   ],
                 ),
                 if (store.address.isNotEmpty) ...[

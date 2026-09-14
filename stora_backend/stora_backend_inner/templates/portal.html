@@ -70,8 +70,7 @@
           </p>
           <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
             <a id="customer-apk-download"
-               href="{{ customer_download_url|default:'https://github.com/Ljam-hub/stora_app/releases/latest/download/Stora-Customer.apk' }}"
-               download="Stora-Customer.apk"
+               href="/download/customer/"
                class="button button--primary"
                style="flex: 1; padding: 13px 20px; border-radius: 12px; font-size: 14px;">
               <span>Download Customer APK</span>
@@ -94,12 +93,11 @@
             </div>
           </div>
           <p style="margin: 0 0 24px; color: #9CA3AF; font-size: 14px; line-height: 1.6; flex-grow: 1;">
-            High-speed POS cash register with camera barcode scanning, offline-first SQLite database synchronization, automated stock alerts, and AI business growth insights.
+            High-speed POS cash register with camera barcode scanning, offline-first SQLite database synchronization, automated stock alerts, and business growth insights.
           </p>
           <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
             <a id="owner-apk-download"
-               href="{{ owner_download_url|default:'https://github.com/Ljam-hub/stora_app/releases/latest/download/Stora.apk' }}"
-               download="Stora.apk"
+               href="/download/owner/"
                class="button button--quiet"
                style="flex: 1; padding: 13px 20px; border-radius: 12px; font-size: 14px; border-color: rgba(255, 107, 0, 0.6); color: #ffffff; background: #1C1527;">
               <span>Download Owner APK</span>
@@ -110,8 +108,15 @@
         </div>
       </div>
 
-      <div style="margin-top: 24px; padding: 16px 20px; border-radius: 12px; background: rgba(255, 107, 0, 0.08); border: 1px solid rgba(255, 107, 0, 0.28); color: var(--text-dim); font-size: 13px; line-height: 1.6;">
-        <strong style="color: #FF9E58;">💡 Android Installation:</strong> If your mobile browser prompts <em>"File might be harmful"</em>, tap <strong>"Download anyway"</strong>. When installing, enable <strong>"Allow from this source"</strong> (Install unknown apps) in your device settings to complete setup.
+      <div style="margin-top: 24px; padding: 20px 24px; border-radius: 14px; background: rgba(255, 107, 0, 0.08); border: 1px solid rgba(255, 107, 0, 0.3); color: var(--text-dim); font-size: 13.5px; line-height: 1.65;">
+        <strong style="color: #FF9E58; font-size: 15px; display: block; margin-bottom: 8px;">💡 Having Trouble Downloading or Installing? Common Fixes:</strong>
+        <ul style="margin: 0; padding-left: 20px;">
+          <li style="margin-bottom: 6px;"><strong>Opening from Messenger / Facebook / TikTok?</strong> Meta &amp; TikTok in-app browsers block APK downloads. Tap the <strong>three dots (⋮)</strong> at the top right of your screen and select <strong>"Open in Chrome"</strong> or <strong>"Open in Browser"</strong>.</li>
+          <li style="margin-bottom: 6px;"><strong>"File might be harmful" warning?</strong> This is standard Android security for apps outside Google Play. Tap <strong>"Download anyway"</strong>.</li>
+          <li style="margin-bottom: 6px;"><strong>"Install unknown apps" blocked?</strong> Open your phone's <strong>Settings &rarr; Apps &rarr; Special app access &rarr; Install unknown apps</strong> &rarr; select your browser (Chrome) &rarr; toggle <strong>Allow from this source</strong> ON.</li>
+          <li style="margin-bottom: 6px;"><strong>Using an iPhone (iOS)?</strong> APK files are strictly for Android phones. iPhones and iPads cannot install APK files.</li>
+          <li><strong>"App not installed" or conflicting package?</strong> If you have an older test version installed, uninstall it from your home screen first, then install the new APK.</li>
+        </ul>
       </div>
     </section>
 

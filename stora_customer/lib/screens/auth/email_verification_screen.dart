@@ -97,7 +97,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Stay Here', style: TextStyle(color: AppColors.primaryLight)),
+            child: Text('Stay Here', style: TextStyle(color: AppColors.accentText)),
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
@@ -244,9 +244,9 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen>
                               color: AppColors.primary.withValues(alpha: 0.3),
                             ),
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.mark_email_read_outlined,
-                            color: AppColors.primaryLight,
+                            color: AppColors.accentText,
                             size: 32,
                           ),
                         ),
@@ -314,7 +314,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen>
                             border: InputBorder.none,
                             contentPadding: const EdgeInsets.symmetric(vertical: 16),
                             suffixIcon: IconButton(
-                              icon: const Icon(Icons.content_paste_rounded, color: AppColors.primaryLight),
+                              icon: Icon(Icons.content_paste_rounded, color: AppColors.accentText),
                               tooltip: 'Paste from clipboard',
                               onPressed: _pasteFromClipboard,
                             ),
@@ -355,7 +355,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen>
                                     style: TextStyle(
                                       color: _resendCooldown > 0
                                           ? AppColors.textMuted
-                                          : AppColors.primaryLight,
+                                          : AppColors.accentText,
                                       fontWeight: FontWeight.w700,
                                       fontSize: 13,
                                     ),

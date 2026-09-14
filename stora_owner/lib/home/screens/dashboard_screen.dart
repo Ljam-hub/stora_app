@@ -6,10 +6,11 @@ import '../stores/inventory_store.dart';
 import '../stores/orders_store.dart';
 import '../stores/sales_store.dart';
 import '../theme/home_colors.dart';
+import '../theme/theme_mode_controller.dart';
 import '../utils/date_utils.dart';
 import '../../subscription/subscription_screen.dart';
 import 'add_edit_product_screen.dart';
-import 'ai_insights_screen.dart';
+import 'business_insights_screen.dart';
 import 'pending_orders_screen.dart';
 import 'pos_screen.dart';
 import 'profile_screen.dart';
@@ -35,6 +36,7 @@ class DashboardScreen extends StatelessWidget {
         AccountStatusStore.instance,
         OrdersStore.instance,
         ChatStore.instance,
+        ThemeModeController.instance,
       ]),
       builder: (context, _) {
         final store = InventoryStore.instance;
@@ -150,7 +152,7 @@ class DashboardScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 14),
-                // AI Insights & Map Row
+                // Business Insights & Map Row
                 FadeSlideIn(
                   delay: const Duration(milliseconds: 200),
                   child: Row(
@@ -159,15 +161,15 @@ class DashboardScreen extends StatelessWidget {
                         child: GestureDetector(
                           onTap: () {
                             if (!AccountStatusStore.instance.isPremium) {
-                              _showPremiumFeatureDialog(context, featureName: 'AI Store Insights');
+                              _showPremiumFeatureDialog(context, featureName: 'Business Insights');
                               return;
                             }
                             Navigator.of(context).push(
-                              MaterialPageRoute(builder: (_) => const AiInsightsScreen()),
+                              MaterialPageRoute(builder: (_) => const BusinessInsightsScreen()),
                             );
                           },
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                             decoration: BoxDecoration(
                               color: HomeColors.cardBackground,
                               borderRadius: BorderRadius.circular(16),
@@ -190,19 +192,32 @@ class DashboardScreen extends StatelessWidget {
                                   ),
                                   child: const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 16),
                                 ),
-                                const SizedBox(width: 10),
+                                const SizedBox(width: 8),
                                 Expanded(
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Row(
                                         children: [
-                                          Text('AI Insights',
-                                              style: TextStyle(color: HomeColors.textPrimary, fontSize: 13, fontWeight: FontWeight.w700)),
+                                          Flexible(
+                                            child: FittedBox(
+                                              fit: BoxFit.scaleDown,
+                                              alignment: Alignment.centerLeft,
+                                              child: Text(
+                                                'Business Insights',
+                                                maxLines: 1,
+                                                style: TextStyle(
+                                                  color: HomeColors.textPrimary,
+                                                  fontSize: 12.5,
+                                                  fontWeight: FontWeight.w700,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
                                           if (!AccountStatusStore.instance.isPremium) ...[
-                                            const SizedBox(width: 5),
+                                            const SizedBox(width: 4),
                                             Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                              padding: const EdgeInsets.symmetric(horizontal: 4.5, vertical: 1.5),
                                               decoration: BoxDecoration(
                                                 color: Colors.amber.withValues(alpha: 0.18),
                                                 borderRadius: BorderRadius.circular(6),
@@ -774,7 +789,7 @@ class _FreePlanCard extends StatelessWidget {
                       limit > 0 ? '$current/$limit items · $daysLeft days left' : '$current items',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: AppColors.purpleLight, fontSize: 12, fontWeight: FontWeight.w700),
+                      style: TextStyle(color: HomeColors.accentText, fontSize: 12, fontWeight: FontWeight.w700),
                     ),
                   ),
                 ),
@@ -809,9 +824,9 @@ class _FreePlanCard extends StatelessWidget {
                     builder: (_) => SubscriptionScreen(productsUsed: current, productsLimit: limit),
                   ),
                 ),
-                child: const Text(
+                child: Text(
                   'Upgrade →',
-                  style: TextStyle(color: AppColors.purpleLight, fontSize: 12, fontWeight: FontWeight.w800),
+                  style: TextStyle(color: HomeColors.accentText, fontSize: 12, fontWeight: FontWeight.w800),
                 ),
               ),
             ],
@@ -834,10 +849,10 @@ class _OutlinedAction extends StatelessWidget {
       height: 52,
       child: OutlinedButton.icon(
         onPressed: onPressed,
-        icon: Icon(icon, color: AppColors.purpleLight, size: 18),
+        icon: Icon(icon, color: HomeColors.accentText, size: 18),
         label: FittedBox(
           fit: BoxFit.scaleDown,
-          child: Text(label, style: const TextStyle(color: AppColors.purpleLight, fontWeight: FontWeight.w700, fontSize: 14)),
+          child: Text(label, style: TextStyle(color: HomeColors.accentText, fontWeight: FontWeight.w700, fontSize: 14)),
         ),
         style: OutlinedButton.styleFrom(
           backgroundColor: HomeColors.cardBackground,
@@ -896,7 +911,7 @@ class _IncomingOrdersCard extends StatelessWidget {
                 ),
                 child: Icon(
                   Icons.shopping_bag_outlined,
-                  color: hasPending ? AppColors.purpleLight : HomeColors.textSecondary,
+                  color: hasPending ? HomeColors.accentText : HomeColors.textSecondary,
                   size: 22,
                 ),
               ),
@@ -933,7 +948,7 @@ class _IncomingOrdersCard extends StatelessWidget {
                           child: const Text(
                             'NEW',
                             style: TextStyle(
-                              color: Colors.black,
+                              color: Colors.white,
                               fontSize: 9,
                               fontWeight: FontWeight.w900,
                             ),
@@ -948,7 +963,7 @@ class _IncomingOrdersCard extends StatelessWidget {
                         ? 'Tap to review, accept, or counter-offer'
                         : 'Review incoming customer carts and orders',
                     style: TextStyle(
-                      color: hasPending ? AppColors.purpleLight : HomeColors.textSecondary,
+                      color: hasPending ? HomeColors.accentText : HomeColors.textSecondary,
                       fontSize: 12,
                       fontWeight: hasPending ? FontWeight.w600 : FontWeight.w400,
                     ),
@@ -964,7 +979,7 @@ class _IncomingOrdersCard extends StatelessWidget {
               ),
               child: Icon(
                 Icons.arrow_forward_ios_rounded,
-                color: hasPending ? AppColors.purpleLight : HomeColors.textSecondary,
+                color: hasPending ? HomeColors.accentText : HomeColors.textSecondary,
                 size: 14,
               ),
             ),
@@ -1004,7 +1019,7 @@ void _showPremiumFeatureDialog(BuildContext context, {required String featureNam
         ],
       ),
       content: Text(
-        '$featureName is exclusive to Premium subscribers. Upgrade now to unlock advanced analytics, smart AI store recommendations, and unlimited products.',
+        '$featureName is exclusive to Premium subscribers. Upgrade now to unlock advanced analytics, business insights & recommendations, and unlimited products.',
         style: TextStyle(color: HomeColors.textSecondary, fontSize: 13, height: 1.4),
       ),
       actions: [

@@ -205,7 +205,7 @@ class ManageCategoriesDialog extends StatelessWidget {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Done', style: TextStyle(color: AppColors.purpleLight)),
+              child: Text('Done', style: TextStyle(color: HomeColors.accentText, fontWeight: FontWeight.bold)),
             ),
           ],
         );

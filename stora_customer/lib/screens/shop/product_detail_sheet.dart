@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import '../../models/product_model.dart';
 import '../../providers/cart_provider.dart';
 import '../../theme/app_theme.dart';
-import '../../theme/theme_controller.dart';
 import '../../widgets/gradient_button.dart';
 import '../../widgets/product_image.dart';
 import '../chat/customer_chat_screen.dart';
@@ -126,8 +125,8 @@ class _ProductDetailSheetState extends State<ProductDetailSheet> {
                             ),
                             child: Text(
                               product.categoryName,
-                              style: const TextStyle(
-                                color: AppColors.primaryLight,
+                              style: TextStyle(
+                                color: AppColors.accentText,
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -246,7 +245,7 @@ class _ProductDetailSheetState extends State<ProductDetailSheet> {
                             child: Row(
                               children: [
                                 IconButton(
-                                  icon: const Icon(Icons.remove, color: Colors.white, size: 18),
+                                  icon: Icon(Icons.remove, color: _quantity > 1 ? AppColors.textPrimary : AppColors.textMuted, size: 18),
                                   onPressed: _quantity > 1
                                       ? () => setState(() => _quantity--)
                                       : null,
@@ -255,15 +254,15 @@ class _ProductDetailSheetState extends State<ProductDetailSheet> {
                                   padding: const EdgeInsets.symmetric(horizontal: 12),
                                   child: Text(
                                     '$_quantity',
-                                    style: const TextStyle(
-                                      color: Colors.white,
+                                    style: TextStyle(
+                                      color: AppColors.textPrimary,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 16,
                                     ),
                                   ),
                                 ),
                                 IconButton(
-                                  icon: const Icon(Icons.add, color: Colors.white, size: 18),
+                                  icon: Icon(Icons.add, color: _quantity < maxAvailable ? AppColors.textPrimary : AppColors.textMuted, size: 18),
                                   onPressed: _quantity < maxAvailable
                                       ? () => setState(() => _quantity++)
                                       : null,
@@ -293,7 +292,7 @@ class _ProductDetailSheetState extends State<ProductDetailSheet> {
                                 backgroundColor: AppColors.cardElevated,
                                 action: SnackBarAction(
                                   label: 'Clear & Add',
-                                  textColor: AppColors.primaryLight,
+                                  textColor: AppColors.accentText,
                                   onPressed: () {
                                     cart.clear();
                                     cart.addItem(product, _quantity);
@@ -369,7 +368,7 @@ class _ProductDetailSheetState extends State<ProductDetailSheet> {
                             ),
                           );
                         },
-                        icon: const Icon(Icons.chat_bubble_outline_rounded, size: 16, color: AppColors.primaryLight),
+                        icon: Icon(Icons.chat_bubble_outline_rounded, size: 16, color: AppColors.accentText),
                         label: Text(
                           'Chat with ${product.storeName ?? "Store"}',
                           style: TextStyle(color: AppColors.textPrimary, fontSize: 13, fontWeight: FontWeight.w600),

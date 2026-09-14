@@ -10,6 +10,7 @@ import '../stores/cart_store.dart';
 import '../stores/inventory_store.dart';
 import '../stores/sales_store.dart';
 import '../theme/home_colors.dart';
+import '../theme/theme_mode_controller.dart';
 import '../widgets/category_filter_row.dart';
 import '../widgets/product_image_widget.dart';
 import '../widgets/receipt_dialog.dart';
@@ -161,7 +162,12 @@ class _PosScreenState extends State<PosScreen> {
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: Listenable.merge([InventoryStore.instance, CartStore.instance, AccountStatusStore.instance]),
+      animation: Listenable.merge([
+        InventoryStore.instance,
+        CartStore.instance,
+        AccountStatusStore.instance,
+        ThemeModeController.instance,
+      ]),
       builder: (context, _) {
         final categoryFiltered = _selectedCategory == 'All'
             ? InventoryStore.instance.products
@@ -346,19 +352,19 @@ class _PosScreenState extends State<PosScreen> {
                     children: [
                       Row(
                         children: [
-                          const Text('Total Amount', style: TextStyle(color: AppColors.label, fontSize: 13, fontWeight: FontWeight.w600)),
+                          Text('Total Amount', style: TextStyle(color: HomeColors.textSecondary, fontSize: 13, fontWeight: FontWeight.w600)),
                           const SizedBox(width: 8),
                           if (cart.items.isNotEmpty)
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                               decoration: BoxDecoration(
-                                color: AppColors.fieldBackground,
+                                color: HomeColors.cardElevated,
                                 borderRadius: BorderRadius.circular(10),
                                 border: Border.all(color: HomeColors.cardBorder),
                               ),
                               child: Text(
                                 '${cart.items.fold(0, (sum, i) => sum + i.quantity)} items',
-                                style: const TextStyle(color: AppColors.purpleLight, fontSize: 11, fontWeight: FontWeight.w700),
+                                style: TextStyle(color: HomeColors.accentText, fontSize: 11, fontWeight: FontWeight.w700),
                               ),
                             ),
                         ],
@@ -427,7 +433,7 @@ class _PosProductCard extends StatelessWidget {
                       style: TextStyle(color: HomeColors.textPrimary, fontSize: 12, fontWeight: FontWeight.w700)),
                   const SizedBox(height: 2),
                   Text('₱${product.price.toStringAsFixed(2)}',
-                      style: const TextStyle(color: AppColors.purpleLight, fontSize: 11, fontWeight: FontWeight.w800)),
+                      style: TextStyle(color: HomeColors.accentText, fontSize: 11, fontWeight: FontWeight.w800)),
                 ],
               ),
             ),
