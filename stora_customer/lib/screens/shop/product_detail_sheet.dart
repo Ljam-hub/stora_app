@@ -21,6 +21,7 @@ class ProductDetailSheet extends StatefulWidget {
 
 class _ProductDetailSheetState extends State<ProductDetailSheet> {
   int _quantity = 1;
+  bool _isActionInProgress = false;
 
   @override
   Widget build(BuildContext context) {
@@ -280,58 +281,63 @@ class _ProductDetailSheetState extends State<ProductDetailSheet> {
                       GradientButton(
                         text: 'Add to Cart • ₱${(product.price * _quantity).toStringAsFixed(2)}',
                         icon: Icons.add_shopping_cart,
-                        onPressed: () {
-                          final added = cart.addItem(product, _quantity);
-                          if (!added && cart.isNotEmpty && cart.storeId != product.ownerId) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  'Your cart contains items from another store. Clear cart first?',
-                                  style: TextStyle(color: AppColors.textPrimary),
-                                ),
-                                backgroundColor: AppColors.cardElevated,
-                                action: SnackBarAction(
-                                  label: 'Clear & Add',
-                                  textColor: AppColors.accentText,
-                                  onPressed: () {
-                                    cart.clear();
-                                    cart.addItem(product, _quantity);
-                                    Navigator.pop(context);
-                                  },
-                                ),
-                              ),
-                            );
-                          } else {
-                            Navigator.pop(context);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Row(
-                                  children: [
-                                    const Icon(Icons.check_circle_rounded, color: AppColors.secondaryLight, size: 20),
-                                    const SizedBox(width: 10),
-                                    Expanded(
-                                      child: Text(
-                                        'Added $_quantity "${product.name}" to cart',
-                                        style: TextStyle(
-                                          color: CustomerThemeController.instance.isDarkMode ? Colors.white : const Color(0xFF065F46),
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 13,
-                                        ),
+                        onPressed: _isActionInProgress
+                            ? null
+                            : () {
+                                if (_isActionInProgress) return;
+                                setState(() => _isActionInProgress = true);
+                                final added = cart.addItem(product, _quantity);
+                                if (!added && cart.isNotEmpty && cart.storeId != product.ownerId) {
+                                  setState(() => _isActionInProgress = false);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        'Your cart contains items from another store. Clear cart first?',
+                                        style: TextStyle(color: AppColors.textPrimary),
+                                      ),
+                                      backgroundColor: AppColors.cardElevated,
+                                      action: SnackBarAction(
+                                        label: 'Clear & Add',
+                                        textColor: AppColors.accentText,
+                                        onPressed: () {
+                                          cart.clear();
+                                          cart.addItem(product, _quantity);
+                                          Navigator.pop(context);
+                                        },
                                       ),
                                     ),
-                                  ],
-                                ),
-                                backgroundColor: AppColors.successBg,
-                                behavior: SnackBarBehavior.floating,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  side: BorderSide(color: AppColors.secondary.withValues(alpha: 0.4)),
-                                ),
-                                duration: const Duration(seconds: 2),
-                              ),
-                            );
-                          }
-                        },
+                                  );
+                                } else {
+                                  Navigator.pop(context);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Row(
+                                        children: [
+                                          const Icon(Icons.check_circle_rounded, color: AppColors.secondaryLight, size: 20),
+                                          const SizedBox(width: 10),
+                                          Expanded(
+                                            child: Text(
+                                              'Added $_quantity "${product.name}" to cart',
+                                              style: TextStyle(
+                                                color: CustomerThemeController.instance.isDarkMode ? Colors.white : const Color(0xFF065F46),
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: 13,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      backgroundColor: AppColors.successBg,
+                                      behavior: SnackBarBehavior.floating,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        side: BorderSide(color: AppColors.secondary.withValues(alpha: 0.4)),
+                                      ),
+                                      duration: const Duration(seconds: 2),
+                                    ),
+                                  );
+                                }
+                              },
                       )
                     else
                       Container(
@@ -356,18 +362,22 @@ class _ProductDetailSheetState extends State<ProductDetailSheet> {
                     if (product.ownerId != null) ...[
                       const SizedBox(height: 12),
                       OutlinedButton.icon(
-                        onPressed: () {
-                          Navigator.pop(context);
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => CustomerChatScreen(
-                                storeOwnerId: product.ownerId!,
-                                storeName: product.storeName ?? 'Store Owner',
-                                storeAvatarUrl: product.storeAvatarUrl,
-                              ),
-                            ),
-                          );
-                        },
+                        onPressed: _isActionInProgress
+                            ? null
+                            : () {
+                                if (_isActionInProgress) return;
+                                setState(() => _isActionInProgress = true);
+                                Navigator.pop(context);
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => CustomerChatScreen(
+                                      storeOwnerId: product.ownerId!,
+                                      storeName: product.storeName ?? 'Store Owner',
+                                      storeAvatarUrl: product.storeAvatarUrl,
+                                    ),
+                                  ),
+                                );
+                              },
                         icon: Icon(Icons.chat_bubble_outline_rounded, size: 16, color: AppColors.accentText),
                         label: Text(
                           'Chat with ${product.storeName ?? "Store"}',

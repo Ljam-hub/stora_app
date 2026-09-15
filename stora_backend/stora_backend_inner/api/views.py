@@ -908,6 +908,9 @@ class OrderViewSet(viewsets.ModelViewSet):
             return Order.objects.filter(customer=user).prefetch_related("items")
 
     def perform_create(self, serializer):
+        owner = serializer.validated_data.get("owner")
+        if owner and hasattr(owner, "location") and not owner.location.is_open:
+            raise serializers.ValidationError({"error": "This store is currently closed and not accepting orders."})
         order = serializer.save()
         notify_order_status_change(order, "created")
 
@@ -1027,6 +1030,7 @@ def list_stores(request):
         lng = loc.longitude if loc else 120.9842
         address = loc.address if loc else ""
         is_visible = loc.is_visible if loc else True
+        is_open = loc.is_open if loc else True
 
         if not is_visible:
             continue
@@ -1045,6 +1049,7 @@ def list_stores(request):
             "longitude": lng,
             "address": address,
             "distance_km": distance_km,
+            "is_open": is_open,
         })
 
     if user_lat is not None and user_lng is not None:
@@ -1068,6 +1073,7 @@ def store_location(request):
             "longitude": 120.9842,
             "address": "Metro Manila, Philippines",
             "is_visible": True,
+            "is_open": True,
         }
     )
 

@@ -36,12 +36,32 @@ class SalesStore extends ChangeNotifier {
   bool _recording = false;
   bool get recording => _recording;
 
-  Future<Sale> recordSale(List<CartItem> items, double total) async {
+  Future<Sale> recordSale(
+    List<CartItem> items,
+    double total, {
+    double? cashTendered,
+    double? changeAmount,
+  }) async {
     if (_recording) {
       throw ApiException('A sale is already being processed.');
     }
     _recording = true;
     Sale sale;
+    final hasLocalItems = items.any((it) => it.product.id.startsWith('local-') || int.tryParse(it.product.id) == null);
+    if (hasLocalItems) {
+      try {
+        sale = await _recordOfflineSale(
+          items,
+          total,
+          cashTendered: cashTendered,
+          changeAmount: changeAmount,
+        );
+      } finally {
+        _recording = false;
+      }
+      notifyListeners();
+      return sale;
+    }
     try {
       final created = Sale.fromJson(
         await _api.createSale({
@@ -55,17 +75,31 @@ class SalesStore extends ChangeNotifier {
               .toList(),
         }),
       );
-      _sales.add(created);
-      await _db.salesDao.upsertSale(created);
+      final withCashDetails = created.copyWith(
+        cashTendered: cashTendered,
+        changeAmount: changeAmount,
+      );
+      _sales.add(withCashDetails);
+      await _db.salesDao.upsertSale(withCashDetails);
       await InventoryStore.instance.loadProducts();
-      sale = created;
+      sale = withCashDetails;
     } on ApiException catch (e) {
       if (e.statusCode != null && e.statusCode! < 500) {
         rethrow;
       }
-      sale = await _recordOfflineSale(items, total);
+      sale = await _recordOfflineSale(
+        items,
+        total,
+        cashTendered: cashTendered,
+        changeAmount: changeAmount,
+      );
     } catch (_) {
-      sale = await _recordOfflineSale(items, total);
+      sale = await _recordOfflineSale(
+        items,
+        total,
+        cashTendered: cashTendered,
+        changeAmount: changeAmount,
+      );
     } finally {
       _recording = false;
     }
@@ -73,12 +107,19 @@ class SalesStore extends ChangeNotifier {
     return sale;
   }
 
-  Future<Sale> _recordOfflineSale(List<CartItem> items, double total) async {
+  Future<Sale> _recordOfflineSale(
+    List<CartItem> items,
+    double total, {
+    double? cashTendered,
+    double? changeAmount,
+  }) async {
     final local = Sale(
       id: 'local-${DateTime.now().microsecondsSinceEpoch}',
       date: DateTime.now(),
       items: items.map((i) => CartItem(product: i.product, quantity: i.quantity)).toList(),
       total: total,
+      cashTendered: cashTendered,
+      changeAmount: changeAmount,
     );
     _sales.add(local);
     await _db.salesDao.upsertSale(local);

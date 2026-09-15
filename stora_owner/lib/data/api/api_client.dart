@@ -591,26 +591,44 @@ class ApiClient {
   Future<Map<String, dynamic>> getStoreLocation() async {
     final response = await _send('GET', '/stores/my-location/');
     if (response.statusCode != 200) _throw(response);
-    return _decode(response) as Map<String, dynamic>;
+    final decoded = _decode(response);
+    if (decoded is Map<String, dynamic>) return decoded;
+    if (decoded is Map) return Map<String, dynamic>.from(decoded);
+    return <String, dynamic>{};
   }
 
   Future<Map<String, dynamic>> updateStoreLocation({
     required double latitude,
     required double longitude,
     required String address,
+    bool? isOpen,
   }) async {
+    final body = <String, dynamic>{
+      'latitude': latitude,
+      'longitude': longitude,
+      'address': address,
+      'is_visible': true,
+    };
+    if (isOpen != null) body['is_open'] = isOpen;
+    final response = await _send('PUT', '/stores/my-location/', body: body);
+    if (response.statusCode != 200) _throw(response);
+    final decoded = _decode(response);
+    if (decoded is Map<String, dynamic>) return decoded;
+    if (decoded is Map) return Map<String, dynamic>.from(decoded);
+    return <String, dynamic>{};
+  }
+
+  Future<Map<String, dynamic>> updateStoreOpenStatus(bool isOpen) async {
     final response = await _send(
       'PUT',
       '/stores/my-location/',
-      body: {
-        'latitude': latitude,
-        'longitude': longitude,
-        'address': address,
-        'is_visible': true,
-      },
+      body: {'is_open': isOpen},
     );
     if (response.statusCode != 200) _throw(response);
-    return _decode(response) as Map<String, dynamic>;
+    final decoded = _decode(response);
+    if (decoded is Map<String, dynamic>) return decoded;
+    if (decoded is Map) return Map<String, dynamic>.from(decoded);
+    return <String, dynamic>{};
   }
 
   // ---------- Business Store Insights ----------

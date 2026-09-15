@@ -154,6 +154,30 @@ class ReceiptService {
                   ),
                 ],
               ),
+              if (sale.cashTendered != null) ...[
+                pw.SizedBox(height: 2),
+                pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Text('CASH TENDERED:', style: const pw.TextStyle(fontSize: 7)),
+                    pw.Text(
+                      'PHP ${sale.cashTendered!.toStringAsFixed(2)}',
+                      style: const pw.TextStyle(fontSize: 7),
+                    ),
+                  ],
+                ),
+                pw.SizedBox(height: 1),
+                pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Text('CHANGE (SUKLI):', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold)),
+                    pw.Text(
+                      'PHP ${(sale.changeAmount ?? (sale.cashTendered! - sale.total)).clamp(0.0, double.infinity).toStringAsFixed(2)}',
+                      style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold),
+                    ),
+                  ],
+                ),
+              ],
               pw.Divider(thickness: 0.5, borderStyle: pw.BorderStyle.dashed),
 
               // Footer
@@ -183,7 +207,7 @@ class ReceiptService {
     final pdfBytes = await generateReceiptPdf(sale, businessName: businessName);
     await Printing.layoutPdf(
       onLayout: (PdfPageFormat format) async => pdfBytes,
-      name: 'Receipt_${sale.id}.pdf',
+      name: 'Receipt_${sale.id.replaceAll(RegExp(r'[^a-zA-Z0-9_\-]'), '_')}.pdf',
     );
   }
 
@@ -191,7 +215,8 @@ class ReceiptService {
   Future<void> shareReceipt(Sale sale, {String? businessName}) async {
     final pdfBytes = await generateReceiptPdf(sale, businessName: businessName);
     final output = await getTemporaryDirectory();
-    final file = File('${output.path}/receipt_${sale.id}.pdf');
+    final safeId = sale.id.replaceAll(RegExp(r'[^a-zA-Z0-9_\-]'), '_');
+    final file = File('${output.path}/receipt_$safeId.pdf');
     await file.writeAsBytes(pdfBytes);
 
     await Share.shareXFiles(
@@ -450,7 +475,7 @@ class ReceiptService {
       expiresAt: expiresAt,
     );
     final output = await getTemporaryDirectory();
-    final file = File('${output.path}/stora_subscription_receipt.pdf');
+    final file = File('${output.path}/stora_subscription_receipt_${DateTime.now().millisecondsSinceEpoch}.pdf');
     await file.writeAsBytes(pdfBytes);
 
     await Share.shareXFiles(

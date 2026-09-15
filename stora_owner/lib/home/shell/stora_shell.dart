@@ -15,6 +15,7 @@ import '../stores/chat_store.dart';
 import '../stores/inventory_store.dart';
 import '../stores/orders_store.dart';
 import '../stores/sales_store.dart';
+import '../stores/store_status_store.dart';
 import '../theme/home_colors.dart';
 import '../theme/theme_mode_controller.dart';
 import '../widgets/notification_badge.dart';
@@ -52,6 +53,7 @@ class _StoraShellState extends State<StoraShell> {
     OrdersStore.instance.startPolling();
     ChatStore.instance.fetchConversations();
     ChatStore.instance.startPolling();
+    StoreStatusStore.instance.fetchStatus();
     OwnerNotificationService.instance.init();
 
     OrdersStore.instance.onNewOrderReceived = (order) {

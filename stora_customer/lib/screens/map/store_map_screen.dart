@@ -29,6 +29,9 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
   StoreModel? _selectedStore;
   String _searchFilter = '';
 
+  bool _isRecentering = false;
+  bool _isShowingStoresSheet = false;
+
   // Radar beacon pulse animation
   late final AnimationController _pulseAnim;
 
@@ -96,11 +99,14 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
       }
 
       if (position != null && mounted) {
+        final pos = position;
         setState(() {
-          _userLat = position!.latitude;
-          _userLng = position.longitude;
+          _userLat = pos.latitude;
+          _userLng = pos.longitude;
         });
-        _mapController.move(LatLng(_userLat, _userLng), 15.0);
+        try {
+          _mapController.move(LatLng(_userLat, _userLng), 15.0);
+        } catch (_) {}
       }
     } catch (_) {
       // Fallback
@@ -125,6 +131,9 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
   }
 
   void _recenter() async {
+    if (_isRecentering) return;
+    _isRecentering = true;
+
     final messenger = ScaffoldMessenger.of(context);
     messenger.hideCurrentSnackBar();
     messenger.showSnackBar(
@@ -145,51 +154,68 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
       ),
     );
 
-    String? errorMessage;
-    final position = await LocationService.instance.getCurrentPosition(
-      onError: (err) => errorMessage = err,
-    );
-
-    if (!mounted) return;
-    messenger.hideCurrentSnackBar();
-
-    if (position != null) {
-      setState(() {
-        _userLat = position.latitude;
-        _userLng = position.longitude;
-      });
-      _mapController.move(LatLng(_userLat, _userLng), 16.0);
-      _fetchStores();
-      messenger.showSnackBar(
-        const SnackBar(
-          duration: Duration(seconds: 2),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: AppColors.success,
-          content: Text('Centered to your location!'),
-        ),
+    try {
+      String? errorMessage;
+      final position = await LocationService.instance.getCurrentPosition(
+        onError: (err) => errorMessage = err,
       );
-    } else {
-      messenger.showSnackBar(
-        SnackBar(
-          duration: const Duration(seconds: 4),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: AppColors.danger,
-          content: Text(errorMessage ?? 'Could not determine your location. Please enable GPS.'),
-        ),
-      );
+
+      if (!mounted) return;
+      messenger.hideCurrentSnackBar();
+
+      if (position != null) {
+        setState(() {
+          _userLat = position.latitude;
+          _userLng = position.longitude;
+        });
+        try {
+          _mapController.move(LatLng(_userLat, _userLng), 16.0);
+        } catch (_) {}
+        _fetchStores();
+        messenger.showSnackBar(
+          const SnackBar(
+            duration: Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: AppColors.success,
+            content: Text('Centered to your location!'),
+          ),
+        );
+      } else {
+        messenger.showSnackBar(
+          SnackBar(
+            duration: const Duration(seconds: 4),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: AppColors.danger,
+            content: Text(errorMessage ?? 'Could not determine your location. Please enable GPS.'),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isRecentering = false;
+        });
+      } else {
+        _isRecentering = false;
+      }
     }
   }
 
   void _zoom(double delta) {
-    final newZoom = (_mapController.camera.zoom + delta).clamp(1.0, 20.0);
-    _mapController.move(_mapController.camera.center, newZoom);
+    try {
+      final newZoom = (_mapController.camera.zoom + delta).clamp(1.0, 20.0);
+      _mapController.move(_mapController.camera.center, newZoom);
+    } catch (_) {}
   }
 
   void _onStoreSelected(StoreModel store, int index, {bool animatePage = true}) {
     setState(() {
       _selectedStore = store;
     });
-    _mapController.move(LatLng(store.latitude, store.longitude), _mapController.camera.zoom);
+    try {
+      final zoom = _mapController.camera.zoom;
+      _mapController.move(LatLng(store.latitude, store.longitude), zoom);
+    } catch (_) {}
     if (animatePage && _pageController.hasClients) {
       _pageController.animateToPage(
         index,
@@ -199,10 +225,14 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
     }
   }
 
-  void _showAllStoresSheet(BuildContext context, List<StoreModel> stores) {
+  void _showAllStoresSheet(BuildContext context, List<StoreModel> stores) async {
+    if (_isShowingStoresSheet) return;
+    _isShowingStoresSheet = true;
+
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    showModalBottomSheet(
+    try {
+      await showModalBottomSheet(
       context: context,
       backgroundColor: isDark ? AppColors.cardBackground : Colors.white,
       shape: const RoundedRectangleBorder(
@@ -280,12 +310,38 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
                               ),
                               child: const Icon(Icons.storefront_rounded, color: Colors.white, size: 22),
                             ),
-                            title: Text(
-                              s.displayName,
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: isDark ? Colors.white : Colors.black87,
-                              ),
+                            title: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    s.displayName,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: isDark ? Colors.white : Colors.black87,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: s.isOpen
+                                        ? AppColors.success.withValues(alpha: 0.15)
+                                        : AppColors.danger.withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    s.isOpen ? 'Open' : 'Closed',
+                                    style: TextStyle(
+                                      color: s.isOpen ? AppColors.success : AppColors.danger,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                             subtitle: Text(
                               s.address.isNotEmpty ? s.address : dist,
@@ -318,6 +374,9 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
         );
       },
     );
+    } finally {
+      _isShowingStoresSheet = false;
+    }
   }
 
   @override
@@ -334,9 +393,9 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
           s.address.toLowerCase().contains(q);
     }).toList();
 
-    if (_selectedStore == null && filteredStores.isNotEmpty) {
-      _selectedStore = filteredStores.first;
-    }
+    final activeStore = (_selectedStore != null && filteredStores.any((s) => s.id == _selectedStore!.id))
+        ? _selectedStore
+        : (filteredStores.isNotEmpty ? filteredStores.first : null);
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF0E0B14) : const Color(0xFFE2E8F0),
@@ -369,7 +428,7 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
                       alignment: Alignment.topCenter,
                       child: _buildStorePin(
                         store: filteredStores[i],
-                        isSelected: _selectedStore?.id == filteredStores[i].id,
+                        isSelected: activeStore?.id == filteredStores[i].id,
                         index: i,
                       ),
                     ),
@@ -631,7 +690,7 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
                   },
                   itemBuilder: (ctx, i) {
                     final store = filteredStores[i];
-                    final isSelected = _selectedStore?.id == store.id;
+                    final isSelected = activeStore?.id == store.id;
 
                     return Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
@@ -692,7 +751,7 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
                 children: [
                   Flexible(
                     child: Text(
-                      store.displayName,
+                      store.isOpen ? store.displayName : '${store.displayName} (Closed)',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 10,
@@ -1006,7 +1065,14 @@ class _StoreCarouselCard extends StatelessWidget {
                     const SizedBox(width: 6),
                     Container(width: 3, height: 3, decoration: BoxDecoration(color: AppColors.textMuted, shape: BoxShape.circle)),
                     const SizedBox(width: 6),
-                    Text('Open', style: TextStyle(color: AppColors.successText, fontSize: 11, fontWeight: FontWeight.w700)),
+                    Text(
+                      store.isOpen ? 'Open' : 'Closed',
+                      style: TextStyle(
+                        color: store.isOpen ? AppColors.successText : AppColors.danger,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                   ],
                 ),
                 if (store.address.isNotEmpty) ...[

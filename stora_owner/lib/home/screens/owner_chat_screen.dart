@@ -1609,7 +1609,7 @@ class _OwnerChatThreadScreenState extends State<OwnerChatThreadScreen> {
                   ),
                   Text(
                     _isSupportChat
-                        ? 'Official Support • Online'
+                        ? 'Official Support'
                         : (_isBlocked
                             ? 'Blocked'
                             : ((widget.customerEmail != null && widget.customerEmail!.isNotEmpty)

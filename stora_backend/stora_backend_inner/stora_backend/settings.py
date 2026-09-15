@@ -11,12 +11,14 @@ try:
     import dj_database_url
 except ImportError:
     dj_database_url = None
-from dotenv import load_dotenv
-
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Load .env file
-load_dotenv(BASE_DIR / ".env")
+# Load .env file safely
+try:
+    from dotenv import load_dotenv
+    load_dotenv(BASE_DIR / ".env")
+except ImportError:
+    pass
 
 SECRET_KEY = os.getenv("SECRET_KEY", os.getenv("Secret_Key", "dev-insecure-secret-key-change-me"))
 

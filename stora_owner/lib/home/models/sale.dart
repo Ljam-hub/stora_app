@@ -8,12 +8,35 @@ class Sale {
   final List<CartItem> items;
   final double total;
 
+  final double? cashTendered;
+  final double? changeAmount;
+
   Sale({
     required this.id,
     required this.date,
     required this.items,
     required this.total,
+    this.cashTendered,
+    this.changeAmount,
   });
+
+  Sale copyWith({
+    String? id,
+    DateTime? date,
+    List<CartItem>? items,
+    double? total,
+    double? cashTendered,
+    double? changeAmount,
+  }) {
+    return Sale(
+      id: id ?? this.id,
+      date: date ?? this.date,
+      items: items ?? this.items,
+      total: total ?? this.total,
+      cashTendered: cashTendered ?? this.cashTendered,
+      changeAmount: changeAmount ?? this.changeAmount,
+    );
+  }
 
   /// Create a [Sale] from a JSON map returned by the Django API.
   factory Sale.fromJson(Map<String, dynamic> json) {
@@ -70,11 +93,23 @@ class Sale {
         ? rawTotal.toDouble()
         : (double.tryParse(rawTotal?.toString() ?? '0') ?? 0.0);
 
+    final rawTendered = json['cash_tendered'];
+    final cashTendered = (rawTendered is num)
+        ? rawTendered.toDouble()
+        : (rawTendered != null ? double.tryParse(rawTendered.toString()) : null);
+
+    final rawChange = json['change_amount'];
+    final changeAmount = (rawChange is num)
+        ? rawChange.toDouble()
+        : (rawChange != null ? double.tryParse(rawChange.toString()) : null);
+
     return Sale(
       id: json['id']?.toString() ?? '',
       date: parsedDate,
       items: items,
       total: total,
+      cashTendered: cashTendered,
+      changeAmount: changeAmount,
     );
   }
 
@@ -82,6 +117,8 @@ class Sale {
   Map<String, dynamic> toJson() {
     return {
       'total': total.toStringAsFixed(2),
+      if (cashTendered != null) 'cash_tendered': cashTendered!.toStringAsFixed(2),
+      if (changeAmount != null) 'change_amount': changeAmount!.toStringAsFixed(2),
       'items': items
           .map((item) => <String, dynamic>{
                 'product_name': item.product.name,

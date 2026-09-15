@@ -292,6 +292,7 @@ class StoreLocation(models.Model):
     longitude = models.FloatField(default=120.9842)
     address = models.CharField(max_length=255, blank=True, default="")
     is_visible = models.BooleanField(default=True)
+    is_open = models.BooleanField(default=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):

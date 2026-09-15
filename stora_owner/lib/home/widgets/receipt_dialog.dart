@@ -11,12 +11,20 @@ class ReceiptDialog extends StatefulWidget {
 
   const ReceiptDialog({super.key, required this.sale});
 
-  static Future<void> show(BuildContext context, Sale sale) {
-    return showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => ReceiptDialog(sale: sale),
-    );
+  static bool _isShowing = false;
+
+  static Future<void> show(BuildContext context, Sale sale) async {
+    if (_isShowing) return;
+    _isShowing = true;
+    try {
+      await showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => ReceiptDialog(sale: sale),
+      );
+    } finally {
+      _isShowing = false;
+    }
   }
 
   @override
@@ -29,7 +37,8 @@ class _ReceiptDialogState extends State<ReceiptDialog> {
   @override
   Widget build(BuildContext context) {
     final sale = widget.sale;
-    final businessName = AuthStore.instance.businessName ?? 'Stora Store';
+    final bName = AuthStore.instance.businessName?.trim();
+    final businessName = (bName != null && bName.isNotEmpty) ? bName : 'Stora Store';
     final dateFormat = DateFormat('MMM dd, yyyy • hh:mm a');
     final formattedDate = dateFormat.format(toManila(sale.date));
 
@@ -134,15 +143,34 @@ class _ReceiptDialogState extends State<ReceiptDialog> {
                             style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.w600, fontSize: 12)),
                       ],
                     ),
-                    const SizedBox(height: 6),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text('Total Paid', style: TextStyle(color: Colors.black, fontSize: 15, fontWeight: FontWeight.w800)),
+                        const Text('Total Amount', style: TextStyle(color: Colors.black, fontSize: 15, fontWeight: FontWeight.w800)),
                         Text('₱${sale.total.toStringAsFixed(2)}',
                             style: const TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.w900)),
                       ],
                     ),
+                    if (sale.cashTendered != null) ...[
+                      const SizedBox(height: 6),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Cash Tendered', style: TextStyle(color: Colors.black54, fontSize: 12)),
+                          Text('₱${sale.cashTendered!.toStringAsFixed(2)}',
+                              style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.w600, fontSize: 12)),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Change (Sukli)', style: TextStyle(color: Color(0xFF2E7D32), fontSize: 13, fontWeight: FontWeight.w700)),
+                          Text('₱${(sale.changeAmount ?? (sale.cashTendered! - sale.total)).clamp(0.0, double.infinity).toStringAsFixed(2)}',
+                              style: const TextStyle(color: Color(0xFF2E7D32), fontSize: 14, fontWeight: FontWeight.w800)),
+                        ],
+                      ),
+                    ],
                     const SizedBox(height: 16),
                     const Text('Thank you for shopping with us!',
                         style: TextStyle(color: Colors.black45, fontSize: 11, fontStyle: FontStyle.italic)),

@@ -1,0 +1,663 @@
+import 'dart:convert';
+import 'dart:math' as math;
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:http/http.dart' as http;
+import 'package:latlong2/latlong.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+import '../stores/store_status_store.dart';
+import '../theme/home_colors.dart';
+
+class CustomerLocationMapSheet extends StatefulWidget {
+  final int orderId;
+  final String customerName;
+  final String customerAddress;
+  final String? customerPhone;
+
+  const CustomerLocationMapSheet({
+    super.key,
+    required this.orderId,
+    required this.customerName,
+    required this.customerAddress,
+    this.customerPhone,
+  });
+
+  static bool _isShowing = false;
+
+  static Future<void> show(
+    BuildContext context, {
+    required int orderId,
+    required String customerName,
+    required String customerAddress,
+    String? customerPhone,
+  }) async {
+    if (_isShowing) return;
+    _isShowing = true;
+    try {
+      await showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (_) => CustomerLocationMapSheet(
+          orderId: orderId,
+          customerName: customerName,
+          customerAddress: customerAddress,
+          customerPhone: customerPhone,
+        ),
+      );
+    } finally {
+      _isShowing = false;
+    }
+  }
+
+  @override
+  State<CustomerLocationMapSheet> createState() => _CustomerLocationMapSheetState();
+}
+
+class _CustomerLocationMapSheetState extends State<CustomerLocationMapSheet> {
+  final _mapController = MapController();
+  bool _isResolving = true;
+  String? _resolveError;
+  LatLng? _customerPoint;
+  LatLng? _storePoint;
+  double? _distanceKm;
+
+  @override
+  void initState() {
+    super.initState();
+    _initCoordinates();
+  }
+
+  @override
+  void dispose() {
+    _mapController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _initCoordinates() async {
+    final storeStore = StoreStatusStore.instance;
+    _storePoint = LatLng(storeStore.latitude, storeStore.longitude);
+
+    final addr = widget.customerAddress.trim();
+    if (addr.isEmpty) {
+      setState(() {
+        _isResolving = false;
+        _resolveError = 'Customer has not specified a delivery address.';
+        _customerPoint = _storePoint;
+      });
+      return;
+    }
+
+    // 1. Check if the address string directly contains coordinates (e.g., "14.5995, 120.9842")
+    final coordRegex = RegExp(r'(-?\d+\.\d{3,})\s*,\s*(-?\d+\.\d{3,})');
+    final match = coordRegex.firstMatch(addr);
+    if (match != null) {
+      final g1 = match.group(1);
+      final g2 = match.group(2);
+      if (g1 != null && g2 != null) {
+        final lat = double.tryParse(g1);
+        final lng = double.tryParse(g2);
+        if (lat != null && lng != null) {
+          _setPoints(LatLng(lat, lng));
+          return;
+        }
+      }
+    }
+
+    // 2. Geocode address via OpenStreetMap Nominatim
+    try {
+      final uri = Uri.parse(
+        'https://nominatim.openstreetmap.org/search?q=${Uri.encodeComponent(addr)}&format=json&countrycodes=ph&limit=1',
+      );
+      final res = await http.get(
+        uri,
+        headers: {'User-Agent': 'StoraOwnerApp/1.0 (support@stora.ph)'},
+      ).timeout(const Duration(seconds: 7));
+
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body);
+        if (data is List && data.isNotEmpty && data[0] is Map) {
+          final lat = double.tryParse(data[0]['lat']?.toString() ?? '');
+          final lon = double.tryParse(data[0]['lon']?.toString() ?? '');
+          if (lat != null && lon != null) {
+            _setPoints(LatLng(lat, lon));
+            return;
+          }
+        }
+      }
+    } catch (_) {}
+
+    // Fallback: If forward geocoding did not resolve or timed out, place pin near store
+    final store = _storePoint ?? LatLng(StoreStatusStore.instance.latitude, StoreStatusStore.instance.longitude);
+    final fallback = LatLng(store.latitude + 0.008, store.longitude + 0.008);
+    _setPoints(fallback, isEstimate: true);
+  }
+
+  void _setPoints(LatLng customer, {bool isEstimate = false}) {
+    if (!mounted) return;
+    final store = _storePoint ?? LatLng(StoreStatusStore.instance.latitude, StoreStatusStore.instance.longitude);
+    final dist = _calculateDistanceKm(store, customer);
+    setState(() {
+      _customerPoint = customer;
+      _distanceKm = dist;
+      _isResolving = false;
+      if (isEstimate) {
+        _resolveError = 'Pin approximated from address text. Verify with customer.';
+      }
+    });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _fitMapBounds();
+    });
+  }
+
+  double _calculateDistanceKm(LatLng p1, LatLng p2) {
+    const r = 6371.0; // Earth's radius in km
+    final dLat = (p2.latitude - p1.latitude) * (math.pi / 180.0);
+    final dLon = (p2.longitude - p1.longitude) * (math.pi / 180.0);
+    final a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+        math.cos(p1.latitude * (math.pi / 180.0)) *
+            math.cos(p2.latitude * (math.pi / 180.0)) *
+            math.sin(dLon / 2) *
+            math.sin(dLon / 2);
+    final c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
+    return double.parse((r * c).toStringAsFixed(2));
+  }
+
+  void _fitMapBounds() {
+    if (_storePoint == null || _customerPoint == null) return;
+    try {
+      // Guard against identical points which cause infinite zoom
+      if (_storePoint!.latitude == _customerPoint!.latitude &&
+          _storePoint!.longitude == _customerPoint!.longitude) {
+        _mapController.move(_storePoint!, 15.0);
+        return;
+      }
+      final bounds = LatLngBounds.fromPoints([_storePoint!, _customerPoint!]);
+      _mapController.fitCamera(
+        CameraFit.bounds(
+          bounds: bounds,
+          padding: const EdgeInsets.all(50),
+        ),
+      );
+    } catch (_) {}
+  }
+
+  Future<void> _openExternalNavigation() async {
+    if (_customerPoint == null) return;
+    final lat = _customerPoint!.latitude;
+    final lng = _customerPoint!.longitude;
+    final googleMapsUrl = Uri.parse(
+      'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng',
+    );
+    final geoUrl = Uri.parse('geo:$lat,$lng?q=$lat,$lng(${Uri.encodeComponent(widget.customerName)})');
+
+    try {
+      if (await canLaunchUrl(geoUrl)) {
+        await launchUrl(geoUrl, mode: LaunchMode.externalApplication);
+      } else if (await canLaunchUrl(googleMapsUrl)) {
+        await launchUrl(googleMapsUrl, mode: LaunchMode.externalApplication);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Could not launch navigation application.')),
+          );
+        }
+      }
+    } catch (_) {
+      if (mounted) {
+        try {
+          await launchUrl(googleMapsUrl, mode: LaunchMode.externalApplication);
+        } catch (_) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Could not launch navigation application.')),
+            );
+          }
+        }
+      }
+    }
+  }
+
+  Future<void> _callCustomer() async {
+    final phone = widget.customerPhone?.replaceAll(RegExp(r'[^0-9+]'), '') ?? '';
+    if (phone.isEmpty) return;
+    final telUri = Uri.parse('tel:$phone');
+    try {
+      if (await canLaunchUrl(telUri)) {
+        await launchUrl(telUri);
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not open phone dialer.')),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final height = MediaQuery.of(context).size.height * 0.85;
+
+    return Container(
+      height: height,
+      decoration: BoxDecoration(
+        color: HomeColors.cardBackground,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.4),
+            blurRadius: 25,
+            offset: const Offset(0, -6),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          // Sheet Drag Handle
+          const SizedBox(height: 12),
+          Container(
+            width: 44,
+            height: 4,
+            decoration: BoxDecoration(
+              color: HomeColors.cardBorder,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+
+          // Header
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 12, 16, 12),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: HomeColors.primary.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.delivery_dining_rounded, color: HomeColors.primary, size: 22),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Delivery Location • Order #${widget.orderId}',
+                        style: TextStyle(
+                          color: HomeColors.textPrimary,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      Text(
+                        widget.customerName,
+                        style: TextStyle(color: HomeColors.textSecondary, fontSize: 13),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(Icons.close_rounded, color: HomeColors.textMuted),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+              ],
+            ),
+          ),
+
+          // Warning / Estimate Banner
+          if (_resolveError != null)
+            Container(
+              margin: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: HomeColors.warningBg,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: HomeColors.warningText.withValues(alpha: 0.4)),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline_rounded, color: HomeColors.warningText, size: 16),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      _resolveError!,
+                      style: TextStyle(color: HomeColors.warningText, fontSize: 11, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+          // Map View Area
+          Expanded(
+            child: Stack(
+              children: [
+                if (_customerPoint != null && _storePoint != null)
+                  FlutterMap(
+                    mapController: _mapController,
+                    options: MapOptions(
+                      initialCenter: _customerPoint!,
+                      initialZoom: 14.0,
+                    ),
+                    children: [
+                      TileLayer(
+                        urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                        userAgentPackageName: 'com.example.stora_owner',
+                      ),
+                      // Connector Line
+                      PolylineLayer(
+                        polylines: [
+                          Polyline(
+                            points: [_storePoint!, _customerPoint!],
+                            color: HomeColors.primary.withValues(alpha: 0.8),
+                            strokeWidth: 3.5,
+                            pattern: const StrokePattern.dotted(),
+                          ),
+                        ],
+                      ),
+                      // Markers
+                      MarkerLayer(
+                        markers: [
+                          // Store Marker
+                          Marker(
+                            point: _storePoint!,
+                            width: 100,
+                            height: 60,
+                            alignment: Alignment.center,
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black87,
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: const Text(
+                                    '🏪 Your Store',
+                                    style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Container(
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFF2E7D32),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(Icons.storefront_rounded, color: Colors.white, size: 16),
+                                ),
+                              ],
+                            ),
+                          ),
+                          // Customer Delivery Marker
+                          Marker(
+                            point: _customerPoint!,
+                            width: 130,
+                            height: 66,
+                            alignment: Alignment.center,
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: HomeColors.primary,
+                                    borderRadius: BorderRadius.circular(6),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withValues(alpha: 0.3),
+                                        blurRadius: 4,
+                                      ),
+                                    ],
+                                  ),
+                                  child: Text(
+                                    '📍 ${widget.customerName}',
+                                    style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Container(
+                                  padding: const EdgeInsets.all(7),
+                                  decoration: BoxDecoration(
+                                    color: Colors.redAccent,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: Colors.white, width: 2),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.redAccent.withValues(alpha: 0.5),
+                                        blurRadius: 8,
+                                      ),
+                                    ],
+                                  ),
+                                  child: const Icon(Icons.person_pin_circle_rounded, color: Colors.white, size: 18),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+
+                if (_isResolving)
+                  Container(
+                    color: Colors.black.withValues(alpha: 0.3),
+                    child: const Center(
+                      child: CircularProgressIndicator(color: HomeColors.primary),
+                    ),
+                  ),
+
+                // Floating Map Controls
+                Positioned(
+                  top: 12,
+                  right: 12,
+                  child: Column(
+                    children: [
+                      _MapIconButton(
+                        icon: Icons.fit_screen_rounded,
+                        tooltip: 'Fit route in view',
+                        onTap: _fitMapBounds,
+                      ),
+                      const SizedBox(height: 8),
+                      _MapIconButton(
+                        icon: Icons.storefront_rounded,
+                        tooltip: 'Center store',
+                        onTap: () {
+                          if (_storePoint != null) {
+                            _mapController.move(_storePoint!, 15.0);
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 8),
+                      _MapIconButton(
+                        icon: Icons.person_pin_circle_rounded,
+                        tooltip: 'Center customer',
+                        onTap: () {
+                          if (_customerPoint != null) {
+                            _mapController.move(_customerPoint!, 15.0);
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Distance Badge Overlay
+                if (_distanceKm != null)
+                  Positioned(
+                    top: 12,
+                    left: 12,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.8),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Colors.white24),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.3),
+                            blurRadius: 6,
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.route_rounded, color: Color(0xFF38BDF8), size: 15),
+                          const SizedBox(width: 6),
+                          Text(
+                            '$_distanceKm km from store',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+
+          // Bottom Detail Card
+          Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: HomeColors.cardElevated,
+              border: Border(top: BorderSide(color: HomeColors.cardBorder)),
+            ),
+            child: SafeArea(
+              top: false,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Address
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.location_on_rounded, color: HomeColors.primary, size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Delivery Address',
+                              style: TextStyle(color: HomeColors.textMuted, fontSize: 11, fontWeight: FontWeight.w600),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              widget.customerAddress.isNotEmpty ? widget.customerAddress : 'No address provided',
+                              style: TextStyle(
+                                color: HomeColors.textPrimary,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: Icon(Icons.copy_rounded, color: HomeColors.textMuted, size: 18),
+                        tooltip: 'Copy address',
+                        onPressed: () {
+                          Clipboard.setData(ClipboardData(text: widget.customerAddress));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Address copied to clipboard')),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+
+                  // Actions: Call customer & Google Maps navigation
+                  Row(
+                    children: [
+                      if (widget.customerPhone != null && widget.customerPhone!.trim().isNotEmpty) ...[
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: HomeColors.textPrimary,
+                              side: BorderSide(color: HomeColors.cardBorder),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                            onPressed: _callCustomer,
+                            icon: const Icon(Icons.call_rounded, size: 18),
+                            label: const Text('Call', style: TextStyle(fontWeight: FontWeight.w700)),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                      ],
+                      Expanded(
+                        flex: 2,
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: HomeColors.primary,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            elevation: 2,
+                          ),
+                          onPressed: _openExternalNavigation,
+                          icon: const Icon(Icons.navigation_rounded, size: 18),
+                          label: const Text('Open in Navigation', style: TextStyle(fontWeight: FontWeight.w800)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MapIconButton extends StatelessWidget {
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onTap;
+
+  const _MapIconButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: Colors.black.withValues(alpha: 0.75),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+          side: const BorderSide(color: Colors.white24),
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(10),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Icon(icon, color: Colors.white, size: 18),
+          ),
+        ),
+      ),
+    );
+  }
+}

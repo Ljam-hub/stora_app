@@ -18,6 +18,7 @@ import 'sales_analytics_screen.dart';
 import 'sales_history_screen.dart';
 import 'set_store_location_screen.dart';
 import '../stores/chat_store.dart';
+import '../stores/store_status_store.dart';
 import '../widgets/fade_slide_in.dart';
 import '../widgets/notification_badge.dart';
 
@@ -25,6 +26,20 @@ class DashboardScreen extends StatelessWidget {
   final VoidCallback? onNavigateToChat;
 
   const DashboardScreen({super.key, this.onNavigateToChat});
+
+  static bool _isNavigating = false;
+
+  static Future<T?> safeNavigate<T>(BuildContext context, Widget screen) async {
+    if (_isNavigating) return null;
+    _isNavigating = true;
+    try {
+      return await Navigator.of(context).push<T>(
+        MaterialPageRoute(builder: (_) => screen),
+      );
+    } finally {
+      _isNavigating = false;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,6 +51,7 @@ class DashboardScreen extends StatelessWidget {
         AccountStatusStore.instance,
         OrdersStore.instance,
         ChatStore.instance,
+        StoreStatusStore.instance,
         ThemeModeController.instance,
       ]),
       builder: (context, _) {
@@ -55,6 +71,7 @@ class DashboardScreen extends StatelessWidget {
                 orders.fetchOrders(),
                 ChatStore.instance.fetchConversations(),
                 AccountStatusStore.instance.fetchStatus(),
+                StoreStatusStore.instance.fetchStatus(),
               ]);
             },
             child: SingleChildScrollView(
@@ -73,20 +90,20 @@ class DashboardScreen extends StatelessWidget {
                       ),
                       child: InkWell(
                         borderRadius: BorderRadius.circular(20),
-                        onTap: () => Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => const ProfileScreen(),
-                          ),
-                        ),
-                        child: CircleAvatar(
-                          radius: 20,
-                          backgroundColor: HomeColors.cardElevated,
-                          backgroundImage: (AuthStore.instance.avatarUrl != null && AuthStore.instance.avatarUrl!.isNotEmpty)
-                              ? NetworkImage(AuthStore.instance.avatarUrl!)
-                              : null,
-                          child: (AuthStore.instance.avatarUrl == null || AuthStore.instance.avatarUrl!.isEmpty)
-                              ? const Icon(Icons.storefront_rounded, color: AppColors.purpleLight, size: 20)
-                              : null,
+                        onTap: () => DashboardScreen.safeNavigate(context, const ProfileScreen()),
+                        child: Builder(
+                          builder: (_) {
+                            final avatar = AuthStore.instance.avatarUrl;
+                            final hasAvatar = avatar != null && avatar.isNotEmpty;
+                            return CircleAvatar(
+                              radius: 20,
+                              backgroundColor: HomeColors.cardElevated,
+                              backgroundImage: hasAvatar ? NetworkImage(avatar) : null,
+                              child: !hasAvatar
+                                  ? const Icon(Icons.storefront_rounded, color: AppColors.purpleLight, size: 20)
+                                  : null,
+                            );
+                          },
                         ),
                       ),
                     ),
@@ -117,11 +134,7 @@ class DashboardScreen extends StatelessWidget {
                       ),
                     ),
                     IconButton(
-                      onPressed: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const ProfileScreen(),
-                        ),
-                      ),
+                      onPressed: () => DashboardScreen.safeNavigate(context, const ProfileScreen()),
                       icon: Icon(Icons.settings_outlined, color: HomeColors.textSecondary, size: 22),
                     ),
                   ],
@@ -129,11 +142,14 @@ class DashboardScreen extends StatelessWidget {
                 const SizedBox(height: 14),
                 FadeSlideIn(
                   delay: const Duration(milliseconds: 0),
+                  child: const _StoreOpenClosedCard(),
+                ),
+                const SizedBox(height: 14),
+                FadeSlideIn(
+                  delay: const Duration(milliseconds: 50),
                   child: _IncomingOrdersCard(
                     pendingCount: orders.pendingCount,
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const PendingOrdersScreen()),
-                    ),
+                    onTap: () => DashboardScreen.safeNavigate(context, const PendingOrdersScreen()),
                   ),
                 ),
                 const SizedBox(height: 14),
@@ -146,9 +162,7 @@ class DashboardScreen extends StatelessWidget {
                     badge: sales.changeBadge,
                     isPremium: AccountStatusStore.instance.isPremium,
                     daysLeft: AccountStatusStore.instance.daysLeft,
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const SalesHistoryScreen()),
-                    ),
+                    onTap: () => DashboardScreen.safeNavigate(context, const SalesHistoryScreen()),
                   ),
                 ),
                 const SizedBox(height: 14),
@@ -164,9 +178,7 @@ class DashboardScreen extends StatelessWidget {
                               _showPremiumFeatureDialog(context, featureName: 'Business Insights');
                               return;
                             }
-                            Navigator.of(context).push(
-                              MaterialPageRoute(builder: (_) => const BusinessInsightsScreen()),
-                            );
+                            DashboardScreen.safeNavigate(context, const BusinessInsightsScreen());
                           },
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
@@ -251,9 +263,7 @@ class DashboardScreen extends StatelessWidget {
                       const SizedBox(width: 10),
                       Expanded(
                         child: GestureDetector(
-                          onTap: () => Navigator.of(context).push(
-                            MaterialPageRoute(builder: (_) => const SetStoreLocationScreen()),
-                          ),
+                          onTap: () => DashboardScreen.safeNavigate(context, const SetStoreLocationScreen()),
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                             decoration: BoxDecoration(
@@ -301,9 +311,7 @@ class DashboardScreen extends StatelessWidget {
                         _showPremiumFeatureDialog(context, featureName: 'Sales Analytics & Reports');
                         return;
                       }
-                      Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const SalesAnalyticsScreen()),
-                      );
+                      DashboardScreen.safeNavigate(context, const SalesAnalyticsScreen());
                     },
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -422,9 +430,7 @@ class DashboardScreen extends StatelessWidget {
                             boxShadow: HomeColors.glowShadow(AppColors.purple, opacity: 0.3),
                           ),
                           child: ElevatedButton.icon(
-                            onPressed: () => Navigator.of(context).push(
-                              MaterialPageRoute(builder: (_) => const PosScreen(isStandalone: true)),
-                            ),
+                            onPressed: () => DashboardScreen.safeNavigate(context, const PosScreen(isStandalone: true)),
                             icon: const Icon(Icons.point_of_sale_rounded, color: Colors.white, size: 20),
                             label: const FittedBox(
                               fit: BoxFit.scaleDown,
@@ -446,18 +452,15 @@ class DashboardScreen extends StatelessWidget {
                           icon: Icons.add_circle_outline_rounded,
                           onPressed: () {
                             if (!AccountStatusStore.instance.canAddProduct) {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) => SubscriptionScreen(
-                                    productsUsed: AccountStatusStore.instance.productCount,
-                                    productsLimit: AccountStatusStore.instance.productLimit,
-                                  ),
+                              DashboardScreen.safeNavigate(
+                                context,
+                                SubscriptionScreen(
+                                  productsUsed: AccountStatusStore.instance.productCount,
+                                  productsLimit: AccountStatusStore.instance.productLimit,
                                 ),
                               );
                             } else {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(builder: (_) => const AddEditProductScreen()),
-                              );
+                              DashboardScreen.safeNavigate(context, const AddEditProductScreen());
                             }
                           },
                         ),
@@ -568,9 +571,7 @@ class _EarningsCard extends StatelessWidget {
                         if (isPremium)
                           GestureDetector(
                             behavior: HitTestBehavior.opaque,
-                            onTap: () => Navigator.of(context).push(
-                              MaterialPageRoute(builder: (_) => SubscriptionScreen()),
-                            ),
+                            onTap: () => DashboardScreen.safeNavigate(context, SubscriptionScreen()),
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
                               decoration: BoxDecoration(
@@ -603,9 +604,7 @@ class _EarningsCard extends StatelessWidget {
                         else
                           GestureDetector(
                             behavior: HitTestBehavior.opaque,
-                            onTap: () => Navigator.of(context).push(
-                              MaterialPageRoute(builder: (_) => SubscriptionScreen()),
-                            ),
+                            onTap: () => DashboardScreen.safeNavigate(context, SubscriptionScreen()),
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
                               decoration: BoxDecoration(
@@ -819,10 +818,9 @@ class _FreePlanCard extends StatelessWidget {
                 ),
               ),
               GestureDetector(
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => SubscriptionScreen(productsUsed: current, productsLimit: limit),
-                  ),
+                onTap: () => DashboardScreen.safeNavigate(
+                  context,
+                  SubscriptionScreen(productsUsed: current, productsLimit: limit),
                 ),
                 child: Text(
                   'Upgrade →',
@@ -1036,9 +1034,7 @@ void _showPremiumFeatureDialog(BuildContext context, {required String featureNam
           ),
           onPressed: () {
             Navigator.of(ctx).pop();
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => SubscriptionScreen()),
-            );
+            DashboardScreen.safeNavigate(context, SubscriptionScreen());
           },
           child: const Text('Upgrade to Premium', style: TextStyle(fontWeight: FontWeight.bold)),
         ),
@@ -1046,4 +1042,127 @@ void _showPremiumFeatureDialog(BuildContext context, {required String featureNam
     ),
   );
 }
+
+class _StoreOpenClosedCard extends StatelessWidget {
+  const _StoreOpenClosedCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final storeStatus = StoreStatusStore.instance;
+    final isOpen = storeStatus.isOpen;
+    final isUpdating = storeStatus.isUpdating;
+
+    return Material(
+      color: Colors.transparent,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: isOpen
+              ? HomeColors.chartGreen.withValues(alpha: 0.12)
+              : HomeColors.dangerText.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isOpen
+                ? HomeColors.chartGreen.withValues(alpha: 0.35)
+                : HomeColors.dangerText.withValues(alpha: 0.35),
+            width: 1.2,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: isOpen
+                    ? HomeColors.chartGreen.withValues(alpha: 0.15)
+                    : HomeColors.dangerText.withValues(alpha: 0.15),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                isOpen ? Icons.storefront_rounded : Icons.store_mall_directory_outlined,
+                color: isOpen ? HomeColors.chartGreen : HomeColors.dangerText,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: isOpen ? HomeColors.chartGreen : HomeColors.dangerText,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        isOpen ? 'Store is OPEN' : 'Store is CLOSED',
+                        style: TextStyle(
+                          color: isOpen ? HomeColors.chartGreen : HomeColors.dangerText,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    isOpen
+                        ? 'Accepting online orders from customers'
+                        : 'Orders paused. Customers see store as closed',
+                    style: TextStyle(
+                      color: HomeColors.textSecondary,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (isUpdating)
+              const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            else
+              Transform.scale(
+                scale: 0.85,
+                child: Switch.adaptive(
+                  value: isOpen,
+                  activeTrackColor: HomeColors.chartGreen,
+                  inactiveThumbColor: HomeColors.dangerText,
+                  inactiveTrackColor: HomeColors.dangerText.withValues(alpha: 0.25),
+                  onChanged: (val) async {
+                    try {
+                      await storeStatus.setOpenStatus(val);
+                      if (context.mounted) {
+                        showStoraSnackBar(
+                          context,
+                          val
+                              ? 'Store is now OPEN for customer orders'
+                              : 'Store is now CLOSED. Incoming customer orders paused',
+                          isError: false,
+                        );
+                      }
+                    } catch (e) {
+                      if (context.mounted) {
+                        showStoraSnackBar(context, 'Failed to update store status: $e');
+                      }
+                    }
+                  },
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 

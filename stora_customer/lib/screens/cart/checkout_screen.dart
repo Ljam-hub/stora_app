@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/cart_provider.dart';
+import '../../providers/catalog_provider.dart';
 import '../../providers/order_provider.dart';
 import '../../services/location_service.dart';
 import '../../theme/app_theme.dart';
@@ -100,7 +101,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   Future<void> _handlePlaceOrder() async {
     if (_isSubmitting) return;
-    if (!_formKey.currentState!.validate()) return;
+    setState(() => _isSubmitting = true);
+
+    if (_formKey.currentState?.validate() != true) {
+      setState(() => _isSubmitting = false);
+      return;
+    }
     FocusScope.of(context).unfocus();
 
     final cart = context.read<CartProvider>();
@@ -109,6 +115,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
     final storeOwnerId = cart.storeId;
     if (storeOwnerId == null) {
+      setState(() => _isSubmitting = false);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Cannot place order: Store information missing.'),
@@ -118,7 +125,23 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       return;
     }
 
-    setState(() => _isSubmitting = true);
+    final catalog = context.read<CatalogProvider>();
+    final store = catalog.stores.where((s) => s.id == storeOwnerId).firstOrNull ??
+        (catalog.selectedStore?.id == storeOwnerId ? catalog.selectedStore : null);
+    if (store == null || !store.isOpen) {
+      setState(() => _isSubmitting = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(store == null
+                ? 'Cannot place order: Store information unavailable.'
+                : 'Cannot place order: This store is currently closed.'),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+      }
+      return;
+    }
 
     try {
       // Save delivery details for future convenience
@@ -250,6 +273,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   Widget build(BuildContext context) {
     context.watch<CustomerThemeController>();
     final cart = context.watch<CartProvider>();
+    final catalog = context.watch<CatalogProvider>();
+    final storeOwnerId = cart.storeId;
+    final currentStore = storeOwnerId != null
+        ? (catalog.stores.where((s) => s.id == storeOwnerId).firstOrNull ??
+            (catalog.selectedStore?.id == storeOwnerId ? catalog.selectedStore : null))
+        : null;
+    final isStoreClosed = currentStore != null && !currentStore.isOpen;
 
     return Scaffold(
       appBar: AppBar(
@@ -432,12 +462,37 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 ),
                 const SizedBox(height: 28),
 
+                if (isStoreClosed)
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: AppColors.danger.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppColors.danger.withValues(alpha: 0.35)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.store_mall_directory_outlined, color: AppColors.danger, size: 18),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'This store is currently closed. Orders cannot be placed at this time.',
+                            style: TextStyle(color: AppColors.danger, fontSize: 12, fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
                 // Place Order Button
                 GradientButton(
-                  text: 'Place Order (${cart.formattedTotal})',
-                  icon: Icons.send_rounded,
+                  text: isStoreClosed
+                      ? 'Store is Currently Closed'
+                      : 'Place Order (${cart.formattedTotal})',
+                  icon: isStoreClosed ? Icons.lock_outline : Icons.send_rounded,
                   isLoading: _isSubmitting,
-                  onPressed: _isSubmitting ? null : _handlePlaceOrder,
+                  onPressed: (_isSubmitting || isStoreClosed) ? null : _handlePlaceOrder,
                 ),
                 const SizedBox(height: 20),
               ],

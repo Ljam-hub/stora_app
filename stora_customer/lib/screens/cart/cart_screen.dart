@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/cart_provider.dart';
+import '../../providers/catalog_provider.dart';
 import '../../services/location_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/cart_item_tile.dart';
@@ -9,7 +10,7 @@ import '../../widgets/empty_state.dart';
 import '../../widgets/gradient_button.dart';
 import 'checkout_screen.dart';
 
-class CartScreen extends StatelessWidget {
+class CartScreen extends StatefulWidget {
   final VoidCallback? onStartShopping;
   final VoidCallback? onOrderPlaced;
 
@@ -18,6 +19,13 @@ class CartScreen extends StatelessWidget {
     this.onStartShopping,
     this.onOrderPlaced,
   });
+
+  @override
+  State<CartScreen> createState() => _CartScreenState();
+}
+
+class _CartScreenState extends State<CartScreen> {
+  bool _isNavigatingToCheckout = false;
 
   Future<void> _detectLocation(BuildContext context) async {
     final messenger = ScaffoldMessenger.of(context);
@@ -69,8 +77,19 @@ class CartScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     context.watch<CustomerThemeController>();
     final cart = context.watch<CartProvider>();
+    final catalog = context.watch<CatalogProvider>();
     final auth = context.watch<AuthProvider>();
     final savedAddress = auth.savedAddress;
+
+    final storeOwnerId = cart.storeId;
+    if (storeOwnerId != null && catalog.stores.isEmpty && !catalog.isLoading) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        catalog.fetchStores();
+      });
+    }
+    final currentStore = catalog.stores.where((s) => s.id == storeOwnerId).firstOrNull ??
+        (catalog.selectedStore?.id == storeOwnerId ? catalog.selectedStore : null);
+    final isStoreClosed = currentStore != null && !currentStore.isOpen;
 
     return Scaffold(
       appBar: AppBar(
@@ -113,7 +132,7 @@ class CartScreen extends StatelessWidget {
               title: 'Your Cart is Empty',
               message: 'Explore our catalog and add items from your favorite store to get started.',
               buttonText: 'Start Shopping',
-              onButtonPressed: onStartShopping,
+              onButtonPressed: widget.onStartShopping,
             )
           : Column(
               children: [
@@ -146,8 +165,12 @@ class CartScreen extends StatelessWidget {
 
                 // Delivery location banner with auto-locate icon
                 Container(
-                  width: double.infinity,
-                  margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                  margin: EdgeInsets.fromLTRB(
+                    16,
+                    (cart.storeName != null && cart.storeName!.isNotEmpty) ? 0 : 8,
+                    16,
+                    8,
+                  ),
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                   decoration: BoxDecoration(
                     color: AppColors.cardElevated.withValues(alpha: 0.6),
@@ -265,19 +288,49 @@ class CartScreen extends StatelessWidget {
                           ],
                         ),
                         const SizedBox(height: 16),
-                        GradientButton(
-                          text: 'Proceed to Checkout',
-                          icon: Icons.arrow_forward_rounded,
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => CheckoutScreen(
-                                  onOrderPlaced: onOrderPlaced,
+                        if (isStoreClosed)
+                          Container(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: AppColors.danger.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: AppColors.danger.withValues(alpha: 0.35)),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.store_mall_directory_outlined, color: AppColors.danger, size: 18),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    'This store is currently closed. Checkout is paused until the store reopens.',
+                                    style: TextStyle(color: AppColors.danger, fontSize: 12, fontWeight: FontWeight.w600),
+                                  ),
                                 ),
-                              ),
-                            );
-                          },
+                              ],
+                            ),
+                          ),
+                        GradientButton(
+                          text: isStoreClosed ? 'Store is Currently Closed' : 'Proceed to Checkout',
+                          icon: isStoreClosed ? Icons.lock_outline_rounded : Icons.arrow_forward_rounded,
+                          isLoading: _isNavigatingToCheckout,
+                          onPressed: (isStoreClosed || _isNavigatingToCheckout)
+                              ? null
+                              : () async {
+                                  if (_isNavigatingToCheckout) return;
+                                  setState(() => _isNavigatingToCheckout = true);
+                                  await Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => CheckoutScreen(
+                                        onOrderPlaced: widget.onOrderPlaced,
+                                      ),
+                                    ),
+                                  );
+                                  if (mounted) {
+                                    setState(() => _isNavigatingToCheckout = false);
+                                  }
+                                },
                         ),
                       ],
                     ),

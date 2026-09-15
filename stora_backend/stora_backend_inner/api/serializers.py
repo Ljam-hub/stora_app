@@ -759,7 +759,7 @@ class FCMTokenSerializer(serializers.Serializer):
 class StoreLocationSerializer(serializers.ModelSerializer):
     class Meta:
         model = StoreLocation
-        fields = ("id", "latitude", "longitude", "address", "is_visible", "updated_at")
+        fields = ("id", "latitude", "longitude", "address", "is_visible", "is_open", "updated_at")
         read_only_fields = ("id", "updated_at")
 
 

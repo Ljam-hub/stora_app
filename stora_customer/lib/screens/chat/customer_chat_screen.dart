@@ -85,14 +85,24 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
     });
   }
 
+  ChatProvider? _chatProvider;
+  OrderProvider? _orderProvider;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _chatProvider = context.read<ChatProvider>();
+    _orderProvider = context.read<OrderProvider>();
+  }
+
   @override
   void dispose() {
     _pollTimer?.cancel();
     _textController.dispose();
     _scrollController.dispose();
     try {
-      context.read<ChatProvider>().fetchConversations(isSilent: true);
-      context.read<OrderProvider>().refresh(isSilent: true);
+      _chatProvider?.fetchConversations(isSilent: true);
+      _orderProvider?.refresh(isSilent: true);
     } catch (_) {}
     super.dispose();
   }
@@ -825,7 +835,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
                   ),
                   Text(
                     _isSupportChat
-                        ? 'Official Support · Online'
+                        ? 'Official Support'
                         : (_isBlocked ? 'Blocked by store' : 'Store Owner'),
                     style: TextStyle(
                       color: _isSupportChat

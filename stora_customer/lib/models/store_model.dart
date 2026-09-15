@@ -7,6 +7,7 @@ class StoreModel {
   final String address;
   final double? distanceKm;
   final String? avatarUrl;
+  final bool isOpen;
 
   StoreModel({
     required this.id,
@@ -17,6 +18,7 @@ class StoreModel {
     this.address = '',
     this.distanceKm,
     this.avatarUrl,
+    this.isOpen = true,
   });
 
   String get displayName {
@@ -35,6 +37,12 @@ class StoreModel {
       address: (json['address'] as String?) ?? '',
       distanceKm: json['distance_km'] is num ? (json['distance_km'] as num).toDouble() : null,
       avatarUrl: (json['avatar_url'] as String?),
+      isOpen: json['is_open'] == false ||
+              json['is_open'] == 0 ||
+              json['is_open'] == 'false' ||
+              json['is_open'] == '0'
+          ? false
+          : true,
     );
   }
 
@@ -48,6 +56,7 @@ class StoreModel {
       'address': address,
       'distance_km': distanceKm,
       'avatar_url': avatarUrl,
+      'is_open': isOpen,
     };
   }
 }

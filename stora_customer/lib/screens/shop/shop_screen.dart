@@ -40,13 +40,22 @@ class _ShopScreenState extends State<ShopScreen> {
     super.dispose();
   }
 
-  void _openProductDetail(ProductModel product) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => ProductDetailSheet(product: product),
-    );
+  bool _isOpeningDetail = false;
+  bool _isNavigatingToChat = false;
+
+  void _openProductDetail(ProductModel product) async {
+    if (_isOpeningDetail) return;
+    _isOpeningDetail = true;
+    try {
+      await showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (_) => ProductDetailSheet(product: product),
+      );
+    } finally {
+      _isOpeningDetail = false;
+    }
   }
 
   @override
@@ -82,17 +91,25 @@ class _ShopScreenState extends State<ShopScreen> {
               child: IconButton(
                 icon: Icon(Icons.chat_bubble_outline_rounded, color: AppColors.textPrimary),
                 tooltip: 'Message Store',
-                onPressed: () {
-                  final store = catalog.selectedStore!;
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => CustomerChatScreen(
-                        storeOwnerId: store.id,
-                        storeName: store.displayName,
-                        storeAvatarUrl: store.avatarUrl,
+                onPressed: () async {
+                  final store = catalog.selectedStore;
+                  if (store == null || _isNavigatingToChat) return;
+                  setState(() => _isNavigatingToChat = true);
+                  try {
+                    await Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => CustomerChatScreen(
+                          storeOwnerId: store.id,
+                          storeName: store.displayName,
+                          storeAvatarUrl: store.avatarUrl,
+                        ),
                       ),
-                    ),
-                  );
+                    );
+                  } finally {
+                    if (mounted) {
+                      setState(() => _isNavigatingToChat = false);
+                    }
+                  }
                 },
               ),
             ),
@@ -328,15 +345,46 @@ class _ShopScreenState extends State<ShopScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              catalog.selectedStore!.displayName,
-                              style: TextStyle(color: AppColors.textPrimary, fontSize: 13, fontWeight: FontWeight.bold),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                            Row(
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    catalog.selectedStore!.displayName,
+                                    style: TextStyle(color: AppColors.textPrimary, fontSize: 13, fontWeight: FontWeight.bold),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: catalog.selectedStore!.isOpen
+                                        ? AppColors.success.withValues(alpha: 0.15)
+                                        : AppColors.danger.withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(6),
+                                    border: Border.all(
+                                      color: catalog.selectedStore!.isOpen
+                                          ? AppColors.success.withValues(alpha: 0.4)
+                                          : AppColors.danger.withValues(alpha: 0.4),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    catalog.selectedStore!.isOpen ? 'OPEN' : 'CLOSED',
+                                    style: TextStyle(
+                                      color: catalog.selectedStore!.isOpen ? AppColors.success : AppColors.danger,
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              'Have questions about inventory?',
+                              catalog.selectedStore!.isOpen
+                                  ? 'Have questions about inventory?'
+                                  : 'Store is temporarily closed for orders',
                               style: TextStyle(color: AppColors.textSecondary, fontSize: 11),
                             ),
                           ],
@@ -344,7 +392,8 @@ class _ShopScreenState extends State<ShopScreen> {
                       ),
                       ElevatedButton.icon(
                         onPressed: () {
-                          final store = catalog.selectedStore!;
+                          final store = catalog.selectedStore;
+                          if (store == null) return;
                           Navigator.of(context).push(
                             MaterialPageRoute(
                               builder: (_) => CustomerChatScreen(
@@ -369,6 +418,34 @@ class _ShopScreenState extends State<ShopScreen> {
                   ),
                 ),
               ),
+              if (!catalog.selectedStore!.isOpen)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: AppColors.danger.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppColors.danger.withValues(alpha: 0.35)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.store_mall_directory_outlined, color: AppColors.danger, size: 20),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'This store is currently closed. New orders cannot be placed at this time.',
+                            style: TextStyle(
+                              color: AppColors.danger,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               const SizedBox(height: 6),
             ],
 

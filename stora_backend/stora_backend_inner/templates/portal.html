@@ -5,8 +5,34 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#0E0B14">
-  <title>STORA Portal | Retail Operations & Mobile Commerce</title>
-  <link rel="stylesheet" href="{% static 'css/portal.css' %}">
+  <title>Stora: Where every small store shines bright</title>
+  <meta name="description" content="Stora: Where every small store shines bright. Retail operations and mobile commerce made seamless.">
+  <link rel="stylesheet" href="{% static 'css/portal.css' %}?v=20260915_4">
+  <style>
+    .button--admin {
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      gap: 8px !important;
+      border-radius: 12px !important;
+      padding: 12px 22px !important;
+      font-size: 14px !important;
+      font-weight: 700 !important;
+      text-decoration: none !important;
+      background: linear-gradient(135deg, #8B5CF6, #6366F1) !important;
+      color: #ffffff !important;
+      border: none !important;
+      box-shadow: 0 4px 16px rgba(139, 92, 246, 0.45) !important;
+      cursor: pointer !important;
+      transition: all .2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    }
+    .button--admin:hover {
+      background: linear-gradient(135deg, #A78BFA, #4F46E5) !important;
+      box-shadow: 0 6px 22px rgba(139, 92, 246, 0.7) !important;
+      transform: translateY(-2px) !important;
+      color: #ffffff !important;
+    }
+  </style>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2224%22 fill=%22%23FF6B00%22/><text y=%2268%22 x=%2250%22 font-family=%22sans-serif%22 font-size=%2256%22 font-weight=%22bold%22 text-anchor=%22middle%22 fill=%22white%22>S</text></svg>">
 </head>
 <body>
@@ -14,26 +40,22 @@
     <a class="brand" href="/" aria-label="STORA home">
       <span class="brand__mark" aria-hidden="true">S</span>
       <span class="brand__name">STORA<span>.</span></span>
-      <span class="brand__context">Cloud Portal</span>
+      <span class="brand__context">Where every small store shines bright</span>
     </a>
     <nav class="site-nav" aria-label="Main navigation">
       <span class="status"><span class="status__dot" aria-hidden="true"></span>Services Online</span>
-      <a class="button button--quiet" href="#downloads">Download Apps &#8595;</a>
-      <a class="button button--primary" href="/admin/">Admin Console <span aria-hidden="true">&#8599;</span></a>
+      <a class="button button--primary" href="#downloads">Download Apps &#8595;</a>
     </nav>
   </header>
 
   <main class="page-shell">
     <section class="intro" aria-labelledby="page-title">
-      <p class="eyebrow">Commerce Operations Platform</p>
+      <p class="eyebrow" style="display: inline-flex; align-items: center; gap: 6px; font-weight: 700; letter-spacing: 0.08em;"><span aria-hidden="true">✨</span> Stora &bull; Where every small store shines bright</p>
       <h1 id="page-title">Retail commerce and store operations made seamless.</h1>
       <p class="intro__copy">Powering modern sari-sari stores, neighborhood groceries, and mobile customers across the Philippines with real-time inventory and instant ordering.</p>
       <div class="intro__actions">
         <a class="button button--primary button--large" href="#downloads">
           Get Mobile Apps (APK) &#8595;
-        </a>
-        <a class="button button--quiet button--large" href="/admin/">
-          Merchant Dashboard <span aria-hidden="true">&#8594;</span>
         </a>
       </div>
     </section>
@@ -81,7 +103,7 @@
         </div>
 
         <!-- Card 2: Owner App -->
-        <div style="display: flex; flex-direction: column; padding: 28px; border-radius: 16px; background: #130E1B; border: 1px solid rgba(255, 255, 255, 0.12); box-shadow: 0 8px 30px rgba(0,0,0,0.4); position: relative; overflow: hidden;">
+        <div id="owner-apk-card" style="display: flex; flex-direction: column; padding: 28px; border-radius: 16px; background: #130E1B; border: 1px solid rgba(255, 255, 255, 0.12); box-shadow: 0 8px 30px rgba(0,0,0,0.4); position: relative; overflow: hidden;">
           <div style="position: absolute; top: -30px; right: -30px; width: 120px; height: 120px; background: radial-gradient(circle, rgba(74,222,128,0.15) 0%, transparent 70%); pointer-events: none;"></div>
           <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;">
             <div style="width: 54px; height: 54px; border-radius: 14px; background: #1E1729; border: 1.5px solid #FF6B00; display: grid; place-items: center; color: #FF6B00; font-size: 26px; box-shadow: 0 4px 16px rgba(0,0,0,0.4);">
@@ -132,27 +154,22 @@
         <div class="status-item"><span class="status-item__indicator"></span><span>Sync Service</span><strong>Connected</strong></div>
       </div>
     </section>
-
-    <!-- Business Features Grid -->
-    <section class="feature-grid" aria-label="Platform Operations">
-      <article class="feature-card">
-        <span class="feature-card__number">01</span>
-        <h2>Store &amp; Inventory</h2>
-        <p>Manage product catalogs, categories, pricing, barcodes, and automated low-stock warnings from the management console.</p>
-        <a href="/admin/inventory/product/">Manage inventory <span aria-hidden="true">&#8594;</span></a>
-      </article>
-      <article class="feature-card">
-        <span class="feature-card__number">02</span>
-        <h2>Order Processing</h2>
-        <p>Review customer carts, track order fulfillments, manage payments, and streamline customer store pickups in real time.</p>
-        <a href="/admin/orders/order/">Review orders <span aria-hidden="true">&#8594;</span></a>
-      </article>
-    </section>
   </main>
 
   <footer class="site-footer">
-    <span>&copy; STORA Platform &bull; Retail Operations &amp; Mobile Commerce</span>
-    <span>Production Cloud Services</span>
+    <div style="display: flex; flex-direction: column; gap: 4px;">
+      <span style="font-weight: 700; color: #FFFFFF; font-size: 14px;">Stora: Where every small store shines bright</span>
+      <span style="font-size: 12px; color: var(--text-faint);">&copy; STORA Platform &bull; Retail Operations &amp; Mobile Commerce</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+      <a class="button button--admin"
+         href="/admin/"
+         aria-label="Open Admin Console"
+         style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; border-radius: 12px; padding: 12px 22px; font-size: 14px; font-weight: 700; text-decoration: none; background: linear-gradient(135deg, #8B5CF6, #6366F1); color: #ffffff; border: none; box-shadow: 0 4px 16px rgba(139, 92, 246, 0.45); cursor: pointer; transition: all 0.2s ease;">
+        <span>Admin Console</span>
+        <span aria-hidden="true" style="font-size: 15px; font-weight: 800;">&#8599;</span>
+      </a>
+    </div>
   </footer>
 
   <script>

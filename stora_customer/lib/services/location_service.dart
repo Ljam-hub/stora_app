@@ -170,4 +170,10 @@ class LocationService {
       longitude: position.longitude,
     );
   }
+
+  /// Open device app settings (e.g. if permissions permanently denied)
+  Future<bool> openAppSettings() => Geolocator.openAppSettings();
+
+  /// Open device location settings (e.g. if GPS is disabled)
+  Future<bool> openLocationSettings() => Geolocator.openLocationSettings();
 }

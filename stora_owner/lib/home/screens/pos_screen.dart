@@ -11,6 +11,7 @@ import '../stores/inventory_store.dart';
 import '../stores/sales_store.dart';
 import '../theme/home_colors.dart';
 import '../theme/theme_mode_controller.dart';
+import '../widgets/cash_payment_dialog.dart';
 import '../widgets/category_filter_row.dart';
 import '../widgets/product_image_widget.dart';
 import '../widgets/receipt_dialog.dart';
@@ -156,12 +157,27 @@ class _PosScreenState extends State<PosScreen> {
       showStoraSnackBar(context, 'Your cart is empty');
       return;
     }
+
     setState(() => _isCheckingOut = true);
-    final items = List<CartItem>.from(cart.items);
     final total = cart.total;
+    final paymentResult = await CashPaymentDialog.show(
+      context,
+      totalAmount: total,
+    );
+    if (paymentResult == null) {
+      if (mounted) setState(() => _isCheckingOut = false);
+      return;
+    }
+
+    final items = List<CartItem>.from(cart.items);
     Sale? recordedSale;
     try {
-      recordedSale = await SalesStore.instance.recordSale(items, total);
+      recordedSale = await SalesStore.instance.recordSale(
+        items,
+        total,
+        cashTendered: paymentResult.tendered,
+        changeAmount: paymentResult.change,
+      );
       cart.clear();
       if (!mounted) return;
       if (recordedSale.id.startsWith('local-')) {

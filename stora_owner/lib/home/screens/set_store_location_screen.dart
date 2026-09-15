@@ -7,6 +7,7 @@ import 'package:latlong2/latlong.dart';
 
 import '../../data/api/api_client.dart';
 import '../../stora_login/theme/app_colors.dart';
+import '../stores/store_status_store.dart';
 import '../theme/home_colors.dart';
 
 class SetStoreLocationScreen extends StatefulWidget {
@@ -91,8 +92,12 @@ class _SetStoreLocationScreenState extends State<SetStoreLocationScreen> {
     try {
       final data = await ApiClient.instance.getStoreLocation();
       if (mounted) {
-        final lat = data['latitude'] ?? 14.5995;
-        final lng = data['longitude'] ?? 120.9842;
+        final lat = (data['latitude'] is num)
+            ? (data['latitude'] as num).toDouble()
+            : (double.tryParse(data['latitude']?.toString() ?? '14.5995') ?? 14.5995);
+        final lng = (data['longitude'] is num)
+            ? (data['longitude'] as num).toDouble()
+            : (double.tryParse(data['longitude']?.toString() ?? '120.9842') ?? 120.9842);
         setState(() {
           _currentMapPosition = LatLng(lat, lng);
           _latController.text = lat.toString();
@@ -111,6 +116,7 @@ class _SetStoreLocationScreenState extends State<SetStoreLocationScreen> {
   }
 
   Future<void> _saveLocation() async {
+    if (_isSaving) return;
     final lat = double.tryParse(_latController.text.trim());
     final lng = double.tryParse(_lngController.text.trim());
     final address = _addressController.text.trim();
@@ -138,6 +144,11 @@ class _SetStoreLocationScreenState extends State<SetStoreLocationScreen> {
 
     try {
       await ApiClient.instance.updateStoreLocation(
+        latitude: lat,
+        longitude: lng,
+        address: address,
+      );
+      StoreStatusStore.instance.updateLocalCoordinates(
         latitude: lat,
         longitude: lng,
         address: address,
@@ -185,6 +196,7 @@ class _SetStoreLocationScreenState extends State<SetStoreLocationScreen> {
   }
 
   Future<void> _detectLocation() async {
+    if (_isDetectingLocation) return;
     setState(() {
       _isDetectingLocation = true;
       _message = null;
@@ -258,8 +270,8 @@ class _SetStoreLocationScreenState extends State<SetStoreLocationScreen> {
       if (mounted) {
         setState(() {
           _currentMapPosition = newPos;
-          _latController.text = position!.latitude.toStringAsFixed(6);
-          _lngController.text = position.longitude.toStringAsFixed(6);
+          _latController.text = newPos.latitude.toStringAsFixed(6);
+          _lngController.text = newPos.longitude.toStringAsFixed(6);
           _isDetectingLocation = false;
           _isError = false;
           _message = 'GPS location detected! Pin updated on map.';
@@ -276,7 +288,7 @@ class _SetStoreLocationScreenState extends State<SetStoreLocationScreen> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'GPS locked: ${position.latitude.toStringAsFixed(5)}, ${position.longitude.toStringAsFixed(5)}',
+                    'GPS locked: ${newPos.latitude.toStringAsFixed(5)}, ${newPos.longitude.toStringAsFixed(5)}',
                     style: TextStyle(color: HomeColors.successText, fontWeight: FontWeight.bold, fontSize: 13),
                   ),
                 ),
@@ -285,7 +297,7 @@ class _SetStoreLocationScreenState extends State<SetStoreLocationScreen> {
           ),
         );
 
-        _tryReverseGeocode(position.latitude, position.longitude);
+        _tryReverseGeocode(newPos.latitude, newPos.longitude);
       }
     } catch (e) {
       if (mounted) {

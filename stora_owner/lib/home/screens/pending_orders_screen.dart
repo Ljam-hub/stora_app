@@ -4,6 +4,7 @@ import '../../stora_login/theme/app_colors.dart';
 import '../stores/orders_store.dart';
 import '../theme/home_colors.dart';
 import '../theme/theme_mode_controller.dart';
+import '../widgets/customer_location_map_sheet.dart';
 import '../widgets/notification_badge.dart';
 import 'owner_chat_screen.dart';
 
@@ -240,7 +241,7 @@ class _OrderCardState extends State<_OrderCard> {
   bool _isExpanded = true;
   bool _isProcessing = false;
 
-  int get orderId => widget.order['id'] as int;
+  int get orderId => (widget.order['id'] as num?)?.toInt() ?? int.tryParse(widget.order['id']?.toString() ?? '') ?? 0;
   String get status => (widget.order['status'] as String?) ?? 'pending';
   String get customerName => (widget.order['customer_name'] as String?) ?? 'Customer';
   String get customerEmail => (widget.order['customer_email'] as String?) ?? (widget.order['email'] as String?) ?? '';
@@ -258,7 +259,7 @@ class _OrderCardState extends State<_OrderCard> {
   String get totalAmount => widget.order['total_amount']?.toString() ?? '0.00';
   List get items => (widget.order['items'] as List?) ?? [];
   int get totalQuantity => items.fold<int>(
-      0, (sum, i) => sum + ((i['quantity'] as num?)?.toInt() ?? 1));
+      0, (sum, i) => sum + ((i is Map ? (i['quantity'] as num?)?.toInt() : null) ?? 1));
 
   Color get _statusColor {
     switch (status) {
@@ -418,7 +419,9 @@ class _OrderCardState extends State<_OrderCard> {
               const SizedBox(height: 10),
               RadioGroup<String>(
                 groupValue: selectedReason,
-                onChanged: (val) => setDialogState(() => selectedReason = val!),
+                onChanged: (val) {
+                  if (val != null) setDialogState(() => selectedReason = val);
+                },
                 child: Column(
                   children: standardReasons.map((r) => RadioListTile<String>(
                     dense: true,
@@ -784,6 +787,40 @@ class _OrderCardState extends State<_OrderCard> {
                         Expanded(
                           child: Text(customerAddress, style: const TextStyle(color: AppColors.label, fontSize: 12)),
                         ),
+                        const SizedBox(width: 8),
+                        InkWell(
+                          onTap: () => CustomerLocationMapSheet.show(
+                            context,
+                            orderId: orderId,
+                            customerName: customerName,
+                            customerAddress: customerAddress,
+                            customerPhone: customerPhone,
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: HomeColors.primary.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: HomeColors.primary.withValues(alpha: 0.4)),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.map_rounded, color: HomeColors.primary, size: 13),
+                                SizedBox(width: 4),
+                                Text(
+                                  'View Map',
+                                  style: TextStyle(
+                                    color: HomeColors.primary,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ],
@@ -881,7 +918,7 @@ class _OrderCardState extends State<_OrderCard> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Column(
-                children: items.map<Widget>((item) {
+                children: items.whereType<Map>().map<Widget>((item) {
                   final name = item['product_name'] ?? 'Item';
                   final qty = item['quantity'] ?? 1;
                   final price = item['unit_price'] ?? '0.00';
