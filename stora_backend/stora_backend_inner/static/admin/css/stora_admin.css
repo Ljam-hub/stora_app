@@ -65,6 +65,46 @@
   --stora-sidebar-border: #283338;
   --stora-sidebar-hover:  rgba(139, 211, 202, 0.08);
   --stora-sidebar-active: rgba(139, 211, 202, 0.15);
+
+  /* Override Django Native Admin Variables — Prevents White Flash/Leak on Light-Mode OS/Browsers */
+  --primary:              #8bd3ca !important;
+  --primary-fg:           #0c0f12 !important;
+  --body-fg:              #f5f8f8 !important;
+  --body-bg:              #0c0f12 !important;
+  --body-quiet-color:     #b4c2c5 !important;
+  --body-medium-color:    #e0e0e0 !important;
+  --body-loud-color:      #ffffff !important;
+  --header-color:         #8bd3ca !important;
+  --header-bg:            #090b0d !important;
+  --header-link-color:    #f5f8f8 !important;
+  --breadcrumbs-fg:       #b4c2c5 !important;
+  --breadcrumbs-link-fg:  #8bd3ca !important;
+  --breadcrumbs-bg:       #090b0d !important;
+  --link-fg:              #8bd3ca !important;
+  --link-hover-color:     #c7eeea !important;
+  --link-selected-fg:     #8bd3ca !important;
+  --hairline-color:       #283439 !important;
+  --border-color:         #283439 !important;
+  --darkened-bg:          #14191c !important;
+  --selected-bg:          #1c2327 !important;
+  --selected-row:         rgba(139, 211, 202, 0.15) !important;
+  --button-fg:            #102022 !important;
+  --button-bg:            #8bd3ca !important;
+  --button-hover-bg:      #c7eeea !important;
+  color-scheme: dark !important;
+}
+
+/* Enforce dark theme variables even if OS prefers light mode */
+@media (prefers-color-scheme: light) {
+  :root, html, body {
+    --body-bg: #0c0f12 !important;
+    --darkened-bg: #14191c !important;
+    --hairline-color: #283439 !important;
+    --border-color: #283439 !important;
+    --primary: #8bd3ca !important;
+    --primary-fg: #0c0f12 !important;
+    color-scheme: dark !important;
+  }
 }
 
 /* ==========================================================================
@@ -481,33 +521,53 @@ div.breadcrumbs a:hover {
   color: #c7eeea !important;
 }
 
-/* Model rows inside sidebar */
-#nav-sidebar table {
+/* Model rows inside sidebar — Guaranteed Transparent to Avoid White Leakage on Any PC */
+#nav-sidebar table,
+#nav-sidebar tbody,
+#nav-sidebar thead {
   width: 100% !important;
   border-collapse: separate !important;
   border-spacing: 0 3px !important;
   background: transparent !important;
+  background-color: transparent !important;
 }
 
-#nav-sidebar tr {
+#nav-sidebar tr,
+#nav-sidebar tr:nth-child(odd),
+#nav-sidebar tr:nth-child(even),
+#nav-sidebar tr.row1,
+#nav-sidebar tr.row2 {
+  background: transparent !important;
+  background-color: transparent !important;
   border-radius: 8px !important;
   transition: background 0.15s ease !important;
 }
 
-#nav-sidebar tr:hover {
+#nav-sidebar tr:hover,
+#nav-sidebar tr:hover th,
+#nav-sidebar tr:hover td {
   background: var(--stora-sidebar-hover) !important;
+  background-color: rgba(139, 211, 202, 0.08) !important;
 }
 
-#nav-sidebar tr.current-model {
+#nav-sidebar tr.current-model,
+#nav-sidebar tr.current-model th,
+#nav-sidebar tr.current-model td {
   background: var(--stora-sidebar-active) !important;
+  background-color: rgba(139, 211, 202, 0.15) !important;
   box-shadow: inset 3px 0 0 var(--stora-accent) !important;
+}
+
+#nav-sidebar th,
+#nav-sidebar td {
+  background: transparent !important;
+  background-color: transparent !important;
 }
 
 #nav-sidebar th {
   padding: 8px 8px 8px 6px !important;
   vertical-align: middle !important;
   width: auto !important;
-  background: transparent !important;
   border: none !important;
 }
 
@@ -536,8 +596,25 @@ div.breadcrumbs a:hover {
   text-align: right !important;
   vertical-align: middle !important;
   white-space: nowrap !important;
-  background: transparent !important;
   border: none !important;
+}
+
+/* Sidebar Toggle Button Dark Guard */
+#toggle-nav-sidebar,
+.toggle-nav-sidebar {
+  background: #090b0d !important;
+  background-color: #090b0d !important;
+  border-right: 1px solid var(--stora-border) !important;
+  color: var(--stora-accent) !important;
+}
+
+#toggle-nav-sidebar:hover,
+#toggle-nav-sidebar:focus,
+.toggle-nav-sidebar:hover,
+.toggle-nav-sidebar:focus {
+  background: #14191c !important;
+  background-color: #14191c !important;
+  color: var(--stora-accent-strong) !important;
 }
 
 /* + Add link in sidebar */
@@ -561,20 +638,38 @@ div.breadcrumbs a:hover {
   transform: translateY(-1px);
 }
 
-/* App List & Model Rows on Admin Index (/admin/) */
-#content-main .module table {
+/* App List & Model Rows on Admin Index (/admin/) ONLY - STRICTLY ISOLATED FROM CHANGELISTS */
+body.dashboard #content-main .module table,
+#content-main .app-list .module table,
+#content-main > .module:not(#changelist) table {
   width: 100% !important;
   border-collapse: collapse !important;
+  background: transparent !important;
 }
 
-#content-main .module table th {
+body.dashboard #content-main .module table tr,
+body.dashboard #content-main .module table tr:nth-child(odd),
+body.dashboard #content-main .module table tr:nth-child(even),
+#content-main > .module:not(#changelist) table tr,
+#content-main > .module:not(#changelist) table tr:nth-child(odd),
+#content-main > .module:not(#changelist) table tr:nth-child(even) {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+body.dashboard #content-main .module table th,
+#content-main .app-list .module table th,
+#content-main > .module:not(#changelist) table th {
   padding: 12px 18px !important;
   vertical-align: middle !important;
   text-align: left !important;
+  background: transparent !important;
   border-bottom: 1px solid rgba(255, 255, 255, 0.04) !important;
 }
 
-#content-main .module table th a {
+body.dashboard #content-main .module table th a,
+#content-main .app-list .module table th a,
+#content-main > .module:not(#changelist) table th a {
   color: var(--stora-text) !important;
   font-size: 13.5px !important;
   font-weight: 700 !important;
@@ -584,19 +679,28 @@ div.breadcrumbs a:hover {
   transition: color 0.15s ease !important;
 }
 
-#content-main .module table th a:hover {
+body.dashboard #content-main .module table th a:hover,
+#content-main .app-list .module table th a:hover,
+#content-main > .module:not(#changelist) table th a:hover {
   color: var(--stora-accent) !important;
 }
 
-#content-main .module table td {
+body.dashboard #content-main .module table td,
+#content-main .app-list .module table td,
+#content-main > .module:not(#changelist) table td {
   padding: 12px 16px !important;
   vertical-align: middle !important;
   text-align: right !important;
+  background: transparent !important;
   border-bottom: 1px solid rgba(255, 255, 255, 0.04) !important;
 }
 
-#content-main .module table tr:hover td,
-#content-main .module table tr:hover th {
+body.dashboard #content-main .module table tr:hover td,
+body.dashboard #content-main .module table tr:hover th,
+#content-main .app-list .module table tr:hover td,
+#content-main .app-list .module table tr:hover th,
+#content-main > .module:not(#changelist) table tr:hover td,
+#content-main > .module:not(#changelist) table tr:hover th {
   background: rgba(139, 211, 202, 0.03) !important;
 }
 
@@ -1825,13 +1929,31 @@ a.selector-clearall:hover {
 
 #changelist .results {
   width: 100% !important;
+  max-width: 100% !important;
   overflow-x: auto !important;
   -webkit-overflow-scrolling: touch !important;
   border-radius: var(--stora-radius-md) !important;
   border: 1px solid var(--stora-border) !important;
   box-shadow: var(--stora-shadow);
   scrollbar-width: thin !important;
-  scrollbar-color: #404d53 #121618 !important;
+  scrollbar-color: #38464d #121618 !important;
+}
+
+#changelist .results::-webkit-scrollbar {
+  height: 8px !important;
+}
+
+#changelist .results::-webkit-scrollbar-track {
+  background: #121618 !important;
+}
+
+#changelist .results::-webkit-scrollbar-thumb {
+  background: #38464d !important;
+  border-radius: 4px !important;
+}
+
+#changelist .results::-webkit-scrollbar-thumb:hover {
+  background: var(--stora-accent) !important;
 }
 
 #result_list {
@@ -1840,7 +1962,7 @@ a.selector-clearall:hover {
   table-layout: auto !important;
 }
 
-/* Base header th styling */
+/* Base header th styling - Strict Left Alignment matching data cells */
 #result_list thead th {
   background: var(--stora-surface-raised) !important;
   color: #aab8bb !important;
@@ -1865,15 +1987,18 @@ a.selector-clearall:hover {
   margin: 0 !important;
   display: flex !important;
   align-items: center !important;
+  justify-content: flex-start !important;
   min-height: 38px !important;
   box-sizing: border-box !important;
   width: 100% !important;
+  text-align: left !important;
 }
 
 #result_list thead th .text a,
 #result_list thead th .text span {
   display: inline-flex !important;
   align-items: center !important;
+  justify-content: flex-start !important;
   padding: 8px 10px !important;
   margin: 0 !important;
   color: #aab8bb !important;
@@ -1883,6 +2008,7 @@ a.selector-clearall:hover {
   text-transform: uppercase !important;
   text-decoration: none !important;
   box-sizing: border-box !important;
+  text-align: left !important;
 }
 
 #result_list thead th .text a:hover {
@@ -1892,6 +2018,7 @@ a.selector-clearall:hover {
 /* For simple header th without .text wrapper */
 #result_list thead th:not(.action-checkbox-column):not(:has(.text)) {
   padding: 8px 10px !important;
+  text-align: left !important;
 }
 
 /* Sorted headers */
@@ -1904,7 +2031,7 @@ a.selector-clearall:hover {
 }
 
 /* Position sorting options cleanly on the right */
-#result_list thead th.sortable:not(.column-role_badge):not(.column-account_status_badge):not(.column-subscription_status):not(.column-is_email_verified):not(.column-subscription_expiration):not(.column-formatted_last_login):not(.column-is_active):not(.column-is_staff):not(.column-is_blocked) .text a {
+#result_list thead th.sortable:not(.column-role_badge):not(.column-account_status_badge):not(.column-subscription_status):not(.column-is_email_verified):not(.column-subscription_expiration):not(.column-formatted_last_login):not(.column-is_active):not(.column-is_staff):not(.column-is_blocked):not(.column-status_badge) .text a {
   padding-right: 24px !important;
 }
 
@@ -1939,7 +2066,7 @@ a.selector-clearall:hover {
   background: var(--stora-surface-raised) !important;
 }
 
-/* Table body cells - COMPACT 8px vertical, 10px horizontal for ideal screen fit */
+/* Table body cells - Strict Left Alignment matching thead headers */
 #result_list tbody td,
 #result_list tbody th {
   padding: 8px 10px !important;
@@ -1950,6 +2077,7 @@ a.selector-clearall:hover {
   white-space: nowrap !important;
   box-sizing: border-box !important;
   line-height: 1.4 !important;
+  text-align: left !important;
 }
 
 #result_list tbody th a,
@@ -1963,6 +2091,51 @@ a.selector-clearall:hover {
 #result_list tbody td a:hover {
   color: var(--stora-accent-strong) !important;
   text-decoration: underline;
+}
+
+/* Column Specific Alignments & Clean Wrapping */
+#result_list thead th.column-products_summary,
+#result_list thead th.column-products_summary .text,
+#result_list thead th.column-products_summary .text span,
+#result_list thead th.column-products_summary .text a,
+#result_list tbody td.field-products_summary,
+#result_list tbody td.field-products_summary a {
+  text-align: left !important;
+  justify-content: flex-start !important;
+}
+
+#result_list tbody td.field-products_summary {
+  white-space: normal !important;
+  min-width: 200px !important;
+  max-width: 360px !important;
+  line-height: 1.4 !important;
+}
+
+#result_list thead th.column-total_amount_display,
+#result_list thead th.column-total_amount_display .text,
+#result_list thead th.column-total_amount_display .text span,
+#result_list thead th.column-total_amount_display .text a,
+#result_list tbody td.field-total_amount_display {
+  text-align: left !important;
+  justify-content: flex-start !important;
+}
+
+#result_list tbody td.field-total_amount_display {
+  font-family: var(--stora-font-mono) !important;
+  font-weight: 700 !important;
+  color: var(--stora-accent) !important;
+  white-space: nowrap !important;
+}
+
+#result_list thead th.column-items_count,
+#result_list thead th.column-items_count .text,
+#result_list thead th.column-items_count .text span,
+#result_list thead th.column-items_count .text a,
+#result_list tbody td.field-items_count {
+  text-align: left !important;
+  justify-content: flex-start !important;
+  white-space: nowrap !important;
+  color: var(--stora-muted) !important;
 }
 
 /* Action Checkbox Column: Fixed width and perfectly centered in both thead and tbody */
@@ -2012,6 +2185,8 @@ a.selector-clearall:hover {
 #result_list tbody td.field-account_status_badge,
 #result_list thead th.column-subscription_status,
 #result_list tbody td.field-subscription_status,
+#result_list thead th.column-status_badge,
+#result_list tbody td.field-status_badge,
 #result_list thead th.column-is_email_verified,
 #result_list tbody td.field-is_email_verified,
 #result_list thead th.column-subscription_expiration,
@@ -2032,6 +2207,7 @@ a.selector-clearall:hover {
 #result_list thead th.column-role_badge .text,
 #result_list thead th.column-account_status_badge .text,
 #result_list thead th.column-subscription_status .text,
+#result_list thead th.column-status_badge .text,
 #result_list thead th.column-is_email_verified .text,
 #result_list thead th.column-subscription_expiration .text,
 #result_list thead th.column-formatted_last_login .text,
@@ -2051,6 +2227,8 @@ a.selector-clearall:hover {
 #result_list thead th.column-account_status_badge .text span,
 #result_list thead th.column-subscription_status .text a,
 #result_list thead th.column-subscription_status .text span,
+#result_list thead th.column-status_badge .text a,
+#result_list thead th.column-status_badge .text span,
 #result_list thead th.column-is_email_verified .text a,
 #result_list thead th.column-is_email_verified .text span,
 #result_list thead th.column-subscription_expiration .text a,
@@ -2074,7 +2252,8 @@ a.selector-clearall:hover {
 /* Center icons & badges inside centered columns */
 #result_list tbody td.field-role_badge .user-badge,
 #result_list tbody td.field-account_status_badge span,
-#result_list tbody td.field-subscription_status .user-badge {
+#result_list tbody td.field-subscription_status .user-badge,
+#result_list tbody td.field-status_badge span {
   display: inline-flex !important;
   margin-left: auto !important;
   margin-right: auto !important;
