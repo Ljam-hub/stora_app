@@ -1143,6 +1143,30 @@ class UserReportingTests(APITestCase):
         self.assertEqual(res.status_code, 201)
         self.assertEqual(res.data["report"]["reason"], "fraud")
 
+    def test_report_with_image_evidence_attachment(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        tiny_gif = (
+            b"\x47\x49\x46\x38\x39\x61\x01\x00\x01\x00\x80\x00\x00\x00\x00\x00"
+            b"\xff\xff\xff\x21\xf9\x04\x01\x00\x00\x00\x00\x2c\x00\x00\x00\x00"
+            b"\x01\x00\x01\x00\x00\x02\x02\x44\x01\x00\x3b"
+        )
+        img_file = SimpleUploadedFile("screenshot.gif", tiny_gif, content_type="image/gif")
+
+        self.client.force_authenticate(user=self.customer)
+        res = self.client.post(
+            "/api/reports/",
+            {
+                "reported_user": self.owner.id,
+                "reason": "fraud",
+                "description": "Store did not ship items, screenshot of chat attached.",
+                "attachment": img_file,
+            },
+            format="multipart",
+        )
+        self.assertEqual(res.status_code, 201)
+        self.assertIsNotNone(res.data["report"]["attachment_url"])
+        self.assertIn("screenshot", res.data["report"]["attachment"])
+
     def test_cannot_report_oneself(self):
         self.client.force_authenticate(user=self.customer)
         res = self.client.post(

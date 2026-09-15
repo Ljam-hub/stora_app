@@ -26,6 +26,7 @@ class UserAdmin(DjangoUserAdmin):
         "subscription_expiration",
         "formatted_last_login",
     )
+    list_display_links = ("email", "owner_customer_name")
     search_fields = ("username", "email", "business_name", "first_name", "last_name")
     list_filter = ("role", "is_blocked", "is_email_verified", "is_premium", "is_staff", "is_active")
     actions = ["block_selected_users", "unblock_selected_users"]

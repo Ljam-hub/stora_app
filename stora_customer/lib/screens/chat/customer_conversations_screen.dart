@@ -7,6 +7,7 @@ import '../../theme/app_theme.dart';
 import '../../utils/date_utils.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/notification_badge.dart';
+import '../../widgets/customer_report_dialog.dart';
 import 'customer_chat_screen.dart';
 
 class CustomerConversationsScreen extends StatefulWidget {
@@ -548,9 +549,26 @@ class _CustomerConversationsScreenState extends State<CustomerConversationsScree
                                               onSelected: (val) {
                                                 if (val == 'delete') {
                                                   _confirmDeleteConversation(storeOwnerId, storeName);
+                                                } else if (val == 'report') {
+                                                  showCustomerReportDialog(
+                                                    context: context,
+                                                    reportedUserId: storeOwnerId,
+                                                    targetName: storeName,
+                                                  );
                                                 }
                                               },
                                               itemBuilder: (_) => [
+                                                if (!isSupport && storeOwnerId > 0)
+                                                  const PopupMenuItem(
+                                                    value: 'report',
+                                                    child: Row(
+                                                      children: [
+                                                        Icon(Icons.flag_outlined, color: Colors.amber, size: 18),
+                                                        SizedBox(width: 8),
+                                                        Text('Report Store', style: TextStyle(color: Colors.amber, fontSize: 13)),
+                                                      ],
+                                                    ),
+                                                  ),
                                                 const PopupMenuItem(
                                                   value: 'delete',
                                                   child: Row(

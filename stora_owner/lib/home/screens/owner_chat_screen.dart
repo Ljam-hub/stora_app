@@ -741,32 +741,49 @@ class _OwnerChatScreenState extends State<OwnerChatScreen> {
                                         ],
                                       ),
                                     ),
-                                    trailing: PopupMenuButton<String>(
-                                      icon: const Icon(
-                                        Icons.more_vert_rounded,
-                                        color: Colors.white38,
-                                        size: 20,
-                                      ),
-                                      color: HomeColors.cardElevated,
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                      onSelected: (val) {
-                                        if (val == 'delete') {
-                                          _confirmDeleteConversation(customerId, customerName);
-                                        }
-                                      },
-                                      itemBuilder: (_) => [
-                                        PopupMenuItem(
-                                          value: 'delete',
-                                          child: Row(
-                                            children: [
-                                              Icon(Icons.delete_outline_rounded, color: HomeColors.dangerText, size: 18),
-                                              const SizedBox(width: 8),
-                                              Text('Delete Convo', style: TextStyle(color: HomeColors.dangerText, fontSize: 13)),
-                                            ],
-                                          ),
-                                        ),
-                                      ],
-                                    ),
+                                     trailing: PopupMenuButton<String>(
+                                       icon: const Icon(
+                                         Icons.more_vert_rounded,
+                                         color: Colors.white38,
+                                         size: 20,
+                                       ),
+                                       color: HomeColors.cardElevated,
+                                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                       onSelected: (val) {
+                                         if (val == 'delete') {
+                                           _confirmDeleteConversation(customerId, customerName);
+                                         } else if (val == 'report') {
+                                           showOwnerReportCustomerDialog(
+                                             context: context,
+                                             customerId: customerId,
+                                             customerName: customerName,
+                                           );
+                                         }
+                                       },
+                                       itemBuilder: (_) => [
+                                         if (!isSupport)
+                                           PopupMenuItem(
+                                             value: 'report',
+                                             child: Row(
+                                               children: [
+                                                 const Icon(Icons.report_problem_outlined, color: Colors.amber, size: 18),
+                                                 const SizedBox(width: 8),
+                                                 Text('Report Customer', style: TextStyle(color: HomeColors.textPrimary, fontSize: 13)),
+                                               ],
+                                             ),
+                                           ),
+                                         PopupMenuItem(
+                                           value: 'delete',
+                                           child: Row(
+                                             children: [
+                                               Icon(Icons.delete_outline_rounded, color: HomeColors.dangerText, size: 18),
+                                               const SizedBox(width: 8),
+                                               Text('Delete Convo', style: TextStyle(color: HomeColors.dangerText, fontSize: 13)),
+                                             ],
+                                           ),
+                                         ),
+                                       ],
+                                     ),
                                   ),
                                 );
                               },
@@ -1118,269 +1135,16 @@ class _OwnerChatThreadScreenState extends State<OwnerChatThreadScreen> {
   }
 
   Future<void> _showReportDialog() async {
-    String selectedReason = 'harassment';
-    final descriptionController = TextEditingController();
-    bool alsoBlock = !_isBlocked;
-    bool isSubmitting = false;
-
-    final reasons = [
-      {'value': 'harassment', 'label': 'Harassment / Abusive Behavior'},
-      {'value': 'fraud', 'label': 'Fraud / Scam / Non-payment'},
-      {'value': 'fake_order', 'label': 'Fake / Suspicious Order'},
-      {'value': 'inappropriate_content', 'label': 'Inappropriate Photos or Content'},
-      {'value': 'spam', 'label': 'Spam / Unsolicited Promotion'},
-      {'value': 'other', 'label': 'Other Violation'},
-    ];
-
-    try {
-      await showModalBottomSheet(
-        context: context,
-        backgroundColor: HomeColors.cardBackground,
-        isScrollControlled: true,
-        isDismissible: !isSubmitting,
-        enableDrag: !isSubmitting,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        builder: (ctx) {
-          return StatefulBuilder(
-            builder: (sheetCtx, setSheetState) {
-              return Padding(
-                padding: EdgeInsets.only(
-                  left: 20,
-                  right: 20,
-                  top: 16,
-                  bottom: MediaQuery.of(sheetCtx).viewInsets.bottom + 20,
-                ),
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Center(
-                        child: Container(
-                          width: 40,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: HomeColors.cardBorder,
-                            borderRadius: BorderRadius.circular(2),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Colors.amber.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: const Icon(Icons.report_problem_rounded, color: Colors.amber, size: 22),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  widget.customerName.isNotEmpty ? 'Report ${widget.customerName}' : 'Report Customer',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: HomeColors.textPrimary,
-                                  ),
-                                ),
-                                Text(
-                                  'Reports are investigated by Stora platform admins.',
-                                  style: TextStyle(fontSize: 12, color: HomeColors.textSecondary),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-                      Text(
-                        'Reason for Report',
-                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: HomeColors.textSecondary),
-                      ),
-                      const SizedBox(height: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: HomeColors.cardElevated,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: HomeColors.cardBorder),
-                        ),
-                        child: DropdownButtonHideUnderline(
-                          child: DropdownButton<String>(
-                            value: selectedReason,
-                            isExpanded: true,
-                            dropdownColor: HomeColors.cardElevated,
-                            style: TextStyle(color: HomeColors.textPrimary, fontSize: 14),
-                            items: reasons.map((r) {
-                              return DropdownMenuItem<String>(
-                                value: r['value'],
-                                child: Text(r['label']!),
-                              );
-                            }).toList(),
-                            onChanged: isSubmitting
-                                ? null
-                                : (val) {
-                                    if (val != null) setSheetState(() => selectedReason = val);
-                                  },
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Details / Description',
-                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: HomeColors.textSecondary),
-                      ),
-                      const SizedBox(height: 8),
-                      TextField(
-                        controller: descriptionController,
-                        maxLines: 3,
-                        enabled: !isSubmitting,
-                        style: TextStyle(color: HomeColors.textPrimary, fontSize: 14),
-                        decoration: InputDecoration(
-                          hintText: 'Describe what happened (e.g. offensive messages, bogus orders)...',
-                          hintStyle: TextStyle(color: HomeColors.textMuted, fontSize: 13),
-                          filled: true,
-                          fillColor: HomeColors.cardElevated,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: HomeColors.cardBorder),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: HomeColors.cardBorder),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: AppColors.primary),
-                          ),
-                          contentPadding: const EdgeInsets.all(12),
-                        ),
-                      ),
-                      if (!_isBlocked) ...[
-                        const SizedBox(height: 12),
-                        InkWell(
-                          onTap: isSubmitting ? null : () => setSheetState(() => alsoBlock = !alsoBlock),
-                          borderRadius: BorderRadius.circular(8),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 4),
-                            child: Row(
-                              children: [
-                                SizedBox(
-                                  width: 24,
-                                  height: 24,
-                                  child: Checkbox(
-                                    value: alsoBlock,
-                                    activeColor: AppColors.primary,
-                                    onChanged: isSubmitting ? null : (val) => setSheetState(() => alsoBlock = val ?? false),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    'Also block this customer from messaging me',
-                                    style: TextStyle(color: HomeColors.textPrimary, fontSize: 13),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                      const SizedBox(height: 20),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton(
-                              onPressed: isSubmitting ? null : () => Navigator.of(ctx).pop(),
-                              style: OutlinedButton.styleFrom(
-                                side: BorderSide(color: HomeColors.cardBorder),
-                                padding: const EdgeInsets.symmetric(vertical: 13),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                              ),
-                              child: Text('Cancel', style: TextStyle(color: HomeColors.textSecondary)),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            flex: 2,
-                            child: ElevatedButton(
-                              onPressed: isSubmitting
-                                  ? null
-                                  : () async {
-                                      final messenger = ScaffoldMessenger.of(context);
-                                      setSheetState(() => isSubmitting = true);
-                                      try {
-                                        await ApiClient.instance.submitReport(
-                                          reportedUserId: widget.customerId,
-                                          reason: selectedReason,
-                                          description: descriptionController.text.trim(),
-                                          orderId: widget.orderId,
-                                        );
-
-                                        if (alsoBlock && !_isBlocked) {
-                                          try {
-                                            await ApiClient.instance.blockCustomer(widget.customerId);
-                                            if (mounted) setState(() => _isBlocked = true);
-                                          } catch (_) {}
-                                        }
-
-                                        if (ctx.mounted) Navigator.of(ctx).pop();
-
-                                        messenger.showSnackBar(
-                                          const SnackBar(
-                                            content: Text(
-                                              'Report submitted. Our administrators will review this user.',
-                                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                                            ),
-                                            backgroundColor: HomeColors.successText,
-                                          ),
-                                        );
-                                      } catch (e) {
-                                        if (ctx.mounted) setSheetState(() => isSubmitting = false);
-                                        final eStr = e.toString().toLowerCase();
-                                        final msg = eStr.contains('pending report') || eStr.contains('already have')
-                                            ? 'You already have an active pending report for this user.'
-                                            : 'Failed to submit report: $e';
-                                        messenger.showSnackBar(
-                                          SnackBar(content: Text(msg), backgroundColor: HomeColors.dangerText),
-                                        );
-                                      }
-                                    },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.amber[700],
-                                padding: const EdgeInsets.symmetric(vertical: 13),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                              ),
-                              child: isSubmitting
-                                  ? const SizedBox(
-                                      width: 18,
-                                      height: 18,
-                                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                                    )
-                                  : const Text('Submit Report', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          );
-        },
-      );
-    } finally {
-      descriptionController.dispose();
-    }
+    await showOwnerReportCustomerDialog(
+      context: context,
+      customerId: widget.customerId,
+      customerName: widget.customerName,
+      orderId: widget.orderId,
+      isBlocked: _isBlocked,
+      onBlockedChanged: (val) {
+        if (mounted) setState(() => _isBlocked = val);
+      },
+    );
   }
 
   Future<void> _pickImage(ImageSource source) async {
@@ -2360,5 +2124,495 @@ class _OwnerChatThreadScreenState extends State<OwnerChatThreadScreen> {
         ],
       ),
     );
+  }
+}
+
+Future<void> showOwnerReportCustomerDialog({
+  required BuildContext context,
+  required int customerId,
+  required String customerName,
+  int? orderId,
+  bool isBlocked = false,
+  ValueChanged<bool>? onBlockedChanged,
+}) async {
+  String selectedReason = 'harassment';
+  final descriptionController = TextEditingController();
+  bool alsoBlock = !isBlocked;
+  bool isSubmitting = false;
+  Uint8List? evidenceBytes;
+  String? evidenceFilename;
+
+  final reasons = [
+    {'value': 'harassment', 'label': 'Harassment / Abusive Behavior'},
+    {'value': 'fraud', 'label': 'Fraud / Scam / Non-payment'},
+    {'value': 'fake_order', 'label': 'Fake / Suspicious Order'},
+    {'value': 'inappropriate_content', 'label': 'Inappropriate Photos or Content'},
+    {'value': 'spam', 'label': 'Spam / Unsolicited Promotion'},
+    {'value': 'other', 'label': 'Other Violation'},
+  ];
+
+  Future<void> pickEvidence(ImageSource source, StateSetter setSheetState) async {
+    try {
+      final picker = ImagePicker();
+      final picked = await picker.pickImage(
+        source: source,
+        maxWidth: 1600,
+        maxHeight: 1600,
+        imageQuality: 85,
+      );
+      if (picked != null) {
+        final bytes = await picked.readAsBytes();
+        setSheetState(() {
+          evidenceBytes = bytes;
+          evidenceFilename = picked.name;
+        });
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Could not attach image: $e'),
+            backgroundColor: HomeColors.dangerText,
+          ),
+        );
+      }
+    }
+  }
+
+  void showSourcePicker(StateSetter setSheetState) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: HomeColors.cardBackground,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (bCtx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: HomeColors.cardBorder,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Attach Evidence',
+                style: TextStyle(
+                  color: HomeColors.textPrimary,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 14),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.camera_alt_rounded, color: AppColors.primary),
+                ),
+                title: Text('Take Photo', style: TextStyle(color: HomeColors.textPrimary, fontWeight: FontWeight.w600)),
+                subtitle: Text('Capture evidence using camera', style: TextStyle(color: HomeColors.textMuted, fontSize: 12)),
+                onTap: () {
+                  Navigator.of(bCtx).pop();
+                  pickEvidence(ImageSource.camera, setSheetState);
+                },
+              ),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.purple.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.photo_library_rounded, color: Colors.purpleAccent),
+                ),
+                title: Text('Choose from Gallery', style: TextStyle(color: HomeColors.textPrimary, fontWeight: FontWeight.w600)),
+                subtitle: Text('Pick screenshot or image file', style: TextStyle(color: HomeColors.textMuted, fontSize: 12)),
+                onTap: () {
+                  Navigator.of(bCtx).pop();
+                  pickEvidence(ImageSource.gallery, setSheetState);
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  try {
+    await showModalBottomSheet(
+      context: context,
+      backgroundColor: HomeColors.cardBackground,
+      isScrollControlled: true,
+      isDismissible: !isSubmitting,
+      enableDrag: !isSubmitting,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (sheetCtx, setSheetState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 16,
+                bottom: MediaQuery.of(sheetCtx).viewInsets.bottom + 20,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: HomeColors.cardBorder,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.amber.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(Icons.report_problem_rounded, color: Colors.amber, size: 22),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                customerName.isNotEmpty ? 'Report $customerName' : 'Report Customer',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: HomeColors.textPrimary,
+                                ),
+                              ),
+                              Text(
+                                'Reports are investigated by Stora platform admins.',
+                                style: TextStyle(fontSize: 12, color: HomeColors.textSecondary),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      'Reason for Report',
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: HomeColors.textSecondary),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: HomeColors.cardElevated,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: HomeColors.cardBorder),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: selectedReason,
+                          isExpanded: true,
+                          dropdownColor: HomeColors.cardElevated,
+                          style: TextStyle(color: HomeColors.textPrimary, fontSize: 14),
+                          items: reasons.map((r) {
+                            return DropdownMenuItem<String>(
+                              value: r['value'],
+                              child: Text(r['label']!),
+                            );
+                          }).toList(),
+                          onChanged: isSubmitting
+                              ? null
+                              : (val) {
+                                  if (val != null) setSheetState(() => selectedReason = val);
+                                },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Details / Description',
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: HomeColors.textSecondary),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: descriptionController,
+                      maxLines: 3,
+                      enabled: !isSubmitting,
+                      style: TextStyle(color: HomeColors.textPrimary, fontSize: 14),
+                      decoration: InputDecoration(
+                        hintText: 'Describe what happened (e.g. offensive messages, bogus orders)...',
+                        hintStyle: TextStyle(color: HomeColors.textMuted, fontSize: 13),
+                        filled: true,
+                        fillColor: HomeColors.cardElevated,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: HomeColors.cardBorder),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: HomeColors.cardBorder),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: AppColors.primary),
+                        ),
+                        contentPadding: const EdgeInsets.all(12),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Attach Evidence / Screenshot (Optional)',
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: HomeColors.textSecondary),
+                    ),
+                    const SizedBox(height: 8),
+                    if (evidenceBytes == null)
+                      InkWell(
+                        onTap: isSubmitting ? null : () => showSourcePicker(setSheetState),
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                          decoration: BoxDecoration(
+                            color: HomeColors.cardElevated,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: HomeColors.cardBorder, style: BorderStyle.solid),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary.withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Icon(Icons.add_photo_alternate_outlined, color: AppColors.primary, size: 20),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Attach photo or screenshot',
+                                      style: TextStyle(color: HomeColors.textPrimary, fontSize: 13, fontWeight: FontWeight.w600),
+                                    ),
+                                    Text(
+                                      'Tap to take photo or choose from gallery',
+                                      style: TextStyle(color: HomeColors.textMuted, fontSize: 11.5),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Icon(Icons.arrow_forward_ios_rounded, color: HomeColors.textMuted, size: 14),
+                            ],
+                          ),
+                        ),
+                      )
+                    else
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: HomeColors.cardElevated,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppColors.primary.withValues(alpha: 0.5)),
+                        ),
+                        child: Row(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Image.memory(
+                                evidenceBytes!,
+                                width: 52,
+                                height: 52,
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    evidenceFilename ?? 'evidence.jpg',
+                                    style: TextStyle(color: HomeColors.textPrimary, fontSize: 13, fontWeight: FontWeight.w600),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Row(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                                        decoration: BoxDecoration(
+                                          color: Colors.green.withValues(alpha: 0.2),
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                        child: const Text(
+                                          'Attached',
+                                          style: TextStyle(color: Colors.greenAccent, fontSize: 10, fontWeight: FontWeight.bold),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        '${(evidenceBytes!.lengthInBytes / 1024).toStringAsFixed(1)} KB',
+                                        style: TextStyle(color: HomeColors.textMuted, fontSize: 11),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                            IconButton(
+                              tooltip: 'Remove Image',
+                              icon: Icon(Icons.close_rounded, color: HomeColors.dangerText, size: 20),
+                              onPressed: isSubmitting
+                                  ? null
+                                  : () => setSheetState(() {
+                                        evidenceBytes = null;
+                                        evidenceFilename = null;
+                                      }),
+                            ),
+                          ],
+                        ),
+                      ),
+                    if (!isBlocked) ...[
+                      const SizedBox(height: 12),
+                      InkWell(
+                        onTap: isSubmitting ? null : () => setSheetState(() => alsoBlock = !alsoBlock),
+                        borderRadius: BorderRadius.circular(8),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Row(
+                            children: [
+                              SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: Checkbox(
+                                  value: alsoBlock,
+                                  activeColor: AppColors.primary,
+                                  onChanged: isSubmitting ? null : (val) => setSheetState(() => alsoBlock = val ?? false),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Also block this customer from messaging me',
+                                  style: TextStyle(color: HomeColors.textPrimary, fontSize: 13),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 20),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: isSubmitting ? null : () => Navigator.of(ctx).pop(),
+                            style: OutlinedButton.styleFrom(
+                              side: BorderSide(color: HomeColors.cardBorder),
+                              padding: const EdgeInsets.symmetric(vertical: 13),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                            child: Text('Cancel', style: TextStyle(color: HomeColors.textSecondary)),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          flex: 2,
+                          child: ElevatedButton(
+                            onPressed: isSubmitting
+                                ? null
+                                : () async {
+                                    final messenger = ScaffoldMessenger.of(context);
+                                    setSheetState(() => isSubmitting = true);
+                                    try {
+                                      await ApiClient.instance.submitReport(
+                                        reportedUserId: customerId,
+                                        reason: selectedReason,
+                                        description: descriptionController.text.trim(),
+                                        orderId: orderId,
+                                        attachmentBytes: evidenceBytes,
+                                        filename: evidenceFilename ?? 'report_evidence.jpg',
+                                      );
+
+                                      if (alsoBlock && !isBlocked) {
+                                        try {
+                                          await ApiClient.instance.blockCustomer(customerId);
+                                          onBlockedChanged?.call(true);
+                                        } catch (_) {}
+                                      }
+
+                                      if (ctx.mounted) Navigator.of(ctx).pop();
+
+                                      messenger.showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            'Report submitted. Our administrators will review this user.',
+                                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                          ),
+                                          backgroundColor: HomeColors.successText,
+                                        ),
+                                      );
+                                    } catch (e) {
+                                      if (ctx.mounted) setSheetState(() => isSubmitting = false);
+                                      final eStr = e.toString().toLowerCase();
+                                      final msg = eStr.contains('pending report') || eStr.contains('already have')
+                                          ? 'You already have an active pending report for this user.'
+                                          : 'Failed to submit report: $e';
+                                      messenger.showSnackBar(
+                                        SnackBar(content: Text(msg), backgroundColor: HomeColors.dangerText),
+                                      );
+                                    }
+                                  },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.amber[700],
+                              padding: const EdgeInsets.symmetric(vertical: 13),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                            child: isSubmitting
+                                ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                                  )
+                                : const Text('Submit Report', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  } finally {
+    descriptionController.dispose();
   }
 }

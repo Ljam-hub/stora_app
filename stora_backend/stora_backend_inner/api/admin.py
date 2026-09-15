@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.html import format_html
 from stora_backend.admin_site import stora_admin_site
@@ -38,7 +39,9 @@ class BlockedCustomerAdmin(admin.ModelAdmin):
         "customer_display",
         "user_account_status",
         "created_at",
+        "manage_actions",
     )
+    list_display_links = ("id", "block_scope_badge", "owner_display", "customer_display")
     list_filter = ("created_at",)
     search_fields = (
         "owner__email",
@@ -87,14 +90,22 @@ class BlockedCustomerAdmin(admin.ModelAdmin):
     def owner_display(self, obj):
         if obj.owner:
             name = obj.owner.business_name or obj.owner.get_full_name() or obj.owner.username
-            return format_html('<strong>{}</strong> <span style="color: #8bd3ca; font-size: 12px;">({})</span>', name, obj.owner.email)
+            return format_html(
+                '<span style="color: #8bd3ca; font-weight: 700;">🏪 {}</span> <span style="color: #8bd3ca; font-size: 11px;">({})</span>',
+                name,
+                obj.owner.email,
+            )
         return format_html('<span style="color: #9ca3af; font-style: italic;">All Stores (Global)</span>')
 
     @admin.display(description="Customer")
     def customer_display(self, obj):
         if obj.customer:
             name = obj.customer.get_full_name() or obj.customer.username
-            return format_html('<strong>{}</strong> <span style="color: #8bd3ca; font-size: 12px;">({})</span>', name, obj.customer.email)
+            return format_html(
+                '<span style="color: #8bd3ca; font-weight: 700;">👤 {}</span> <span style="color: #8bd3ca; font-size: 11px;">({})</span>',
+                name,
+                obj.customer.email,
+            )
         return format_html('<span style="color: #9ca3af; font-style: italic;">Owner Blocked Directly</span>')
 
     @admin.display(description="Account Access")
@@ -108,6 +119,28 @@ class BlockedCustomerAdmin(admin.ModelAdmin):
             )
         return format_html(
             '<span style="background: rgba(16, 185, 129, 0.2); color: #34d399; padding: 2px 7px; border-radius: 4px; font-weight: bold; font-size: 11px;">Active In-App</span>'
+        )
+
+    @admin.display(description="Actions")
+    def manage_actions(self, obj):
+        edit_block_url = reverse("stora_admin:api_blockedcustomer_change", args=[obj.id])
+        target_user = obj.customer or obj.owner
+        user_url = reverse("stora_admin:accounts_user_change", args=[target_user.id]) if target_user else None
+        user_btn = (
+            format_html(
+                '<a href="{}" style="display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; color: #8bd3ca; background: rgba(139, 211, 202, 0.12); border: 1px solid rgba(139, 211, 202, 0.35); text-decoration: none; margin-left: 6px;" title="Manage user profile">👤 User Account &rarr;</a>',
+                user_url,
+            )
+            if user_url
+            else ""
+        )
+        return format_html(
+            '<div style="display: inline-flex; align-items: center;">'
+            '<a href="{}" style="display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; color: #fbbf24; background: rgba(251, 191, 36, 0.12); border: 1px solid rgba(251, 191, 36, 0.35); text-decoration: none;" title="Edit block settings">⚙️ Edit Block</a>'
+            '{}'
+            '</div>',
+            edit_block_url,
+            user_btn,
         )
 
     def save_model(self, request, obj, form, change):
@@ -138,6 +171,7 @@ class UserReportAdmin(admin.ModelAdmin):
         "has_attachment",
         "created_at",
     )
+    list_display_links = ("id", "reporter_display", "reported_user_display", "reason")
     list_filter = ("status", "reason", "created_at")
     search_fields = (
         "reporter__email",
@@ -162,7 +196,7 @@ class UserReportAdmin(admin.ModelAdmin):
         role_color = "#FF6B00" if u.role == "owner" else "#00875A"
         role_label = "Store Owner" if u.role == "owner" else "Customer"
         return format_html(
-            '<strong>{}</strong> <span style="font-size: 11px; background: {}; color: #fff; padding: 2px 6px; border-radius: 4px; margin-left: 4px;">{}</span>',
+            '<span style="color: #8bd3ca; font-weight: 700;">{}</span> <span style="font-size: 11px; background: {}; color: #fff; padding: 2px 6px; border-radius: 4px; margin-left: 4px;">{}</span>',
             name,
             role_color,
             role_label,
@@ -176,7 +210,7 @@ class UserReportAdmin(admin.ModelAdmin):
         role_label = "Store Owner" if u.role == "owner" else "Customer"
         active_badge = "" if u.is_active else ' <span style="font-size: 11px; background: #EF4444; color: #fff; padding: 2px 6px; border-radius: 4px; font-weight: bold;">🚫 BLOCKED</span>'
         return format_html(
-            '<strong>{}</strong> <span style="font-size: 11px; background: {}; color: #fff; padding: 2px 6px; border-radius: 4px; margin-left: 4px;">{}</span>{}',
+            '<span style="color: #8bd3ca; font-weight: 700;">{}</span> <span style="font-size: 11px; background: {}; color: #fff; padding: 2px 6px; border-radius: 4px; margin-left: 4px;">{}</span>{}',
             name,
             role_color,
             role_label,
