@@ -76,17 +76,37 @@ class CartItemTile extends StatelessWidget {
             ),
           ),
 
-          // Quantity Stepper & Remove
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
+          // Delete Button & Quantity Stepper
+          Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              IconButton(
-                icon: const Icon(Icons.delete_outline, size: 20, color: AppColors.danger),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-                onPressed: onRemove,
+              // Delete Button: on the left side of - 1 +, fit to match stepper
+              Tooltip(
+                message: 'Remove item',
+                child: InkWell(
+                  onTap: onRemove,
+                  borderRadius: BorderRadius.circular(8),
+                  child: Container(
+                    padding: const EdgeInsets.all(5),
+                    decoration: BoxDecoration(
+                      color: AppColors.danger.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: AppColors.danger.withValues(alpha: 0.25),
+                        width: 1,
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.delete_outline_rounded,
+                      size: 16,
+                      color: AppColors.danger,
+                    ),
+                  ),
+                ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(width: 8),
+
+              // Quantity Stepper: - 1 +
               Container(
                 decoration: BoxDecoration(
                   color: AppColors.cardElevated,

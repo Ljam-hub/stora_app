@@ -6,6 +6,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import '../../models/store_model.dart';
 import '../../providers/catalog_provider.dart';
+import '../../services/location_service.dart';
 import '../../theme/app_theme.dart';
 
 class StoreMapScreen extends StatefulWidget {
@@ -124,15 +125,59 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
   }
 
   void _recenter() async {
-    ScaffoldMessenger.of(context).showSnackBar(
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(
       const SnackBar(
-        duration: Duration(seconds: 1),
+        duration: Duration(seconds: 2),
         behavior: SnackBarBehavior.floating,
-        content: Text('Locating your GPS position...'),
+        content: Row(
+          children: [
+            SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+            ),
+            SizedBox(width: 12),
+            Text('Locating your GPS position...'),
+          ],
+        ),
       ),
     );
-    await _acquireLocation();
-    _mapController.move(LatLng(_userLat, _userLng), 15.0);
+
+    String? errorMessage;
+    final position = await LocationService.instance.getCurrentPosition(
+      onError: (err) => errorMessage = err,
+    );
+
+    if (!mounted) return;
+    messenger.hideCurrentSnackBar();
+
+    if (position != null) {
+      setState(() {
+        _userLat = position.latitude;
+        _userLng = position.longitude;
+      });
+      _mapController.move(LatLng(_userLat, _userLng), 16.0);
+      _fetchStores();
+      messenger.showSnackBar(
+        const SnackBar(
+          duration: Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: AppColors.success,
+          content: Text('Centered to your location!'),
+        ),
+      );
+    } else {
+      messenger.showSnackBar(
+        SnackBar(
+          duration: const Duration(seconds: 4),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: AppColors.danger,
+          content: Text(errorMessage ?? 'Could not determine your location. Please enable GPS.'),
+        ),
+      );
+    }
   }
 
   void _zoom(double delta) {

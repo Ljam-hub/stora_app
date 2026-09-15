@@ -45,5 +45,7 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Stora requires access to your location to automatically locate your delivery address and show nearby stores.</string>
 </dict>
 </plist>

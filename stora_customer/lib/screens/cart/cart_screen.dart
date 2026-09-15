@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/cart_provider.dart';
+import '../../services/location_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/cart_item_tile.dart';
 import '../../widgets/empty_state.dart';
@@ -17,10 +19,58 @@ class CartScreen extends StatelessWidget {
     this.onOrderPlaced,
   });
 
+  Future<void> _detectLocation(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final auth = context.read<AuthProvider>();
+
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(
+      const SnackBar(
+        content: Row(
+          children: [
+            SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+            ),
+            SizedBox(width: 12),
+            Text('Locating your current address...'),
+          ],
+        ),
+        duration: Duration(seconds: 4),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+
+    final result = await LocationService.instance.detectCurrentAddress();
+    messenger.hideCurrentSnackBar();
+
+    if (result.success && result.address != null && result.address!.isNotEmpty) {
+      await auth.saveDeliveryDetails(address: result.address!);
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('Delivery address set: ${result.address!}'),
+          backgroundColor: AppColors.success,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } else {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(result.errorMessage ?? 'Unable to detect location. Please check GPS permissions.'),
+          backgroundColor: AppColors.danger,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     context.watch<CustomerThemeController>();
     final cart = context.watch<CartProvider>();
+    final auth = context.watch<AuthProvider>();
+    final savedAddress = auth.savedAddress;
 
     return Scaffold(
       appBar: AppBar(
@@ -93,6 +143,81 @@ class CartScreen extends StatelessWidget {
                       ],
                     ),
                   ),
+
+                // Delivery location banner with auto-locate icon
+                Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: AppColors.cardElevated.withValues(alpha: 0.6),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.cardBorderLight),
+                  ),
+                  child: Row(
+                    children: [
+                      Tooltip(
+                        message: 'Detect current location',
+                        child: InkWell(
+                          onTap: () => _detectLocation(context),
+                          borderRadius: BorderRadius.circular(8),
+                          child: Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(
+                              Icons.location_on_rounded,
+                              color: AppColors.primary,
+                              size: 16,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: InkWell(
+                          onTap: () => _detectLocation(context),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Deliver To:',
+                                style: TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              Text(
+                                (savedAddress != null && savedAddress.isNotEmpty)
+                                    ? savedAddress
+                                    : 'Tap location icon to detect current address',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: (savedAddress != null && savedAddress.isNotEmpty)
+                                      ? AppColors.textPrimary
+                                      : AppColors.accentText,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.my_location_rounded, size: 18, color: AppColors.primary),
+                        tooltip: 'Locate me now',
+                        onPressed: () => _detectLocation(context),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                      ),
+                    ],
+                  ),
+                ),
 
                 // Item List
                 Expanded(

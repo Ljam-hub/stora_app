@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/api_service.dart';
+import '../../services/location_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../widgets/gradient_button.dart';
@@ -230,63 +231,117 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final auth = context.read<AuthProvider>();
     final phoneController = TextEditingController(text: auth.savedPhone ?? '');
     final addressController = TextEditingController(text: auth.savedAddress ?? '');
+    bool isLocating = false;
 
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.cardBackground,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: AppColors.cardBorder),
-        ),
-        title: Text('Default Delivery Info', style: TextStyle(color: AppColors.textPrimary)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CustomTextField(
-              controller: phoneController,
-              label: 'Phone Number',
-              prefixIcon: Icons.phone_outlined,
-            ),
-            const SizedBox(height: 14),
-            CustomTextField(
-              controller: addressController,
-              label: 'Delivery Address',
-              prefixIcon: Icons.location_on_outlined,
-              maxLines: 2,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final messenger = ScaffoldMessenger.of(context);
-              final nav = Navigator.of(ctx);
-              await auth.saveDeliveryDetails(
-                phone: phoneController.text,
-                address: addressController.text,
+      builder: (ctx) => StatefulBuilder(
+        builder: (dialogCtx, setDialogState) {
+          Future<void> autoLocate() async {
+            if (isLocating) return;
+            setDialogState(() => isLocating = true);
+            final messenger = ScaffoldMessenger.of(context);
+            messenger.hideCurrentSnackBar();
+            messenger.showSnackBar(
+              const SnackBar(
+                content: Text('Detecting current GPS location...'),
+                duration: Duration(seconds: 3),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+            final res = await LocationService.instance.detectCurrentAddress();
+            if (dialogCtx.mounted) {
+              setDialogState(() => isLocating = false);
+            }
+            messenger.hideCurrentSnackBar();
+            if (res.success && res.address != null) {
+              addressController.text = res.address!;
+              messenger.showSnackBar(
+                SnackBar(
+                  content: Text('Location found: ${res.address!}'),
+                  backgroundColor: AppColors.success,
+                  behavior: SnackBarBehavior.floating,
+                ),
               );
-              if (mounted) {
-                nav.pop();
-                messenger.showSnackBar(
-                  const SnackBar(
-                    content: Text('Delivery information saved!', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                    backgroundColor: Color(0xFF059669),
-                  ),
-                );
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.black,
+            } else {
+              messenger.showSnackBar(
+                SnackBar(
+                  content: Text(res.errorMessage ?? 'Could not detect location.'),
+                  backgroundColor: AppColors.danger,
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            }
+          }
+
+          return AlertDialog(
+            backgroundColor: AppColors.cardBackground,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+              side: BorderSide(color: AppColors.cardBorder),
             ),
-            child: const Text('Save'),
-          ),
-        ],
+            title: Text('Default Delivery Info', style: TextStyle(color: AppColors.textPrimary)),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CustomTextField(
+                  controller: phoneController,
+                  label: 'Phone Number',
+                  prefixIcon: Icons.phone_outlined,
+                ),
+                const SizedBox(height: 14),
+                CustomTextField(
+                  controller: addressController,
+                  label: 'Delivery Address',
+                  prefixIcon: Icons.location_on_outlined,
+                  prefixIconTooltip: 'Locate current address',
+                  onPrefixIconPressed: autoLocate,
+                  suffix: isLocating
+                      ? const Padding(
+                          padding: EdgeInsets.all(12),
+                          child: SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+                          ),
+                        )
+                      : IconButton(
+                          icon: const Icon(Icons.my_location_rounded, color: AppColors.primary, size: 20),
+                          tooltip: 'Detect current location',
+                          onPressed: autoLocate,
+                        ),
+                  maxLines: 2,
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  final messenger = ScaffoldMessenger.of(context);
+                  final nav = Navigator.of(ctx);
+                  await auth.saveDeliveryDetails(
+                    phone: phoneController.text,
+                    address: addressController.text,
+                  );
+                  if (mounted) {
+                    nav.pop();
+                    messenger.showSnackBar(
+                      const SnackBar(
+                        content: Text('Delivery information saved!', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                        backgroundColor: Color(0xFF059669),
+                      ),
+                    );
+                  }
+                },
+                child: const Text('Save Details'),
+              ),
+            ],
+          );
+        },
       ),
     );
   }

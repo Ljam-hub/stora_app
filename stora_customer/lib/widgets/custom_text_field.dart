@@ -13,6 +13,8 @@ class CustomTextField extends StatefulWidget {
   final void Function(String)? onChanged;
   final bool readOnly;
   final Widget? suffix;
+  final VoidCallback? onPrefixIconPressed;
+  final String? prefixIconTooltip;
 
   const CustomTextField({
     super.key,
@@ -27,6 +29,8 @@ class CustomTextField extends StatefulWidget {
     this.onChanged,
     this.readOnly = false,
     this.suffix,
+    this.onPrefixIconPressed,
+    this.prefixIconTooltip,
   });
 
   @override
@@ -66,7 +70,15 @@ class _CustomTextFieldState extends State<CustomTextField> {
           decoration: InputDecoration(
             hintText: widget.hint,
             prefixIcon: widget.prefixIcon != null
-                ? Icon(widget.prefixIcon, color: AppColors.accentText, size: 20)
+                ? (widget.onPrefixIconPressed != null
+                    ? IconButton(
+                        icon: Icon(widget.prefixIcon, color: AppColors.primary, size: 20),
+                        tooltip: widget.prefixIconTooltip ?? 'Locate current address',
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                        onPressed: widget.onPrefixIconPressed,
+                      )
+                    : Icon(widget.prefixIcon, color: AppColors.accentText, size: 20))
                 : null,
             suffixIcon: widget.isPassword
                 ? ValueListenableBuilder<TextEditingValue>(

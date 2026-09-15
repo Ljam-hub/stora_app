@@ -195,9 +195,9 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> saveDeliveryDetails({required String phone, required String address}) async {
-    _savedPhone = phone;
-    _savedAddress = address;
+  Future<void> saveDeliveryDetails({String? phone, String? address}) async {
+    if (phone != null) _savedPhone = phone;
+    if (address != null) _savedAddress = address;
     await SessionManager.instance.updateDeliveryInfo(phone: phone, address: address);
     notifyListeners();
   }

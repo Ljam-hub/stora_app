@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/cart_provider.dart';
 import '../../providers/order_provider.dart';
+import '../../services/location_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../widgets/gradient_button.dart';
@@ -24,6 +25,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   final _notesController = TextEditingController();
 
   bool _isSubmitting = false;
+  bool _isLocating = false;
 
   @override
   void initState() {
@@ -41,6 +43,59 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     _addressController.dispose();
     _notesController.dispose();
     super.dispose();
+  }
+
+  Future<void> _handleAutoLocate() async {
+    if (_isLocating) return;
+    setState(() => _isLocating = true);
+
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Row(
+          children: [
+            SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+            ),
+            SizedBox(width: 12),
+            Text('Locating your current address...'),
+          ],
+        ),
+        duration: Duration(seconds: 4),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+
+    final result = await LocationService.instance.detectCurrentAddress();
+
+    if (!mounted) return;
+    setState(() => _isLocating = false);
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
+    if (result.success && result.address != null && result.address!.isNotEmpty) {
+      _addressController.text = result.address!;
+      context.read<AuthProvider>().saveDeliveryDetails(
+        address: result.address!,
+      );
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Location detected: ${result.address!}'),
+          backgroundColor: AppColors.success,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result.errorMessage ?? 'Unable to detect location. Please enter your address manually.'),
+          backgroundColor: AppColors.danger,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   Future<void> _handlePlaceOrder() async {
@@ -282,6 +337,22 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   label: 'Delivery / Pickup Address',
                   hint: 'House/Unit No., Street, Barangay, City',
                   prefixIcon: Icons.location_on_outlined,
+                  prefixIconTooltip: 'Auto-detect current location',
+                  onPrefixIconPressed: _handleAutoLocate,
+                  suffix: _isLocating
+                      ? const Padding(
+                          padding: EdgeInsets.all(12),
+                          child: SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+                          ),
+                        )
+                      : IconButton(
+                          icon: const Icon(Icons.my_location_rounded, color: AppColors.primary, size: 20),
+                          tooltip: 'Use current GPS location',
+                          onPressed: _handleAutoLocate,
+                        ),
                   maxLines: 2,
                   validator: (val) => val == null || val.trim().isEmpty ? 'Please provide your address' : null,
                 ),
