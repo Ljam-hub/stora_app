@@ -59,56 +59,98 @@ class StoraAdminSite(AdminSite):
             qs = qs.exclude(deleted_by_users=request.user)
         return qs.count()
 
-    def index(self, request, extra_context=None):
-        from accounts.models import PasswordResetToken, PaymentProof
+    def get_admin_notifications_summary(self, request=None):
+        from accounts.models import PasswordResetToken, PaymentProof, User
+        from api.models import UserReport
         from inventory.models import Product
         from orders.models import Order
-        from sales.models import Sale
 
-        today = timezone.localdate()
-        user = request.user
+        user = getattr(request, "user", None) if request else None
+        is_admin = bool(
+            user and user.is_authenticated and (user.is_superuser or user.is_staff or getattr(user, "role", None) == User.ROLE_ADMIN)
+        )
 
-        if user.is_superuser:
-            todays_sales = Sale.objects.filter(created_at__date=today)
-            products = Product.objects.all()
-            pending_orders = Order.objects.filter(status=Order.STATUS_PENDING)
-            pending_requests = PaymentProof.objects.filter(status="pending").count()
+        unread_support = self.get_unread_support_count(request)
+
+        if is_admin:
+            pending_reports = UserReport.objects.filter(status=UserReport.STATUS_PENDING).count()
+            pending_payments = PaymentProof.objects.filter(status=PaymentProof.STATUS_PENDING).count()
+            pending_orders = Order.objects.filter(status=Order.STATUS_PENDING).count()
             active_resets = PasswordResetToken.objects.filter(
                 used=False,
                 created_at__gte=timezone.now() - timedelta(hours=1),
             ).count()
-            unread_support = self.get_unread_support_count(request)
+            out_of_stock = Product.objects.filter(stock=0).count()
+        elif user and user.is_authenticated:
+            pending_reports = 0
+            pending_payments = 0
+            pending_orders = Order.objects.filter(owner=user, status=Order.STATUS_PENDING).count()
+            active_resets = 0
+            out_of_stock = Product.objects.filter(owner=user, stock=0).count()
+        else:
+            pending_reports = 0
+            pending_payments = 0
+            pending_orders = 0
+            active_resets = 0
+            out_of_stock = 0
+
+        total_action = pending_reports + pending_payments + pending_orders + unread_support
+
+        return {
+            "pending_reports_count": pending_reports,
+            "pending_payments_count": pending_payments,
+            "pending_orders_count": pending_orders,
+            "unread_support_count": unread_support,
+            "active_reset_requests": active_resets,
+            "out_of_stock_count": out_of_stock,
+            "total_action_count": total_action,
+        }
+
+    def index(self, request, extra_context=None):
+        from inventory.models import Product
+        from sales.models import Sale
+
+        today = timezone.localdate()
+        user = request.user
+        notifs = self.get_admin_notifications_summary(request)
+
+        if user.is_superuser or getattr(user, "role", None) == "admin":
+            todays_sales = Sale.objects.filter(created_at__date=today)
+            products = Product.objects.all()
         else:
             todays_sales = Sale.objects.filter(owner=user, created_at__date=today)
             products = Product.objects.filter(owner=user)
-            pending_orders = Order.objects.filter(owner=user, status=Order.STATUS_PENDING)
-            pending_requests = 0
-            active_resets = 0
-            unread_support = self.get_unread_support_count(request)
 
         extra_context = extra_context or {}
+        extra_context["stora_notifications"] = notifs
+        extra_context["stora_unread_support_count"] = notifs["unread_support_count"]
         extra_context["stora_stats"] = {
             "todays_total": todays_sales.aggregate(total=Sum("total"))["total"] or 0,
             "todays_count": todays_sales.count(),
             "total_stock": products.aggregate(total=Sum("stock"))["total"] or 0,
             "low_stock_count": products.filter(stock__lt=5).count(),
             "product_count": products.count(),
-            "pending_orders_count": pending_orders.count(),
-            "pending_requests": pending_requests,
-            "active_reset_requests": active_resets,
-            "unread_support_count": unread_support,
+            "out_of_stock_count": notifs["out_of_stock_count"],
+            "pending_reports_count": notifs["pending_reports_count"],
+            "pending_requests": notifs["pending_payments_count"],
+            "pending_orders_count": notifs["pending_orders_count"],
+            "unread_support_count": notifs["unread_support_count"],
+            "active_reset_requests": notifs["active_reset_requests"],
+            "total_action_count": notifs["total_action_count"],
         }
-        extra_context["stora_unread_support_count"] = unread_support
         return super().index(request, extra_context)
 
     def each_context(self, request):
         context = super().each_context(request)
-        context["stora_unread_support_count"] = self.get_unread_support_count(request)
+        notifs = self.get_admin_notifications_summary(request)
+        context["stora_notifications"] = notifs
+        context["stora_unread_support_count"] = notifs["unread_support_count"]
         return context
 
     def get_urls(self):
         urls = super().get_urls()
         custom_urls = [
+            path("api/notifications/summary/", self.admin_view(self.notifications_summary_api), name="notifications_summary_api"),
             path("support/", self.admin_view(self.support_chat_view), name="support_chat"),
             path("support/api/conversations/", self.admin_view(self.support_conversations_api), name="support_conversations_api"),
             path("support/api/messages/", self.admin_view(self.support_messages_api), name="support_messages_api"),
@@ -120,6 +162,10 @@ class StoraAdminSite(AdminSite):
             path("support/api/unread-count/", self.admin_view(self.support_unread_count_api), name="support_unread_count_api"),
         ]
         return custom_urls + urls
+
+    def notifications_summary_api(self, request):
+        summary = self.get_admin_notifications_summary(request)
+        return JsonResponse(summary)
 
     def support_chat_view(self, request):
         from api.views import get_support_user

@@ -130,10 +130,12 @@ class OrderAdmin(admin.ModelAdmin):
 
     @admin.action(description="✓ Accept selected orders (deduct stock & create sales)")
     def accept_orders(self, request, queryset):
+        from api.fcm import notify_order_status_change
         accepted_count = 0
         for order in queryset:
             if order.status in (Order.STATUS_PENDING, Order.STATUS_COUNTER_OFFER):
                 order.accept()
+                notify_order_status_change(order, "accepted")
                 accepted_count += 1
         self.message_user(
             request, f"Successfully accepted {accepted_count} order(s)."
@@ -141,10 +143,12 @@ class OrderAdmin(admin.ModelAdmin):
 
     @admin.action(description="📦 Mark selected orders as Ready for Pickup")
     def mark_ready_orders(self, request, queryset):
+        from api.fcm import notify_order_status_change
         ready_count = 0
         for order in queryset:
             if order.status == Order.STATUS_ACCEPTED:
                 order.mark_as_ready()
+                notify_order_status_change(order, "ready")
                 ready_count += 1
         self.message_user(
             request, f"Successfully marked {ready_count} order(s) as Ready for Pickup."
@@ -152,10 +156,12 @@ class OrderAdmin(admin.ModelAdmin):
 
     @admin.action(description="✗ Decline selected orders")
     def decline_orders(self, request, queryset):
+        from api.fcm import notify_order_status_change
         declined_count = 0
         for order in queryset:
             if order.status in (Order.STATUS_PENDING, Order.STATUS_COUNTER_OFFER):
                 order.decline(reason="Declined via Admin Portal")
+                notify_order_status_change(order, "declined", extra_msg="Declined via Admin Portal")
                 declined_count += 1
         self.message_user(
             request, f"Successfully declined {declined_count} order(s)."

@@ -3,6 +3,17 @@
 
 {% block content %}
 <section class="stora-alerts" aria-label="Notifications">
+  {% if stora_stats.pending_reports_count > 0 %}
+  <article class="stora-alert stora-alert--reports" style="border-left-color: #EF4444; background: linear-gradient(135deg, rgba(239, 68, 68, 0.16), rgba(24, 20, 36, 0.95));">
+    <span class="stora-alert__icon" aria-hidden="true" style="color: #EF4444;">&#9888;</span>
+    <div class="stora-alert__copy">
+      <h2 style="color: #F87171;">User Violation Reports</h2>
+      <p><strong>{{ stora_stats.pending_reports_count }}</strong> pending user report{{ stora_stats.pending_reports_count|pluralize }} awaiting investigation & moderation.</p>
+    </div>
+    <a class="stora-alert__action" href="/admin/api/userreport/?status__exact=pending" style="background: #EF4444; color: #FFF; border-color: #EF4444;">Review Reports <span aria-hidden="true">&rarr;</span></a>
+  </article>
+  {% endif %}
+
   {% if stora_stats.unread_support_count > 0 %}
   <article class="stora-alert stora-alert--support" style="border-left-color: #FF6B00; background: linear-gradient(135deg, rgba(255, 107, 0, 0.15), rgba(24, 20, 36, 0.95));">
     <span class="stora-alert__icon" aria-hidden="true" style="color: #FF6B00;">&#128172;</span>
@@ -36,6 +47,17 @@
   </article>
   {% endif %}
 
+  {% if stora_stats.out_of_stock_count > 0 %}
+  <article class="stora-alert stora-alert--danger" style="border-left-color: #F43F5E; background: linear-gradient(135deg, rgba(244, 63, 94, 0.12), rgba(24, 20, 36, 0.95));">
+    <span class="stora-alert__icon" aria-hidden="true" style="color: #F43F5E;">&#128230;</span>
+    <div class="stora-alert__copy">
+      <h2 style="color: #FB7185;">Out of Stock Inventory</h2>
+      <p><strong>{{ stora_stats.out_of_stock_count }}</strong> product{{ stora_stats.out_of_stock_count|pluralize }} reached 0 units and cannot be purchased.</p>
+    </div>
+    <a class="stora-alert__action" href="/admin/inventory/product/?stock__exact=0" style="background: rgba(244, 63, 94, 0.2); color: #FB7185; border-color: rgba(244, 63, 94, 0.4);">Restock Products <span aria-hidden="true">&rarr;</span></a>
+  </article>
+  {% endif %}
+
   {% if stora_stats.active_reset_requests > 0 %}
   <article class="stora-alert stora-alert--resets">
     <span class="stora-alert__icon" aria-hidden="true">&#128273;</span>
@@ -54,21 +76,43 @@
     <p class="stora-card__value">&#8369;{{ stora_stats.todays_total|floatformat:2 }}</p>
     <p class="stora-card__sub">{{ stora_stats.todays_count }} completed sale{{ stora_stats.todays_count|pluralize }}</p>
   </article>
+
+  <article class="stora-card" style="border: 1px solid {% if stora_stats.pending_reports_count > 0 %}rgba(239, 68, 68, 0.5){% else %}rgba(255, 255, 255, 0.08){% endif %};">
+    <div class="stora-card__top">
+      <span class="stora-card__label">User Reports</span>
+      <span class="stora-card__icon" style="background: rgba(239, 68, 68, 0.15); color: #F87171;" aria-hidden="true">&#128737;</span>
+    </div>
+    <p class="stora-card__value" style="color: {% if stora_stats.pending_reports_count > 0 %}#F87171{% else %}#ffffff{% endif %};">{{ stora_stats.pending_reports_count }}</p>
+    <p class="stora-card__sub"><a href="/admin/api/userreport/?status__exact=pending">Review pending reports <span aria-hidden="true">&rarr;</span></a></p>
+  </article>
+
+  <article class="stora-card" style="border: 1px solid {% if stora_stats.pending_requests > 0 %}rgba(139, 211, 202, 0.45){% else %}rgba(255, 255, 255, 0.08){% endif %};">
+    <div class="stora-card__top">
+      <span class="stora-card__label">Subscription Proofs</span>
+      <span class="stora-card__icon" style="background: rgba(139, 211, 202, 0.15); color: #8bd3ca;" aria-hidden="true">&#128179;</span>
+    </div>
+    <p class="stora-card__value" style="color: {% if stora_stats.pending_requests > 0 %}#8bd3ca{% else %}#ffffff{% endif %};">{{ stora_stats.pending_requests }}</p>
+    <p class="stora-card__sub"><a href="/admin/accounts/paymentproof/?status__exact=pending">Review approvals <span aria-hidden="true">&rarr;</span></a></p>
+  </article>
+
   <article class="stora-card">
     <div class="stora-card__top"><span class="stora-card__label">Pending orders</span><span class="stora-card__icon" aria-hidden="true">&#8599;</span></div>
     <p class="stora-card__value">{{ stora_stats.pending_orders_count }}</p>
     <p class="stora-card__sub"><a href="/admin/orders/order/?status__exact=pending">Review carts <span aria-hidden="true">&rarr;</span></a></p>
   </article>
+
   <article class="stora-card" style="border: 1px solid rgba(255, 107, 0, 0.35);">
     <div class="stora-card__top"><span class="stora-card__label">Support Inquiries</span><span class="stora-card__icon" style="color: #FF6B00;" aria-hidden="true">&#128172;</span></div>
     <p class="stora-card__value" style="color: #FF8F3D;">{{ stora_stats.unread_support_count }}</p>
     <p class="stora-card__sub"><a href="{% url 'admin:support_chat' %}">Open Support Inbox <span aria-hidden="true">&rarr;</span></a></p>
   </article>
+
   <article class="stora-card">
     <div class="stora-card__top"><span class="stora-card__label">Total products</span><span class="stora-card__icon stora-card__icon--blue" aria-hidden="true">&#9632;</span></div>
     <p class="stora-card__value">{{ stora_stats.product_count }}</p>
     <p class="stora-card__sub">{{ stora_stats.total_stock }} total units in stock</p>
   </article>
+
   <article class="stora-card stora-card--danger">
     <div class="stora-card__top"><span class="stora-card__label">Stock alerts</span><span class="stora-card__icon" aria-hidden="true">!</span></div>
     <p class="stora-card__value">{{ stora_stats.low_stock_count }}</p>

@@ -1619,6 +1619,181 @@ class StoreLocationAndStatusTests(APITestCase):
         self.assertTrue(admin_entry["is_open"])
 
 
+class AdminNotificationsAndBlockedUserTests(APITestCase):
+    def setUp(self):
+        self.admin = User.objects.create_superuser(
+            username="super_notif_admin@gmail.com",
+            email="super_notif_admin@gmail.com",
+            password="adminpassword123",
+            role=User.ROLE_ADMIN,
+        )
+        self.owner = User.objects.create_user(
+            username="owner_notif_store@gmail.com",
+            email="owner_notif_store@gmail.com",
+            password="password123",
+            role=User.ROLE_OWNER,
+            business_name="Test Notif Sari-Sari",
+        )
+        self.customer = User.objects.create_user(
+            username="customer_notif_shopper@gmail.com",
+            email="customer_notif_shopper@gmail.com",
+            password="password123",
+            role=User.ROLE_CUSTOMER,
+            first_name="Pedro",
+            last_name="Penduko",
+        )
+
+    def test_admin_notifications_summary_api(self):
+        from api.models import UserReport
+        from accounts.models import PaymentProof
+        from orders.models import Order
+        from inventory.models import Product
+
+        # Create sample pending report
+        UserReport.objects.create(
+            reporter=self.customer,
+            reported_user=self.owner,
+            reason="harassment",
+            status=UserReport.STATUS_PENDING,
+        )
+        # Create sample pending payment proof
+        PaymentProof.objects.create(
+            user=self.owner,
+            amount=100.00,
+            reference_number="GCASH123456789",
+            status=PaymentProof.STATUS_PENDING,
+        )
+        # Create sample pending order
+        Order.objects.create(
+            owner=self.owner,
+            customer=self.customer,
+            customer_name="Pedro Penduko",
+            status=Order.STATUS_PENDING,
+        )
+
+        self.client.force_login(self.admin)
+        res = self.client.get("/admin/api/notifications/summary/")
+        self.assertEqual(res.status_code, 200)
+        data = res.json()
+
+        self.assertGreaterEqual(data["pending_reports_count"], 1)
+        self.assertGreaterEqual(data["pending_payments_count"], 1)
+        self.assertGreaterEqual(data["pending_orders_count"], 1)
+        self.assertGreaterEqual(data["total_action_count"], 3)
+
+    def test_blocked_user_flexible_fields_and_validation(self):
+        from api.models import BlockedCustomer
+        from django.core.exceptions import ValidationError
+
+        # 1. Customer only block (global customer block)
+        block_customer = BlockedCustomer.objects.create(
+            owner=None,
+            customer=self.customer,
+        )
+        self.assertIn("Blocked Customer", str(block_customer))
+
+        # 2. Owner only block (global owner block)
+        block_owner = BlockedCustomer.objects.create(
+            owner=self.owner,
+            customer=None,
+        )
+        self.assertIn("Blocked Store Owner", str(block_owner))
+
+        # 3. Paired block (store-specific customer block)
+        paired_block = BlockedCustomer.objects.create(
+            owner=self.owner,
+            customer=self.customer,
+        )
+        self.assertIn("blocked", str(paired_block))
+
+        # 4. Neither owner nor customer raises ValidationError
+        invalid_block = BlockedCustomer(owner=None, customer=None)
+        with self.assertRaises(ValidationError):
+            invalid_block.clean()
+
+    def test_blocked_user_admin_foreignkey_filtering(self):
+        from api.models import BlockedCustomer
+        from api.admin import BlockedCustomerAdmin
+        from stora_backend.admin_site import stora_admin_site
+
+        admin_instance = BlockedCustomerAdmin(model=BlockedCustomer, admin_site=stora_admin_site)
+        from unittest.mock import Mock
+
+        mock_req = Mock()
+        mock_req.user = self.admin
+
+        owner_field = BlockedCustomer._meta.get_field("owner")
+        owner_formfield = admin_instance.formfield_for_foreignkey(owner_field, mock_req)
+        # Should only contain owners
+        for u in owner_formfield.queryset:
+            self.assertEqual(u.role, User.ROLE_OWNER)
+
+        customer_field = BlockedCustomer._meta.get_field("customer")
+        customer_formfield = admin_instance.formfield_for_foreignkey(customer_field, mock_req)
+        # Should only contain customers
+        for u in customer_formfield.queryset:
+            self.assertEqual(u.role, User.ROLE_CUSTOMER)
+
+    def test_order_admin_actions_trigger_notifications(self):
+        from orders.models import Order
+        from orders.admin import OrderAdmin
+        from stora_backend.admin_site import stora_admin_site
+        from inventory.models import Product, Category
+
+        cat = Category.objects.create(owner=self.owner, name="Beverages")
+        product = Product.objects.create(
+            owner=self.owner,
+            category=cat,
+            name="Soda Can",
+            price=25.00,
+            stock=10,
+        )
+        order = Order.objects.create(
+            owner=self.owner,
+            customer=self.customer,
+            customer_name="Pedro Penduko",
+            status=Order.STATUS_PENDING,
+        )
+        order.items.create(
+            product=product,
+            product_name="Soda Can",
+            quantity=2,
+            unit_price=25.00,
+        )
+
+        admin_instance = OrderAdmin(model=Order, admin_site=stora_admin_site)
+        class MockRequest:
+            user = self.admin
+            def __init__(self):
+                self._messages = []
+            def message_user(self, req, msg, **kwargs):
+                self._messages.append(msg)
+
+        req = MockRequest()
+        admin_instance.message_user = req.message_user
+
+        # Accept action
+        admin_instance.accept_orders(req, Order.objects.filter(id=order.id))
+        order.refresh_from_db()
+        self.assertEqual(order.status, Order.STATUS_ACCEPTED)
+
+        # Mark ready action
+        admin_instance.mark_ready_orders(req, Order.objects.filter(id=order.id))
+        order.refresh_from_db()
+        self.assertEqual(order.status, Order.STATUS_READY)
+
+        # Create another order to test decline action
+        decline_order = Order.objects.create(
+            owner=self.owner,
+            customer=self.customer,
+            customer_name="Pedro Penduko",
+            status=Order.STATUS_PENDING,
+        )
+        admin_instance.decline_orders(req, Order.objects.filter(id=decline_order.id))
+        decline_order.refresh_from_db()
+        self.assertEqual(decline_order.status, Order.STATUS_DECLINED)
+
+
 
 
 

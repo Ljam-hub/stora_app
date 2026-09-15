@@ -908,7 +908,7 @@ class ChatMessageSerializer(serializers.ModelSerializer):
 
 
 class BlockedCustomerSerializer(serializers.ModelSerializer):
-    customer_email = serializers.CharField(source="customer.email", read_only=True)
+    customer_email = serializers.CharField(source="customer.email", read_only=True, default="")
     customer_name = serializers.SerializerMethodField()
     created_at = UTCDateTimeField(read_only=True)
 
@@ -918,6 +918,8 @@ class BlockedCustomerSerializer(serializers.ModelSerializer):
         read_only_fields = ("id", "owner", "created_at")
 
     def get_customer_name(self, obj):
+        if not obj.customer:
+            return "—"
         return f"{obj.customer.first_name} {obj.customer.last_name}".strip() or obj.customer.username
 
 

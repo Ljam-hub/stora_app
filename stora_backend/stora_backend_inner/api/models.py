@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models
 
 
@@ -46,20 +47,29 @@ class ChatMessage(models.Model):
         return f"{self.sender} -> {self.recipient}: {self.message[:30]}"
 
 
+
 class BlockedCustomer(models.Model):
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="blocked_customers",
+        null=True,
+        blank=True,
+        help_text="Store Owner (leave empty if blocking a customer globally / by admin)",
     )
     customer = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="blocked_by_owners",
+        null=True,
+        blank=True,
+        help_text="Customer (leave empty if blocking a store owner globally / by admin)",
     )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
+        verbose_name = "Blocked User"
+        verbose_name_plural = "Blocked Users"
         ordering = ["-created_at"]
         constraints = [
             models.UniqueConstraint(
@@ -68,8 +78,19 @@ class BlockedCustomer(models.Model):
             )
         ]
 
+    def clean(self):
+        super().clean()
+        if not self.owner and not self.customer:
+            raise ValidationError("Please select at least an Owner, a Customer, or both to block.")
+
     def __str__(self):
-        return f"{self.owner} blocked {self.customer}"
+        if self.owner and self.customer:
+            return f"{self.owner} blocked {self.customer}"
+        elif self.customer:
+            return f"Blocked Customer: {self.customer}"
+        elif self.owner:
+            return f"Blocked Store Owner: {self.owner}"
+        return f"Blocked User #{self.pk or ''}"
 
 
 def report_attachment_upload_path(instance, filename):

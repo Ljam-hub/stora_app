@@ -56,6 +56,192 @@
     flex-shrink: 0 !important;
     display: inline-block !important;
   }
+
+  /* Admin Notification Center Button */
+  .stora-notif-wrapper {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+  }
+  .stora-notif-btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 7px !important;
+    padding: 8px 14px !important;
+    border: 1px solid rgba(239, 68, 68, 0.45) !important;
+    border-radius: 99px !important;
+    background: rgba(239, 68, 68, 0.12) !important;
+    color: #fca5a5 !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    cursor: pointer !important;
+    transition: all .2s ease !important;
+    outline: none !important;
+  }
+  .stora-notif-btn:hover {
+    background: rgba(239, 68, 68, 0.24) !important;
+    border-color: rgba(239, 68, 68, 0.75) !important;
+    color: #FFFFFF !important;
+    box-shadow: 0 0 14px rgba(239, 68, 68, 0.35) !important;
+  }
+  .stora-notif-btn__icon {
+    font-size: 13px !important;
+    line-height: 1 !important;
+  }
+
+  /* Dropdown Popover */
+  .stora-notif-dropdown {
+    position: absolute !important;
+    top: calc(100% + 10px) !important;
+    right: 0 !important;
+    width: 330px !important;
+    background: #14191c !important;
+    border: 1px solid #283439 !important;
+    border-radius: 14px !important;
+    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.08) !important;
+    z-index: 1000 !important;
+    overflow: hidden !important;
+    animation: storaNotifSlideDown 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  }
+  @keyframes storaNotifSlideDown {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .stora-notif-dropdown__header {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 14px 18px !important;
+    background: #181e22 !important;
+    border-bottom: 1px solid #283439 !important;
+  }
+  .stora-notif-dropdown__list {
+    display: flex !important;
+    flex-direction: column !important;
+    padding: 6px 0 !important;
+    max-height: 380px !important;
+    overflow-y: auto !important;
+  }
+  .stora-notif-item {
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    padding: 12px 18px !important;
+    text-decoration: none !important;
+    transition: background 0.15s ease !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03) !important;
+  }
+  .stora-notif-item:last-child {
+    border-bottom: none !important;
+  }
+  .stora-notif-item:hover {
+    background: rgba(139, 211, 202, 0.08) !important;
+  }
+  .stora-notif-item__icon {
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 8px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 15px !important;
+    flex-shrink: 0 !important;
+  }
+  .stora-notif-item__copy {
+    flex: 1 !important;
+    min-width: 0 !important;
+  }
+  .stora-notif-item__title {
+    color: #f5f8f8 !important;
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    line-height: 1.2 !important;
+  }
+  .stora-notif-item__sub {
+    color: #9ca3af !important;
+    font-size: 11px !important;
+    margin-top: 2px !important;
+  }
+  .stora-notif-item__badge {
+    padding: 2px 7px !important;
+    border-radius: 10px !important;
+    font-size: 11px !important;
+    font-weight: 800 !important;
+    line-height: 1.2 !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* Floating Toast */
+  .stora-toast-container {
+    position: fixed !important;
+    bottom: 24px !important;
+    right: 24px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+    z-index: 9999 !important;
+    max-width: 380px !important;
+    pointer-events: none !important;
+  }
+  .stora-toast {
+    display: flex !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+    padding: 14px 18px !important;
+    background: #14191c !important;
+    border: 1px solid rgba(239, 68, 68, 0.45) !important;
+    border-left: 4px solid #EF4444 !important;
+    border-radius: 12px !important;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6) !important;
+    color: #fff !important;
+    pointer-events: auto !important;
+    animation: storaToastIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  }
+  @keyframes storaToastIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .stora-toast__icon {
+    font-size: 20px !important;
+    line-height: 1 !important;
+  }
+  .stora-toast__body {
+    flex: 1 !important;
+    min-width: 0 !important;
+  }
+  .stora-toast__title {
+    font-size: 13px !important;
+    font-weight: 800 !important;
+    color: #f87171 !important;
+    margin-bottom: 2px !important;
+  }
+  .stora-toast__text {
+    font-size: 12px !important;
+    color: #d1d5db !important;
+    line-height: 1.4 !important;
+  }
+  .stora-toast__action {
+    display: inline-block !important;
+    font-size: 11px !important;
+    color: #8bd3ca !important;
+    font-weight: 800 !important;
+    text-decoration: none !important;
+    align-self: center !important;
+    margin-left: 4px !important;
+    white-space: nowrap !important;
+  }
+  .stora-toast__close {
+    background: none !important;
+    border: none !important;
+    color: #9ca3af !important;
+    font-size: 16px !important;
+    cursor: pointer !important;
+    padding: 0 0 0 6px !important;
+    line-height: 1 !important;
+  }
+  .stora-toast__close:hover {
+    color: #fff !important;
+  }
 </style>
 {% endblock %}
 
@@ -72,6 +258,111 @@
 {% block nav-global %}
 <div class="stora-global-actions">
   {% if user.is_authenticated and user.is_staff %}
+  <!-- Admin Notification Bell & Dropdown Popover -->
+  <div class="stora-notif-wrapper">
+    <button type="button" id="stora-admin-notif-btn" class="stora-notif-btn" aria-label="Admin Notifications" onclick="toggleAdminNotifDropdown(event);">
+      <span class="stora-notif-btn__icon" aria-hidden="true">&#128276;</span>
+      <span class="stora-notif-btn__label">Alerts</span>
+      <span id="stora-admin-global-notif-badge" class="stora-header-badge" style="display: {% if stora_notifications.total_action_count > 0 %}inline-flex{% else %}none{% endif %}; background: #EF4444; color: #FFF; font-size: 10px; font-weight: 800; border-radius: 10px; padding: 1px 6px; line-height: 1.2; box-shadow: 0 0 8px rgba(239, 68, 68, 0.6);">{{ stora_notifications.total_action_count|default:"0" }}</span>
+    </button>
+    
+    <div id="stora-admin-notif-dropdown" class="stora-notif-dropdown" hidden>
+      <div class="stora-notif-dropdown__header">
+        <div>
+          <h3 style="margin: 0; font-size: 13px; font-weight: 800; color: #fff; letter-spacing: -0.01em;">Admin Action Center</h3>
+          <p id="stora-notif-summary-text" style="margin: 2px 0 0 0; font-size: 11px; color: #9ca3af;">
+            {% if stora_notifications.total_action_count > 0 %}
+              {{ stora_notifications.total_action_count }} item{{ stora_notifications.total_action_count|pluralize }} requiring attention
+            {% else %}
+              All caught up &bull; 0 pending tasks
+            {% endif %}
+          </p>
+        </div>
+        <a href="{% url 'admin:index' %}" style="font-size: 11px; color: #8bd3ca; font-weight: 700; text-decoration: none;">Dashboard &rarr;</a>
+      </div>
+
+      <div class="stora-notif-dropdown__list">
+        <!-- User Reports -->
+        <a href="/admin/api/userreport/?status__exact=pending" class="stora-notif-item">
+          <div class="stora-notif-item__icon" style="background: rgba(239, 68, 68, 0.18); color: #f87171;">&#9888;</div>
+          <div class="stora-notif-item__copy">
+            <div class="stora-notif-item__title">User Violation Reports</div>
+            <div class="stora-notif-item__sub" id="stora-notif-reports-sub">
+              {% if stora_notifications.pending_reports_count > 0 %}
+                <span style="color: #f87171; font-weight: 700;">{{ stora_notifications.pending_reports_count }} pending</span> review
+              {% else %}
+                No pending reports
+              {% endif %}
+            </div>
+          </div>
+          <span id="stora-notif-reports-badge" class="stora-notif-item__badge" style="background: rgba(239, 68, 68, 0.2); color: #f87171; {% if stora_notifications.pending_reports_count == 0 %}opacity: 0.4;{% endif %}">{{ stora_notifications.pending_reports_count }}</span>
+        </a>
+
+        <!-- Payment Proofs -->
+        <a href="/admin/accounts/paymentproof/?status__exact=pending" class="stora-notif-item">
+          <div class="stora-notif-item__icon" style="background: rgba(139, 211, 202, 0.18); color: #8bd3ca;">&#128179;</div>
+          <div class="stora-notif-item__copy">
+            <div class="stora-notif-item__title">Subscription Approvals</div>
+            <div class="stora-notif-item__sub" id="stora-notif-payments-sub">
+              {% if stora_notifications.pending_payments_count > 0 %}
+                <span style="color: #8bd3ca; font-weight: 700;">{{ stora_notifications.pending_payments_count }} pending</span> GCash proof{{ stora_notifications.pending_payments_count|pluralize }}
+              {% else %}
+                No pending payments
+              {% endif %}
+            </div>
+          </div>
+          <span id="stora-notif-payments-badge" class="stora-notif-item__badge" style="background: rgba(139, 211, 202, 0.2); color: #8bd3ca; {% if stora_notifications.pending_payments_count == 0 %}opacity: 0.4;{% endif %}">{{ stora_notifications.pending_payments_count }}</span>
+        </a>
+
+        <!-- Pending Orders -->
+        <a href="/admin/orders/order/?status__exact=pending" class="stora-notif-item">
+          <div class="stora-notif-item__icon" style="background: rgba(251, 191, 36, 0.18); color: #fbbf24;">&#128722;</div>
+          <div class="stora-notif-item__copy">
+            <div class="stora-notif-item__title">Customer Orders</div>
+            <div class="stora-notif-item__sub" id="stora-notif-orders-sub">
+              {% if stora_notifications.pending_orders_count > 0 %}
+                <span style="color: #fbbf24; font-weight: 700;">{{ stora_notifications.pending_orders_count }} awaiting</span> acceptance
+              {% else %}
+                No pending orders
+              {% endif %}
+            </div>
+          </div>
+          <span id="stora-notif-orders-badge" class="stora-notif-item__badge" style="background: rgba(251, 191, 36, 0.2); color: #fbbf24; {% if stora_notifications.pending_orders_count == 0 %}opacity: 0.4;{% endif %}">{{ stora_notifications.pending_orders_count }}</span>
+        </a>
+
+        <!-- Support Messages -->
+        <a href="{% url 'admin:support_chat' %}" class="stora-notif-item">
+          <div class="stora-notif-item__icon" style="background: rgba(255, 107, 0, 0.18); color: #FF8F3D;">&#128172;</div>
+          <div class="stora-notif-item__copy">
+            <div class="stora-notif-item__title">Live Support Messages</div>
+            <div class="stora-notif-item__sub" id="stora-notif-support-sub">
+              {% if stora_notifications.unread_support_count > 0 %}
+                <span style="color: #FF8F3D; font-weight: 700;">{{ stora_notifications.unread_support_count }} unread</span> message{{ stora_notifications.unread_support_count|pluralize }}
+              {% else %}
+                All messages read
+              {% endif %}
+            </div>
+          </div>
+          <span id="stora-notif-support-badge" class="stora-notif-item__badge" style="background: rgba(255, 107, 0, 0.2); color: #FF8F3D; {% if stora_notifications.unread_support_count == 0 %}opacity: 0.4;{% endif %}">{{ stora_notifications.unread_support_count }}</span>
+        </a>
+
+        <!-- Password Resets -->
+        {% if stora_notifications.active_reset_requests > 0 %}
+        <a href="/admin/accounts/passwordresettoken/?used__exact=0" class="stora-notif-item">
+          <div class="stora-notif-item__icon" style="background: rgba(56, 189, 248, 0.18); color: #38bdf8;">&#128273;</div>
+          <div class="stora-notif-item__copy">
+            <div class="stora-notif-item__title">Active Password Resets</div>
+            <div class="stora-notif-item__sub">
+              <span style="color: #38bdf8; font-weight: 700;">{{ stora_notifications.active_reset_requests }} active</span> in last hour
+            </div>
+          </div>
+          <span class="stora-notif-item__badge" style="background: rgba(56, 189, 248, 0.2); color: #38bdf8;">{{ stora_notifications.active_reset_requests }}</span>
+        </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
   <a href="{% url 'admin:support_chat' %}" class="stora-support-status">
     <span class="stora-support-status__dot" aria-hidden="true"></span>
     Support
@@ -88,25 +379,104 @@
 
 {% if user.is_authenticated and user.is_staff %}
 <script>
-  // Live polling for STORA Admin Support Badge across all admin pages
   (function() {
-    function refreshAdminSupportBadge() {
-      fetch("{% url 'admin:support_unread_count_api' %}")
+    var prevTotal = parseInt("{{ stora_notifications.total_action_count|default:'0' }}", 10);
+    var prevReports = parseInt("{{ stora_notifications.pending_reports_count|default:'0' }}", 10);
+    var prevPayments = parseInt("{{ stora_notifications.pending_payments_count|default:'0' }}", 10);
+
+    window.toggleAdminNotifDropdown = function(e) {
+      if (e) e.stopPropagation();
+      var dd = document.getElementById('stora-admin-notif-dropdown');
+      if (!dd) return;
+      dd.hidden = !dd.hidden;
+    };
+
+    document.addEventListener('click', function(e) {
+      var wrapper = document.querySelector('.stora-notif-wrapper');
+      var dd = document.getElementById('stora-admin-notif-dropdown');
+      if (dd && !dd.hidden && wrapper && !wrapper.contains(e.target)) {
+        dd.hidden = true;
+      }
+    });
+
+    function showAdminToast(title, body, url) {
+      var container = document.getElementById('stora-toast-container');
+      if (!container) {
+        container = document.createElement('div');
+        container.id = 'stora-toast-container';
+        container.className = 'stora-toast-container';
+        document.body.appendChild(container);
+      }
+      var toast = document.createElement('div');
+      toast.className = 'stora-toast';
+      toast.innerHTML = '<div class="stora-toast__icon">&#128276;</div>' +
+        '<div class="stora-toast__body">' +
+        '<div class="stora-toast__title">' + title + '</div>' +
+        '<div class="stora-toast__text">' + body + '</div>' +
+        '</div>' +
+        (url ? '<a href="' + url + '" class="stora-toast__action">View &rarr;</a>' : '') +
+        '<button type="button" class="stora-toast__close" onclick="this.parentElement.remove();">&times;</button>';
+      container.appendChild(toast);
+      setTimeout(function() {
+        if (toast.parentElement) toast.remove();
+      }, 9000);
+    }
+
+    function refreshAdminNotifications() {
+      fetch("{% url 'admin:notifications_summary_api' %}")
         .then(function(res) { return res.json(); })
         .then(function(data) {
-          var badge = document.getElementById('stora-admin-global-badge');
-          if (!badge) return;
-          var count = data.unread_count || 0;
-          if (count > 0) {
-            badge.textContent = count;
-            badge.style.display = 'inline-flex';
-          } else {
-            badge.style.display = 'none';
+          var badge = document.getElementById('stora-admin-global-notif-badge');
+          var supportBadge = document.getElementById('stora-admin-global-badge');
+          var summaryText = document.getElementById('stora-notif-summary-text');
+          var reportsBadge = document.getElementById('stora-notif-reports-badge');
+          var paymentsBadge = document.getElementById('stora-notif-payments-badge');
+          var ordersBadge = document.getElementById('stora-notif-orders-badge');
+          var supportBadgeItem = document.getElementById('stora-notif-support-badge');
+
+          var total = data.total_action_count || 0;
+          if (badge) {
+            if (total > 0) {
+              badge.textContent = total;
+              badge.style.display = 'inline-flex';
+            } else {
+              badge.style.display = 'none';
+            }
           }
+          if (supportBadge) {
+            var unread = data.unread_support_count || 0;
+            if (unread > 0) {
+              supportBadge.textContent = unread;
+              supportBadge.style.display = 'inline-flex';
+            } else {
+              supportBadge.style.display = 'none';
+            }
+          }
+          if (summaryText) {
+            summaryText.textContent = total > 0 ? (total + ' item' + (total === 1 ? '' : 's') + ' requiring attention') : 'All caught up • 0 pending tasks';
+          }
+          if (reportsBadge) reportsBadge.textContent = data.pending_reports_count || 0;
+          if (paymentsBadge) paymentsBadge.textContent = data.pending_payments_count || 0;
+          if (ordersBadge) ordersBadge.textContent = data.pending_orders_count || 0;
+          if (supportBadgeItem) supportBadgeItem.textContent = data.unread_support_count || 0;
+
+          // Alert on new user reports
+          if (data.pending_reports_count > prevReports) {
+            showAdminToast('🚨 New User Report Filed', 'A customer or store owner submitted a user violation report for investigation.', '/admin/api/userreport/?status__exact=pending');
+          } else if (data.pending_payments_count > prevPayments) {
+            showAdminToast('💳 New Subscription Proof', 'A store owner submitted a new GCash payment proof for approval.', '/admin/accounts/paymentproof/?status__exact=pending');
+          } else if (total > prevTotal && prevTotal > 0) {
+            showAdminToast('🔔 Admin Action Required', 'New pending activity requires administrative review.', '/admin/');
+          }
+
+          prevTotal = total;
+          prevReports = data.pending_reports_count || 0;
+          prevPayments = data.pending_payments_count || 0;
         })
         .catch(function(e) {});
     }
-    setInterval(refreshAdminSupportBadge, 5000);
+
+    setInterval(refreshAdminNotifications, 8000);
   })();
 </script>
 {% endif %}

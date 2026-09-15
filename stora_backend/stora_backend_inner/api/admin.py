@@ -31,9 +31,98 @@ class ChatMessageAdmin(admin.ModelAdmin):
 
 @admin.register(BlockedCustomer, site=stora_admin_site)
 class BlockedCustomerAdmin(admin.ModelAdmin):
-    list_display = ("id", "owner", "customer", "created_at")
+    list_display = (
+        "id",
+        "block_scope_badge",
+        "owner_display",
+        "customer_display",
+        "user_account_status",
+        "created_at",
+    )
     list_filter = ("created_at",)
-    search_fields = ("owner__email", "owner__business_name", "customer__email")
+    search_fields = (
+        "owner__email",
+        "owner__business_name",
+        "customer__email",
+        "customer__first_name",
+        "customer__last_name",
+        "customer__username",
+    )
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        from accounts.models import User
+        if db_field.name == "owner":
+            kwargs["queryset"] = User.objects.filter(role=User.ROLE_OWNER).order_by("business_name", "email")
+            formfield = super().formfield_for_foreignkey(db_field, request, **kwargs)
+            if formfield:
+                formfield.label_from_instance = lambda obj: f"🏪 {obj.business_name or obj.get_full_name() or obj.username} ({obj.email})"
+                formfield.empty_label = "— None (Global Block / Not store specific) —"
+            return formfield
+        elif db_field.name == "customer":
+            kwargs["queryset"] = User.objects.filter(role=User.ROLE_CUSTOMER).order_by("first_name", "email")
+            formfield = super().formfield_for_foreignkey(db_field, request, **kwargs)
+            if formfield:
+                formfield.label_from_instance = lambda obj: f"👤 {obj.get_full_name() or obj.username} ({obj.email})"
+                formfield.empty_label = "— None (Global Store Owner Block) —"
+            return formfield
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+    @admin.display(description="Block Scope")
+    def block_scope_badge(self, obj):
+        if obj.owner and obj.customer:
+            return format_html(
+                '<span style="background: rgba(251, 191, 36, 0.16); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.4); padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 700;">🏪 Store Level</span>'
+            )
+        elif obj.customer:
+            return format_html(
+                '<span style="background: rgba(239, 68, 68, 0.16); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 700;">🚫 Customer Global</span>'
+            )
+        elif obj.owner:
+            return format_html(
+                '<span style="background: rgba(239, 68, 68, 0.16); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 700;">🚫 Owner Global</span>'
+            )
+        return "—"
+
+    @admin.display(description="Store Owner")
+    def owner_display(self, obj):
+        if obj.owner:
+            name = obj.owner.business_name or obj.owner.get_full_name() or obj.owner.username
+            return format_html('<strong>{}</strong> <span style="color: #8bd3ca; font-size: 12px;">({})</span>', name, obj.owner.email)
+        return format_html('<span style="color: #9ca3af; font-style: italic;">All Stores (Global)</span>')
+
+    @admin.display(description="Customer")
+    def customer_display(self, obj):
+        if obj.customer:
+            name = obj.customer.get_full_name() or obj.customer.username
+            return format_html('<strong>{}</strong> <span style="color: #8bd3ca; font-size: 12px;">({})</span>', name, obj.customer.email)
+        return format_html('<span style="color: #9ca3af; font-style: italic;">Owner Blocked Directly</span>')
+
+    @admin.display(description="Account Access")
+    def user_account_status(self, obj):
+        target = obj.customer if obj.customer else obj.owner
+        if not target:
+            return "—"
+        if getattr(target, "is_blocked", False) or not target.is_active:
+            return format_html(
+                '<span style="background: rgba(239, 68, 68, 0.2); color: #f87171; padding: 2px 7px; border-radius: 4px; font-weight: bold; font-size: 11px;">🚫 BLOCKED</span>'
+            )
+        return format_html(
+            '<span style="background: rgba(16, 185, 129, 0.2); color: #34d399; padding: 2px 7px; border-radius: 4px; font-weight: bold; font-size: 11px;">Active In-App</span>'
+        )
+
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        # If admin blocks a customer alone or owner alone, sync their account is_blocked status
+        if obj.customer and not obj.owner:
+            if not obj.customer.is_blocked:
+                obj.customer.is_blocked = True
+                obj.customer.block_reason = "Blocked by administrator via Blocked Users registry"
+                obj.customer.save(update_fields=["is_blocked", "block_reason"])
+        elif obj.owner and not obj.customer:
+            if not obj.owner.is_blocked:
+                obj.owner.is_blocked = True
+                obj.owner.block_reason = "Blocked by administrator via Blocked Users registry"
+                obj.owner.save(update_fields=["is_blocked", "block_reason"])
 
 
 @admin.register(UserReport, site=stora_admin_site)

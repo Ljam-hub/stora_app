@@ -2885,6 +2885,11 @@ input[type="submit"].default {
   color: #102022 !important;
 }
 
+.stora-alert--reports {
+  border-left: 4px solid var(--stora-danger);
+  background: linear-gradient(135deg, rgba(248, 113, 113, 0.14), rgba(20, 25, 28, 0.95)) !important;
+}
+
 .stora-alert--orders {
   border-left: 4px solid var(--stora-warning);
 }
@@ -2895,6 +2900,11 @@ input[type="submit"].default {
 
 .stora-alert--resets {
   border-left: 4px solid var(--stora-info);
+}
+
+.stora-alert--outofstock {
+  border-left: 4px solid #f43f5e;
+  background: linear-gradient(135deg, rgba(244, 63, 94, 0.12), rgba(20, 25, 28, 0.95)) !important;
 }
 
 /* ==========================================================================
