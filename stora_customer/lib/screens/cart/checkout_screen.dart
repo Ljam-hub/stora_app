@@ -253,10 +253,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       text: 'Track Order',
                       onPressed: () {
                         Navigator.pop(ctx);
-                        Navigator.pop(context);
-                        if (widget.onOrderPlaced != null) {
-                          widget.onOrderPlaced!();
+                        if (mounted) {
+                          Navigator.pop(context);
                         }
+                        widget.onOrderPlaced?.call();
                       },
                     ),
                   ],

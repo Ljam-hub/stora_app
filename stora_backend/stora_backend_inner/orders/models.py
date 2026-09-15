@@ -88,8 +88,13 @@ class Order(models.Model):
             for item in items:
                 if item.product_id:
                     if item.product_id not in locked_products:
-                        product = Product.objects.select_for_update().get(pk=item.product_id)
-                        locked_products[item.product_id] = product
+                        try:
+                            product = Product.objects.select_for_update().get(pk=item.product_id)
+                            locked_products[item.product_id] = product
+                        except Product.DoesNotExist:
+                            raise ValueError(
+                                f"Product '{item.product_name}' is no longer available in inventory."
+                            )
                     else:
                         product = locked_products[item.product_id]
 

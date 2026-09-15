@@ -611,20 +611,25 @@ class _OwnerChatScreenState extends State<OwnerChatScreen> {
                                     onTap: () async {
                                       if (_isNavigating) return;
                                       _isNavigating = true;
-                                      await Navigator.of(context).push(
-                                        MaterialPageRoute(
-                                          builder: (_) => OwnerChatThreadScreen(
-                                            customerId: customerId,
-                                            customerName: customerName,
-                                            customerEmail: conv['email'] as String?,
-                                            customerAvatarUrl: avatarUrl,
-                                            isSupport: isSupport,
+                                      try {
+                                        await Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                            builder: (_) => OwnerChatThreadScreen(
+                                              customerId: customerId,
+                                              customerName: customerName,
+                                              customerEmail: conv['email'] as String?,
+                                              customerAvatarUrl: avatarUrl,
+                                              isSupport: isSupport,
+                                            ),
                                           ),
-                                        ),
-                                      );
-                                      if (mounted) {
-                                        setState(() => _isNavigating = false);
-                                        _loadConversations(silent: true);
+                                        );
+                                      } finally {
+                                        if (mounted) {
+                                          setState(() => _isNavigating = false);
+                                          _loadConversations(silent: true);
+                                        } else {
+                                          _isNavigating = false;
+                                        }
                                       }
                                     },
                                     leading: AppNotificationBadge(

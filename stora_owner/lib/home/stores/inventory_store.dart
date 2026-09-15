@@ -176,12 +176,15 @@ class InventoryStore extends ChangeNotifier {
     try {
       final isLocal = id.startsWith('local-');
 
+      bool remoteDeleted = false;
       if (!isLocal) {
         try {
           await _api.deleteProduct(id);
+          remoteDeleted = true;
         } on ApiException catch (e) {
           if (e.statusCode == 404) {
             // Already removed from server — continue with local deletion
+            remoteDeleted = true;
           } else if (e.statusCode != null && e.statusCode! < 500) {
             _error = e.message;
             notifyListeners();
@@ -195,7 +198,7 @@ class InventoryStore extends ChangeNotifier {
 
       _products.removeWhere((p) => p.id == id);
       await _db.productDao.deleteProduct(id);
-      if (!isLocal) {
+      if (!isLocal && !remoteDeleted) {
         await _db.syncDao.enqueueSync(
           entityType: 'product',
           action: 'delete',
@@ -221,15 +224,17 @@ class InventoryStore extends ChangeNotifier {
 
     try {
       final res = await _api.adjustStock(id, delta);
+      final currentIdx = _products.indexWhere((p) => p.id == id);
       if (res != null) {
         final updated = Product.fromJson(res);
-        if (idx != -1) {
-          _products[idx] = updated;
+        if (currentIdx != -1) {
+          _products[currentIdx] = updated;
+          notifyListeners();
         }
         await _db.productDao.upsertProduct(updated);
       } else {
-        if (idx != -1) {
-          await _db.productDao.upsertProduct(_products[idx]);
+        if (currentIdx != -1) {
+          await _db.productDao.upsertProduct(_products[currentIdx]);
         }
       }
     } catch (_) {

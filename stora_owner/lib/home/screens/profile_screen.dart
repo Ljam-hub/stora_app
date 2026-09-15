@@ -141,105 +141,110 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  void _showEditProfileDialog(BuildContext context) {
+  void _showEditProfileDialog(BuildContext context) async {
     final businessController = TextEditingController(text: AuthStore.instance.businessName ?? '');
     final emailController = TextEditingController(text: AuthStore.instance.email ?? '');
     bool isSaving = false;
 
-    showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          backgroundColor: HomeColors.cardBackground,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: BorderSide(color: HomeColors.cardBorder),
-          ),
-          title: Text('Edit Profile', style: TextStyle(color: HomeColors.textPrimary, fontSize: 18, fontWeight: FontWeight.w700)),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: businessController,
-                style: TextStyle(color: HomeColors.textPrimary),
-                decoration: InputDecoration(
-                  labelText: 'Store / Business Name',
-                  labelStyle: TextStyle(color: HomeColors.textSecondary),
-                  filled: true,
-                  fillColor: HomeColors.cardElevated,
-                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: HomeColors.cardBorder)),
-                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary, width: 1.5)),
+    try {
+      await showDialog(
+        context: context,
+        builder: (ctx) => StatefulBuilder(
+          builder: (context, setDialogState) => AlertDialog(
+            backgroundColor: HomeColors.cardBackground,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: BorderSide(color: HomeColors.cardBorder),
+            ),
+            title: Text('Edit Profile', style: TextStyle(color: HomeColors.textPrimary, fontSize: 18, fontWeight: FontWeight.w700)),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: businessController,
+                  style: TextStyle(color: HomeColors.textPrimary),
+                  decoration: InputDecoration(
+                    labelText: 'Store / Business Name',
+                    labelStyle: TextStyle(color: HomeColors.textSecondary),
+                    filled: true,
+                    fillColor: HomeColors.cardElevated,
+                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: HomeColors.cardBorder)),
+                    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary, width: 1.5)),
+                  ),
                 ),
+                const SizedBox(height: 14),
+                TextField(
+                  controller: emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  style: TextStyle(color: HomeColors.textPrimary),
+                  decoration: InputDecoration(
+                    labelText: 'Email Address',
+                    labelStyle: TextStyle(color: HomeColors.textSecondary),
+                    filled: true,
+                    fillColor: HomeColors.cardElevated,
+                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: HomeColors.cardBorder)),
+                    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary, width: 1.5)),
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: isSaving ? null : () => Navigator.of(ctx).pop(),
+                child: Text('Cancel', style: TextStyle(color: HomeColors.textSecondary)),
               ),
-              const SizedBox(height: 14),
-              TextField(
-                controller: emailController,
-                keyboardType: TextInputType.emailAddress,
-                style: TextStyle(color: HomeColors.textPrimary),
-                decoration: InputDecoration(
-                  labelText: 'Email Address',
-                  labelStyle: TextStyle(color: HomeColors.textSecondary),
-                  filled: true,
-                  fillColor: HomeColors.cardElevated,
-                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: HomeColors.cardBorder)),
-                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary, width: 1.5)),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
+                onPressed: isSaving
+                    ? null
+                    : () async {
+                        final bName = businessController.text.trim();
+                        final email = emailController.text.trim();
+                        if (email.isEmpty) {
+                          showStoraSnackBar(context, 'Email cannot be empty');
+                          return;
+                        }
+                        setDialogState(() => isSaving = true);
+                        try {
+                          await AuthStore.instance.updateProfile(
+                            newBusinessName: bName,
+                            newEmail: email,
+                          );
+                          if (ctx.mounted) Navigator.of(ctx).pop();
+                          if (context.mounted) {
+                            showStoraSnackBar(context, 'Profile updated successfully', isError: false);
+                          }
+                        } on ApiException catch (e) {
+                          setDialogState(() => isSaving = false);
+                          if (context.mounted) showStoraSnackBar(context, e.message);
+                        } catch (e) {
+                          setDialogState(() => isSaving = false);
+                          if (context.mounted) showStoraSnackBar(context, 'Could not update profile');
+                        }
+                      },
+                child: isSaving
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
+                      )
+                    : const Text('Save', style: TextStyle(fontWeight: FontWeight.w700)),
               ),
             ],
           ),
-          actions: [
-            TextButton(
-              onPressed: isSaving ? null : () => Navigator.of(ctx).pop(),
-              child: Text('Cancel', style: TextStyle(color: HomeColors.textSecondary)),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              ),
-              onPressed: isSaving
-                  ? null
-                  : () async {
-                      final bName = businessController.text.trim();
-                      final email = emailController.text.trim();
-                      if (email.isEmpty) {
-                        showStoraSnackBar(context, 'Email cannot be empty');
-                        return;
-                      }
-                      setDialogState(() => isSaving = true);
-                      try {
-                        await AuthStore.instance.updateProfile(
-                          newBusinessName: bName,
-                          newEmail: email,
-                        );
-                        if (ctx.mounted) Navigator.of(ctx).pop();
-                        if (context.mounted) {
-                          showStoraSnackBar(context, 'Profile updated successfully', isError: false);
-                        }
-                      } on ApiException catch (e) {
-                        setDialogState(() => isSaving = false);
-                        if (context.mounted) showStoraSnackBar(context, e.message);
-                      } catch (e) {
-                        setDialogState(() => isSaving = false);
-                        if (context.mounted) showStoraSnackBar(context, 'Could not update profile');
-                      }
-                    },
-              child: isSaving
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
-                    )
-                  : const Text('Save', style: TextStyle(fontWeight: FontWeight.w700)),
-            ),
-          ],
         ),
-      ),
-    );
+      );
+    } finally {
+      businessController.dispose();
+      emailController.dispose();
+    }
   }
 
-  void _showChangePasswordDialog(BuildContext context) {
+  void _showChangePasswordDialog(BuildContext context) async {
     final oldPasswordController = TextEditingController();
     final newPasswordController = TextEditingController();
     final confirmPasswordController = TextEditingController();
@@ -248,251 +253,257 @@ class _ProfileScreenState extends State<ProfileScreen> {
     bool obscureNew = true;
     bool obscureConfirm = true;
 
-    showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          backgroundColor: HomeColors.cardBackground,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: BorderSide(color: HomeColors.cardBorder),
-          ),
-          title: Text('Change Password', style: TextStyle(color: HomeColors.textPrimary, fontSize: 18, fontWeight: FontWeight.w700)),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: oldPasswordController,
-                  obscureText: obscureOld,
-                  style: TextStyle(color: HomeColors.textPrimary),
-                  decoration: InputDecoration(
-                    labelText: 'Current Password',
-                    labelStyle: TextStyle(color: HomeColors.textSecondary),
-                    filled: true,
-                    fillColor: HomeColors.cardElevated,
-                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: HomeColors.cardBorder)),
-                    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary, width: 1.5)),
-                    suffixIcon: ValueListenableBuilder<TextEditingValue>(
-                      valueListenable: oldPasswordController,
-                      builder: (context, value, _) {
-                        return Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (value.text.isNotEmpty) ...[
-                              IconButton(
-                                padding: EdgeInsets.zero,
-                                constraints: const BoxConstraints(minWidth: 36, minHeight: 36, maxWidth: 36, maxHeight: 36),
-                                style: IconButton.styleFrom(
-                                  shape: const CircleBorder(),
-                                  padding: EdgeInsets.zero,
-                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                ),
-                                icon: Icon(Icons.close_rounded, color: HomeColors.textSecondary, size: 18),
-                                tooltip: 'Clear password',
-                                onPressed: () => oldPasswordController.clear(),
-                              ),
-                              const SizedBox(width: 4),
-                            ],
-                            IconButton(
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(minWidth: 36, minHeight: 36, maxWidth: 36, maxHeight: 36),
-                              style: IconButton.styleFrom(
-                                shape: const CircleBorder(),
-                                padding: EdgeInsets.zero,
-                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              ),
-                              icon: Icon(
-                                obscureOld ? Icons.visibility_rounded : Icons.visibility_off_rounded,
-                                color: HomeColors.textSecondary,
-                                size: 20,
-                              ),
-                              tooltip: obscureOld ? 'Show password' : 'Hide password',
-                              onPressed: () => setDialogState(() => obscureOld = !obscureOld),
-                            ),
-                            const SizedBox(width: 8),
-                          ],
-                        );
-                      },
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 14),
-                TextField(
-                  controller: newPasswordController,
-                  obscureText: obscureNew,
-                  style: TextStyle(color: HomeColors.textPrimary),
-                  decoration: InputDecoration(
-                    labelText: 'New Password',
-                    labelStyle: TextStyle(color: HomeColors.textSecondary),
-                    filled: true,
-                    fillColor: HomeColors.cardElevated,
-                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: HomeColors.cardBorder)),
-                    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary, width: 1.5)),
-                    suffixIcon: ValueListenableBuilder<TextEditingValue>(
-                      valueListenable: newPasswordController,
-                      builder: (context, value, _) {
-                        return Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (value.text.isNotEmpty) ...[
-                              IconButton(
-                                padding: EdgeInsets.zero,
-                                constraints: const BoxConstraints(minWidth: 36, minHeight: 36, maxWidth: 36, maxHeight: 36),
-                                style: IconButton.styleFrom(
-                                  shape: const CircleBorder(),
-                                  padding: EdgeInsets.zero,
-                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                ),
-                                icon: Icon(Icons.close_rounded, color: HomeColors.textSecondary, size: 18),
-                                tooltip: 'Clear password',
-                                onPressed: () => newPasswordController.clear(),
-                              ),
-                              const SizedBox(width: 4),
-                            ],
-                            IconButton(
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(minWidth: 36, minHeight: 36, maxWidth: 36, maxHeight: 36),
-                              style: IconButton.styleFrom(
-                                shape: const CircleBorder(),
-                                padding: EdgeInsets.zero,
-                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              ),
-                              icon: Icon(
-                                obscureNew ? Icons.visibility_rounded : Icons.visibility_off_rounded,
-                                color: HomeColors.textSecondary,
-                                size: 20,
-                              ),
-                              tooltip: obscureNew ? 'Show password' : 'Hide password',
-                              onPressed: () => setDialogState(() => obscureNew = !obscureNew),
-                            ),
-                            const SizedBox(width: 8),
-                          ],
-                        );
-                      },
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 14),
-                TextField(
-                  controller: confirmPasswordController,
-                  obscureText: obscureConfirm,
-                  style: TextStyle(color: HomeColors.textPrimary),
-                  decoration: InputDecoration(
-                    labelText: 'Confirm New Password',
-                    labelStyle: TextStyle(color: HomeColors.textSecondary),
-                    filled: true,
-                    fillColor: HomeColors.cardElevated,
-                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: HomeColors.cardBorder)),
-                    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary, width: 1.5)),
-                    suffixIcon: ValueListenableBuilder<TextEditingValue>(
-                      valueListenable: confirmPasswordController,
-                      builder: (context, value, _) {
-                        return Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (value.text.isNotEmpty) ...[
-                              IconButton(
-                                padding: EdgeInsets.zero,
-                                constraints: const BoxConstraints(minWidth: 36, minHeight: 36, maxWidth: 36, maxHeight: 36),
-                                style: IconButton.styleFrom(
-                                  shape: const CircleBorder(),
-                                  padding: EdgeInsets.zero,
-                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                ),
-                                icon: Icon(Icons.close_rounded, color: HomeColors.textSecondary, size: 18),
-                                tooltip: 'Clear password',
-                                onPressed: () => confirmPasswordController.clear(),
-                              ),
-                              const SizedBox(width: 4),
-                            ],
-                            IconButton(
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(minWidth: 36, minHeight: 36, maxWidth: 36, maxHeight: 36),
-                              style: IconButton.styleFrom(
-                                shape: const CircleBorder(),
-                                padding: EdgeInsets.zero,
-                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              ),
-                              icon: Icon(
-                                obscureConfirm ? Icons.visibility_rounded : Icons.visibility_off_rounded,
-                                color: HomeColors.textSecondary,
-                                size: 20,
-                              ),
-                              tooltip: obscureConfirm ? 'Show password' : 'Hide password',
-                              onPressed: () => setDialogState(() => obscureConfirm = !obscureConfirm),
-                            ),
-                            const SizedBox(width: 8),
-                          ],
-                        );
-                      },
-                    ),
-                  ),
-                ),
-              ],
+    try {
+      await showDialog(
+        context: context,
+        builder: (ctx) => StatefulBuilder(
+          builder: (context, setDialogState) => AlertDialog(
+            backgroundColor: HomeColors.cardBackground,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: BorderSide(color: HomeColors.cardBorder),
             ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: isSaving ? null : () => Navigator.of(ctx).pop(),
-              child: Text('Cancel', style: TextStyle(color: HomeColors.textSecondary)),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            title: Text('Change Password', style: TextStyle(color: HomeColors.textPrimary, fontSize: 18, fontWeight: FontWeight.w700)),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: oldPasswordController,
+                    obscureText: obscureOld,
+                    style: TextStyle(color: HomeColors.textPrimary),
+                    decoration: InputDecoration(
+                      labelText: 'Current Password',
+                      labelStyle: TextStyle(color: HomeColors.textSecondary),
+                      filled: true,
+                      fillColor: HomeColors.cardElevated,
+                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: HomeColors.cardBorder)),
+                      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary, width: 1.5)),
+                      suffixIcon: ValueListenableBuilder<TextEditingValue>(
+                        valueListenable: oldPasswordController,
+                        builder: (context, value, _) {
+                          return Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (value.text.isNotEmpty) ...[
+                                IconButton(
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(minWidth: 36, minHeight: 36, maxWidth: 36, maxHeight: 36),
+                                  style: IconButton.styleFrom(
+                                    shape: const CircleBorder(),
+                                    padding: EdgeInsets.zero,
+                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                  ),
+                                  icon: Icon(Icons.close_rounded, color: HomeColors.textSecondary, size: 18),
+                                  tooltip: 'Clear password',
+                                  onPressed: () => oldPasswordController.clear(),
+                                ),
+                                const SizedBox(width: 4),
+                              ],
+                              IconButton(
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(minWidth: 36, minHeight: 36, maxWidth: 36, maxHeight: 36),
+                                style: IconButton.styleFrom(
+                                  shape: const CircleBorder(),
+                                  padding: EdgeInsets.zero,
+                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                ),
+                                icon: Icon(
+                                  obscureOld ? Icons.visibility_rounded : Icons.visibility_off_rounded,
+                                  color: HomeColors.textSecondary,
+                                  size: 20,
+                                ),
+                                tooltip: obscureOld ? 'Show password' : 'Hide password',
+                                onPressed: () => setDialogState(() => obscureOld = !obscureOld),
+                              ),
+                              const SizedBox(width: 8),
+                            ],
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  TextField(
+                    controller: newPasswordController,
+                    obscureText: obscureNew,
+                    style: TextStyle(color: HomeColors.textPrimary),
+                    decoration: InputDecoration(
+                      labelText: 'New Password',
+                      labelStyle: TextStyle(color: HomeColors.textSecondary),
+                      filled: true,
+                      fillColor: HomeColors.cardElevated,
+                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: HomeColors.cardBorder)),
+                      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary, width: 1.5)),
+                      suffixIcon: ValueListenableBuilder<TextEditingValue>(
+                        valueListenable: newPasswordController,
+                        builder: (context, value, _) {
+                          return Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (value.text.isNotEmpty) ...[
+                                IconButton(
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(minWidth: 36, minHeight: 36, maxWidth: 36, maxHeight: 36),
+                                  style: IconButton.styleFrom(
+                                    shape: const CircleBorder(),
+                                    padding: EdgeInsets.zero,
+                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                  ),
+                                  icon: Icon(Icons.close_rounded, color: HomeColors.textSecondary, size: 18),
+                                  tooltip: 'Clear password',
+                                  onPressed: () => newPasswordController.clear(),
+                                ),
+                                const SizedBox(width: 4),
+                              ],
+                              IconButton(
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(minWidth: 36, minHeight: 36, maxWidth: 36, maxHeight: 36),
+                                style: IconButton.styleFrom(
+                                  shape: const CircleBorder(),
+                                  padding: EdgeInsets.zero,
+                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                ),
+                                icon: Icon(
+                                  obscureNew ? Icons.visibility_rounded : Icons.visibility_off_rounded,
+                                  color: HomeColors.textSecondary,
+                                  size: 20,
+                                ),
+                                tooltip: obscureNew ? 'Show password' : 'Hide password',
+                                onPressed: () => setDialogState(() => obscureNew = !obscureNew),
+                              ),
+                              const SizedBox(width: 8),
+                            ],
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  TextField(
+                    controller: confirmPasswordController,
+                    obscureText: obscureConfirm,
+                    style: TextStyle(color: HomeColors.textPrimary),
+                    decoration: InputDecoration(
+                      labelText: 'Confirm New Password',
+                      labelStyle: TextStyle(color: HomeColors.textSecondary),
+                      filled: true,
+                      fillColor: HomeColors.cardElevated,
+                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: HomeColors.cardBorder)),
+                      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary, width: 1.5)),
+                      suffixIcon: ValueListenableBuilder<TextEditingValue>(
+                        valueListenable: confirmPasswordController,
+                        builder: (context, value, _) {
+                          return Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (value.text.isNotEmpty) ...[
+                                IconButton(
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(minWidth: 36, minHeight: 36, maxWidth: 36, maxHeight: 36),
+                                  style: IconButton.styleFrom(
+                                    shape: const CircleBorder(),
+                                    padding: EdgeInsets.zero,
+                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                  ),
+                                  icon: Icon(Icons.close_rounded, color: HomeColors.textSecondary, size: 18),
+                                  tooltip: 'Clear password',
+                                  onPressed: () => confirmPasswordController.clear(),
+                                ),
+                                const SizedBox(width: 4),
+                              ],
+                              IconButton(
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(minWidth: 36, minHeight: 36, maxWidth: 36, maxHeight: 36),
+                                style: IconButton.styleFrom(
+                                  shape: const CircleBorder(),
+                                  padding: EdgeInsets.zero,
+                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                ),
+                                icon: Icon(
+                                  obscureConfirm ? Icons.visibility_rounded : Icons.visibility_off_rounded,
+                                  color: HomeColors.textSecondary,
+                                  size: 20,
+                                ),
+                                tooltip: obscureConfirm ? 'Show password' : 'Hide password',
+                                onPressed: () => setDialogState(() => obscureConfirm = !obscureConfirm),
+                              ),
+                              const SizedBox(width: 8),
+                            ],
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              onPressed: isSaving
-                  ? null
-                  : () async {
-                      final oldPass = oldPasswordController.text;
-                      final newPass = newPasswordController.text;
-                      final confirmPass = confirmPasswordController.text;
-
-                      if (oldPass.isEmpty || newPass.isEmpty) {
-                        showStoraSnackBar(context, 'Please fill in all password fields');
-                        return;
-                      }
-                      if (newPass.length < 8) {
-                        showStoraSnackBar(context, 'New password must be at least 8 characters');
-                        return;
-                      }
-                      if (newPass != confirmPass) {
-                        showStoraSnackBar(context, 'New passwords do not match');
-                        return;
-                      }
-
-                      setDialogState(() => isSaving = true);
-                      try {
-                        final msg = await AuthStore.instance.changePassword(
-                          oldPassword: oldPass,
-                          newPassword: newPass,
-                        );
-                        if (ctx.mounted) Navigator.of(ctx).pop();
-                        if (context.mounted) {
-                          showStoraSnackBar(context, msg, isError: false);
-                        }
-                      } on ApiException catch (e) {
-                        setDialogState(() => isSaving = false);
-                        if (context.mounted) showStoraSnackBar(context, e.message);
-                      } catch (e) {
-                        setDialogState(() => isSaving = false);
-                        if (context.mounted) showStoraSnackBar(context, 'Could not change password');
-                      }
-                    },
-              child: isSaving
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
-                    )
-                  : const Text('Change', style: TextStyle(fontWeight: FontWeight.w700)),
             ),
-          ],
+            actions: [
+              TextButton(
+                onPressed: isSaving ? null : () => Navigator.of(ctx).pop(),
+                child: Text('Cancel', style: TextStyle(color: HomeColors.textSecondary)),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                onPressed: isSaving
+                    ? null
+                    : () async {
+                        final oldPass = oldPasswordController.text;
+                        final newPass = newPasswordController.text;
+                        final confirmPass = confirmPasswordController.text;
+
+                        if (oldPass.isEmpty || newPass.isEmpty) {
+                          showStoraSnackBar(context, 'Please fill in all password fields');
+                          return;
+                        }
+                        if (newPass.length < 8) {
+                          showStoraSnackBar(context, 'New password must be at least 8 characters');
+                          return;
+                        }
+                        if (newPass != confirmPass) {
+                          showStoraSnackBar(context, 'New passwords do not match');
+                          return;
+                        }
+
+                        setDialogState(() => isSaving = true);
+                        try {
+                          final msg = await AuthStore.instance.changePassword(
+                            oldPassword: oldPass,
+                            newPassword: newPass,
+                          );
+                          if (ctx.mounted) Navigator.of(ctx).pop();
+                          if (context.mounted) {
+                            showStoraSnackBar(context, msg, isError: false);
+                          }
+                        } on ApiException catch (e) {
+                          setDialogState(() => isSaving = false);
+                          if (context.mounted) showStoraSnackBar(context, e.message);
+                        } catch (e) {
+                          setDialogState(() => isSaving = false);
+                          if (context.mounted) showStoraSnackBar(context, 'Could not change password');
+                        }
+                      },
+                child: isSaving
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
+                      )
+                    : const Text('Change', style: TextStyle(fontWeight: FontWeight.w700)),
+              ),
+            ],
+          ),
         ),
-      ),
-    );
+      );
+    } finally {
+      oldPasswordController.dispose();
+      newPasswordController.dispose();
+      confirmPasswordController.dispose();
+    }
   }
 
   Future<void> _openSupportChat() async {

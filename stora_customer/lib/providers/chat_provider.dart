@@ -49,21 +49,57 @@ class ChatProvider extends ChangeNotifier {
 
     try {
       final fetched = await CustomerApiService.instance.fetchConversations();
+      final hasChanged = !_areConversationsEqual(_conversations, fetched);
       _conversations = fetched;
       _errorMessage = null;
+      if (!isSilent || hasChanged) {
+        notifyListeners();
+      }
     } catch (e) {
-      if (!isSilent) _errorMessage = e.toString();
+      if (!isSilent) {
+        _errorMessage = e.toString();
+        notifyListeners();
+      }
     } finally {
       if (!isSilent) {
         _isLoading = false;
+        notifyListeners();
       }
-      notifyListeners();
     }
+  }
+
+  bool _areConversationsEqual(List<Map<String, dynamic>> a, List<Map<String, dynamic>> b) {
+    if (a.length != b.length) return false;
+    for (int i = 0; i < a.length; i++) {
+      if (a[i]['id'] != b[i]['id'] ||
+          a[i]['unread_count'] != b[i]['unread_count'] ||
+          a[i]['last_message'] != b[i]['last_message'] ||
+          a[i]['timestamp'] != b[i]['timestamp']) {
+        return false;
+      }
+    }
+    return true;
   }
 
   Future<void> deleteConversation(int storeOwnerId) async {
     await CustomerApiService.instance.deleteConversation(storeOwnerId);
     _conversations.removeWhere((c) => (c['id'] ?? c['user_id']) == storeOwnerId);
+    _messagesCache.remove(storeOwnerId);
     notifyListeners();
+  }
+
+  void reset() {
+    stopPolling();
+    _conversations = [];
+    _messagesCache.clear();
+    _isLoading = false;
+    _errorMessage = null;
+    notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    stopPolling();
+    super.dispose();
   }
 }

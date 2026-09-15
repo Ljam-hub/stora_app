@@ -54,6 +54,19 @@ class CustomerApiService {
     }
   }
 
+  List<Map<String, dynamic>> _extractList(dynamic body) {
+    try {
+      final decoded = body is String ? (body.isEmpty ? null : jsonDecode(body)) : body;
+      if (decoded is List) {
+        return decoded.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+      }
+      if (decoded is Map && decoded['results'] is List) {
+        return (decoded['results'] as List).whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+      }
+    } catch (_) {}
+    return [];
+  }
+
   String _cleanError(dynamic body, int statusCode) {
     try {
       dynamic decoded = body;
@@ -326,20 +339,30 @@ class CustomerApiService {
         accessToken = session.accessToken;
       }
     }
-    final request = http.MultipartRequest('PATCH', _uri('/auth/me/'));
-    if (accessToken != null && accessToken!.isNotEmpty) {
-      request.headers['Authorization'] = 'Bearer $accessToken';
+    Future<http.Response> sendMultipart(String? token) async {
+      final request = http.MultipartRequest('PATCH', _uri('/auth/me/'));
+      if (token != null && token.isNotEmpty) {
+        request.headers['Authorization'] = 'Bearer $token';
+      }
+      request.headers['Accept'] = 'application/json';
+      request.files.add(
+        http.MultipartFile.fromBytes(
+          'avatar',
+          imageBytes,
+          filename: filename,
+        ),
+      );
+      final streamedResponse = await request.send();
+      return await http.Response.fromStream(streamedResponse);
     }
-    request.headers['Accept'] = 'application/json';
-    request.files.add(
-      http.MultipartFile.fromBytes(
-        'avatar',
-        imageBytes,
-        filename: filename,
-      ),
-    );
-    final streamedResponse = await request.send();
-    final response = await http.Response.fromStream(streamedResponse);
+
+    var response = await sendMultipart(accessToken);
+    if (response.statusCode == 401 && accessToken != null) {
+      final refreshed = await _refreshAccessToken();
+      if (refreshed) {
+        response = await sendMultipart(accessToken);
+      }
+    }
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body) as Map<String, dynamic>;
       final user = UserModel.fromJson(data);
@@ -448,8 +471,8 @@ class CustomerApiService {
       }
       final response = await _dispatch('GET', _uri('/stores/', params));
       if (response.statusCode == 200) {
-        final list = jsonDecode(response.body) as List;
-        return list.map((e) => StoreModel.fromJson(e as Map<String, dynamic>)).toList();
+        final list = _extractList(response.body);
+        return list.map(StoreModel.fromJson).toList();
       }
     } catch (e) {
       debugPrint('Error fetching stores: $e');
@@ -465,8 +488,8 @@ class CustomerApiService {
 
       final response = await _dispatch('GET', _uri('/categories/', params));
       if (response.statusCode == 200) {
-        final list = jsonDecode(response.body) as List;
-        return list.map((e) => CategoryModel.fromJson(e as Map<String, dynamic>)).toList();
+        final list = _extractList(response.body);
+        return list.map(CategoryModel.fromJson).toList();
       }
     } catch (e) {
       debugPrint('Error fetching categories: $e');
@@ -484,8 +507,8 @@ class CustomerApiService {
 
     final response = await _dispatch('GET', _uri('/products/', params.isNotEmpty ? params : null));
     if (response.statusCode == 200) {
-      final list = jsonDecode(response.body) as List;
-      var products = list.map((e) => ProductModel.fromJson(e as Map<String, dynamic>)).toList();
+      final list = _extractList(response.body);
+      var products = list.map(ProductModel.fromJson).toList();
 
       if (categoryId != null) {
         products = products.where((p) => p.categoryId == categoryId).toList();
@@ -528,8 +551,8 @@ class CustomerApiService {
   Future<List<CustomerOrder>> fetchMyOrders() async {
     final response = await _dispatch('GET', _uri('/orders/'));
     if (response.statusCode == 200) {
-      final list = jsonDecode(response.body) as List;
-      return list.map((e) => CustomerOrder.fromJson(e as Map<String, dynamic>)).toList();
+      final list = _extractList(response.body);
+      return list.map(CustomerOrder.fromJson).toList();
     }
     _throw(response);
   }
@@ -557,8 +580,7 @@ class CustomerApiService {
   Future<List<Map<String, dynamic>>> fetchConversations() async {
     final response = await _dispatch('GET', _uri('/messages/conversations/'));
     if (response.statusCode == 200) {
-      final list = jsonDecode(response.body) as List;
-      return list.cast<Map<String, dynamic>>();
+      return _extractList(response.body);
     }
     _throw(response);
   }
@@ -582,8 +604,7 @@ class CustomerApiService {
   Future<List<Map<String, dynamic>>> fetchMessages(int storeOwnerId) async {
     final response = await _dispatch('GET', _uri('/messages/', {'with_user': storeOwnerId.toString()}));
     if (response.statusCode == 200) {
-      final list = jsonDecode(response.body) as List;
-      return list.cast<Map<String, dynamic>>();
+      return _extractList(response.body);
     }
     _throw(response);
   }

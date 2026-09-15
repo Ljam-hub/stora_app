@@ -32,10 +32,16 @@ class StoreModel {
       id: json['id'] is int ? json['id'] as int : (int.tryParse(json['id']?.toString() ?? '0') ?? 0),
       businessName: (json['business_name'] as String?) ?? '',
       email: (json['email'] as String?) ?? '',
-      latitude: json['latitude'] is num ? (json['latitude'] as num).toDouble() : 14.5995,
-      longitude: json['longitude'] is num ? (json['longitude'] as num).toDouble() : 120.9842,
+      latitude: json['latitude'] is num
+          ? (json['latitude'] as num).toDouble()
+          : (double.tryParse(json['latitude']?.toString() ?? '14.5995') ?? 14.5995),
+      longitude: json['longitude'] is num
+          ? (json['longitude'] as num).toDouble()
+          : (double.tryParse(json['longitude']?.toString() ?? '120.9842') ?? 120.9842),
       address: (json['address'] as String?) ?? '',
-      distanceKm: json['distance_km'] is num ? (json['distance_km'] as num).toDouble() : null,
+      distanceKm: json['distance_km'] is num
+          ? (json['distance_km'] as num).toDouble()
+          : (json['distance_km'] != null ? double.tryParse(json['distance_km'].toString()) : null),
       avatarUrl: (json['avatar_url'] as String?),
       isOpen: json['is_open'] == false ||
               json['is_open'] == 0 ||

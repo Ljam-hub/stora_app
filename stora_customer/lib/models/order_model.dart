@@ -22,11 +22,23 @@ class CustomerOrderItem {
   String get formattedSubtotal => '₱${subtotal.toStringAsFixed(2)}';
 
   factory CustomerOrderItem.fromJson(Map<String, dynamic> json) {
+    int? parseId(dynamic val) {
+      if (val == null) return null;
+      if (val is int) return val;
+      if (val is num) return val.toInt();
+      return int.tryParse(val.toString());
+    }
+
+    final rawQty = json['quantity'];
+    final parsedQty = rawQty is int
+        ? rawQty
+        : (rawQty is num ? rawQty.toInt() : (int.tryParse(rawQty?.toString() ?? '1') ?? 1));
+
     return CustomerOrderItem(
-      id: json['id'] as int?,
-      productId: json['product'] as int?,
+      id: parseId(json['id']),
+      productId: parseId(json['product']),
       productName: (json['product_name'] as String?) ?? '',
-      quantity: (json['quantity'] as int?) ?? 1,
+      quantity: parsedQty,
       unitPrice: double.tryParse(json['unit_price']?.toString() ?? '0') ?? 0.0,
     );
   }
@@ -189,10 +201,18 @@ class CustomerOrder {
       totalAmount: double.tryParse(json['total_amount']?.toString() ?? '0') ?? 0.0,
       createdAt: json['created_at'] != null ? DateTime.tryParse(json['created_at'].toString()) : null,
       expiresAt: json['expires_at'] != null ? DateTime.tryParse(json['expires_at'].toString()) : null,
-      items: rawItems.map((e) => CustomerOrderItem.fromJson(e as Map<String, dynamic>)).toList(),
+      items: rawItems
+          .whereType<Map>()
+          .map((e) => CustomerOrderItem.fromJson(Map<String, dynamic>.from(e)))
+          .toList(),
       latestMessage: json['latest_message'] is Map ? (json['latest_message']['message'] as String?) : null,
       latestMessageIsMe: json['latest_message'] is Map ? (json['latest_message']['is_me'] as bool? ?? false) : false,
-      unreadMessageCount: (json['unread_message_count'] as int?) ?? (json['latest_message'] is Map && json['latest_message']['is_read'] == false && json['latest_message']['is_me'] == false ? 1 : 0),
+      unreadMessageCount: json['unread_message_count'] is int
+          ? json['unread_message_count'] as int
+          : (json['unread_message_count'] is num
+              ? (json['unread_message_count'] as num).toInt()
+              : (int.tryParse(json['unread_message_count']?.toString() ?? '') ??
+                  (json['latest_message'] is Map && json['latest_message']['is_read'] == false && json['latest_message']['is_me'] == false ? 1 : 0))),
       latestMessageAt: json['latest_message'] is Map && json['latest_message']['created_at'] != null ? DateTime.tryParse(json['latest_message']['created_at'].toString()) : null,
       latestMessageIsUnsent: json['latest_message'] is Map ? (json['latest_message']['is_unsent'] as bool? ?? false) : false,
     );

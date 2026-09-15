@@ -26,6 +26,7 @@ class CartScreen extends StatefulWidget {
 
 class _CartScreenState extends State<CartScreen> {
   bool _isNavigatingToCheckout = false;
+  bool _hasAttemptedStoreFetch = false;
 
   Future<void> _detectLocation(BuildContext context) async {
     final messenger = ScaffoldMessenger.of(context);
@@ -82,7 +83,8 @@ class _CartScreenState extends State<CartScreen> {
     final savedAddress = auth.savedAddress;
 
     final storeOwnerId = cart.storeId;
-    if (storeOwnerId != null && catalog.stores.isEmpty && !catalog.isLoading) {
+    if (storeOwnerId != null && catalog.stores.isEmpty && !catalog.isLoading && !_hasAttemptedStoreFetch) {
+      _hasAttemptedStoreFetch = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         catalog.fetchStores();
       });

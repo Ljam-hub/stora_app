@@ -415,7 +415,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
       await _fetchMessages(silent: true);
     } on ApiException catch (e) {
       if (e.statusCode == 403 || e.message.toLowerCase().contains('blocked') || e.message.toLowerCase().contains('cannot send')) {
-        setState(() => _isBlocked = true);
+        if (mounted) setState(() => _isBlocked = true);
       }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

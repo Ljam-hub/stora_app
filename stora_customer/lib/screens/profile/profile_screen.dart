@@ -96,7 +96,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       setState(() => _uploadingAvatar = true);
       try {
         final ok = await auth.removeAvatar();
-        if (mounted) setState(() => _uploadingAvatar = false);
+        if (!mounted) return;
+        setState(() => _uploadingAvatar = false);
         if (ok) {
           messenger.showSnackBar(
             const SnackBar(
@@ -113,7 +114,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           );
         }
       } catch (e) {
-        if (mounted) setState(() => _uploadingAvatar = false);
+        if (!mounted) return;
+        setState(() => _uploadingAvatar = false);
         messenger.showSnackBar(
           SnackBar(
             content: Text('Error: $e'),
@@ -134,7 +136,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       setState(() => _uploadingAvatar = true);
       final bytes = await picked.readAsBytes();
       final ok = await auth.uploadAvatar(bytes, picked.name);
-      if (mounted) setState(() => _uploadingAvatar = false);
+      if (!mounted) return;
+      setState(() => _uploadingAvatar = false);
       if (ok) {
         messenger.showSnackBar(
           const SnackBar(
@@ -151,7 +154,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         );
       }
     } catch (e) {
-      if (mounted) setState(() => _uploadingAvatar = false);
+      if (!mounted) return;
+      setState(() => _uploadingAvatar = false);
       messenger.showSnackBar(
         SnackBar(
           content: Text('Error: $e'),
@@ -161,52 +165,51 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  void _openEditProfileDialog() {
+  void _openEditProfileDialog() async {
     final auth = context.read<AuthProvider>();
     final nameController = TextEditingController(text: auth.currentUser?.name ?? '');
     final emailController = TextEditingController(text: auth.currentUser?.email ?? '');
 
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.cardBackground,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: AppColors.cardBorder),
-        ),
-        title: Text('Edit Profile', style: TextStyle(color: AppColors.textPrimary)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CustomTextField(
-              controller: nameController,
-              label: 'Full Name',
-              prefixIcon: Icons.person_outline,
-            ),
-            const SizedBox(height: 14),
-            CustomTextField(
-              controller: emailController,
-              label: 'Email Address',
-              prefixIcon: Icons.email_outlined,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+    try {
+      await showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: AppColors.cardBackground,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(color: AppColors.cardBorder),
           ),
-          ElevatedButton(
-            onPressed: () async {
-              final messenger = ScaffoldMessenger.of(context);
-              final nav = Navigator.of(ctx);
-              final ok = await auth.updateProfile(
-                name: nameController.text,
-                email: emailController.text,
-              );
-              if (mounted) {
-                nav.pop();
-                if (ok) {
+          title: Text('Edit Profile', style: TextStyle(color: AppColors.textPrimary)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CustomTextField(
+                controller: nameController,
+                label: 'Full Name',
+                prefixIcon: Icons.person_outline,
+              ),
+              const SizedBox(height: 14),
+              CustomTextField(
+                controller: emailController,
+                label: 'Email Address',
+                prefixIcon: Icons.email_outlined,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final messenger = ScaffoldMessenger.of(context);
+                final ok = await auth.updateProfile(
+                  name: nameController.text,
+                  email: emailController.text,
+                );
+                if (ctx.mounted) Navigator.of(ctx).pop();
+                if (mounted && ok) {
                   messenger.showSnackBar(
                     const SnackBar(
                       content: Text('Profile updated successfully!', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
@@ -214,269 +217,286 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   );
                 }
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.black,
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.black,
+              ),
+              child: const Text('Save Changes'),
             ),
-            child: const Text('Save Changes'),
-          ),
-        ],
-      ),
-    );
+          ],
+        ),
+      );
+    } finally {
+      nameController.dispose();
+      emailController.dispose();
+    }
   }
 
-  void _openEditDeliveryDialog() {
+  void _openEditDeliveryDialog() async {
     final auth = context.read<AuthProvider>();
     final phoneController = TextEditingController(text: auth.savedPhone ?? '');
     final addressController = TextEditingController(text: auth.savedAddress ?? '');
     bool isLocating = false;
 
-    showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (dialogCtx, setDialogState) {
-          Future<void> autoLocate() async {
-            if (isLocating) return;
-            setDialogState(() => isLocating = true);
-            final messenger = ScaffoldMessenger.of(context);
-            messenger.hideCurrentSnackBar();
-            messenger.showSnackBar(
-              const SnackBar(
-                content: Text('Detecting current GPS location...'),
-                duration: Duration(seconds: 3),
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
-            final res = await LocationService.instance.detectCurrentAddress();
-            if (dialogCtx.mounted) {
-              setDialogState(() => isLocating = false);
-            }
-            messenger.hideCurrentSnackBar();
-            if (res.success && res.address != null) {
-              addressController.text = res.address!;
+    try {
+      await showDialog(
+        context: context,
+        builder: (ctx) => StatefulBuilder(
+          builder: (dialogCtx, setDialogState) {
+            Future<void> autoLocate() async {
+              if (isLocating) return;
+              setDialogState(() => isLocating = true);
+              final messenger = ScaffoldMessenger.of(context);
+              messenger.hideCurrentSnackBar();
               messenger.showSnackBar(
-                SnackBar(
-                  content: Text('Location found: ${res.address!}'),
-                  backgroundColor: AppColors.success,
+                const SnackBar(
+                  content: Text('Detecting current GPS location...'),
+                  duration: Duration(seconds: 3),
                   behavior: SnackBarBehavior.floating,
                 ),
               );
-            } else {
-              messenger.showSnackBar(
-                SnackBar(
-                  content: Text(res.errorMessage ?? 'Could not detect location.'),
-                  backgroundColor: AppColors.danger,
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
+              final res = await LocationService.instance.detectCurrentAddress();
+              if (dialogCtx.mounted) {
+                setDialogState(() => isLocating = false);
+              }
+              messenger.hideCurrentSnackBar();
+              if (res.success && res.address != null) {
+                addressController.text = res.address!;
+                messenger.showSnackBar(
+                  SnackBar(
+                    content: Text('Location found: ${res.address!}'),
+                    backgroundColor: AppColors.success,
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              } else {
+                messenger.showSnackBar(
+                  SnackBar(
+                    content: Text(res.errorMessage ?? 'Could not detect location.'),
+                    backgroundColor: AppColors.danger,
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              }
             }
-          }
 
-          return AlertDialog(
-            backgroundColor: AppColors.cardBackground,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-              side: BorderSide(color: AppColors.cardBorder),
-            ),
-            title: Text('Default Delivery Info', style: TextStyle(color: AppColors.textPrimary)),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CustomTextField(
-                  controller: phoneController,
-                  label: 'Phone Number',
-                  prefixIcon: Icons.phone_outlined,
-                ),
-                const SizedBox(height: 14),
-                CustomTextField(
-                  controller: addressController,
-                  label: 'Delivery Address',
-                  prefixIcon: Icons.location_on_outlined,
-                  prefixIconTooltip: 'Locate current address',
-                  onPrefixIconPressed: autoLocate,
-                  suffix: isLocating
-                      ? const Padding(
-                          padding: EdgeInsets.all(12),
-                          child: SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+            return AlertDialog(
+              backgroundColor: AppColors.cardBackground,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+                side: BorderSide(color: AppColors.cardBorder),
+              ),
+              title: Text('Default Delivery Info', style: TextStyle(color: AppColors.textPrimary)),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CustomTextField(
+                    controller: phoneController,
+                    label: 'Phone Number',
+                    prefixIcon: Icons.phone_outlined,
+                  ),
+                  const SizedBox(height: 14),
+                  CustomTextField(
+                    controller: addressController,
+                    label: 'Delivery Address',
+                    prefixIcon: Icons.location_on_outlined,
+                    prefixIconTooltip: 'Locate current address',
+                    onPrefixIconPressed: autoLocate,
+                    suffix: isLocating
+                        ? const Padding(
+                            padding: EdgeInsets.all(12),
+                            child: SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+                            ),
+                          )
+                        : IconButton(
+                            icon: const Icon(Icons.my_location_rounded, color: AppColors.primary, size: 20),
+                            tooltip: 'Detect current location',
+                            onPressed: autoLocate,
                           ),
-                        )
-                      : IconButton(
-                          icon: const Icon(Icons.my_location_rounded, color: AppColors.primary, size: 20),
-                          tooltip: 'Detect current location',
-                          onPressed: autoLocate,
+                    maxLines: 2,
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    final messenger = ScaffoldMessenger.of(context);
+                    await auth.saveDeliveryDetails(
+                      phone: phoneController.text,
+                      address: addressController.text,
+                    );
+                    if (ctx.mounted) Navigator.of(ctx).pop();
+                    if (mounted) {
+                      messenger.showSnackBar(
+                        const SnackBar(
+                          content: Text('Delivery information saved!', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                          backgroundColor: Color(0xFF059669),
                         ),
-                  maxLines: 2,
+                      );
+                    }
+                  },
+                  child: const Text('Save Details'),
                 ),
               ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
-              ),
-              ElevatedButton(
-                onPressed: () async {
-                  final messenger = ScaffoldMessenger.of(context);
-                  final nav = Navigator.of(ctx);
-                  await auth.saveDeliveryDetails(
-                    phone: phoneController.text,
-                    address: addressController.text,
-                  );
-                  if (mounted) {
-                    nav.pop();
-                    messenger.showSnackBar(
-                      const SnackBar(
-                        content: Text('Delivery information saved!', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                        backgroundColor: Color(0xFF059669),
-                      ),
-                    );
-                  }
-                },
-                child: const Text('Save Details'),
-              ),
-            ],
-          );
-        },
-      ),
-    );
+            );
+          },
+        ),
+      );
+    } finally {
+      phoneController.dispose();
+      addressController.dispose();
+    }
   }
 
-  void _openChangePasswordDialog() {
+  void _openChangePasswordDialog() async {
     final oldPasswordController = TextEditingController();
     final newPasswordController = TextEditingController();
     final confirmPasswordController = TextEditingController();
     bool isSaving = false;
 
-    showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          backgroundColor: AppColors.cardBackground,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-            side: BorderSide(color: AppColors.cardBorder),
-          ),
-          title: Text('Change Password', style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold)),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CustomTextField(
-                  controller: oldPasswordController,
-                  label: 'Current Password',
-                  hint: '••••••••',
-                  prefixIcon: Icons.lock_outline,
-                  isPassword: true,
-                ),
-                const SizedBox(height: 14),
-                CustomTextField(
-                  controller: newPasswordController,
-                  label: 'New Password',
-                  hint: 'At least 8 characters',
-                  prefixIcon: Icons.lock_outline,
-                  isPassword: true,
-                ),
-                const SizedBox(height: 14),
-                CustomTextField(
-                  controller: confirmPasswordController,
-                  label: 'Confirm New Password',
-                  hint: 'Repeat new password',
-                  prefixIcon: Icons.lock_reset_outlined,
-                  isPassword: true,
-                ),
-              ],
+    try {
+      await showDialog(
+        context: context,
+        builder: (ctx) => StatefulBuilder(
+          builder: (context, setDialogState) => AlertDialog(
+            backgroundColor: AppColors.cardBackground,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+              side: BorderSide(color: AppColors.cardBorder),
             ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: isSaving ? null : () => Navigator.pop(ctx),
-              child: Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
-            ),
-            ElevatedButton(
-              onPressed: isSaving
-                  ? null
-                  : () async {
-                      final oldPass = oldPasswordController.text;
-                      final newPass = newPasswordController.text;
-                      final confirmPass = confirmPasswordController.text;
-
-                      if (oldPass.isEmpty || newPass.isEmpty) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Please fill in all password fields.'),
-                            backgroundColor: AppColors.danger,
-                          ),
-                        );
-                        return;
-                      }
-
-                      if (newPass.length < 8) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('New password must be at least 8 characters.'),
-                            backgroundColor: AppColors.danger,
-                          ),
-                        );
-                        return;
-                      }
-
-                      if (newPass != confirmPass) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('New passwords do not match.'),
-                            backgroundColor: AppColors.danger,
-                          ),
-                        );
-                        return;
-                      }
-
-                      setDialogState(() => isSaving = true);
-                      final messenger = ScaffoldMessenger.of(context);
-                      final nav = Navigator.of(ctx);
-
-                      try {
-                        await CustomerApiService.instance.changePassword(
-                          oldPassword: oldPass,
-                          newPassword: newPass,
-                        );
-                        nav.pop();
-                        messenger.showSnackBar(
-                          const SnackBar(
-                            content: Text('Password changed successfully!', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                            backgroundColor: Color(0xFF059669),
-                          ),
-                        );
-                      } catch (e) {
-                        setDialogState(() => isSaving = false);
-                        messenger.showSnackBar(
-                          SnackBar(
-                            content: Text(e.toString().replaceAll('Exception: ', '')),
-                            backgroundColor: AppColors.danger,
-                          ),
-                        );
-                      }
-                    },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.black,
+            title: Text('Change Password', style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold)),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CustomTextField(
+                    controller: oldPasswordController,
+                    label: 'Current Password',
+                    hint: '••••••••',
+                    prefixIcon: Icons.lock_outline,
+                    isPassword: true,
+                  ),
+                  const SizedBox(height: 14),
+                  CustomTextField(
+                    controller: newPasswordController,
+                    label: 'New Password',
+                    hint: 'At least 8 characters',
+                    prefixIcon: Icons.lock_outline,
+                    isPassword: true,
+                  ),
+                  const SizedBox(height: 14),
+                  CustomTextField(
+                    controller: confirmPasswordController,
+                    label: 'Confirm New Password',
+                    hint: 'Repeat new password',
+                    prefixIcon: Icons.lock_reset_outlined,
+                    isPassword: true,
+                  ),
+                ],
               ),
-              child: isSaving
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
-                    )
-                  : const Text('Update Password'),
             ),
-          ],
+            actions: [
+              TextButton(
+                onPressed: isSaving ? null : () => Navigator.pop(ctx),
+                child: Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+              ),
+              ElevatedButton(
+                onPressed: isSaving
+                    ? null
+                    : () async {
+                        final oldPass = oldPasswordController.text;
+                        final newPass = newPasswordController.text;
+                        final confirmPass = confirmPasswordController.text;
+
+                        if (oldPass.isEmpty || newPass.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Please fill in all password fields.'),
+                              backgroundColor: AppColors.danger,
+                            ),
+                          );
+                          return;
+                        }
+
+                        if (newPass.length < 8) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('New password must be at least 8 characters.'),
+                              backgroundColor: AppColors.danger,
+                            ),
+                          );
+                          return;
+                        }
+
+                        if (newPass != confirmPass) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('New passwords do not match.'),
+                              backgroundColor: AppColors.danger,
+                            ),
+                          );
+                          return;
+                        }
+
+                        setDialogState(() => isSaving = true);
+                        final messenger = ScaffoldMessenger.of(context);
+                        final nav = Navigator.of(ctx);
+
+                        try {
+                          await CustomerApiService.instance.changePassword(
+                            oldPassword: oldPass,
+                            newPassword: newPass,
+                          );
+                          if (ctx.mounted) nav.pop();
+                          if (mounted) {
+                            messenger.showSnackBar(
+                              const SnackBar(
+                                content: Text('Password changed successfully!', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                                backgroundColor: Color(0xFF059669),
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          if (ctx.mounted) setDialogState(() => isSaving = false);
+                          if (mounted) {
+                            messenger.showSnackBar(
+                              SnackBar(
+                                content: Text(e.toString().replaceAll('Exception: ', '')),
+                                backgroundColor: AppColors.danger,
+                              ),
+                            );
+                          }
+                        }
+                      },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.black,
+                ),
+                child: isSaving
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
+                      )
+                    : const Text('Update Password'),
+              ),
+            ],
+          ),
         ),
-      ),
-    );
+      );
+    } finally {
+      oldPasswordController.dispose();
+      newPasswordController.dispose();
+      confirmPasswordController.dispose();
+    }
   }
 
   void _handleLogout() {

@@ -128,24 +128,40 @@ class _OrdersScreenState extends State<OrdersScreen> {
                       itemCount: 4,
                       itemBuilder: (_, index) => const ShimmerOrderCard(),
                     )
-                  : orderProvider.orders.isEmpty
+                  : (orderProvider.errorMessage != null && orderProvider.rawOrders.isEmpty)
                       ? LayoutBuilder(
                           builder: (context, constraints) => SingleChildScrollView(
                             physics: const AlwaysScrollableScrollPhysics(),
                             child: ConstrainedBox(
                               constraints: BoxConstraints(minHeight: constraints.maxHeight),
                               child: EmptyState(
-                                icon: Icons.receipt_long_outlined,
-                                title: 'No Orders Found',
-                                message: orderProvider.selectedStatusFilter != 'all'
-                                    ? 'You have no orders in the "${orderProvider.selectedStatusFilter}" status.'
-                                    : 'You haven\'t placed any orders yet. Start exploring products to make your first purchase!',
-                                buttonText: 'Start Shopping',
-                                onButtonPressed: widget.onStartShopping,
+                                icon: Icons.cloud_off_rounded,
+                                title: 'Unable to Load Orders',
+                                message: orderProvider.errorMessage!,
+                                buttonText: 'Retry',
+                                onButtonPressed: () => orderProvider.fetchOrders(),
                               ),
                             ),
                           ),
                         )
+                      : orderProvider.orders.isEmpty
+                          ? LayoutBuilder(
+                              builder: (context, constraints) => SingleChildScrollView(
+                                physics: const AlwaysScrollableScrollPhysics(),
+                                child: ConstrainedBox(
+                                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                                  child: EmptyState(
+                                    icon: Icons.receipt_long_outlined,
+                                    title: 'No Orders Found',
+                                    message: orderProvider.selectedStatusFilter != 'all'
+                                        ? 'You have no orders in the "${orderProvider.selectedStatusFilter}" status.'
+                                        : 'You haven\'t placed any orders yet. Start exploring products to make your first purchase!',
+                                    buttonText: 'Start Shopping',
+                                    onButtonPressed: widget.onStartShopping,
+                                  ),
+                                ),
+                              ),
+                            )
                       : ListView.builder(
                           physics: const AlwaysScrollableScrollPhysics(),
                           padding: const EdgeInsets.all(16),

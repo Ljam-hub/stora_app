@@ -53,7 +53,7 @@ class OrdersStore extends ChangeNotifier {
       // Check for newly arrived customer orders
       if (_hasInitialFetch) {
         for (final o in fetched) {
-          final id = o['id'] as int?;
+          final id = _parseOrderId(o['id']);
           final status = o['status'] as String?;
           if (id != null && !_knownOrderIds.contains(id) && status == 'pending') {
             final custName = (o['customer_name'] as String?)?.trim();
@@ -75,7 +75,7 @@ class OrdersStore extends ChangeNotifier {
 
       _orders = fetched;
       for (final o in _orders) {
-        final id = o['id'] as int?;
+        final id = _parseOrderId(o['id']);
         if (id != null) _knownOrderIds.add(id);
       }
       _hasInitialFetch = true;
@@ -155,3 +155,11 @@ class OrdersStore extends ChangeNotifier {
     notifyListeners();
   }
 }
+
+int? _parseOrderId(dynamic rawId) {
+  if (rawId == null) return null;
+  if (rawId is int) return rawId;
+  if (rawId is num) return rawId.toInt();
+  return int.tryParse(rawId.toString());
+}
+

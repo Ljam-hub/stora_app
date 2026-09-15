@@ -210,6 +210,7 @@ class _OrderCardState extends State<OrderCard> {
 
                                         if (ctx.mounted) Navigator.of(ctx).pop();
 
+                                        if (!context.mounted) return;
                                         messenger.showSnackBar(
                                           const SnackBar(
                                             content: Text('Report submitted. Our administrators will review this store.'),
@@ -218,6 +219,7 @@ class _OrderCardState extends State<OrderCard> {
                                         );
                                       } catch (e) {
                                         if (ctx.mounted) setSheetState(() => isSubmitting = false);
+                                        if (!context.mounted) return;
                                         final eStr = e.toString().toLowerCase();
                                         final msg = eStr.contains('pending report') || eStr.contains('already have')
                                             ? 'You already have an active pending report for this store.'

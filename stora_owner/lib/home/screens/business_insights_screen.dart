@@ -59,38 +59,40 @@ class _BusinessInsightsScreenState extends State<BusinessInsightsScreen> {
     }
   }
 
-  void _handleAction(String target) {
-    switch (target) {
-      case 'inventory':
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const InventoryListScreen()),
-        );
-        break;
-      case 'orders':
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const PendingOrdersScreen()),
-        );
-        break;
-      case 'analytics':
-        if (!AccountStatusStore.instance.isPremium) {
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => SubscriptionScreen()),
-          );
-          return;
-        }
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const SalesAnalyticsScreen()),
-        );
-        break;
-      case 'map':
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const SetStoreLocationScreen()),
-        );
-        break;
-      default:
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const InventoryListScreen()),
-        );
+  bool _isNavigating = false;
+
+  void _handleAction(String target) async {
+    if (_isNavigating || !mounted) return;
+    _isNavigating = true;
+    try {
+      Widget screen;
+      switch (target) {
+        case 'inventory':
+          screen = const InventoryListScreen();
+          break;
+        case 'orders':
+          screen = const PendingOrdersScreen();
+          break;
+        case 'analytics':
+          if (!AccountStatusStore.instance.isPremium) {
+            screen = SubscriptionScreen();
+          } else {
+            screen = const SalesAnalyticsScreen();
+          }
+          break;
+        case 'map':
+          screen = const SetStoreLocationScreen();
+          break;
+        default:
+          screen = const InventoryListScreen();
+      }
+      await Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => screen),
+      );
+    } finally {
+      if (mounted) {
+        _isNavigating = false;
+      }
     }
   }
 

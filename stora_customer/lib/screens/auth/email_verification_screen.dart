@@ -50,6 +50,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen>
   Future<void> _checkClipboardForCode() async {
     try {
       final data = await Clipboard.getData('text/plain');
+      if (!mounted) return;
       final text = data?.text?.trim() ?? '';
       final digits = text.replaceAll(RegExp(r'\D'), '');
       if (digits.length == 6 && _codeController.text != digits) {
@@ -64,6 +65,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen>
   Future<void> _pasteFromClipboard() async {
     try {
       final data = await Clipboard.getData('text/plain');
+      if (!mounted) return;
       final text = data?.text?.trim() ?? '';
       final digits = text.replaceAll(RegExp(r'\D'), '');
       if (digits.isNotEmpty) {
@@ -75,11 +77,9 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen>
           _handleVerify();
         }
       } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('No verification code found in clipboard.')),
-          );
-        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No verification code found in clipboard.')),
+        );
       }
     } catch (_) {}
   }

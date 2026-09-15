@@ -106,12 +106,34 @@ class AlertsScreen extends StatelessWidget {
   }
 }
 
-class _AlertCard extends StatelessWidget {
+class _AlertCard extends StatefulWidget {
   final Product product;
   const _AlertCard({required this.product});
 
   @override
+  State<_AlertCard> createState() => _AlertCardState();
+}
+
+class _AlertCardState extends State<_AlertCard> {
+  bool _isOpening = false;
+
+  void _handleRestock() async {
+    if (_isOpening || !mounted) return;
+    _isOpening = true;
+    try {
+      await Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => AddEditProductScreen(existing: widget.product)),
+      );
+    } finally {
+      if (mounted) {
+        _isOpening = false;
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final product = widget.product;
     final isOut = product.stock <= 0;
     return Container(
       padding: const EdgeInsets.all(16),
@@ -177,9 +199,7 @@ class _AlertCard extends StatelessWidget {
               ),
               const SizedBox(height: 6),
               GestureDetector(
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => AddEditProductScreen(existing: product)),
-                ),
+                onTap: _handleRestock,
                 child: Text(
                   'Restock →',
                   style: TextStyle(color: HomeColors.accentText, fontSize: 11, fontWeight: FontWeight.w800),

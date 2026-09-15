@@ -29,6 +29,24 @@ class MainShell extends StatefulWidget {
 
 class _MainShellState extends State<MainShell> {
   late int _currentIndex;
+  OrderProvider? _orderProvider;
+  ChatProvider? _chatProvider;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _orderProvider = context.read<OrderProvider>();
+    _chatProvider = context.read<ChatProvider>();
+  }
+
+  @override
+  void dispose() {
+    NotificationService.instance.onForegroundMessageReceived = null;
+    _orderProvider?.onOrderStatusChanged = null;
+    _orderProvider?.stopPolling();
+    _chatProvider?.stopPolling();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -169,19 +187,6 @@ class _MainShellState extends State<MainShell> {
     );
   }
 
-  @override
-  void dispose() {
-    try {
-      final orderProvider = context.read<OrderProvider>();
-      orderProvider.stopPolling();
-      orderProvider.onOrderStatusChanged = null;
-    } catch (_) {}
-    try {
-      context.read<ChatProvider>().stopPolling();
-    } catch (_) {}
-    NotificationService.instance.onForegroundMessageReceived = null;
-    super.dispose();
-  }
 
   void _onTabTapped(int index) {
     HapticFeedback.lightImpact();

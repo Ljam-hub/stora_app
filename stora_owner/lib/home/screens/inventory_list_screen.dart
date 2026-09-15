@@ -44,7 +44,7 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
       if (!mounted) return;
       if (match != null) {
         final local = InventoryStore.instance.products.firstWhere(
-          (p) => p.id == match['id'],
+          (p) => p.id == match['id']?.toString(),
           orElse: () => Product.fromJson(match),
         );
         Navigator.of(context).push(

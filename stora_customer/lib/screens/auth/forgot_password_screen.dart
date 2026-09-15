@@ -59,20 +59,19 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> with Widget
   Future<void> _checkClipboardForToken() async {
     try {
       final data = await Clipboard.getData('text/plain');
+      if (!mounted) return;
       final text = data?.text?.trim() ?? '';
       final token = _extractResetToken(text);
       if (token.isNotEmpty && _codeController.text != token) {
         setState(() {
           _codeController.text = token;
         });
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Reset token auto-pasted from clipboard'),
-              duration: Duration(seconds: 2),
-            ),
-          );
-        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Reset token auto-pasted from clipboard'),
+            duration: Duration(seconds: 2),
+          ),
+        );
       }
     } catch (_) {}
   }
@@ -80,30 +79,27 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> with Widget
   Future<void> _pasteFromClipboard() async {
     try {
       final data = await Clipboard.getData('text/plain');
+      if (!mounted) return;
       final text = data?.text?.trim() ?? '';
       final token = _extractResetToken(text);
       if (token.isNotEmpty) {
         setState(() {
           _codeController.text = token;
         });
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Reset token pasted from clipboard'),
-              duration: Duration(seconds: 2),
-            ),
-          );
-        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Reset token pasted from clipboard'),
+            duration: Duration(seconds: 2),
+          ),
+        );
       } else if (text.isNotEmpty) {
         setState(() {
           _codeController.text = text;
         });
       } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('No reset token found in clipboard.')),
-          );
-        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No reset token found in clipboard.')),
+        );
       }
     } catch (_) {}
   }

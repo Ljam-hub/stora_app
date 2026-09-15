@@ -44,11 +44,19 @@ class OrderProvider extends ChangeNotifier {
   final Set<int> _unreadDeclinedOrderIds = {};
   Map<int, String> _persistedSeenStatuses = {};
 
-  int get unreadDeclinedCount => _orders
-      .where((o) =>
-          (o.status == 'declined' || o.status == 'auto_declined') &&
-          _unreadDeclinedOrderIds.contains(o.id))
-      .length;
+  int get unreadDeclinedCount {
+    if (_seenFilters.contains('declined')) {
+      return 0;
+    }
+    int unread = 0;
+    for (final o in _orders) {
+      if ((o.status == 'declined' || o.status == 'auto_declined') &&
+          (_unreadDeclinedOrderIds.contains(o.id) || _persistedSeenStatuses[o.id] != o.status)) {
+        unread++;
+      }
+    }
+    return unread;
+  }
 
   OrderProvider() {
     _loadPersistedSeen();
@@ -58,16 +66,18 @@ class OrderProvider extends ChangeNotifier {
     try {
       final raw = await SessionManager.instance.getSetting('seen_orders_snapshot');
       if (raw != null && raw.isNotEmpty) {
-        final decoded = jsonDecode(raw) as Map<String, dynamic>;
-        final map = <int, String>{};
-        for (final entry in decoded.entries) {
-          final id = int.tryParse(entry.key);
-          if (id != null) {
-            map[id] = entry.value.toString();
+        final decoded = jsonDecode(raw);
+        if (decoded is Map) {
+          final map = <int, String>{};
+          for (final entry in decoded.entries) {
+            final id = int.tryParse(entry.key.toString());
+            if (id != null) {
+              map[id] = entry.value.toString();
+            }
           }
+          _persistedSeenStatuses = map;
+          notifyListeners();
         }
-        _persistedSeenStatuses = map;
-        notifyListeners();
       }
     } catch (e) {
       debugPrint('Error loading seen orders snapshot: $e');
@@ -353,5 +363,26 @@ class OrderProvider extends ChangeNotifier {
     } finally {
       _isPlacingOrder = false;
     }
+  }
+
+  void reset() {
+    stopPolling();
+    _orders = [];
+    _knownStatuses.clear();
+    _seenFilters.clear();
+    _unreadDeclinedOrderIds.clear();
+    _persistedSeenStatuses.clear();
+    _ordersTabSeen = false;
+    _hasInitialFetch = false;
+    _isLoading = false;
+    _isPlacingOrder = false;
+    _errorMessage = null;
+    notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    stopPolling();
+    super.dispose();
   }
 }

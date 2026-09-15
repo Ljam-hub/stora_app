@@ -79,7 +79,9 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
 
   String? _validatePrice(String? v) {
     if (v == null || v.trim().isEmpty) return 'Price is required';
-    if (double.tryParse(v.trim()) == null) return 'Enter a valid amount';
+    final p = double.tryParse(v.trim());
+    if (p == null) return 'Enter a valid amount';
+    if (p <= 0) return 'Price must be greater than zero';
     return null;
   }
 
@@ -344,37 +346,41 @@ class _CategoryPickerState extends State<_CategoryPicker> {
 
   Future<void> _promptNewCategory() async {
     final controller = TextEditingController();
-    final result = await showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: HomeColors.cardBackground,
-        title: Text('New category', style: TextStyle(color: HomeColors.textPrimary)),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          style: TextStyle(color: HomeColors.textPrimary),
-          decoration: InputDecoration(
-            hintText: 'e.g. Frozen Goods',
-            hintStyle: TextStyle(color: HomeColors.textSecondary),
+    try {
+      final result = await showDialog<String>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: HomeColors.cardBackground,
+          title: Text('New category', style: TextStyle(color: HomeColors.textPrimary)),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            style: TextStyle(color: HomeColors.textPrimary),
+            decoration: InputDecoration(
+              hintText: 'e.g. Frozen Goods',
+              hintStyle: TextStyle(color: HomeColors.textSecondary),
+            ),
           ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: Text('Cancel', style: TextStyle(color: HomeColors.textSecondary)),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(controller.text.trim()),
+              child: Text('Add', style: TextStyle(color: HomeColors.accentText, fontWeight: FontWeight.w700)),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: Text('Cancel', style: TextStyle(color: HomeColors.textSecondary)),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(controller.text.trim()),
-            child: Text('Add', style: TextStyle(color: HomeColors.accentText, fontWeight: FontWeight.w700)),
-          ),
-        ],
-      ),
-    );
-    if (result != null && result.isNotEmpty) {
-      await CategoryStore.instance.addCategory(result);
-      if (!mounted) return;
-      setState(() => _selected = result);
-      widget.onChanged(result);
+      );
+      if (result != null && result.isNotEmpty) {
+        await CategoryStore.instance.addCategory(result);
+        if (!mounted) return;
+        setState(() => _selected = result);
+        widget.onChanged(result);
+      }
+    } finally {
+      controller.dispose();
     }
   }
 

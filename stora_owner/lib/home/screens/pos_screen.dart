@@ -614,7 +614,7 @@ class _CartRow extends StatelessWidget {
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Text('${item.quantity}', style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w800)),
+            child: Text('${item.quantity}', style: TextStyle(color: HomeColors.textPrimary, fontSize: 13, fontWeight: FontWeight.w800)),
           ),
           StockStepButton(
             icon: Icons.add,

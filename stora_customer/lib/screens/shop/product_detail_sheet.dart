@@ -367,8 +367,9 @@ class _ProductDetailSheetState extends State<ProductDetailSheet> {
                             : () {
                                 if (_isActionInProgress) return;
                                 setState(() => _isActionInProgress = true);
-                                Navigator.pop(context);
-                                Navigator.of(context).push(
+                                final nav = Navigator.of(context);
+                                nav.pop();
+                                nav.push(
                                   MaterialPageRoute(
                                     builder: (_) => CustomerChatScreen(
                                       storeOwnerId: product.ownerId!,
