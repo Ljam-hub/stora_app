@@ -9,12 +9,16 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../stores/store_status_store.dart';
 import '../theme/home_colors.dart';
+import '../screens/owner_chat_screen.dart';
 
 class CustomerLocationMapSheet extends StatefulWidget {
   final int orderId;
   final String customerName;
   final String customerAddress;
   final String? customerPhone;
+  final int? customerId;
+  final String? customerEmail;
+  final String? customerAvatarUrl;
 
   const CustomerLocationMapSheet({
     super.key,
@@ -22,6 +26,9 @@ class CustomerLocationMapSheet extends StatefulWidget {
     required this.customerName,
     required this.customerAddress,
     this.customerPhone,
+    this.customerId,
+    this.customerEmail,
+    this.customerAvatarUrl,
   });
 
   static bool _isShowing = false;
@@ -32,6 +39,9 @@ class CustomerLocationMapSheet extends StatefulWidget {
     required String customerName,
     required String customerAddress,
     String? customerPhone,
+    int? customerId,
+    String? customerEmail,
+    String? customerAvatarUrl,
   }) async {
     if (_isShowing) return;
     _isShowing = true;
@@ -45,6 +55,9 @@ class CustomerLocationMapSheet extends StatefulWidget {
           customerName: customerName,
           customerAddress: customerAddress,
           customerPhone: customerPhone,
+          customerId: customerId,
+          customerEmail: customerEmail,
+          customerAvatarUrl: customerAvatarUrl,
         ),
       );
     } finally {
@@ -106,10 +119,16 @@ class _CustomerLocationMapSheetState extends State<CustomerLocationMapSheet> {
       }
     }
 
-    // 2. Geocode address via OpenStreetMap Nominatim
+    // 2. Geocode address via OpenStreetMap Nominatim (with store-proximity viewbox bias)
+    final storeLat = _storePoint!.latitude;
+    final storeLng = _storePoint!.longitude;
+    const bias = 0.5; // ~55 km viewbox around the store
     try {
       final uri = Uri.parse(
-        'https://nominatim.openstreetmap.org/search?q=${Uri.encodeComponent(addr)}&format=json&countrycodes=ph&limit=1',
+        'https://nominatim.openstreetmap.org/search?q=${Uri.encodeComponent(addr)}'
+        '&format=json&countrycodes=ph&limit=1'
+        '&viewbox=${storeLng - bias},${storeLat + bias},${storeLng + bias},${storeLat - bias}'
+        '&bounded=0',
       );
       final res = await http.get(
         uri,
@@ -129,9 +148,42 @@ class _CustomerLocationMapSheetState extends State<CustomerLocationMapSheet> {
       }
     } catch (_) {}
 
-    // Fallback: If forward geocoding did not resolve or timed out, place pin near store
+    // 3. Fallback: Photon API (Komoot) geocoder with store-proximity bias
+    try {
+      final photonUri = Uri.parse(
+        'https://photon.komoot.io/api/?q=${Uri.encodeComponent(addr)}'
+        '&lat=$storeLat&lon=$storeLng&limit=1',
+      );
+      final photonRes = await http.get(
+        photonUri,
+        headers: {'User-Agent': 'StoraOwnerApp/1.0 (support@stora.ph)'},
+      ).timeout(const Duration(seconds: 7));
+
+      if (photonRes.statusCode == 200) {
+        final data = jsonDecode(photonRes.body);
+        if (data is Map && data['features'] is List) {
+          final features = data['features'] as List;
+          if (features.isNotEmpty && features[0] is Map) {
+            final geometry = features[0]['geometry'];
+            if (geometry is Map && geometry['coordinates'] is List) {
+              final coords = geometry['coordinates'] as List;
+              if (coords.length >= 2) {
+                final lon = (coords[0] is num) ? (coords[0] as num).toDouble() : null;
+                final lat = (coords[1] is num) ? (coords[1] as num).toDouble() : null;
+                if (lat != null && lon != null) {
+                  _setPoints(LatLng(lat, lon));
+                  return;
+                }
+              }
+            }
+          }
+        }
+      }
+    } catch (_) {}
+
+    // Fallback: If all geocoders failed, place pin near store
     final store = _storePoint ?? LatLng(StoreStatusStore.instance.latitude, StoreStatusStore.instance.longitude);
-    final fallback = LatLng(store.latitude + 0.008, store.longitude + 0.008);
+    final fallback = LatLng(store.latitude + 0.003, store.longitude + 0.003);
     _setPoints(fallback, isEstimate: true);
   }
 
@@ -185,41 +237,6 @@ class _CustomerLocationMapSheetState extends State<CustomerLocationMapSheet> {
     } catch (_) {}
   }
 
-  Future<void> _openExternalNavigation() async {
-    if (_customerPoint == null) return;
-    final lat = _customerPoint!.latitude;
-    final lng = _customerPoint!.longitude;
-    final googleMapsUrl = Uri.parse(
-      'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng',
-    );
-    final geoUrl = Uri.parse('geo:$lat,$lng?q=$lat,$lng(${Uri.encodeComponent(widget.customerName)})');
-
-    try {
-      if (await canLaunchUrl(geoUrl)) {
-        await launchUrl(geoUrl, mode: LaunchMode.externalApplication);
-      } else if (await canLaunchUrl(googleMapsUrl)) {
-        await launchUrl(googleMapsUrl, mode: LaunchMode.externalApplication);
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Could not launch navigation application.')),
-          );
-        }
-      }
-    } catch (_) {
-      if (mounted) {
-        try {
-          await launchUrl(googleMapsUrl, mode: LaunchMode.externalApplication);
-        } catch (_) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Could not launch navigation application.')),
-            );
-          }
-        }
-      }
-    }
-  }
 
   Future<void> _callCustomer() async {
     final phone = widget.customerPhone?.replaceAll(RegExp(r'[^0-9+]'), '') ?? '';
@@ -582,7 +599,7 @@ class _CustomerLocationMapSheetState extends State<CustomerLocationMapSheet> {
                   ),
                   const SizedBox(height: 14),
 
-                  // Actions: Call customer & Google Maps navigation
+                  // Actions: Call customer & Message about order
                   Row(
                     children: [
                       if (widget.customerPhone != null && widget.customerPhone!.trim().isNotEmpty) ...[
@@ -591,12 +608,12 @@ class _CustomerLocationMapSheetState extends State<CustomerLocationMapSheet> {
                             style: OutlinedButton.styleFrom(
                               foregroundColor: HomeColors.textPrimary,
                               side: BorderSide(color: HomeColors.cardBorder),
-                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             ),
                             onPressed: _callCustomer,
                             icon: const Icon(Icons.call_rounded, size: 18),
-                            label: const Text('Call', style: TextStyle(fontWeight: FontWeight.w700)),
+                            label: const Text('Call', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
                           ),
                         ),
                         const SizedBox(width: 10),
@@ -607,13 +624,32 @@ class _CustomerLocationMapSheetState extends State<CustomerLocationMapSheet> {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: HomeColors.primary,
                             foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             elevation: 2,
                           ),
-                          onPressed: _openExternalNavigation,
-                          icon: const Icon(Icons.navigation_rounded, size: 18),
-                          label: const Text('Open in Navigation', style: TextStyle(fontWeight: FontWeight.w800)),
+                          onPressed: widget.customerId != null
+                              ? () {
+                                  Navigator.of(context).pop(); // close the bottom sheet
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => OwnerChatThreadScreen(
+                                        customerId: widget.customerId!,
+                                        customerName: widget.customerName,
+                                        customerEmail: widget.customerEmail ?? '',
+                                        customerAvatarUrl: widget.customerAvatarUrl,
+                                        orderId: widget.orderId,
+                                      ),
+                                    ),
+                                  );
+                                }
+                              : null,
+                          icon: const Icon(Icons.chat_rounded, size: 18),
+                          label: const Text(
+                            'Message customer about this order',
+                            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                       ),
                     ],

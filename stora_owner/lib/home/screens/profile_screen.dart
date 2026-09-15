@@ -15,6 +15,7 @@ import '../../subscription/subscription_status_screen.dart';
 import '../../subscription/subscription_status.dart';
 import '../../subscription/past_receipts_sheet.dart';
 import '../theme/theme_mode_controller.dart';
+import '../stores/store_status_store.dart';
 import 'owner_chat_screen.dart';
 
 // ---------------------------------------------------------------------
@@ -539,7 +540,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: Listenable.merge([AuthStore.instance, AccountStatusStore.instance, ThemeModeController.instance]),
+      animation: Listenable.merge([AuthStore.instance, AccountStatusStore.instance, ThemeModeController.instance, StoreStatusStore.instance]),
       builder: (context, _) {
         final auth = AuthStore.instance;
         final account = AccountStatusStore.instance.status;
@@ -831,6 +832,79 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     icon: Icons.support_agent_rounded,
                     label: 'Contact STORA Support',
                     onTap: _openSupportChat,
+                  ),
+                  // ── Store Online / Offline toggle ────────────
+                  AnimatedBuilder(
+                    animation: StoreStatusStore.instance,
+                    builder: (context, _) {
+                      final store = StoreStatusStore.instance;
+                      final isOpen = store.isOpen;
+                      final isUpdating = store.isUpdating;
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: HomeColors.cardBackground,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: HomeColors.cardBorder),
+                            boxShadow: HomeColors.cardShadow,
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: isOpen
+                                      ? HomeColors.chartGreen.withValues(alpha: 0.12)
+                                      : HomeColors.dangerText.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Icon(
+                                  isOpen ? Icons.storefront_rounded : Icons.store_mall_directory_outlined,
+                                  size: 18,
+                                  color: isOpen ? HomeColors.chartGreen : HomeColors.dangerText,
+                                ),
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      isOpen ? 'Store is Online' : 'Store is Offline',
+                                      style: TextStyle(color: HomeColors.textPrimary, fontSize: 14, fontWeight: FontWeight.w700),
+                                    ),
+                                    Text(
+                                      isOpen ? 'Accepting customer orders' : 'Orders paused for customers',
+                                      style: TextStyle(color: HomeColors.textSecondary, fontSize: 11),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              if (isUpdating)
+                                const SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              else
+                                Switch.adaptive(
+                                  value: isOpen,
+                                  activeTrackColor: HomeColors.chartGreen,
+                                  inactiveThumbColor: HomeColors.dangerText,
+                                  inactiveTrackColor: HomeColors.dangerText.withValues(alpha: 0.25),
+                                  onChanged: (val) async {
+                                    try {
+                                      await store.setOpenStatus(val);
+                                    } catch (_) {}
+                                  },
+                                ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
                   ),
                   AnimatedBuilder(
                     animation: ThemeModeController.instance,

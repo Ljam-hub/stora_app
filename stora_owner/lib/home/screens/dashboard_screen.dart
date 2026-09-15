@@ -142,7 +142,7 @@ class DashboardScreen extends StatelessWidget {
                 const SizedBox(height: 14),
                 FadeSlideIn(
                   delay: const Duration(milliseconds: 0),
-                  child: const _StoreOpenClosedCard(),
+                  child: _StoreOpenClosedCard(),
                 ),
                 const SizedBox(height: 14),
                 FadeSlideIn(
@@ -1048,119 +1048,124 @@ class _StoreOpenClosedCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final storeStatus = StoreStatusStore.instance;
-    final isOpen = storeStatus.isOpen;
-    final isUpdating = storeStatus.isUpdating;
+    return AnimatedBuilder(
+      animation: StoreStatusStore.instance,
+      builder: (context, _) {
+        final storeStatus = StoreStatusStore.instance;
+        final isOpen = storeStatus.isOpen;
+        final isUpdating = storeStatus.isUpdating;
 
-    return Material(
-      color: Colors.transparent,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: isOpen
-              ? HomeColors.chartGreen.withValues(alpha: 0.12)
-              : HomeColors.dangerText.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isOpen
-                ? HomeColors.chartGreen.withValues(alpha: 0.35)
-                : HomeColors.dangerText.withValues(alpha: 0.35),
-            width: 1.2,
-          ),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
+        return Material(
+          color: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: isOpen
+                  ? HomeColors.chartGreen.withValues(alpha: 0.12)
+                  : HomeColors.dangerText.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
                 color: isOpen
-                    ? HomeColors.chartGreen.withValues(alpha: 0.15)
-                    : HomeColors.dangerText.withValues(alpha: 0.15),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                isOpen ? Icons.storefront_rounded : Icons.store_mall_directory_outlined,
-                color: isOpen ? HomeColors.chartGreen : HomeColors.dangerText,
-                size: 20,
+                    ? HomeColors.chartGreen.withValues(alpha: 0.35)
+                    : HomeColors.dangerText.withValues(alpha: 0.35),
+                width: 1.2,
               ),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: isOpen
+                        ? HomeColors.chartGreen.withValues(alpha: 0.15)
+                        : HomeColors.dangerText.withValues(alpha: 0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    isOpen ? Icons.storefront_rounded : Icons.store_mall_directory_outlined,
+                    color: isOpen ? HomeColors.chartGreen : HomeColors.dangerText,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: isOpen ? HomeColors.chartGreen : HomeColors.dangerText,
-                        ),
+                      Row(
+                        children: [
+                          Container(
+                            width: 8,
+                            height: 8,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: isOpen ? HomeColors.chartGreen : HomeColors.dangerText,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            isOpen ? 'Store is OPEN' : 'Store is CLOSED',
+                            style: TextStyle(
+                              color: isOpen ? HomeColors.chartGreen : HomeColors.dangerText,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 6),
+                      const SizedBox(height: 2),
                       Text(
-                        isOpen ? 'Store is OPEN' : 'Store is CLOSED',
+                        isOpen
+                            ? 'Accepting online orders from customers'
+                            : 'Orders paused. Customers see store as closed',
                         style: TextStyle(
-                          color: isOpen ? HomeColors.chartGreen : HomeColors.dangerText,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w800,
+                          color: HomeColors.textSecondary,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    isOpen
-                        ? 'Accepting online orders from customers'
-                        : 'Orders paused. Customers see store as closed',
-                    style: TextStyle(
-                      color: HomeColors.textSecondary,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
+                ),
+                if (isUpdating)
+                  const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                else
+                  Transform.scale(
+                    scale: 0.85,
+                    child: Switch.adaptive(
+                      value: isOpen,
+                      activeTrackColor: HomeColors.chartGreen,
+                      inactiveThumbColor: HomeColors.dangerText,
+                      inactiveTrackColor: HomeColors.dangerText.withValues(alpha: 0.25),
+                      onChanged: (val) async {
+                        try {
+                          await storeStatus.setOpenStatus(val);
+                          if (context.mounted) {
+                            showStoraSnackBar(
+                              context,
+                              val
+                                  ? 'Store is now OPEN for customer orders'
+                                  : 'Store is now CLOSED. Incoming customer orders paused',
+                              isError: false,
+                            );
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            showStoraSnackBar(context, 'Failed to update store status: $e');
+                          }
+                        }
+                      },
                     ),
                   ),
-                ],
-              ),
+              ],
             ),
-            if (isUpdating)
-              const SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            else
-              Transform.scale(
-                scale: 0.85,
-                child: Switch.adaptive(
-                  value: isOpen,
-                  activeTrackColor: HomeColors.chartGreen,
-                  inactiveThumbColor: HomeColors.dangerText,
-                  inactiveTrackColor: HomeColors.dangerText.withValues(alpha: 0.25),
-                  onChanged: (val) async {
-                    try {
-                      await storeStatus.setOpenStatus(val);
-                      if (context.mounted) {
-                        showStoraSnackBar(
-                          context,
-                          val
-                              ? 'Store is now OPEN for customer orders'
-                              : 'Store is now CLOSED. Incoming customer orders paused',
-                          isError: false,
-                        );
-                      }
-                    } catch (e) {
-                      if (context.mounted) {
-                        showStoraSnackBar(context, 'Failed to update store status: $e');
-                      }
-                    }
-                  },
-                ),
-              ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }

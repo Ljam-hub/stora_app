@@ -1012,7 +1012,7 @@ def _haversine_km(lat1, lon1, lat2, lon2):
 @permission_classes([IsAuthenticated])
 def list_stores(request):
     """List stores for customers with location and optional GPS proximity sorting."""
-    owners = User.objects.filter(role="owner").select_related("location")
+    owners = User.objects.filter(role__in=["owner", "admin"]).select_related("location")
     
     # Optional GPS coordinates from query params
     user_lat = request.query_params.get("lat")
@@ -1058,12 +1058,12 @@ def list_stores(request):
     return Response(stores_data)
 
 
-@api_view(["GET", "PUT", "POST"])
+@api_view(["GET", "PUT", "POST", "PATCH"])
 @permission_classes([IsAuthenticated])
 def store_location(request):
     """Get or update current owner's store location."""
     user = request.user
-    if getattr(user, "role", "owner") != "owner":
+    if getattr(user, "role", "owner") not in ("owner", "admin") and not user.is_superuser and not user.is_staff:
         raise PermissionDenied("Only store owners can manage store location.")
 
     location, _ = StoreLocation.objects.get_or_create(
@@ -1077,7 +1077,7 @@ def store_location(request):
         }
     )
 
-    if request.method in ["PUT", "POST"]:
+    if request.method in ["PUT", "POST", "PATCH"]:
         serializer = StoreLocationSerializer(location, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
@@ -1091,7 +1091,7 @@ def store_location(request):
 def ai_store_insights(request):
     """Generate and return real-time business store insights for the store owner."""
     user = request.user
-    if getattr(user, "role", "owner") != "owner":
+    if getattr(user, "role", "owner") not in ("owner", "admin") and not user.is_superuser and not user.is_staff:
         raise PermissionDenied("Only store owners can access business insights.")
     if not getattr(user, "is_premium_active", False):
         raise PermissionDenied("Business insights are exclusive to Premium members.")

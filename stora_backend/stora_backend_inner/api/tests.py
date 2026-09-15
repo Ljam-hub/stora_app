@@ -7,7 +7,7 @@ from django.test import Client, TestCase
 from rest_framework.test import APITestCase
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from accounts.models import EmailVerificationCode, PasswordResetToken
+from accounts.models import EmailVerificationCode, PasswordResetToken, StoreLocation
 from inventory.models import Category, Product
 from orders.models import Order, OrderItem
 
@@ -1539,6 +1539,85 @@ class BugFixesAuditTestCase(APITestCase):
         )
         self.assertEqual(res.status_code, 400)
         self.assertIn("items_data", res.data)
+
+
+class StoreLocationAndStatusTests(APITestCase):
+    def setUp(self):
+        self.owner = User.objects.create_user(
+            username="owner_store@example.com",
+            email="owner_store@example.com",
+            password="password123",
+            business_name="Super Mart",
+            role="owner",
+        )
+        self.admin = User.objects.create_user(
+            username="admin_store@example.com",
+            email="admin_store@example.com",
+            password="password123",
+            business_name="Admin Mart",
+            role="admin",
+        )
+        self.customer = User.objects.create_user(
+            username="customer_store@example.com",
+            email="customer_store@example.com",
+            password="password123",
+            role="customer",
+        )
+
+    def test_owner_can_get_and_toggle_store_location(self):
+        self.client.force_authenticate(user=self.owner)
+        res = self.client.get("/api/stores/my-location/")
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue(res.data.get("is_open"))
+
+        # Toggle to closed via PUT
+        res_put = self.client.put("/api/stores/my-location/", {"is_open": False}, format="json")
+        self.assertEqual(res_put.status_code, 200)
+        self.assertFalse(res_put.data.get("is_open"))
+
+        loc = StoreLocation.objects.get(owner=self.owner)
+        self.assertFalse(loc.is_open)
+
+        # Toggle to open via PATCH
+        res_patch = self.client.patch("/api/stores/my-location/", {"is_open": True}, format="json")
+        self.assertEqual(res_patch.status_code, 200)
+        self.assertTrue(res_patch.data.get("is_open"))
+
+    def test_admin_can_manage_store_location(self):
+        self.client.force_authenticate(user=self.admin)
+        res = self.client.get("/api/stores/my-location/")
+        self.assertEqual(res.status_code, 200)
+
+        # Admin toggling open/close should succeed, not return 403
+        res_put = self.client.put("/api/stores/my-location/", {"is_open": False}, format="json")
+        self.assertEqual(res_put.status_code, 200)
+        self.assertFalse(res_put.data.get("is_open"))
+
+    def test_customer_cannot_manage_store_location(self):
+        self.client.force_authenticate(user=self.customer)
+        res_get = self.client.get("/api/stores/my-location/")
+        self.assertEqual(res_get.status_code, 403)
+
+        res_put = self.client.put("/api/stores/my-location/", {"is_open": False}, format="json")
+        self.assertEqual(res_put.status_code, 403)
+
+    def test_list_stores_includes_admin_and_returns_open_status(self):
+        StoreLocation.objects.create(owner=self.owner, is_open=False, is_visible=True)
+        StoreLocation.objects.create(owner=self.admin, is_open=True, is_visible=True)
+
+        self.client.force_authenticate(user=self.customer)
+        res = self.client.get("/api/stores/")
+        self.assertEqual(res.status_code, 200)
+
+        store_ids = [s["id"] for s in res.data]
+        self.assertIn(self.owner.id, store_ids)
+        self.assertIn(self.admin.id, store_ids)
+
+        owner_entry = next(s for s in res.data if s["id"] == self.owner.id)
+        admin_entry = next(s for s in res.data if s["id"] == self.admin.id)
+        self.assertFalse(owner_entry["is_open"])
+        self.assertTrue(admin_entry["is_open"])
+
 
 
 

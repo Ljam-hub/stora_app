@@ -795,6 +795,9 @@ class _OrderCardState extends State<_OrderCard> {
                             customerName: customerName,
                             customerAddress: customerAddress,
                             customerPhone: customerPhone,
+                            customerId: customerId,
+                            customerEmail: customerEmail,
+                            customerAvatarUrl: customerAvatarUrl,
                           ),
                           borderRadius: BorderRadius.circular(8),
                           child: Container(

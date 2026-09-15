@@ -30,7 +30,7 @@ class StoreStatusStore extends ChangeNotifier {
     if (_isUpdating) return;
     try {
       final data = await ApiClient.instance.getStoreLocation();
-      _isOpen = _parseBool(data['is_open'], true);
+      _isOpen = _parseBool(data['is_open'], _isOpen);
       _latitude = (data['latitude'] is num)
           ? (data['latitude'] as num).toDouble()
           : (double.tryParse(data['latitude']?.toString() ?? '14.5995') ?? 14.5995);
