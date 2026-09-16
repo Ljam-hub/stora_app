@@ -243,13 +243,14 @@ class UserReportAdmin(admin.ModelAdmin):
         name = u.business_name if u.role == "owner" and u.business_name else f"{u.first_name} {u.last_name}".strip() or u.username
         role_color = "#FF6B00" if u.role == "owner" else "#00875A"
         role_label = "Store Owner" if u.role == "owner" else "Customer"
-        active_badge = "" if u.is_active else ' <span style="font-size: 11px; background: #EF4444; color: #fff; padding: 2px 6px; border-radius: 4px; font-weight: bold;">🚫 BLOCKED</span>'
+        is_user_suspended = getattr(u, "is_blocked", False) or not u.is_active
+        active_badge = format_html(' <span style="font-size: 11px; background: #EF4444; color: #fff; padding: 2px 6px; border-radius: 4px; font-weight: bold;">🚫 BLOCKED</span>') if is_user_suspended else ""
         return format_html(
             '<span style="color: #8bd3ca; font-weight: 700;">{}</span> <span style="font-size: 11px; background: {}; color: #fff; padding: 2px 6px; border-radius: 4px; margin-left: 4px;">{}</span>{}',
             name,
             role_color,
             role_label,
-            format_html(active_badge),
+            active_badge,
         )
 
     @admin.display(description="Status")
@@ -303,7 +304,7 @@ class UserReportAdmin(admin.ModelAdmin):
             reported_user.block_user(reason=f"Suspended due to report #{report.id}: {report.get_reason_display()}")
             count += 1
             report.status = UserReport.STATUS_ACTION_TAKEN
-            report.admin_notes += f"\nBlocked by admin {request.user.username} on {now_str}."
+            report.admin_notes = ((report.admin_notes or "") + f"\nBlocked by admin {request.user.username} on {now_str}.").strip()
             report.updated_at = now
             report.save(update_fields=["status", "admin_notes", "updated_at"])
 
@@ -322,7 +323,7 @@ class UserReportAdmin(admin.ModelAdmin):
             reported_user.unblock_user()
             count += 1
             report.status = UserReport.STATUS_REVIEWED
-            report.admin_notes += f"\nUnblocked by admin {request.user.username} on {now_str}."
+            report.admin_notes = ((report.admin_notes or "") + f"\nUnblocked by admin {request.user.username} on {now_str}.").strip()
             report.updated_at = now
             report.save(update_fields=["status", "admin_notes", "updated_at"])
         self.message_user(request, f"Successfully unblocked {count} user(s).")

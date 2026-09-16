@@ -1338,7 +1338,12 @@ def chat_messages(request):
                     {"error": "This store owner account is suspended."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-            if (
+            is_support_recipient = (
+                recipient.role == User.ROLE_ADMIN
+                or recipient.is_superuser
+                or recipient.is_staff
+            )
+            if not is_support_recipient and (
                 BlockedCustomer.objects.filter(
                     owner=recipient,
                     customer=user,
@@ -1540,6 +1545,7 @@ def list_conversations(request):
         partner_role = partner.role
         is_support_partner = partner.role == User.ROLE_ADMIN or partner.is_superuser or partner.is_staff
         if is_support_partner:
+            is_blocked = False
             partner_name = "STORA Support"
             if not avatar_url:
                 sup = get_support_user()
@@ -1743,10 +1749,21 @@ def block_customer(request):
     reason = request.data.get("reason", "")
 
     # Decoupled from user account suspension: create or update BlockedCustomer entry
-    target_owner = user if user.role == User.ROLE_OWNER else None
+    if user.role == User.ROLE_OWNER:
+        target_owner = user
+        target_customer = customer
+    else:
+        # Admin is blocking
+        if customer.role == User.ROLE_OWNER:
+            target_owner = customer
+            target_customer = None
+        else:
+            target_owner = None
+            target_customer = customer
+
     block_entry, _ = BlockedCustomer.objects.update_or_create(
         owner=target_owner,
-        customer=customer,
+        customer=target_customer,
         defaults={"block_side": block_side, "reason": reason},
     )
 
@@ -1781,7 +1798,9 @@ def unblock_customer(request):
 
     # Decoupled: removing BlockedCustomer record does NOT touch User.is_blocked or User.is_active
     if user.role == User.ROLE_ADMIN or user.is_superuser:
-        BlockedCustomer.objects.filter(customer=customer).delete()
+        BlockedCustomer.objects.filter(
+            Q(customer=customer) | Q(owner=customer)
+        ).delete()
     else:
         BlockedCustomer.objects.filter(owner=user, customer=customer).delete()
 
@@ -1819,12 +1838,26 @@ def block_status(request):
 
     elif user.role == User.ROLE_CUSTOMER and (owner_id or customer_id):
         target_owner_id = owner_id or customer_id
+        target_owner = User.objects.filter(id=target_owner_id).first()
+        is_support = bool(
+            target_owner and (
+                target_owner.role == User.ROLE_ADMIN
+                or target_owner.is_staff
+                or target_owner.is_superuser
+            )
+        )
+        if is_support:
+            return Response({
+                "is_blocked": False,
+                "block_side": None,
+                "can_send": True,
+            })
+
         block_entry = (
             BlockedCustomer.objects.filter(owner_id=target_owner_id, customer=user).first()
             or BlockedCustomer.objects.filter(customer=user, owner__isnull=True).first()
             or BlockedCustomer.objects.filter(owner_id=target_owner_id, customer__isnull=True).first()
         )
-        target_owner = User.objects.filter(id=target_owner_id).first()
         account_blocked = bool(target_owner and target_owner.is_blocked)
 
         if block_entry:
