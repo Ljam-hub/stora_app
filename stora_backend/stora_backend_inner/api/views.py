@@ -1364,7 +1364,7 @@ def chat_messages(request):
                     {"error": "You have been blocked from messaging."},
                     status=status.HTTP_403_FORBIDDEN,
                 )
-        elif user.role in (User.ROLE_OWNER, User.ROLE_ADMIN) and recipient.role == User.ROLE_CUSTOMER:
+        elif user.role == User.ROLE_OWNER and recipient.role == User.ROLE_CUSTOMER:
             if getattr(user, "is_blocked", False) or not user.is_active:
                 return Response(
                     {"error": "Your account is suspended."},

@@ -97,6 +97,11 @@ class BlockedCustomer(models.Model):
         super().clean()
         if not self.owner and not self.customer:
             raise ValidationError("Please select at least an Owner, a Customer, or both to block.")
+        existing = BlockedCustomer.objects.filter(owner=self.owner, customer=self.customer)
+        if self.pk:
+            existing = existing.exclude(pk=self.pk)
+        if existing.exists():
+            raise ValidationError("A block entry for this combination of Owner and Customer already exists.")
 
     def __str__(self):
         side_label = dict(self.BLOCK_SIDE_CHOICES).get(self.block_side, self.block_side)
