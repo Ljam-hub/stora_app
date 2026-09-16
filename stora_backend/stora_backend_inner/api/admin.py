@@ -1,5 +1,6 @@
 from django.contrib import admin
-from django.urls import reverse
+from django.shortcuts import get_object_or_404, redirect
+from django.urls import path, reverse
 from django.utils import timezone
 from django.utils.html import format_html
 from stora_backend.admin_site import stora_admin_site
@@ -43,6 +44,7 @@ class BlockedCustomerAdmin(admin.ModelAdmin):
     )
     list_display_links = ("id", "block_scope_badge", "owner_display", "customer_display")
     list_filter = ("created_at",)
+    actions = ["unblock_selected_blocked_users"]
     search_fields = (
         "owner__email",
         "owner__business_name",
@@ -51,6 +53,50 @@ class BlockedCustomerAdmin(admin.ModelAdmin):
         "customer__last_name",
         "customer__username",
     )
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path("<int:block_id>/unblock/", self.admin_site.admin_view(self.unblock_single_view), name="api_blockedcustomer_unblock"),
+        ]
+        return custom_urls + urls
+
+    def unblock_single_view(self, request, block_id):
+        obj = get_object_or_404(BlockedCustomer, pk=block_id)
+        target = obj.customer or obj.owner
+        name = ""
+        if target:
+            name = target.business_name or target.get_full_name() or target.username
+            target.unblock_user()
+        else:
+            obj.delete()
+        self.message_user(request, f"Successfully unblocked {name or 'user'} and restored account access.")
+        return redirect(reverse("stora_admin:api_blockedcustomer_changelist"))
+
+    @admin.action(description="🔓 Unblock selected user(s) & restore app access")
+    def unblock_selected_blocked_users(self, request, queryset):
+        count = 0
+        for obj in queryset:
+            target = obj.customer or obj.owner
+            if target:
+                target.unblock_user()
+            else:
+                obj.delete()
+            count += 1
+        self.message_user(request, f"Successfully unblocked {count} user(s) and restored account access.")
+
+    def delete_model(self, request, obj):
+        target = obj.customer or obj.owner
+        if target:
+            target.unblock_user()
+        super().delete_model(request, obj)
+
+    def delete_queryset(self, request, queryset):
+        for obj in queryset:
+            target = obj.customer or obj.owner
+            if target:
+                target.unblock_user()
+        super().delete_queryset(request, queryset)
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         from accounts.models import User
@@ -126,6 +172,7 @@ class BlockedCustomerAdmin(admin.ModelAdmin):
         edit_block_url = reverse("stora_admin:api_blockedcustomer_change", args=[obj.id])
         target_user = obj.customer or obj.owner
         user_url = reverse("stora_admin:accounts_user_change", args=[target_user.id]) if target_user else None
+        unblock_url = reverse("stora_admin:api_blockedcustomer_unblock", args=[obj.id])
         user_btn = (
             format_html(
                 '<a href="{}" style="display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; color: #8bd3ca; background: rgba(139, 211, 202, 0.12); border: 1px solid rgba(139, 211, 202, 0.35); text-decoration: none; margin-left: 6px;" title="Manage user profile">👤 User Account &rarr;</a>',
@@ -134,28 +181,26 @@ class BlockedCustomerAdmin(admin.ModelAdmin):
             if user_url
             else ""
         )
+        unblock_btn = format_html(
+            '<a href="{}" style="display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; color: #34d399; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.45); text-decoration: none; margin-left: 6px;" onclick="return confirm(\'Are you sure you want to unblock this user and restore their account access?\');" title="Unblock user and restore account">🔓 Unblock</a>',
+            unblock_url,
+        )
         return format_html(
             '<div style="display: inline-flex; align-items: center;">'
             '<a href="{}" style="display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; color: #fbbf24; background: rgba(251, 191, 36, 0.12); border: 1px solid rgba(251, 191, 36, 0.35); text-decoration: none;" title="Edit block settings">⚙️ Edit Block</a>'
             '{}'
+            '{}'
             '</div>',
             edit_block_url,
             user_btn,
+            unblock_btn,
         )
 
     def save_model(self, request, obj, form, change):
         super().save_model(request, obj, form, change)
-        # If admin blocks a customer alone or owner alone, sync their account is_blocked status
-        if obj.customer and not obj.owner:
-            if not obj.customer.is_blocked:
-                obj.customer.is_blocked = True
-                obj.customer.block_reason = "Blocked by administrator via Blocked Users registry"
-                obj.customer.save(update_fields=["is_blocked", "block_reason"])
-        elif obj.owner and not obj.customer:
-            if not obj.owner.is_blocked:
-                obj.owner.is_blocked = True
-                obj.owner.block_reason = "Blocked by administrator via Blocked Users registry"
-                obj.owner.save(update_fields=["is_blocked", "block_reason"])
+        target = obj.customer if obj.customer and not obj.owner else (obj.owner if obj.owner and not obj.customer else None)
+        if target:
+            target.block_user(reason="Blocked by administrator via Blocked Users registry")
 
 
 @admin.register(UserReport, site=stora_admin_site)
@@ -265,10 +310,8 @@ class UserReportAdmin(admin.ModelAdmin):
             if reported_user == request.user or reported_user.is_staff or reported_user.is_superuser or getattr(reported_user, "role", None) == "admin":
                 skipped += 1
                 continue
-            if reported_user.is_active:
-                reported_user.is_active = False
-                reported_user.save(update_fields=["is_active"])
-                count += 1
+            reported_user.block_user(reason=f"Suspended due to report #{report.id}: {report.get_reason_display()}")
+            count += 1
             report.status = UserReport.STATUS_ACTION_TAKEN
             report.admin_notes += f"\nBlocked by admin {request.user.username} on {now_str}."
             report.updated_at = now
@@ -286,10 +329,8 @@ class UserReportAdmin(admin.ModelAdmin):
         now_str = now.strftime("%Y-%m-%d %H:%M:%S UTC")
         for report in queryset:
             reported_user = report.reported_user
-            if not reported_user.is_active:
-                reported_user.is_active = True
-                reported_user.save(update_fields=["is_active"])
-                count += 1
+            reported_user.unblock_user()
+            count += 1
             report.status = UserReport.STATUS_REVIEWED
             report.admin_notes += f"\nUnblocked by admin {request.user.username} on {now_str}."
             report.updated_at = now

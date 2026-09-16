@@ -110,6 +110,28 @@ class User(AbstractUser):
                 return order_name
         return self.username or self.email
 
+    def unblock_user(self):
+        """Unblock this user, restore active status, and remove from Blocked Users registry."""
+        self.is_blocked = False
+        self.is_active = True
+        self.block_reason = ""
+        self.save(update_fields=["is_blocked", "is_active", "block_reason"])
+        from api.models import BlockedCustomer
+        from django.db.models import Q
+        BlockedCustomer.objects.filter(Q(customer=self) | Q(owner=self)).delete()
+
+    def block_user(self, reason="Blocked by administrator"):
+        """Block this user account, revoke active access, and sync to Blocked Users registry."""
+        self.is_blocked = True
+        self.is_active = False
+        self.block_reason = reason
+        self.save(update_fields=["is_blocked", "is_active", "block_reason"])
+        from api.models import BlockedCustomer
+        if self.role == self.ROLE_CUSTOMER:
+            BlockedCustomer.objects.get_or_create(customer=self, owner=None)
+        elif self.role == self.ROLE_OWNER:
+            BlockedCustomer.objects.get_or_create(owner=self, customer=None)
+
     def __str__(self):
         return self.get_display_name()
 

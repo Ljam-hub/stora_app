@@ -1326,17 +1326,26 @@ def chat_messages(request):
         except User.DoesNotExist:
             return Response({"error": "Recipient user not found."}, status=status.HTTP_404_NOT_FOUND)
 
-        # Check if customer is blocked by store owner
+        # Check if customer is blocked by store owner or globally blocked
         if user.role == User.ROLE_CUSTOMER and recipient.role in (User.ROLE_OWNER, User.ROLE_ADMIN):
-            if BlockedCustomer.objects.filter(owner=recipient, customer=user).exists():
+            if (
+                getattr(user, "is_blocked", False)
+                or not user.is_active
+                or BlockedCustomer.objects.filter(owner=recipient, customer=user).exists()
+                or BlockedCustomer.objects.filter(customer=user, owner__isnull=True).exists()
+            ):
                 return Response(
-                    {"error": "You have been blocked by this store and cannot send messages."},
+                    {"error": "You have been blocked from messaging."},
                     status=status.HTTP_403_FORBIDDEN,
                 )
         elif user.role in (User.ROLE_OWNER, User.ROLE_ADMIN) and recipient.role == User.ROLE_CUSTOMER:
-            if BlockedCustomer.objects.filter(owner=user, customer=recipient).exists():
+            if (
+                BlockedCustomer.objects.filter(owner=user, customer=recipient).exists()
+                or BlockedCustomer.objects.filter(customer=recipient, owner__isnull=True).exists()
+                or getattr(recipient, "is_blocked", False)
+            ):
                 return Response(
-                    {"error": "You have blocked this customer. Unblock them first to send a message."},
+                    {"error": "This customer is blocked. Unblock them first to send a message."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
@@ -1424,10 +1433,14 @@ def list_conversations(request):
     if user.role in (User.ROLE_OWNER, User.ROLE_ADMIN):
         blocked_customers_set = set(
             BlockedCustomer.objects.filter(owner=user, customer_id__in=partner_ids).values_list("customer_id", flat=True)
+        ) | set(
+            BlockedCustomer.objects.filter(owner__isnull=True, customer_id__in=partner_ids).values_list("customer_id", flat=True)
         )
     else:
         blocked_by_owners_set = set(
             BlockedCustomer.objects.filter(owner_id__in=partner_ids, customer=user).values_list("owner_id", flat=True)
+        ) | set(
+            BlockedCustomer.objects.filter(owner_id__in=partner_ids, customer__isnull=True).values_list("owner_id", flat=True)
         )
 
     # Batch 5: Pre-fetch customer names from orders if user is owner/admin
@@ -1457,7 +1470,15 @@ def list_conversations(request):
             continue
 
         unread_count = unread_map.get(pid, 0)
-        is_blocked = (pid in blocked_customers_set) if user.role in (User.ROLE_OWNER, User.ROLE_ADMIN) else (pid in blocked_by_owners_set)
+        is_blocked = (
+            (pid in blocked_customers_set)
+            or getattr(partner, "is_blocked", False)
+            or not partner.is_active
+        ) if user.role in (User.ROLE_OWNER, User.ROLE_ADMIN) else (
+            (pid in blocked_by_owners_set)
+            or getattr(partner, "is_blocked", False)
+            or not partner.is_active
+        )
 
         last_msg_is_me = (last_msg.sender_id == user.id)
         last_message_text = ""
@@ -1659,10 +1680,10 @@ def delete_single_message(request, message_id):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def block_customer(request):
-    """Block a customer (store owners only)."""
+    """Block a customer."""
     user = request.user
     if user.role not in (User.ROLE_OWNER, User.ROLE_ADMIN) and not user.is_superuser:
-        raise PermissionDenied("Only store owners can block customers.")
+        raise PermissionDenied("Only store owners or administrators can block customers.")
 
     customer_id = request.data.get("customer_id")
     if not customer_id:
@@ -1673,7 +1694,11 @@ def block_customer(request):
     except User.DoesNotExist:
         return Response({"error": "Customer not found."}, status=status.HTTP_404_NOT_FOUND)
 
-    BlockedCustomer.objects.get_or_create(owner=user, customer=customer)
+    if user.role == User.ROLE_ADMIN or user.is_superuser:
+        customer.block_user(reason="Blocked by administrator")
+    else:
+        BlockedCustomer.objects.get_or_create(owner=user, customer=customer)
+
     return Response({
         "status": "blocked",
         "customer_id": customer.id,
@@ -1688,33 +1713,65 @@ def block_customer(request):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def unblock_customer(request):
-    """Unblock a customer (store owners only)."""
+    """Unblock a customer."""
     user = request.user
     if user.role not in (User.ROLE_OWNER, User.ROLE_ADMIN) and not user.is_superuser:
-        raise PermissionDenied("Only store owners can unblock customers.")
+        raise PermissionDenied("Only store owners or administrators can unblock customers.")
 
     customer_id = request.data.get("customer_id")
     if not customer_id:
         return Response({"error": "customer_id is required."}, status=status.HTTP_400_BAD_REQUEST)
 
-    BlockedCustomer.objects.filter(owner=user, customer_id=customer_id).delete()
+    try:
+        customer = User.objects.get(pk=customer_id)
+    except User.DoesNotExist:
+        return Response({"error": "Customer not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    if user.role == User.ROLE_ADMIN or user.is_superuser:
+        customer.unblock_user()
+    else:
+        BlockedCustomer.objects.filter(owner=user, customer=customer).delete()
+        if not BlockedCustomer.objects.filter(customer=customer).exists() and customer.is_blocked:
+            if "administrator" not in (customer.block_reason or "").lower():
+                customer.unblock_user()
+
     return Response({"status": "unblocked", "customer_id": int(customer_id)})
 
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def block_status(request):
-    """Check if customer is blocked by the owner."""
+    """Check if customer is blocked."""
     user = request.user
     customer_id = request.query_params.get("customer_id")
     owner_id = request.query_params.get("owner_id")
 
+    is_blocked = False
     if user.role in (User.ROLE_OWNER, User.ROLE_ADMIN) and customer_id:
-        is_blocked = BlockedCustomer.objects.filter(owner=user, customer_id=customer_id).exists()
+        is_blocked = (
+            BlockedCustomer.objects.filter(owner=user, customer_id=customer_id).exists()
+            or BlockedCustomer.objects.filter(customer_id=customer_id, owner__isnull=True).exists()
+            or User.objects.filter(id=customer_id, is_blocked=True).exists()
+        )
     elif user.role == User.ROLE_CUSTOMER and owner_id:
-        is_blocked = BlockedCustomer.objects.filter(owner_id=owner_id, customer=user).exists()
+        is_blocked = (
+            BlockedCustomer.objects.filter(owner_id=owner_id, customer=user).exists()
+            or BlockedCustomer.objects.filter(owner_id=owner_id, customer__isnull=True).exists()
+            or User.objects.filter(id=owner_id, is_blocked=True).exists()
+        )
     elif customer_id and owner_id:
-        is_blocked = BlockedCustomer.objects.filter(owner_id=owner_id, customer_id=customer_id).exists()
+        is_blocked = (
+            BlockedCustomer.objects.filter(owner_id=owner_id, customer_id=customer_id).exists()
+            or BlockedCustomer.objects.filter(customer_id=customer_id, owner__isnull=True).exists()
+            or BlockedCustomer.objects.filter(owner_id=owner_id, customer__isnull=True).exists()
+            or User.objects.filter(id=customer_id, is_blocked=True).exists()
+            or User.objects.filter(id=owner_id, is_blocked=True).exists()
+        )
+    elif customer_id:
+        is_blocked = (
+            BlockedCustomer.objects.filter(customer_id=customer_id).exists()
+            or User.objects.filter(id=customer_id, is_blocked=True).exists()
+        )
     else:
         return Response({"error": "Specify customer_id or owner_id."}, status=status.HTTP_400_BAD_REQUEST)
 

@@ -119,7 +119,7 @@ Future<void> showCustomerReportDialog({
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Report $targetName',
+                                'Report ${targetName.trim().isNotEmpty ? targetName.trim() : 'Store'}',
                                 style: TextStyle(
                                   color: AppColors.textPrimary,
                                   fontSize: 17,

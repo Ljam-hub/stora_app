@@ -1817,6 +1817,98 @@ class AdminNotificationsAndBlockedUserTests(APITestCase):
         decline_order.refresh_from_db()
         self.assertEqual(decline_order.status, Order.STATUS_DECLINED)
 
+    def test_user_admin_and_model_block_unblock_sync(self):
+        from api.models import BlockedCustomer
+        from accounts.admin import UserAdmin
+        from stora_backend.admin_site import stora_admin_site
+
+        user_admin = UserAdmin(model=User, admin_site=stora_admin_site)
+        class MockReq:
+            user = self.admin
+            def __init__(self):
+                self.messages = []
+            def message_user(self, req, msg, **kwargs):
+                self.messages.append(msg)
+        req = MockReq()
+        user_admin.message_user = req.message_user
+
+        # 1. Block customer via UserAdmin action
+        user_admin.block_selected_users(req, User.objects.filter(id=self.customer.id))
+        self.customer.refresh_from_db()
+        self.assertTrue(self.customer.is_blocked)
+        self.assertFalse(self.customer.is_active)
+        self.assertTrue(BlockedCustomer.objects.filter(customer=self.customer, owner=None).exists())
+
+        # 2. Unblock customer via UserAdmin action -> BlockedCustomer must be deleted!
+        user_admin.unblock_selected_users(req, User.objects.filter(id=self.customer.id))
+        self.customer.refresh_from_db()
+        self.assertFalse(self.customer.is_blocked)
+        self.assertTrue(self.customer.is_active)
+        self.assertFalse(BlockedCustomer.objects.filter(customer=self.customer).exists())
+
+    def test_blocked_customer_admin_unblock_actions(self):
+        from api.models import BlockedCustomer
+        from api.admin import BlockedCustomerAdmin
+        from stora_backend.admin_site import stora_admin_site
+
+        # Block customer first
+        self.customer.block_user(reason="Testing admin unblock")
+        self.assertTrue(self.customer.is_blocked)
+        block_entry = BlockedCustomer.objects.get(customer=self.customer, owner=None)
+
+        admin_instance = BlockedCustomerAdmin(model=BlockedCustomer, admin_site=stora_admin_site)
+        class MockReq:
+            user = self.admin
+            def __init__(self):
+                self.messages = []
+            def message_user(self, req, msg, **kwargs):
+                self.messages.append(msg)
+        req = MockReq()
+        admin_instance.message_user = req.message_user
+
+        # Test single unblock view
+        res = admin_instance.unblock_single_view(req, block_entry.id)
+        self.assertEqual(res.status_code, 302)
+        self.customer.refresh_from_db()
+        self.assertFalse(self.customer.is_blocked)
+        self.assertTrue(self.customer.is_active)
+        self.assertFalse(BlockedCustomer.objects.filter(id=block_entry.id).exists())
+
+        # Test bulk action
+        self.customer.block_user(reason="Testing bulk unblock")
+        bulk_entry = BlockedCustomer.objects.get(customer=self.customer, owner=None)
+        admin_instance.unblock_selected_blocked_users(req, BlockedCustomer.objects.filter(id=bulk_entry.id))
+        self.customer.refresh_from_db()
+        self.assertFalse(self.customer.is_blocked)
+        self.assertTrue(self.customer.is_active)
+        self.assertFalse(BlockedCustomer.objects.filter(id=bulk_entry.id).exists())
+
+    def test_api_block_and_unblock_customer_two_way(self):
+        self.client.force_authenticate(user=self.admin)
+
+        # Admin blocks customer via API
+        res_block = self.client.post("/api/messages/block/", {"customer_id": self.customer.id}, format="json")
+        self.assertEqual(res_block.status_code, 200)
+        self.customer.refresh_from_db()
+        self.assertTrue(self.customer.is_blocked)
+
+        # Check block status API
+        res_status = self.client.get(f"/api/messages/block-status/?customer_id={self.customer.id}")
+        self.assertEqual(res_status.status_code, 200)
+        self.assertTrue(res_status.data["is_blocked"])
+
+        # Admin unblocks customer via API
+        res_unblock = self.client.post("/api/messages/unblock/", {"customer_id": self.customer.id}, format="json")
+        self.assertEqual(res_unblock.status_code, 200)
+        self.customer.refresh_from_db()
+        self.assertFalse(self.customer.is_blocked)
+        self.assertTrue(self.customer.is_active)
+
+        # Check block status API again
+        res_status_after = self.client.get(f"/api/messages/block-status/?customer_id={self.customer.id}")
+        self.assertEqual(res_status_after.status_code, 200)
+        self.assertFalse(res_status_after.data["is_blocked"])
+
 
 
 
