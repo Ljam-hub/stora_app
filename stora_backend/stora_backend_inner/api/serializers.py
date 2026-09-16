@@ -927,7 +927,6 @@ class BlockedCustomerSerializer(serializers.ModelSerializer):
             "customer_name",
             "block_side",
             "block_side_display",
-            "reason",
             "created_at",
         )
         read_only_fields = ("id", "owner", "created_at")

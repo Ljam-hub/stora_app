@@ -39,7 +39,6 @@ class BlockedCustomerAdmin(admin.ModelAdmin):
         "block_side_badge",
         "owner_display",
         "customer_display",
-        "reason_preview",
         "created_at",
         "manage_actions",
     )
@@ -53,7 +52,6 @@ class BlockedCustomerAdmin(admin.ModelAdmin):
         "customer__first_name",
         "customer__last_name",
         "customer__username",
-        "reason",
     )
 
     fieldsets = (
@@ -61,7 +59,7 @@ class BlockedCustomerAdmin(admin.ModelAdmin):
             "Message Block Configuration",
             {
                 "description": "Choose whether to block messages on the Customer side, Owner side, or Both sides. Leave Owner empty for a global customer block, or Customer empty for a global store owner block.",
-                "fields": ("owner", "customer", "block_side", "reason"),
+                "fields": ("owner", "customer", "block_side"),
             },
         ),
     )
@@ -159,9 +157,6 @@ class BlockedCustomerAdmin(admin.ModelAdmin):
             )
         return format_html('<span style="color: #9ca3af; font-style: italic;">All Customers (Global)</span>')
 
-    @admin.display(description="Reason / Note")
-    def reason_preview(self, obj):
-        return obj.reason or "—"
 
     @admin.display(description="Actions")
     def manage_actions(self, obj):

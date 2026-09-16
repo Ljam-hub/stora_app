@@ -80,12 +80,6 @@ class BlockedCustomer(models.Model):
         default=BLOCK_SIDE_BOTH,
         help_text="Choose which side is blocked from sending messages.",
     )
-    reason = models.CharField(
-        max_length=255,
-        blank=True,
-        default="",
-        help_text="Optional reason or note for this message block.",
-    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

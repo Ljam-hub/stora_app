@@ -1857,7 +1857,6 @@ class AdminNotificationsAndBlockedUserTests(APITestCase):
             customer=self.customer,
             owner=None,
             block_side=BlockedCustomer.BLOCK_SIDE_BOTH,
-            reason="Testing admin unblock",
         )
 
         admin_instance = BlockedCustomerAdmin(model=BlockedCustomer, admin_site=stora_admin_site)
@@ -1883,7 +1882,6 @@ class AdminNotificationsAndBlockedUserTests(APITestCase):
             customer=self.customer,
             owner=None,
             block_side=BlockedCustomer.BLOCK_SIDE_CUSTOMER,
-            reason="Testing bulk unblock",
         )
         admin_instance.unblock_selected_blocked_users(req, BlockedCustomer.objects.filter(id=bulk_entry.id))
         self.customer.refresh_from_db()
@@ -1902,7 +1900,6 @@ class AdminNotificationsAndBlockedUserTests(APITestCase):
             {
                 "customer_id": self.customer.id,
                 "block_side": BlockedCustomer.BLOCK_SIDE_CUSTOMER,
-                "reason": "Excessive spamming",
             },
             format="json",
         )

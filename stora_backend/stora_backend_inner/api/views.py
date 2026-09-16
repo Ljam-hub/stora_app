@@ -1746,7 +1746,6 @@ def block_customer(request):
     block_side = request.data.get("block_side", BlockedCustomer.BLOCK_SIDE_BOTH)
     if block_side not in (BlockedCustomer.BLOCK_SIDE_BOTH, BlockedCustomer.BLOCK_SIDE_CUSTOMER, BlockedCustomer.BLOCK_SIDE_OWNER):
         block_side = BlockedCustomer.BLOCK_SIDE_BOTH
-    reason = request.data.get("reason", "")
 
     # Decoupled from user account suspension: create or update BlockedCustomer entry
     if user.role == User.ROLE_OWNER:
@@ -1764,7 +1763,7 @@ def block_customer(request):
     block_entry, _ = BlockedCustomer.objects.update_or_create(
         owner=target_owner,
         customer=target_customer,
-        defaults={"block_side": block_side, "reason": reason},
+        defaults={"block_side": block_side},
     )
 
     return Response({
