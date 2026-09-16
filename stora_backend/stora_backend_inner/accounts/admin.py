@@ -59,7 +59,7 @@ class UserAdmin(DjangoUserAdmin):
         for u in queryset:
             u.block_user(reason="Blocked by administrator via Accounts > Users")
             count += 1
-        self.message_user(request, f"{count} user(s) have been blocked from the app and added to Blocked Users registry.")
+        self.message_user(request, f"{count} user(s) have been blocked from accessing the app.")
 
     @admin.action(description="Unblock selected users (restore app access)")
     def unblock_selected_users(self, request, queryset):
@@ -67,7 +67,7 @@ class UserAdmin(DjangoUserAdmin):
         for u in queryset:
             u.unblock_user()
             count += 1
-        self.message_user(request, f"{count} user(s) have been unblocked and removed from Blocked Users registry.")
+        self.message_user(request, f"{count} user(s) have been unblocked and granted app access.")
 
     @admin.display(description="Owner/Customer Name", ordering="business_name")
     def owner_customer_name(self, obj):
@@ -159,21 +159,14 @@ class UserAdmin(DjangoUserAdmin):
 
     def save_model(self, request, obj, form, change):
         super().save_model(request, obj, form, change)
-        from api.models import BlockedCustomer
-        from django.db.models import Q
         if getattr(obj, "is_blocked", False) or not obj.is_active:
             if not obj.is_blocked:
                 obj.is_blocked = True
                 obj.save(update_fields=["is_blocked"])
-            if obj.role == User.ROLE_CUSTOMER:
-                BlockedCustomer.objects.get_or_create(customer=obj, owner=None)
-            elif obj.role == User.ROLE_OWNER:
-                BlockedCustomer.objects.get_or_create(owner=obj, customer=None)
         else:
             if obj.block_reason:
                 obj.block_reason = ""
                 obj.save(update_fields=["block_reason"])
-            BlockedCustomer.objects.filter(Q(customer=obj) | Q(owner=obj)).delete()
 
 
 @admin.register(PasswordResetToken, site=stora_admin_site)

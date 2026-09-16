@@ -259,14 +259,22 @@ def notify_new_chat_message(chat_msg):
         if not recipient or not getattr(recipient, "fcm_token", None):
             return False
 
-        # Check if customer is blocked by owner
+        # Check if messaging notification should be suppressed due to directional block
         if recipient.role == recipient.ROLE_OWNER:
-            if BlockedCustomer.objects.filter(owner=recipient, customer=sender).exists():
+            if BlockedCustomer.objects.filter(
+                owner=recipient,
+                customer=sender,
+                block_side__in=[BlockedCustomer.BLOCK_SIDE_BOTH, BlockedCustomer.BLOCK_SIDE_CUSTOMER],
+            ).exists():
                 logger.info("Notification suppressed: customer %s is blocked by owner %s", sender.id, recipient.id)
                 return False
         elif sender.role == sender.ROLE_OWNER:
-            if BlockedCustomer.objects.filter(owner=sender, customer=recipient).exists():
-                logger.info("Notification suppressed: recipient %s is blocked by owner %s", recipient.id, sender.id)
+            if BlockedCustomer.objects.filter(
+                owner=sender,
+                customer=recipient,
+                block_side__in=[BlockedCustomer.BLOCK_SIDE_BOTH, BlockedCustomer.BLOCK_SIDE_OWNER],
+            ).exists():
+                logger.info("Notification suppressed: owner %s is blocked from messaging recipient %s", sender.id, recipient.id)
                 return False
 
         sender_name = (

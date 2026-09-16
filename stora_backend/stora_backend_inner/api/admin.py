@@ -36,14 +36,15 @@ class BlockedCustomerAdmin(admin.ModelAdmin):
     list_display = (
         "id",
         "block_scope_badge",
+        "block_side_badge",
         "owner_display",
         "customer_display",
-        "user_account_status",
+        "reason_preview",
         "created_at",
         "manage_actions",
     )
     list_display_links = ("id", "block_scope_badge", "owner_display", "customer_display")
-    list_filter = ("created_at",)
+    list_filter = ("block_side", "created_at")
     actions = ["unblock_selected_blocked_users"]
     search_fields = (
         "owner__email",
@@ -52,6 +53,17 @@ class BlockedCustomerAdmin(admin.ModelAdmin):
         "customer__first_name",
         "customer__last_name",
         "customer__username",
+        "reason",
+    )
+
+    fieldsets = (
+        (
+            "Message Block Configuration",
+            {
+                "description": "Choose whether to block messages on the Customer side, Owner side, or Both sides. Leave Owner empty for a global customer block, or Customer empty for a global store owner block.",
+                "fields": ("owner", "customer", "block_side", "reason"),
+            },
+        ),
     )
 
     def get_urls(self):
@@ -63,40 +75,19 @@ class BlockedCustomerAdmin(admin.ModelAdmin):
 
     def unblock_single_view(self, request, block_id):
         obj = get_object_or_404(BlockedCustomer, pk=block_id)
-        target = obj.customer or obj.owner
         name = ""
+        target = obj.customer or obj.owner
         if target:
             name = target.business_name or target.get_full_name() or target.username
-            target.unblock_user()
-        else:
-            obj.delete()
-        self.message_user(request, f"Successfully unblocked {name or 'user'} and restored account access.")
+        obj.delete()
+        self.message_user(request, f"Successfully removed message block for {name or 'customer/owner'}.")
         return redirect(reverse("stora_admin:api_blockedcustomer_changelist"))
 
-    @admin.action(description="🔓 Unblock selected user(s) & restore app access")
+    @admin.action(description="🔓 Remove selected message block(s)")
     def unblock_selected_blocked_users(self, request, queryset):
-        count = 0
-        for obj in queryset:
-            target = obj.customer or obj.owner
-            if target:
-                target.unblock_user()
-            else:
-                obj.delete()
-            count += 1
-        self.message_user(request, f"Successfully unblocked {count} user(s) and restored account access.")
-
-    def delete_model(self, request, obj):
-        target = obj.customer or obj.owner
-        if target:
-            target.unblock_user()
-        super().delete_model(request, obj)
-
-    def delete_queryset(self, request, queryset):
-        for obj in queryset:
-            target = obj.customer or obj.owner
-            if target:
-                target.unblock_user()
-        super().delete_queryset(request, queryset)
+        count = queryset.count()
+        queryset.delete()
+        self.message_user(request, f"Successfully removed {count} message block(s).")
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         from accounts.models import User
@@ -105,7 +96,7 @@ class BlockedCustomerAdmin(admin.ModelAdmin):
             formfield = super().formfield_for_foreignkey(db_field, request, **kwargs)
             if formfield:
                 formfield.label_from_instance = lambda obj: f"🏪 {obj.business_name or obj.get_full_name() or obj.username} ({obj.email})"
-                formfield.empty_label = "— None (Global Block / Not store specific) —"
+                formfield.empty_label = "— None (Global Block across all stores) —"
             return formfield
         elif db_field.name == "customer":
             kwargs["queryset"] = User.objects.filter(role=User.ROLE_CUSTOMER).order_by("first_name", "email")
@@ -132,6 +123,20 @@ class BlockedCustomerAdmin(admin.ModelAdmin):
             )
         return "—"
 
+    @admin.display(description="Messages Blocked On")
+    def block_side_badge(self, obj):
+        if obj.block_side == BlockedCustomer.BLOCK_SIDE_CUSTOMER:
+            return format_html(
+                '<span style="background: rgba(249, 115, 22, 0.16); color: #fb923c; border: 1px solid rgba(249, 115, 22, 0.4); padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 700;">👤 Customer Side</span>'
+            )
+        elif obj.block_side == BlockedCustomer.BLOCK_SIDE_OWNER:
+            return format_html(
+                '<span style="background: rgba(168, 85, 247, 0.16); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.4); padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 700;">🏪 Owner Side</span>'
+            )
+        return format_html(
+            '<span style="background: rgba(239, 68, 68, 0.16); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 700;">🚫 Both Sides</span>'
+        )
+
     @admin.display(description="Store Owner")
     def owner_display(self, obj):
         if obj.owner:
@@ -152,20 +157,11 @@ class BlockedCustomerAdmin(admin.ModelAdmin):
                 name,
                 obj.customer.email,
             )
-        return format_html('<span style="color: #9ca3af; font-style: italic;">Owner Blocked Directly</span>')
+        return format_html('<span style="color: #9ca3af; font-style: italic;">All Customers (Global)</span>')
 
-    @admin.display(description="Account Access")
-    def user_account_status(self, obj):
-        target = obj.customer if obj.customer else obj.owner
-        if not target:
-            return "—"
-        if getattr(target, "is_blocked", False) or not target.is_active:
-            return format_html(
-                '<span style="background: rgba(239, 68, 68, 0.2); color: #f87171; padding: 2px 7px; border-radius: 4px; font-weight: bold; font-size: 11px;">🚫 BLOCKED</span>'
-            )
-        return format_html(
-            '<span style="background: rgba(16, 185, 129, 0.2); color: #34d399; padding: 2px 7px; border-radius: 4px; font-weight: bold; font-size: 11px;">Active In-App</span>'
-        )
+    @admin.display(description="Reason / Note")
+    def reason_preview(self, obj):
+        return obj.reason or "—"
 
     @admin.display(description="Actions")
     def manage_actions(self, obj):
@@ -182,7 +178,7 @@ class BlockedCustomerAdmin(admin.ModelAdmin):
             else ""
         )
         unblock_btn = format_html(
-            '<a href="{}" style="display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; color: #34d399; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.45); text-decoration: none; margin-left: 6px;" onclick="return confirm(\'Are you sure you want to unblock this user and restore their account access?\');" title="Unblock user and restore account">🔓 Unblock</a>',
+            '<a href="{}" style="display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; color: #34d399; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.45); text-decoration: none; margin-left: 6px;" onclick="return confirm(\'Are you sure you want to remove this message block?\');" title="Remove message block">🔓 Unblock</a>',
             unblock_url,
         )
         return format_html(
@@ -195,12 +191,6 @@ class BlockedCustomerAdmin(admin.ModelAdmin):
             user_btn,
             unblock_btn,
         )
-
-    def save_model(self, request, obj, form, change):
-        super().save_model(request, obj, form, change)
-        target = obj.customer if obj.customer and not obj.owner else (obj.owner if obj.owner and not obj.customer else None)
-        if target:
-            target.block_user(reason="Blocked by administrator via Blocked Users registry")
 
 
 @admin.register(UserReport, site=stora_admin_site)

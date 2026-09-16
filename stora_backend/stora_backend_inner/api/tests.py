@@ -1728,7 +1728,7 @@ class AdminNotificationsAndBlockedUserTests(APITestCase):
             owner=self.owner,
             customer=self.customer,
         )
-        self.assertIn("blocked", str(paired_block))
+        self.assertIn("Block", str(paired_block))
 
         # 4. Neither owner nor customer raises ValidationError
         invalid_block = BlockedCustomer(owner=None, customer=None)
@@ -1817,7 +1817,8 @@ class AdminNotificationsAndBlockedUserTests(APITestCase):
         decline_order.refresh_from_db()
         self.assertEqual(decline_order.status, Order.STATUS_DECLINED)
 
-    def test_user_admin_and_model_block_unblock_sync(self):
+    def test_user_admin_block_unblock_decoupled(self):
+        """User account suspension is decoupled from BlockedCustomer message blocking."""
         from api.models import BlockedCustomer
         from accounts.admin import UserAdmin
         from stora_backend.admin_site import stora_admin_site
@@ -1832,14 +1833,14 @@ class AdminNotificationsAndBlockedUserTests(APITestCase):
         req = MockReq()
         user_admin.message_user = req.message_user
 
-        # 1. Block customer via UserAdmin action
+        # 1. Block customer via UserAdmin action -> blocks account access without touching BlockedCustomer
         user_admin.block_selected_users(req, User.objects.filter(id=self.customer.id))
         self.customer.refresh_from_db()
         self.assertTrue(self.customer.is_blocked)
         self.assertFalse(self.customer.is_active)
-        self.assertTrue(BlockedCustomer.objects.filter(customer=self.customer, owner=None).exists())
+        self.assertFalse(BlockedCustomer.objects.filter(customer=self.customer).exists())
 
-        # 2. Unblock customer via UserAdmin action -> BlockedCustomer must be deleted!
+        # 2. Unblock customer via UserAdmin action -> restores account access without touching BlockedCustomer
         user_admin.unblock_selected_users(req, User.objects.filter(id=self.customer.id))
         self.customer.refresh_from_db()
         self.assertFalse(self.customer.is_blocked)
@@ -1851,10 +1852,13 @@ class AdminNotificationsAndBlockedUserTests(APITestCase):
         from api.admin import BlockedCustomerAdmin
         from stora_backend.admin_site import stora_admin_site
 
-        # Block customer first
-        self.customer.block_user(reason="Testing admin unblock")
-        self.assertTrue(self.customer.is_blocked)
-        block_entry = BlockedCustomer.objects.get(customer=self.customer, owner=None)
+        # Create directional blocked customer entry
+        block_entry = BlockedCustomer.objects.create(
+            customer=self.customer,
+            owner=None,
+            block_side=BlockedCustomer.BLOCK_SIDE_BOTH,
+            reason="Testing admin unblock",
+        )
 
         admin_instance = BlockedCustomerAdmin(model=BlockedCustomer, admin_site=stora_admin_site)
         class MockReq:
@@ -1866,7 +1870,7 @@ class AdminNotificationsAndBlockedUserTests(APITestCase):
         req = MockReq()
         admin_instance.message_user = req.message_user
 
-        # Test single unblock view
+        # Test single unblock view -> deletes BlockedCustomer but does not change User.is_blocked
         res = admin_instance.unblock_single_view(req, block_entry.id)
         self.assertEqual(res.status_code, 302)
         self.customer.refresh_from_db()
@@ -1875,39 +1879,128 @@ class AdminNotificationsAndBlockedUserTests(APITestCase):
         self.assertFalse(BlockedCustomer.objects.filter(id=block_entry.id).exists())
 
         # Test bulk action
-        self.customer.block_user(reason="Testing bulk unblock")
-        bulk_entry = BlockedCustomer.objects.get(customer=self.customer, owner=None)
+        bulk_entry = BlockedCustomer.objects.create(
+            customer=self.customer,
+            owner=None,
+            block_side=BlockedCustomer.BLOCK_SIDE_CUSTOMER,
+            reason="Testing bulk unblock",
+        )
         admin_instance.unblock_selected_blocked_users(req, BlockedCustomer.objects.filter(id=bulk_entry.id))
         self.customer.refresh_from_db()
         self.assertFalse(self.customer.is_blocked)
         self.assertTrue(self.customer.is_active)
         self.assertFalse(BlockedCustomer.objects.filter(id=bulk_entry.id).exists())
 
-    def test_api_block_and_unblock_customer_two_way(self):
+    def test_api_block_and_unblock_customer_directional(self):
+        from api.models import BlockedCustomer
+
         self.client.force_authenticate(user=self.admin)
 
-        # Admin blocks customer via API
-        res_block = self.client.post("/api/messages/block/", {"customer_id": self.customer.id}, format="json")
+        # Admin blocks customer messaging with 'customer' side
+        res_block = self.client.post(
+            "/api/messages/block/",
+            {
+                "customer_id": self.customer.id,
+                "block_side": BlockedCustomer.BLOCK_SIDE_CUSTOMER,
+                "reason": "Excessive spamming",
+            },
+            format="json",
+        )
         self.assertEqual(res_block.status_code, 200)
+        self.assertEqual(res_block.data["block_side"], "customer")
         self.customer.refresh_from_db()
-        self.assertTrue(self.customer.is_blocked)
+        # Account is NOT suspended
+        self.assertFalse(self.customer.is_blocked)
+        self.assertTrue(self.customer.is_active)
 
         # Check block status API
         res_status = self.client.get(f"/api/messages/block-status/?customer_id={self.customer.id}")
         self.assertEqual(res_status.status_code, 200)
         self.assertTrue(res_status.data["is_blocked"])
+        self.assertEqual(res_status.data["block_side"], "customer")
 
         # Admin unblocks customer via API
         res_unblock = self.client.post("/api/messages/unblock/", {"customer_id": self.customer.id}, format="json")
         self.assertEqual(res_unblock.status_code, 200)
-        self.customer.refresh_from_db()
-        self.assertFalse(self.customer.is_blocked)
-        self.assertTrue(self.customer.is_active)
+        self.assertFalse(BlockedCustomer.objects.filter(customer=self.customer).exists())
 
         # Check block status API again
         res_status_after = self.client.get(f"/api/messages/block-status/?customer_id={self.customer.id}")
         self.assertEqual(res_status_after.status_code, 200)
         self.assertFalse(res_status_after.data["is_blocked"])
+
+    def test_directional_chat_blocking_enforcement(self):
+        """Verify directional blocking: customer side, owner side, both sides."""
+        from api.models import BlockedCustomer
+
+        # Case 1: Customer side block -> Customer cannot send, Owner CAN send
+        block = BlockedCustomer.objects.create(
+            owner=self.owner,
+            customer=self.customer,
+            block_side=BlockedCustomer.BLOCK_SIDE_CUSTOMER,
+        )
+
+        # Customer attempts to send message to Owner
+        self.client.force_authenticate(user=self.customer)
+        res1 = self.client.post(
+            "/api/messages/",
+            {"recipient": self.owner.id, "message": "Hello owner"},
+            format="json",
+        )
+        self.assertEqual(res1.status_code, 403)
+        self.assertIn("blocked", res1.data["error"].lower())
+
+        # Owner sends message to Customer -> Allowed!
+        self.client.force_authenticate(user=self.owner)
+        res2 = self.client.post(
+            "/api/messages/",
+            {"recipient": self.customer.id, "message": "Hello customer"},
+            format="json",
+        )
+        self.assertEqual(res2.status_code, 201)
+
+        # Case 2: Owner side block -> Owner cannot send, Customer CAN send
+        block.block_side = BlockedCustomer.BLOCK_SIDE_OWNER
+        block.save()
+
+        # Owner attempts to send message
+        self.client.force_authenticate(user=self.owner)
+        res3 = self.client.post(
+            "/api/messages/",
+            {"recipient": self.customer.id, "message": "Another message from owner"},
+            format="json",
+        )
+        self.assertEqual(res3.status_code, 400)
+        self.assertIn("blocked", res3.data["error"].lower())
+
+        # Customer sends message -> Allowed!
+        self.client.force_authenticate(user=self.customer)
+        res4 = self.client.post(
+            "/api/messages/",
+            {"recipient": self.owner.id, "message": "Reply from customer"},
+            format="json",
+        )
+        self.assertEqual(res4.status_code, 201)
+
+        # Case 3: Both sides block -> Neither can send
+        block.block_side = BlockedCustomer.BLOCK_SIDE_BOTH
+        block.save()
+
+        self.client.force_authenticate(user=self.customer)
+        res5 = self.client.post(
+            "/api/messages/",
+            {"recipient": self.owner.id, "message": "Test both blocked"},
+            format="json",
+        )
+        self.assertEqual(res5.status_code, 403)
+
+        self.client.force_authenticate(user=self.owner)
+        res6 = self.client.post(
+            "/api/messages/",
+            {"recipient": self.customer.id, "message": "Test both blocked from owner"},
+            format="json",
+        )
+        self.assertEqual(res6.status_code, 400)
 
 
 

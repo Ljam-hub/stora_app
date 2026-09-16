@@ -49,13 +49,22 @@ class ChatMessage(models.Model):
 
 
 class BlockedCustomer(models.Model):
+    BLOCK_SIDE_BOTH = "both"
+    BLOCK_SIDE_CUSTOMER = "customer"
+    BLOCK_SIDE_OWNER = "owner"
+    BLOCK_SIDE_CHOICES = (
+        (BLOCK_SIDE_BOTH, "Both Sides (Full Chat Block - Neither can message)"),
+        (BLOCK_SIDE_CUSTOMER, "Customer Side Only (Customer cannot send messages)"),
+        (BLOCK_SIDE_OWNER, "Owner Side Only (Owner cannot send messages)"),
+    )
+
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="blocked_customers",
         null=True,
         blank=True,
-        help_text="Store Owner (leave empty if blocking a customer globally / by admin)",
+        help_text="Store Owner (leave empty if blocking a customer globally across all stores)",
     )
     customer = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -63,13 +72,25 @@ class BlockedCustomer(models.Model):
         related_name="blocked_by_owners",
         null=True,
         blank=True,
-        help_text="Customer (leave empty if blocking a store owner globally / by admin)",
+        help_text="Customer (leave empty if blocking a store owner globally from messaging)",
+    )
+    block_side = models.CharField(
+        max_length=20,
+        choices=BLOCK_SIDE_CHOICES,
+        default=BLOCK_SIDE_BOTH,
+        help_text="Choose which side is blocked from sending messages.",
+    )
+    reason = models.CharField(
+        max_length=255,
+        blank=True,
+        default="",
+        help_text="Optional reason or note for this message block.",
     )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        verbose_name = "Blocked User"
-        verbose_name_plural = "Blocked Users"
+        verbose_name = "Blocked Customer/Owner"
+        verbose_name_plural = "Blocked Customers/Owners"
         ordering = ["-created_at"]
         constraints = [
             models.UniqueConstraint(
@@ -84,13 +105,14 @@ class BlockedCustomer(models.Model):
             raise ValidationError("Please select at least an Owner, a Customer, or both to block.")
 
     def __str__(self):
+        side_label = dict(self.BLOCK_SIDE_CHOICES).get(self.block_side, self.block_side)
         if self.owner and self.customer:
-            return f"{self.owner} blocked {self.customer}"
+            return f"{self.owner} & {self.customer} ({side_label})"
         elif self.customer:
-            return f"Blocked Customer: {self.customer}"
+            return f"Blocked Customer (Global): {self.customer}"
         elif self.owner:
-            return f"Blocked Store Owner: {self.owner}"
-        return f"Blocked User #{self.pk or ''}"
+            return f"Blocked Store Owner (Global): {self.owner}"
+        return f"Blocked Customer/Owner #{self.pk or ''}"
 
 
 def report_attachment_upload_path(instance, filename):

@@ -1326,26 +1326,69 @@ def chat_messages(request):
         except User.DoesNotExist:
             return Response({"error": "Recipient user not found."}, status=status.HTTP_404_NOT_FOUND)
 
-        # Check if customer is blocked by store owner or globally blocked
+        # Check if messaging is blocked between customer and owner
         if user.role == User.ROLE_CUSTOMER and recipient.role in (User.ROLE_OWNER, User.ROLE_ADMIN):
+            if getattr(user, "is_blocked", False) or not user.is_active:
+                return Response(
+                    {"error": "Your account is suspended."},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+            if getattr(recipient, "is_blocked", False) or not recipient.is_active:
+                return Response(
+                    {"error": "This store owner account is suspended."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             if (
-                getattr(user, "is_blocked", False)
-                or not user.is_active
-                or BlockedCustomer.objects.filter(owner=recipient, customer=user).exists()
-                or BlockedCustomer.objects.filter(customer=user, owner__isnull=True).exists()
+                BlockedCustomer.objects.filter(
+                    owner=recipient,
+                    customer=user,
+                    block_side__in=[BlockedCustomer.BLOCK_SIDE_BOTH, BlockedCustomer.BLOCK_SIDE_CUSTOMER],
+                ).exists()
+                or BlockedCustomer.objects.filter(
+                    customer=user,
+                    owner__isnull=True,
+                    block_side__in=[BlockedCustomer.BLOCK_SIDE_BOTH, BlockedCustomer.BLOCK_SIDE_CUSTOMER],
+                ).exists()
+                or BlockedCustomer.objects.filter(
+                    owner=recipient,
+                    customer__isnull=True,
+                    block_side__in=[BlockedCustomer.BLOCK_SIDE_BOTH, BlockedCustomer.BLOCK_SIDE_CUSTOMER],
+                ).exists()
             ):
                 return Response(
                     {"error": "You have been blocked from messaging."},
                     status=status.HTTP_403_FORBIDDEN,
                 )
         elif user.role in (User.ROLE_OWNER, User.ROLE_ADMIN) and recipient.role == User.ROLE_CUSTOMER:
+            if getattr(user, "is_blocked", False) or not user.is_active:
+                return Response(
+                    {"error": "Your account is suspended."},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+            if getattr(recipient, "is_blocked", False) or not recipient.is_active:
+                return Response(
+                    {"error": "This customer account is suspended."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             if (
-                BlockedCustomer.objects.filter(owner=user, customer=recipient).exists()
-                or BlockedCustomer.objects.filter(customer=recipient, owner__isnull=True).exists()
-                or getattr(recipient, "is_blocked", False)
+                BlockedCustomer.objects.filter(
+                    owner=user,
+                    customer=recipient,
+                    block_side__in=[BlockedCustomer.BLOCK_SIDE_BOTH, BlockedCustomer.BLOCK_SIDE_OWNER],
+                ).exists()
+                or BlockedCustomer.objects.filter(
+                    owner=user,
+                    customer__isnull=True,
+                    block_side__in=[BlockedCustomer.BLOCK_SIDE_BOTH, BlockedCustomer.BLOCK_SIDE_OWNER],
+                ).exists()
+                or BlockedCustomer.objects.filter(
+                    customer=recipient,
+                    owner__isnull=True,
+                    block_side__in=[BlockedCustomer.BLOCK_SIDE_BOTH, BlockedCustomer.BLOCK_SIDE_OWNER],
+                ).exists()
             ):
                 return Response(
-                    {"error": "This customer is blocked. Unblock them first to send a message."},
+                    {"error": "You are blocked from messaging this customer."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
@@ -1680,10 +1723,10 @@ def delete_single_message(request, message_id):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def block_customer(request):
-    """Block a customer."""
+    """Block a customer/owner from messaging."""
     user = request.user
     if user.role not in (User.ROLE_OWNER, User.ROLE_ADMIN) and not user.is_superuser:
-        raise PermissionDenied("Only store owners or administrators can block customers.")
+        raise PermissionDenied("Only store owners or administrators can block messaging.")
 
     customer_id = request.data.get("customer_id")
     if not customer_id:
@@ -1694,14 +1737,23 @@ def block_customer(request):
     except User.DoesNotExist:
         return Response({"error": "Customer not found."}, status=status.HTTP_404_NOT_FOUND)
 
-    if user.role == User.ROLE_ADMIN or user.is_superuser:
-        customer.block_user(reason="Blocked by administrator")
-    else:
-        BlockedCustomer.objects.get_or_create(owner=user, customer=customer)
+    block_side = request.data.get("block_side", BlockedCustomer.BLOCK_SIDE_BOTH)
+    if block_side not in (BlockedCustomer.BLOCK_SIDE_BOTH, BlockedCustomer.BLOCK_SIDE_CUSTOMER, BlockedCustomer.BLOCK_SIDE_OWNER):
+        block_side = BlockedCustomer.BLOCK_SIDE_BOTH
+    reason = request.data.get("reason", "")
+
+    # Decoupled from user account suspension: create or update BlockedCustomer entry
+    target_owner = user if user.role == User.ROLE_OWNER else None
+    block_entry, _ = BlockedCustomer.objects.update_or_create(
+        owner=target_owner,
+        customer=customer,
+        defaults={"block_side": block_side, "reason": reason},
+    )
 
     return Response({
         "status": "blocked",
         "customer_id": customer.id,
+        "block_side": block_entry.block_side,
         "customer_name": (
             customer.get_display_name()
             if hasattr(customer, "get_display_name")
@@ -1713,10 +1765,10 @@ def block_customer(request):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def unblock_customer(request):
-    """Unblock a customer."""
+    """Unblock a customer/owner messaging block."""
     user = request.user
     if user.role not in (User.ROLE_OWNER, User.ROLE_ADMIN) and not user.is_superuser:
-        raise PermissionDenied("Only store owners or administrators can unblock customers.")
+        raise PermissionDenied("Only store owners or administrators can unblock messaging.")
 
     customer_id = request.data.get("customer_id")
     if not customer_id:
@@ -1727,13 +1779,11 @@ def unblock_customer(request):
     except User.DoesNotExist:
         return Response({"error": "Customer not found."}, status=status.HTTP_404_NOT_FOUND)
 
+    # Decoupled: removing BlockedCustomer record does NOT touch User.is_blocked or User.is_active
     if user.role == User.ROLE_ADMIN or user.is_superuser:
-        customer.unblock_user()
+        BlockedCustomer.objects.filter(customer=customer).delete()
     else:
         BlockedCustomer.objects.filter(owner=user, customer=customer).delete()
-        if not BlockedCustomer.objects.filter(customer=customer).exists() and customer.is_blocked:
-            if "administrator" not in (customer.block_reason or "").lower():
-                customer.unblock_user()
 
     return Response({"status": "unblocked", "customer_id": int(customer_id)})
 
@@ -1741,41 +1791,83 @@ def unblock_customer(request):
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def block_status(request):
-    """Check if customer is blocked."""
+    """Check if messaging is blocked between customer and owner."""
     user = request.user
     customer_id = request.query_params.get("customer_id")
     owner_id = request.query_params.get("owner_id")
 
     is_blocked = False
+    block_side = None
+    can_send = True
+
     if user.role in (User.ROLE_OWNER, User.ROLE_ADMIN) and customer_id:
-        is_blocked = (
-            BlockedCustomer.objects.filter(owner=user, customer_id=customer_id).exists()
-            or BlockedCustomer.objects.filter(customer_id=customer_id, owner__isnull=True).exists()
-            or User.objects.filter(id=customer_id, is_blocked=True).exists()
+        block_entry = (
+            BlockedCustomer.objects.filter(owner=user, customer_id=customer_id).first()
+            or BlockedCustomer.objects.filter(customer_id=customer_id, owner__isnull=True).first()
         )
-    elif user.role == User.ROLE_CUSTOMER and owner_id:
-        is_blocked = (
-            BlockedCustomer.objects.filter(owner_id=owner_id, customer=user).exists()
-            or BlockedCustomer.objects.filter(owner_id=owner_id, customer__isnull=True).exists()
-            or User.objects.filter(id=owner_id, is_blocked=True).exists()
+        target_customer = User.objects.filter(id=customer_id).first()
+        account_blocked = bool(target_customer and target_customer.is_blocked)
+
+        if block_entry:
+            is_blocked = True
+            block_side = block_entry.block_side
+            if block_entry.block_side in (BlockedCustomer.BLOCK_SIDE_BOTH, BlockedCustomer.BLOCK_SIDE_OWNER):
+                can_send = False
+        elif account_blocked:
+            is_blocked = True
+            can_send = False
+
+    elif user.role == User.ROLE_CUSTOMER and (owner_id or customer_id):
+        target_owner_id = owner_id or customer_id
+        block_entry = (
+            BlockedCustomer.objects.filter(owner_id=target_owner_id, customer=user).first()
+            or BlockedCustomer.objects.filter(customer=user, owner__isnull=True).first()
+            or BlockedCustomer.objects.filter(owner_id=target_owner_id, customer__isnull=True).first()
         )
+        target_owner = User.objects.filter(id=target_owner_id).first()
+        account_blocked = bool(target_owner and target_owner.is_blocked)
+
+        if block_entry:
+            block_side = block_entry.block_side
+            if block_entry.block_side in (BlockedCustomer.BLOCK_SIDE_BOTH, BlockedCustomer.BLOCK_SIDE_CUSTOMER):
+                is_blocked = True
+                can_send = False
+        elif account_blocked:
+            is_blocked = True
+            can_send = False
+
     elif customer_id and owner_id:
-        is_blocked = (
-            BlockedCustomer.objects.filter(owner_id=owner_id, customer_id=customer_id).exists()
-            or BlockedCustomer.objects.filter(customer_id=customer_id, owner__isnull=True).exists()
-            or BlockedCustomer.objects.filter(owner_id=owner_id, customer__isnull=True).exists()
-            or User.objects.filter(id=customer_id, is_blocked=True).exists()
-            or User.objects.filter(id=owner_id, is_blocked=True).exists()
+        block_entry = (
+            BlockedCustomer.objects.filter(owner_id=owner_id, customer_id=customer_id).first()
+            or BlockedCustomer.objects.filter(customer_id=customer_id, owner__isnull=True).first()
+            or BlockedCustomer.objects.filter(owner_id=owner_id, customer__isnull=True).first()
         )
+        if block_entry:
+            is_blocked = True
+            block_side = block_entry.block_side
+            can_send = False
+        else:
+            is_blocked = (
+                User.objects.filter(id=customer_id, is_blocked=True).exists()
+                or User.objects.filter(id=owner_id, is_blocked=True).exists()
+            )
+            can_send = not is_blocked
     elif customer_id:
-        is_blocked = (
-            BlockedCustomer.objects.filter(customer_id=customer_id).exists()
-            or User.objects.filter(id=customer_id, is_blocked=True).exists()
-        )
+        block_entry = BlockedCustomer.objects.filter(customer_id=customer_id).first()
+        if block_entry:
+            is_blocked = True
+            block_side = block_entry.block_side
+        else:
+            is_blocked = User.objects.filter(id=customer_id, is_blocked=True).exists()
+        can_send = not is_blocked
     else:
         return Response({"error": "Specify customer_id or owner_id."}, status=status.HTTP_400_BAD_REQUEST)
 
-    return Response({"is_blocked": is_blocked})
+    return Response({
+        "is_blocked": is_blocked,
+        "block_side": block_side,
+        "can_send": can_send,
+    })
 
 
 @api_view(["POST"])

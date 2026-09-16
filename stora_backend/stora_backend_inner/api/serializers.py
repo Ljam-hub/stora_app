@@ -910,17 +910,37 @@ class ChatMessageSerializer(serializers.ModelSerializer):
 class BlockedCustomerSerializer(serializers.ModelSerializer):
     customer_email = serializers.CharField(source="customer.email", read_only=True, default="")
     customer_name = serializers.SerializerMethodField()
+    owner_email = serializers.CharField(source="owner.email", read_only=True, default="")
+    owner_name = serializers.SerializerMethodField()
+    block_side_display = serializers.CharField(source="get_block_side_display", read_only=True)
     created_at = UTCDateTimeField(read_only=True)
 
     class Meta:
         model = BlockedCustomer
-        fields = ("id", "owner", "customer", "customer_email", "customer_name", "created_at")
+        fields = (
+            "id",
+            "owner",
+            "owner_email",
+            "owner_name",
+            "customer",
+            "customer_email",
+            "customer_name",
+            "block_side",
+            "block_side_display",
+            "reason",
+            "created_at",
+        )
         read_only_fields = ("id", "owner", "created_at")
 
     def get_customer_name(self, obj):
         if not obj.customer:
             return "—"
         return f"{obj.customer.first_name} {obj.customer.last_name}".strip() or obj.customer.username
+
+    def get_owner_name(self, obj):
+        if not obj.owner:
+            return "—"
+        return obj.owner.business_name or f"{obj.owner.first_name} {obj.owner.last_name}".strip() or obj.owner.username
 
 
 class UserReportSerializer(serializers.ModelSerializer):
