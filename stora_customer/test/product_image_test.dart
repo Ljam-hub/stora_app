@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:stora_customer/widgets/product_image.dart';
 
@@ -25,7 +25,10 @@ void main() {
       expect(find.byType(Icon), findsNothing);
 
       final imageWidget = tester.widget<Image>(find.byType(Image));
-      expect(imageWidget.image, isA<MemoryImage>());
+      final provider = imageWidget.image is ResizeImage
+          ? (imageWidget.image as ResizeImage).imageProvider
+          : imageWidget.image;
+      expect(provider, isA<MemoryImage>());
     });
 
     testWidgets('renders Image.memory when base64 has data URI prefix', (WidgetTester tester) async {
@@ -42,7 +45,10 @@ void main() {
 
       expect(find.byType(Image), findsOneWidget);
       final imageWidget = tester.widget<Image>(find.byType(Image));
-      expect(imageWidget.image, isA<MemoryImage>());
+      final provider = imageWidget.image is ResizeImage
+          ? (imageWidget.image as ResizeImage).imageProvider
+          : imageWidget.image;
+      expect(provider, isA<MemoryImage>());
     });
 
     testWidgets('renders Image.network for full HTTP/HTTPS URL', (WidgetTester tester) async {
@@ -59,8 +65,11 @@ void main() {
 
       expect(find.byType(Image), findsOneWidget);
       final imageWidget = tester.widget<Image>(find.byType(Image));
-      expect(imageWidget.image, isA<NetworkImage>());
-      final networkImage = imageWidget.image as NetworkImage;
+      final provider = imageWidget.image is ResizeImage
+          ? (imageWidget.image as ResizeImage).imageProvider
+          : imageWidget.image;
+      expect(provider, isA<NetworkImage>());
+      final networkImage = provider as NetworkImage;
       expect(networkImage.url, 'https://images.unsplash.com/photo-example.jpg');
     });
 
@@ -78,8 +87,11 @@ void main() {
 
       expect(find.byType(Image), findsOneWidget);
       final imageWidget = tester.widget<Image>(find.byType(Image));
-      expect(imageWidget.image, isA<NetworkImage>());
-      final networkImage = imageWidget.image as NetworkImage;
+      final provider = imageWidget.image is ResizeImage
+          ? (imageWidget.image as ResizeImage).imageProvider
+          : imageWidget.image;
+      expect(provider, isA<NetworkImage>());
+      final networkImage = provider as NetworkImage;
       expect(networkImage.url, contains('/media/products/item123.jpg'));
     });
 

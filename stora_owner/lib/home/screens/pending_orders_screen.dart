@@ -313,6 +313,8 @@ class _OrderCardState extends State<_OrderCard> {
 
   Color get _statusColor {
     switch (status) {
+      case 'completed':
+        return const Color(0xFF00E676);
       case 'ready':
         return const Color(0xFF00E676);
       case 'accepted':
@@ -329,6 +331,8 @@ class _OrderCardState extends State<_OrderCard> {
 
   String get _statusLabel {
     switch (status) {
+      case 'completed':
+        return 'COMPLETED';
       case 'ready':
         return 'READY FOR PICKUP';
       case 'accepted':
@@ -442,6 +446,27 @@ class _OrderCardState extends State<_OrderCard> {
     } catch (e) {
       if (mounted) {
         _showFeedback('Failed to mark order as ready: $e', isSuccess: false);
+      }
+    } finally {
+      if (mounted) setState(() => _isProcessing = false);
+    }
+  }
+
+  Future<void> _handleComplete() async {
+    if (_isProcessing) return;
+    setState(() => _isProcessing = true);
+    try {
+      await OrdersStore.instance.completeOrder(orderId);
+      if (mounted) {
+        _showFeedback(
+          'Order #$orderId marked as completed! Customer notified.',
+          isSuccess: true,
+          icon: Icons.check_circle_rounded,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        _showFeedback('Failed to complete order: $e', isSuccess: false);
       }
     } finally {
       if (mounted) setState(() => _isProcessing = false);
@@ -1145,8 +1170,57 @@ class _OrderCardState extends State<_OrderCard> {
                     ),
             ),
 
-          // Action Button for Ready Orders (View / Print Receipt)
+          // Action Buttons for Ready Orders (Receipt & Complete Order)
           if (status == 'ready')
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: _isProcessing
+                  ? const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(8.0),
+                        child: CircularProgressIndicator(color: AppColors.purpleLight),
+                      ),
+                    )
+                  : Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            icon: const Icon(Icons.receipt_long_rounded, size: 16),
+                            label: const Text('Receipt', style: TextStyle(fontWeight: FontWeight.bold)),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: const Color(0xFF00E676),
+                              side: BorderSide(color: const Color(0xFF00E676).withValues(alpha: 0.6)),
+                              padding: const EdgeInsets.symmetric(vertical: 13),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                            ),
+                            onPressed: () => ReceiptDialog.show(context, _createSaleFromOrder()),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          flex: 2,
+                          child: ElevatedButton.icon(
+                            icon: const Icon(Icons.check_circle_rounded, size: 18),
+                            label: const Text(
+                              'Complete Order',
+                              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF00E676),
+                              foregroundColor: Colors.black,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                              padding: const EdgeInsets.symmetric(vertical: 13),
+                              elevation: 0,
+                            ),
+                            onPressed: _handleComplete,
+                          ),
+                        ),
+                      ],
+                    ),
+            ),
+
+          // Action Button for Completed Orders (View / Print Receipt)
+          if (status == 'completed')
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
               child: SizedBox(
@@ -1158,8 +1232,8 @@ class _OrderCardState extends State<_OrderCard> {
                     style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
                   ),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFF2E7D32),
-                    side: const BorderSide(color: Color(0xFF81C784)),
+                    foregroundColor: const Color(0xFF00E676),
+                    side: BorderSide(color: const Color(0xFF00E676).withValues(alpha: 0.6)),
                     padding: const EdgeInsets.symmetric(vertical: 13),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                   ),

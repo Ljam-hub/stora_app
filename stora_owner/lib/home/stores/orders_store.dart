@@ -140,6 +140,30 @@ class OrdersStore extends ChangeNotifier {
     }
   }
 
+  Future<void> completeOrder(int orderId) async {
+    if (_processingOrderIds.contains(orderId)) return;
+    _processingOrderIds.add(orderId);
+    notifyListeners();
+    try {
+      final response = await ApiClient.instance.completeOrder(orderId);
+      final updatedOrder = (response['order'] as Map<String, dynamic>?) ?? response;
+      final idx = _orders.indexWhere((o) => _parseOrderId(o['id']) == orderId);
+      if (idx != -1) {
+        _orders[idx] = Map<String, dynamic>.from(_orders[idx])
+          ..addAll(updatedOrder)
+          ..['status'] = 'completed';
+      }
+
+      unawaited(fetchOrders(isSilent: true));
+    } catch (e) {
+      _error = e.toString();
+      rethrow;
+    } finally {
+      _processingOrderIds.remove(orderId);
+      notifyListeners();
+    }
+  }
+
   Future<void> declineOrder(int orderId, {String reason = ''}) async {
     if (_processingOrderIds.contains(orderId)) return;
     _processingOrderIds.add(orderId);

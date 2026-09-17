@@ -113,6 +113,8 @@ class CustomerOrder {
 
   String get statusDisplay {
     switch (status.toLowerCase()) {
+      case 'completed':
+        return 'Completed';
       case 'ready':
         return 'Ready for Pickup';
       case 'accepted':
@@ -131,6 +133,7 @@ class CustomerOrder {
 
   Color get statusColor {
     switch (status.toLowerCase()) {
+      case 'completed':
       case 'ready':
         return AppColors.success;
       case 'accepted':
@@ -148,6 +151,7 @@ class CustomerOrder {
 
   Color get statusBgColor {
     switch (status.toLowerCase()) {
+      case 'completed':
       case 'ready':
         return AppColors.successBg;
       case 'accepted':

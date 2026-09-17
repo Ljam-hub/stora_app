@@ -580,6 +580,12 @@ class ApiClient {
     return _decode(response) as Map<String, dynamic>;
   }
 
+  Future<Map<String, dynamic>> completeOrder(int orderId) async {
+    final response = await _send('POST', '/orders/$orderId/complete/');
+    if (response.statusCode != 200) _throw(response);
+    return _decode(response) as Map<String, dynamic>;
+  }
+
   Future<Map<String, dynamic>> declineOrder(int orderId, {String reason = ''}) async {
     final response = await _send(
       'POST',

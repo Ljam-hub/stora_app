@@ -20,6 +20,7 @@ class Order(models.Model):
     STATUS_PENDING = "pending"
     STATUS_ACCEPTED = "accepted"
     STATUS_READY = "ready"
+    STATUS_COMPLETED = "completed"
     STATUS_DECLINED = "declined"
     STATUS_AUTO_DECLINED = "auto_declined"
     STATUS_COUNTER_OFFER = "counter_offer"
@@ -27,6 +28,7 @@ class Order(models.Model):
         (STATUS_PENDING, "Pending"),
         (STATUS_ACCEPTED, "Accepted"),
         (STATUS_READY, "Ready for Pickup"),
+        (STATUS_COMPLETED, "Completed"),
         (STATUS_DECLINED, "Declined"),
         (STATUS_AUTO_DECLINED, "Auto‑Declined"),
         (STATUS_COUNTER_OFFER, "Counter‑Offer"),
@@ -146,6 +148,14 @@ class Order(models.Model):
         if self.status != self.STATUS_ACCEPTED:
             return False
         self.status = self.STATUS_READY
+        self.save(update_fields=["status"])
+        return True
+
+    def complete(self):
+        """Mark a ready or accepted order as completed / picked up."""
+        if self.status not in (self.STATUS_READY, self.STATUS_ACCEPTED):
+            return False
+        self.status = self.STATUS_COMPLETED
         self.save(update_fields=["status"])
         return True
 

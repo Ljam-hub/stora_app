@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 
@@ -8,6 +9,7 @@ import '../config/api_config.dart';
 /// category-adaptive fallback icon. Replaces duplicated image-decoding
 /// logic formerly in ProductCard, CartItemTile, and ProductDetailSheet.
 class ProductImage extends StatelessWidget {
+  static final Map<String, Uint8List> _base64Cache = {};
   final String? imageData;
   final String categoryName;
   final double? width;
@@ -49,32 +51,44 @@ class ProductImage extends StatelessWidget {
             raw.startsWith('static/')) {
           final resolved = ApiConfig.resolveMediaUrl(raw);
           if (resolved != null) {
+            final targetCacheWidth = width != null ? (width! * 2.5).toInt() : 360;
             return Image.network(
               resolved,
               width: width,
               height: height,
               fit: fit,
+              cacheWidth: targetCacheWidth,
               errorBuilder: (context, error, stackTrace) => _buildFallback(),
             );
           }
         } else {
-          // Decode base64 image (handles raw base64, data URIs, JPEG headers with /9j/, etc.)
-          var clean = raw.contains(',') ? raw.split(',').last.trim() : raw;
-          clean = clean.replaceAll(RegExp(r'\s+'), '');
-          if (clean.isNotEmpty) {
-            while (clean.length % 4 != 0) {
-              clean += '=';
+          // Fast lookup in in-memory base64 cache
+          Uint8List? bytes = _base64Cache[raw];
+          if (bytes == null) {
+            // Decode base64 image (handles raw base64, data URIs, JPEG headers with /9j/, etc.)
+            var clean = raw.contains(',') ? raw.split(',').last.trim() : raw;
+            clean = clean.replaceAll(RegExp(r'\s+'), '');
+            if (clean.isNotEmpty) {
+              while (clean.length % 4 != 0) {
+                clean += '=';
+              }
+              bytes = base64Decode(clean);
+              if (_base64Cache.length > 200) {
+                _base64Cache.clear();
+              }
+              _base64Cache[raw] = bytes;
             }
-            final bytes = base64Decode(clean);
-            if (bytes.isNotEmpty) {
-              return Image.memory(
-                bytes,
-                width: width,
-                height: height,
-                fit: fit,
-                errorBuilder: (context, error, stackTrace) => _buildFallback(),
-              );
-            }
+          }
+          if (bytes != null && bytes.isNotEmpty) {
+            final targetCacheWidth = width != null ? (width! * 2.5).toInt() : 360;
+            return Image.memory(
+              bytes,
+              width: width,
+              height: height,
+              fit: fit,
+              cacheWidth: targetCacheWidth,
+              errorBuilder: (context, error, stackTrace) => _buildFallback(),
+            );
           }
         }
       } catch (e) {

@@ -229,6 +229,19 @@ def notify_order_status_change(order, action: str, extra_msg: str = ""):
         else:
             logger.info("Customer for Order #%s has no registered FCM token.", order.id)
 
+    elif action == "completed":
+        # Notify customer that order is completed / picked up
+        if order.customer and getattr(order.customer, "fcm_token", None):
+            store_name = (order.owner.business_name if hasattr(order.owner, 'business_name') and order.owner.business_name else None) or "the store"
+            title = f"Order #{order.id} Completed! 🎉"
+            body = f"Your order #{order.id} from {store_name} has been completed. Thank you for your purchase!"
+            data_payload["title"] = title
+            data_payload["body"] = body
+            data_payload["channel_id"] = "stora_customer_orders"
+            send_push_notification(order.customer.fcm_token, title, body, data_payload)
+        else:
+            logger.info("Customer for Order #%s has no registered FCM token.", order.id)
+
 
 def notify_admin(title: str, body: str, data: dict = None) -> int:
     """

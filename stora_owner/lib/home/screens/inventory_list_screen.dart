@@ -13,7 +13,6 @@ import '../widgets/product_image_widget.dart';
 import '../widgets/stock_step_button.dart';
 import '../../subscription/subscription_screen.dart';
 import '../widgets/shimmer_product_card.dart';
-import '../widgets/fade_slide_in.dart';
 import 'add_edit_product_screen.dart';
 
 class InventoryListScreen extends StatefulWidget {
@@ -262,7 +261,8 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
                             ),
                           )
                         : GridView.builder(
-                            physics: const AlwaysScrollableScrollPhysics(),
+                            physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+                            cacheExtent: 600,
                             padding: const EdgeInsets.fromLTRB(20, 0, 20, 90),
                             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                               crossAxisCount: 2,
@@ -278,8 +278,7 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
                                   : 20;
                               final allIdx = InventoryStore.instance.products.indexOf(products[i]);
                               final isLocked = !isPremium && (allIdx >= freeLimit || (allIdx == -1 && i >= freeLimit));
-                              return FadeSlideIn(
-                                delay: Duration(milliseconds: 50 * (i % 6)),
+                              return RepaintBoundary(
                                 child: ProductCard(
                                   product: products[i],
                                   isLocked: isLocked,

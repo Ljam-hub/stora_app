@@ -10,7 +10,6 @@ import '../../widgets/empty_state.dart';
 import '../../widgets/notification_badge.dart';
 import '../../widgets/product_card.dart';
 import '../../widgets/shimmer_product_card.dart';
-import '../../widgets/fade_slide_in.dart';
 import '../chat/customer_chat_screen.dart';
 import 'product_detail_sheet.dart';
 
@@ -491,7 +490,8 @@ class _ShopScreenState extends State<ShopScreen> {
                           ),
                         )
                       : GridView.builder(
-                          physics: const AlwaysScrollableScrollPhysics(),
+                          physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+                          cacheExtent: 600,
                           padding: const EdgeInsets.all(16),
                           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: 2,
@@ -502,8 +502,7 @@ class _ShopScreenState extends State<ShopScreen> {
                           itemCount: catalog.products.length,
                           itemBuilder: (context, index) {
                             final product = catalog.products[index];
-                            return FadeSlideIn(
-                              delay: Duration(milliseconds: 50 * (index % 6)),
+                            return RepaintBoundary(
                               child: ProductCard(
                                 product: product,
                                 onTap: () => _openProductDetail(product),

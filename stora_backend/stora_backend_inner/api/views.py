@@ -993,6 +993,24 @@ class OrderViewSet(viewsets.ModelViewSet):
         })
 
     @action(detail=True, methods=["post"])
+    def complete(self, request, pk=None):
+        order = self.get_object()
+        if request.user != order.owner:
+            raise PermissionDenied("Only the store owner can complete this order.")
+        if order.status not in (Order.STATUS_READY, Order.STATUS_ACCEPTED):
+            return Response(
+                {"error": f"Cannot complete order in '{order.status}' status. Order must be ready or accepted."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        order.complete()
+        notify_order_status_change(order, "completed")
+        return Response({
+            "status": "completed",
+            "receipt_number": f"ORD-{order.id}",
+            "order": OrderSerializer(order, context={"request": request}).data,
+        })
+
+    @action(detail=True, methods=["post"])
     def decline(self, request, pk=None):
         order = self.get_object()
         if request.user != order.owner:

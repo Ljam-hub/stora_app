@@ -76,6 +76,9 @@ class _CustomerLocationMapSheetState extends State<CustomerLocationMapSheet> {
   LatLng? _customerPoint;
   LatLng? _storePoint;
   double? _distanceKm;
+  List<LatLng> _roadRoutePoints = [];
+  double? _drivingDistanceKm;
+  int? _drivingDurationMinutes;
 
   @override
   void initState() {
@@ -200,9 +203,94 @@ class _CustomerLocationMapSheetState extends State<CustomerLocationMapSheet> {
       }
     });
 
+    _fetchRoadRoute(store, customer);
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _fitMapBounds();
     });
+  }
+
+  Future<void> _fetchRoadRoute(LatLng start, LatLng end) async {
+    try {
+      final uri = Uri.parse(
+        'https://router.project-osrm.org/route/v1/driving/'
+        '${start.longitude},${start.latitude};'
+        '${end.longitude},${end.latitude}'
+        '?overview=full&geometries=geojson',
+      );
+      final res = await http.get(
+        uri,
+        headers: {'User-Agent': 'StoraOwnerApp/1.0 (support@stora.ph)'},
+      ).timeout(const Duration(seconds: 8));
+
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body);
+        if (data is Map && data['code'] == 'Ok' && data['routes'] is List) {
+          final routes = data['routes'] as List;
+          if (routes.isNotEmpty && routes[0] is Map) {
+            final route = routes[0] as Map;
+            final distMeters = (route['distance'] is num) ? (route['distance'] as num).toDouble() : null;
+            final durationSecs = (route['duration'] is num) ? (route['duration'] as num).toDouble() : null;
+            final geom = route['geometry'];
+            if (geom is Map && geom['coordinates'] is List) {
+              final rawCoords = geom['coordinates'] as List;
+              final points = <LatLng>[];
+              for (final c in rawCoords) {
+                if (c is List && c.length >= 2) {
+                  final lon = (c[0] as num).toDouble();
+                  final lat = (c[1] as num).toDouble();
+                  points.add(LatLng(lat, lon));
+                }
+              }
+              if (points.isNotEmpty && mounted) {
+                setState(() {
+                  _roadRoutePoints = points;
+                  if (distMeters != null) {
+                    _drivingDistanceKm = double.parse((distMeters / 1000.0).toStringAsFixed(1));
+                  }
+                  if (durationSecs != null) {
+                    _drivingDurationMinutes = (durationSecs / 60.0).ceil();
+                  }
+                });
+                return;
+              }
+            }
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('OSRM road routing error: $e');
+    }
+    if (mounted) {
+      setState(() {
+        _roadRoutePoints = [start, end];
+      });
+    }
+  }
+
+  Future<void> _openNavigation() async {
+    if (_customerPoint == null) return;
+    final lat = _customerPoint!.latitude;
+    final lon = _customerPoint!.longitude;
+    final googleNavUri = Uri.parse('google.navigation:q=$lat,$lon&mode=d');
+    final mapsUrl = Uri.parse('https://www.google.com/maps/dir/?api=1&destination=$lat,$lon&travelmode=driving');
+    try {
+      if (await canLaunchUrl(googleNavUri)) {
+        await launchUrl(googleNavUri, mode: LaunchMode.externalApplication);
+        return;
+      }
+    } catch (_) {}
+    try {
+      if (await canLaunchUrl(mapsUrl)) {
+        await launchUrl(mapsUrl, mode: LaunchMode.externalApplication);
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not open map navigation app.')),
+        );
+      }
+    }
   }
 
   double _calculateDistanceKm(LatLng p1, LatLng p2) {
@@ -366,14 +454,18 @@ class _CustomerLocationMapSheetState extends State<CustomerLocationMapSheet> {
                         urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                         userAgentPackageName: 'com.example.stora_owner',
                       ),
-                      // Connector Line
+                      // Road Route Polylines (Dark casing + bright road route)
                       PolylineLayer(
                         polylines: [
                           Polyline(
-                            points: [_storePoint!, _customerPoint!],
-                            color: HomeColors.primary.withValues(alpha: 0.8),
-                            strokeWidth: 3.5,
-                            pattern: const StrokePattern.dotted(),
+                            points: _roadRoutePoints.isNotEmpty ? _roadRoutePoints : [_storePoint!, _customerPoint!],
+                            color: const Color(0xFF0F172A),
+                            strokeWidth: 6.5,
+                          ),
+                          Polyline(
+                            points: _roadRoutePoints.isNotEmpty ? _roadRoutePoints : [_storePoint!, _customerPoint!],
+                            color: const Color(0xFF38BDF8),
+                            strokeWidth: 4.5,
                           ),
                         ],
                       ),
@@ -507,20 +599,20 @@ class _CustomerLocationMapSheetState extends State<CustomerLocationMapSheet> {
                   ),
                 ),
 
-                // Distance Badge Overlay
-                if (_distanceKm != null)
+                // Distance & Road Driving Badge Overlay
+                if (_drivingDistanceKm != null || _distanceKm != null)
                   Positioned(
                     top: 12,
                     left: 12,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                       decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.8),
+                        color: Colors.black.withValues(alpha: 0.85),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.white24),
+                        border: Border.all(color: const Color(0xFF38BDF8).withValues(alpha: 0.5), width: 1.2),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.3),
+                            color: Colors.black.withValues(alpha: 0.4),
                             blurRadius: 6,
                           ),
                         ],
@@ -528,10 +620,16 @@ class _CustomerLocationMapSheetState extends State<CustomerLocationMapSheet> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.route_rounded, color: Color(0xFF38BDF8), size: 15),
+                          Icon(
+                            _drivingDistanceKm != null ? Icons.directions_car_rounded : Icons.route_rounded,
+                            color: const Color(0xFF38BDF8),
+                            size: 16,
+                          ),
                           const SizedBox(width: 6),
                           Text(
-                            '$_distanceKm km from store',
+                            _drivingDistanceKm != null
+                                ? '$_drivingDistanceKm km by road${_drivingDurationMinutes != null ? ' • ~$_drivingDurationMinutes min' : ''}'
+                                : '$_distanceKm km from store',
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 12,
@@ -598,6 +696,27 @@ class _CustomerLocationMapSheetState extends State<CustomerLocationMapSheet> {
                     ],
                   ),
                   const SizedBox(height: 14),
+
+                  // Start Road Navigation Button
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF00E676),
+                        foregroundColor: Colors.black,
+                        padding: const EdgeInsets.symmetric(vertical: 13),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        elevation: 2,
+                      ),
+                      onPressed: _customerPoint != null ? _openNavigation : null,
+                      icon: const Icon(Icons.navigation_rounded, size: 20, color: Colors.black),
+                      label: const Text(
+                        'Start Road Navigation (Google Maps)',
+                        style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5, color: Colors.black),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
 
                   // Actions: Call customer & Message about order
                   Row(

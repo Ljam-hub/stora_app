@@ -302,6 +302,8 @@ class _PosScreenState extends State<PosScreen> {
                 height: 124,
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  cacheExtent: 400,
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   itemCount: results.length,
                   separatorBuilder: (_, _) => const SizedBox(width: 10),
@@ -313,37 +315,39 @@ class _PosScreenState extends State<PosScreen> {
                     final allIdx = InventoryStore.instance.products.indexOf(p);
                     final isLocked = !AccountStatusStore.instance.isPremium &&
                         (allIdx >= freeLimit || (allIdx == -1 && i >= freeLimit));
-                    return _PosProductCard(
-                      product: p,
-                      isLocked: isLocked,
-                      onTap: () {
-                        if (isLocked) {
-                          showStoraSnackBar(
-                            context,
-                            '"${p.name}" is locked. Upgrade to Premium to unlock all items.',
+                    return RepaintBoundary(
+                      child: _PosProductCard(
+                        product: p,
+                        isLocked: isLocked,
+                        onTap: () {
+                          if (isLocked) {
+                            showStoraSnackBar(
+                              context,
+                              '"${p.name}" is locked. Upgrade to Premium to unlock all items.',
+                            );
+                            return;
+                          }
+                          if (p.stock <= 0) {
+                            showStoraSnackBar(context, '"${p.name}" is out of stock');
+                            return;
+                          }
+                          final inCart = cart.items.firstWhere(
+                            (it) => it.product.id == p.id,
+                            orElse: () => CartItem(product: p, quantity: 0),
                           );
-                          return;
-                        }
-                        if (p.stock <= 0) {
-                          showStoraSnackBar(context, '"${p.name}" is out of stock');
-                          return;
-                        }
-                        final inCart = cart.items.firstWhere(
-                          (it) => it.product.id == p.id,
-                          orElse: () => CartItem(product: p, quantity: 0),
-                        );
-                        if (inCart.quantity >= p.stock) {
-                          showStoraSnackBar(
-                            context,
-                            'Maximum available stock for "${p.name}" (${p.stock}) already in cart',
-                          );
-                          return;
-                        }
-                        cart.add(p);
-                        _searchController.clear();
-                        setState(() => _query = '');
-                        FocusScope.of(context).unfocus();
-                      },
+                          if (inCart.quantity >= p.stock) {
+                            showStoraSnackBar(
+                              context,
+                              'Maximum available stock for "${p.name}" (${p.stock}) already in cart',
+                            );
+                            return;
+                          }
+                          cart.add(p);
+                          _searchController.clear();
+                          setState(() => _query = '');
+                          FocusScope.of(context).unfocus();
+                        },
+                      ),
                     );
                   },
                 ),
