@@ -31,11 +31,23 @@ class AuthStore extends ChangeNotifier {
     if (session == null) return false;
     email = session.email;
     businessName = session.businessName;
+    // Restore isEmailVerified from local DB first (offline-safe)
+    isEmailVerified = await AppDatabase.instance.authDao.readIsEmailVerified();
     try {
       final me = await ApiClient.instance.getMe();
       isEmailVerified = me['is_email_verified'] == true;
       avatarUrl = me['avatar_url'] as String?;
-    } catch (_) {}
+      // Re-persist the refreshed verification status
+      await AppDatabase.instance.authDao.saveSession(
+        accessToken: session.accessToken,
+        refreshToken: session.refreshToken,
+        email: session.email,
+        businessName: session.businessName,
+        isEmailVerified: isEmailVerified,
+      );
+    } catch (_) {
+      // Offline — keep locally-stored isEmailVerified value
+    }
     OwnerNotificationService.instance.init();
     notifyListeners();
     return true;
@@ -163,6 +175,7 @@ class AuthStore extends ChangeNotifier {
       refreshToken: result.refreshToken,
       email: result.email,
       businessName: result.businessName,
+      isEmailVerified: result.isEmailVerified,
     );
     email = result.email;
     businessName = result.businessName;

@@ -15,7 +15,8 @@ import 'theme/app_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await ApiConfig.resolve();
+  // Don't block startup on network probe — resolve in background
+  ApiConfig.resolve();
 
   final authProvider = AuthProvider();
   final loggedIn = await authProvider.tryAutoLogin();

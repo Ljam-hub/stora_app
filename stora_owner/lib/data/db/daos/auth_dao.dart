@@ -12,8 +12,9 @@ class AuthDao {
     required String refreshToken,
     required String email,
     required String businessName,
-  }) {
-    return _db.into(_db.authSessions).insertOnConflictUpdate(
+    bool isEmailVerified = false,
+  }) async {
+    await _db.into(_db.authSessions).insertOnConflictUpdate(
       AuthSessionsCompanion(
         id: const Value(1),
         accessToken: Value(accessToken),
@@ -21,6 +22,11 @@ class AuthDao {
         email: Value(email),
         businessName: Value(businessName),
       ),
+    );
+    // Persist isEmailVerified via raw SQL (column added in migration v2)
+    await _db.customStatement(
+      'UPDATE auth_sessions SET is_email_verified = ? WHERE id = 1',
+      [isEmailVerified ? 1 : 0],
     );
   }
 
@@ -32,6 +38,15 @@ class AuthDao {
   Future<String?> readAccessToken() async {
     final session = await readSession();
     return session?.accessToken;
+  }
+
+  /// Read the locally persisted isEmailVerified flag.
+  Future<bool> readIsEmailVerified() async {
+    final result = await _db.customSelect(
+      'SELECT is_email_verified FROM auth_sessions WHERE id = 1',
+    ).getSingleOrNull();
+    if (result == null) return false;
+    return result.read<int>('is_email_verified') == 1;
   }
 
   Future<void> clearSession() async {

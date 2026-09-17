@@ -6,6 +6,7 @@ import '../providers/order_provider.dart';
 import '../screens/chat/customer_chat_screen.dart';
 import '../theme/app_theme.dart';
 import 'customer_report_dialog.dart';
+import '../services/receipt_service.dart';
 import 'notification_badge.dart';
 import 'order_status_stepper.dart';
 
@@ -37,6 +38,98 @@ class _OrderCardState extends State<OrderCard> {
       reportedUserId: widget.order.ownerId,
       targetName: widget.order.storeName,
       orderId: widget.order.id,
+    );
+  }
+
+  void _showReceiptOptions(BuildContext context, CustomerOrder order) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.cardBackground,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.cardBorder,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Order #${order.id} Receipt',
+                style: TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () async {
+                        Navigator.pop(ctx);
+                        try {
+                          await CustomerReceiptService.instance.shareReceipt(order);
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Share error: $e'), backgroundColor: AppColors.danger),
+                            );
+                          }
+                        }
+                      },
+                      icon: const Icon(Icons.share_rounded, size: 18),
+                      label: const Text('Share', style: TextStyle(fontWeight: FontWeight.bold)),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.textPrimary,
+                        side: BorderSide(color: AppColors.cardBorder),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () async {
+                        Navigator.pop(ctx);
+                        try {
+                          await CustomerReceiptService.instance.printReceipt(order);
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Print error: $e'), backgroundColor: AppColors.danger),
+                            );
+                          }
+                        }
+                      },
+                      icon: const Icon(Icons.print_rounded, size: 18),
+                      label: const Text('Print', style: TextStyle(fontWeight: FontWeight.bold)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -416,6 +509,24 @@ class _OrderCardState extends State<OrderCard> {
                     ),
                   ),
                 ),
+                if (order.status == 'accepted' || order.status == 'ready') ...[
+                  const SizedBox(width: 8),
+                  IconButton(
+                    tooltip: 'View Receipt',
+                    onPressed: () {
+                      _showReceiptOptions(context, order);
+                    },
+                    icon: const Icon(Icons.receipt_long_rounded, color: AppColors.success, size: 20),
+                    style: IconButton.styleFrom(
+                      backgroundColor: AppColors.successBg,
+                      padding: const EdgeInsets.all(10),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        side: BorderSide(color: AppColors.success.withValues(alpha: 0.3)),
+                      ),
+                    ),
+                  ),
+                ],
                 const SizedBox(width: 8),
                 IconButton(
                   tooltip: 'Report Store',

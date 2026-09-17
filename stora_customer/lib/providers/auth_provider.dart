@@ -43,7 +43,9 @@ class AuthProvider extends ChangeNotifier {
         try {
           final profile = await CustomerApiService.instance.fetchProfile();
           _currentUser = profile;
-        } catch (_) {}
+        } catch (_) {
+          // Offline — keep locally stored user data including isEmailVerified
+        }
 
         NotificationService.instance.init();
         _isLoading = false;

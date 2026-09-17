@@ -45,7 +45,20 @@ class AppDatabase extends _$AppDatabase {
   static final AppDatabase instance = AppDatabase._();
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+    onCreate: (m) => m.createAll(),
+    onUpgrade: (m, from, to) async {
+      if (from < 2) {
+        // Add is_email_verified column with default false
+        await customStatement(
+          'ALTER TABLE auth_sessions ADD COLUMN is_email_verified INTEGER NOT NULL DEFAULT 0',
+        );
+      }
+    },
+  );
 
   // ── DAOs ──────────────────────────────────────────────────────────────
   late final AuthDao authDao = AuthDao(this);

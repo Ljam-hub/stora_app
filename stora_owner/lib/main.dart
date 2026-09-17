@@ -24,7 +24,13 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   tzdata.initializeTimeZones();
   await _initSqlite();
-  await ApiConfig.resolve();
+  // Don't block startup on network probe — resolve in background
+  ApiConfig.resolve().then((_) {
+    // Re-sync once we know which server is reachable
+    if (AuthStore.instance.isLoggedIn) {
+      SyncManager.instance.syncNow();
+    }
+  });
   SyncManager.instance.init();
   await ThemeModeController.instance.init();
   final loggedIn = await AuthStore.instance.restore();
