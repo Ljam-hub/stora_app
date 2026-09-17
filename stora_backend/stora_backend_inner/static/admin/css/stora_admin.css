@@ -1620,10 +1620,32 @@ a.selector-clearall:hover {
   vertical-align: middle !important;
 }
 
-.related-widget-wrapper > select {
+.related-widget-wrapper > select:not(.select2-hidden-accessible) {
   flex: 1 1 auto !important;
   min-width: 160px !important;
   width: auto !important;
+}
+
+/* Ensure the original select element replaced by Select2 is completely hidden and takes 0 space */
+select.select2-hidden-accessible,
+.related-widget-wrapper > select.select2-hidden-accessible {
+  display: none !important;
+  position: absolute !important;
+  width: 0 !important;
+  height: 0 !important;
+  min-width: 0 !important;
+  max-width: 0 !important;
+  min-height: 0 !important;
+  max-height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+  opacity: 0 !important;
+  clip: rect(0, 0, 0, 0) !important;
+  clip-path: inset(50%) !important;
+  overflow: hidden !important;
+  pointer-events: none !important;
+  flex: 0 0 0px !important;
 }
 
 .related-widget-wrapper > .select2-container {
@@ -1807,7 +1829,17 @@ a.selector-clearall:hover {
 /* Compact, proportional inline columns that fit cleanly without clipping */
 .inline-group .tabular td.field-product,
 .inline-group .tabular th.column-product {
-  min-width: 280px !important;
+  min-width: 320px !important;
+}
+
+.inline-group .tabular td.field-product .related-widget-wrapper {
+  max-width: 100% !important;
+  width: 100% !important;
+}
+
+.inline-group .tabular td.field-product .select2-container {
+  min-width: 180px !important;
+  flex: 1 1 auto !important;
 }
 
 .inline-group .tabular td.field-product_name,
@@ -2099,31 +2131,54 @@ a.selector-clearall:hover {
 #result_list thead th.column-products_summary .text span,
 #result_list thead th.column-products_summary .text a,
 #result_list tbody td.field-products_summary,
-#result_list tbody td.field-products_summary a {
+#result_list tbody td.field-products_summary a,
+#result_list thead th.column-products_display,
+#result_list thead th.column-products_display .text,
+#result_list thead th.column-products_display .text span,
+#result_list thead th.column-products_display .text a,
+#result_list tbody td.field-products_display,
+#result_list tbody td.field-products_display a {
   text-align: left !important;
   justify-content: flex-start !important;
 }
 
-#result_list tbody td.field-products_summary {
+#result_list tbody td.field-products_summary,
+#result_list tbody td.field-products_display {
   white-space: normal !important;
   min-width: 200px !important;
   max-width: 360px !important;
   line-height: 1.4 !important;
 }
 
+#result_list thead th.column-customer_display,
+#result_list thead th.column-customer_display .text,
+#result_list thead th.column-customer_display .text span,
+#result_list thead th.column-customer_display .text a,
+#result_list tbody td.field-customer_display {
+  text-align: left !important;
+  justify-content: flex-start !important;
+  white-space: nowrap !important;
+}
+
 #result_list thead th.column-total_amount_display,
 #result_list thead th.column-total_amount_display .text,
 #result_list thead th.column-total_amount_display .text span,
 #result_list thead th.column-total_amount_display .text a,
-#result_list tbody td.field-total_amount_display {
+#result_list tbody td.field-total_amount_display,
+#result_list thead th.column-total_display,
+#result_list thead th.column-total_display .text,
+#result_list thead th.column-total_display .text span,
+#result_list thead th.column-total_display .text a,
+#result_list tbody td.field-total_display {
   text-align: left !important;
   justify-content: flex-start !important;
 }
 
-#result_list tbody td.field-total_amount_display {
+#result_list tbody td.field-total_amount_display,
+#result_list tbody td.field-total_display {
   font-family: var(--stora-font-mono) !important;
   font-weight: 700 !important;
-  color: var(--stora-accent) !important;
+  color: var(--stora-success) !important;
   white-space: nowrap !important;
 }
 
