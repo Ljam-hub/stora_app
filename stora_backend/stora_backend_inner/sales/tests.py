@@ -118,3 +118,27 @@ class SaleAndReceiptTests(TestCase):
         sale.refresh_from_db()
         self.assertEqual(sale.receipt_number, f"POS-{sale.id}")
         self.assertEqual(sale.customer_name, "Walk-in Customer")
+
+    def test_recalculate_total_preserves_counter_price(self):
+        order = Order.objects.create(
+            owner=self.owner,
+            customer=self.customer,
+            counter_price=Decimal("180.00"),
+            status=Order.STATUS_ACCEPTED,
+        )
+        sale = Sale.objects.create(
+            owner=self.owner,
+            order=order,
+            total=Decimal("180.00"),
+            receipt_number=f"ORD-{order.id}",
+        )
+        SaleItem.objects.create(
+            sale=sale,
+            product=self.product,
+            product_name=self.product.name,
+            quantity=4,
+            unit_price=Decimal("50.00"),  # 4 * 50 = 200.00
+        )
+        sale.recalculate_total()
+        self.assertEqual(sale.total, Decimal("180.00"))
+

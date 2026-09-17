@@ -188,6 +188,45 @@ class _ReceiptDialogState extends State<ReceiptDialog> {
                             style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.w600, fontSize: 12)),
                       ],
                     ),
+                    Builder(builder: (context) {
+                      final itemsSum = sale.items.fold<double>(0.0, (sum, i) => sum + (i.product.price * i.quantity));
+                      final diff = itemsSum - sale.total;
+                      if (diff.abs() > 0.01) {
+                        return Column(
+                          children: [
+                            const SizedBox(height: 2),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text('Subtotal', style: TextStyle(color: Colors.black54, fontSize: 12)),
+                                Text('₱${itemsSum.toStringAsFixed(2)}',
+                                    style: const TextStyle(color: Colors.black54, fontSize: 12)),
+                              ],
+                            ),
+                            const SizedBox(height: 2),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(diff > 0 ? 'Negotiated Discount' : 'Price Adjustment',
+                                    style: TextStyle(
+                                      color: diff > 0 ? const Color(0xFF2E7D32) : Colors.black87,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                    )),
+                                Text('${diff > 0 ? "-₱" : "+₱"}${diff.abs().toStringAsFixed(2)}',
+                                    style: TextStyle(
+                                      color: diff > 0 ? const Color(0xFF2E7D32) : Colors.black87,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                    )),
+                              ],
+                            ),
+                          ],
+                        );
+                      }
+                      return const SizedBox.shrink();
+                    }),
+                    const SizedBox(height: 4),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [

@@ -49,8 +49,11 @@ class Sale(models.Model):
         return f"Sale #{self.pk} \u2014 {self.created_at:%Y-%m-%d %H:%M}"
 
     def recalculate_total(self):
-        total = sum((item.subtotal for item in self.items.all()), Decimal("0"))
-        self.total = total
+        if self.order and self.order.counter_price is not None and self.order.counter_price > 0:
+            self.total = self.order.counter_price
+        else:
+            total = sum((item.subtotal for item in self.items.all()), Decimal("0"))
+            self.total = total
         self.save(update_fields=["total"])
 
 

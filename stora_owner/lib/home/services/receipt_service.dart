@@ -158,6 +158,31 @@ class ReceiptService {
                   ),
                 ],
               ),
+              ...() {
+                final itemsSum = sale.items.fold<double>(0.0, (sum, i) => sum + (i.product.price * i.quantity));
+                final diff = itemsSum - sale.total;
+                if (diff.abs() > 0.01) {
+                  return [
+                    pw.SizedBox(height: 2),
+                    pw.Row(
+                      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                      children: [
+                        pw.Text('Subtotal:', style: const pw.TextStyle(fontSize: 7)),
+                        pw.Text('PHP ${itemsSum.toStringAsFixed(2)}', style: const pw.TextStyle(fontSize: 7)),
+                      ],
+                    ),
+                    pw.SizedBox(height: 1),
+                    pw.Row(
+                      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                      children: [
+                        pw.Text(diff > 0 ? 'Negotiated Discount:' : 'Price Adjustment:', style: pw.TextStyle(fontSize: 7, fontWeight: pw.FontWeight.bold)),
+                        pw.Text('${diff > 0 ? "- PHP " : "+ PHP "}${diff.abs().toStringAsFixed(2)}', style: pw.TextStyle(fontSize: 7, fontWeight: pw.FontWeight.bold)),
+                      ],
+                    ),
+                  ];
+                }
+                return <pw.Widget>[];
+              }(),
               pw.SizedBox(height: 2),
               pw.Row(
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
