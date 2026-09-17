@@ -16,16 +16,19 @@ import logging
 import urllib.request
 from django.core.cache import cache
 
+import os
+
 logger = logging.getLogger(__name__)
 
 GITHUB_REPO = "Ljam-hub/stora_app"
-DEFAULT_RELEASE_TAG = "v1.0.0"
-DEFAULT_CUSTOMER_SIZE = "53.0 MB"
-DEFAULT_OWNER_SIZE = "78.0 MB"
+DEFAULT_RELEASE_TAG = "v1.1.0"
+DEFAULT_CUSTOMER_SIZE = "55.3 MB"
+DEFAULT_OWNER_SIZE = "78.9 MB"
 DEFAULT_CUSTOMER_URL = f"https://github.com/{GITHUB_REPO}/releases/latest/download/Stora-Customer.apk"
 DEFAULT_OWNER_URL = f"https://github.com/{GITHUB_REPO}/releases/latest/download/Stora.apk"
 CACHE_KEY = "stora_github_release_info"
-CACHE_TIMEOUT = 600  # 10 minutes
+LAST_KNOWN_KEY = "stora_github_release_last_known"
+CACHE_TIMEOUT = 300  # 5 minutes
 
 
 def format_bytes_to_mb(size_in_bytes):
@@ -42,7 +45,9 @@ def get_github_release_info():
     if cached:
         return cached
 
-    info = {
+    # Use last known good data as baseline if available, otherwise default
+    last_known = cache.get(LAST_KNOWN_KEY)
+    info = last_known.copy() if last_known else {
         "tag_name": DEFAULT_RELEASE_TAG,
         "customer_apk_size": DEFAULT_CUSTOMER_SIZE,
         "customer_download_url": DEFAULT_CUSTOMER_URL,
@@ -67,17 +72,19 @@ def get_github_release_info():
 
     try:
         url = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest"
-        req = urllib.request.Request(
-            url,
-            headers={
-                "User-Agent": "Stora-Backend/1.0",
-                "Accept": "application/vnd.github.v3+json",
-            },
-        )
-        with urllib.request.urlopen(req, timeout=4) as response:
+        headers = {
+            "User-Agent": "Stora-Backend/1.1",
+            "Accept": "application/vnd.github.v3+json",
+        }
+        github_token = os.environ.get("GITHUB_TOKEN") or getattr(settings, "GITHUB_TOKEN", None)
+        if github_token:
+            headers["Authorization"] = f"token {github_token}"
+
+        req = urllib.request.Request(url, headers=headers)
+        with urllib.request.urlopen(req, timeout=5) as response:
             if response.status == 200:
                 data = json.loads(response.read().decode("utf-8"))
-                tag = data.get("tag_name") or DEFAULT_RELEASE_TAG
+                tag = data.get("tag_name") or info.get("tag_name", DEFAULT_RELEASE_TAG)
                 info["tag_name"] = tag
                 assets = data.get("assets", [])
                 for asset in assets:
@@ -98,6 +105,7 @@ def get_github_release_info():
                             info["owner_download_url"] = download_url
 
                 cache.set(CACHE_KEY, info, CACHE_TIMEOUT)
+                cache.set(LAST_KNOWN_KEY, info, None)  # Persist last known good
     except Exception as exc:
         logger.warning("Could not fetch GitHub release info: %s", exc)
         cache.set(CACHE_KEY, info, 60)
