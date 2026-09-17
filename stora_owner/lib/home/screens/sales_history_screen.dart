@@ -343,13 +343,16 @@ class _SaleCard extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
-              Text(
-                'Receipt #: ${sale.displayReceiptNumber}',
-                style: TextStyle(
-                  color: HomeColors.textSecondary,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
+              Flexible(
+                child: Text(
+                  'Receipt #: ${sale.displayReceiptNumber}',
+                  style: TextStyle(
+                    color: HomeColors.textSecondary,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],

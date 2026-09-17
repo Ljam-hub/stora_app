@@ -466,9 +466,7 @@ class _OrderCardState extends State<OrderCard> {
                   ),
                 ),
                 Text(
-                  order.counterPrice != null && order.counterPrice! > 0
-                      ? order.formattedCounterPrice
-                      : order.formattedTotal,
+                  order.formattedTotal,
                   style: TextStyle(
                     color: AppColors.textPrimary,
                     fontSize: 17,
