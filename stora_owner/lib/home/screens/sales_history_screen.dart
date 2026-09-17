@@ -52,6 +52,21 @@ const _fullMonthNames = [
   'December',
 ];
 
+const _shortMonthNames = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];
+
 class SalesHistoryScreen extends StatefulWidget {
   const SalesHistoryScreen({super.key});
 
@@ -130,9 +145,9 @@ class _SalesHistoryScreenState extends State<SalesHistoryScreen> {
         if (year != null && month != null && month >= 1 && month <= 12) {
           final now = toManila(DateTime.now());
           if (year == now.year && month == now.month) {
-            return 'This Month (${_fullMonthNames[month - 1]})';
+            return 'This Month';
           }
-          return '${_fullMonthNames[month - 1]} $year';
+          return '${_shortMonthNames[month - 1]} $year';
         }
       }
     }
@@ -148,11 +163,15 @@ class _SalesHistoryScreenState extends State<SalesHistoryScreen> {
         final year = int.tryParse(parts[1]);
         final month = int.tryParse(parts[2]);
         if (year != null && month != null && month >= 1 && month <= 12) {
-          return '${_fullMonthNames[month - 1]} $year revenue';
+          final now = toManila(DateTime.now());
+          if (year == now.year && month == now.month) {
+            return 'This month revenue';
+          }
+          return '${_shortMonthNames[month - 1]} $year revenue';
         }
       }
     }
-    return 'Filtered revenue';
+    return 'Total revenue';
   }
 
   @override
@@ -392,22 +411,28 @@ class _HistorySummaryCard extends StatelessWidget {
         children: [
           // Period Selector Header Row
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Icon(Icons.account_balance_wallet_outlined, size: 14, color: HomeColors.textSecondary),
-                  const SizedBox(width: 6),
-                  Text(
-                    revenueTitle,
-                    style: TextStyle(
-                      color: HomeColors.textSecondary,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
+              Expanded(
+                child: Row(
+                  children: [
+                    Icon(Icons.account_balance_wallet_outlined, size: 14, color: HomeColors.textSecondary),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        revenueTitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: HomeColors.textSecondary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
               PopupMenuButton<String>(
                 tooltip: 'Select Month / Period',
                 onSelected: onFilterSelected,
@@ -425,12 +450,17 @@ class _HistorySummaryCard extends StatelessWidget {
                     children: [
                       const Icon(Icons.calendar_month_rounded, size: 14, color: AppColors.purpleLight),
                       const SizedBox(width: 5),
-                      Text(
-                        currentFilterLabel,
-                        style: TextStyle(
-                          color: HomeColors.textPrimary,
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w700,
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 110),
+                        child: Text(
+                          currentFilterLabel,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: HomeColors.textPrimary,
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 4),
@@ -516,21 +546,27 @@ class _HistorySummaryCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '₱${total.toStringAsFixed(2)}',
-                    style: TextStyle(
-                      color: HomeColors.textPrimary,
-                      fontSize: 24,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: -0.5,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        '₱${total.toStringAsFixed(2)}',
+                        style: TextStyle(
+                          color: HomeColors.textPrimary,
+                          fontSize: 24,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-              Container(height: 38, width: 1, color: HomeColors.cardBorder),
+              Container(height: 38, width: 1, color: HomeColors.cardBorder, margin: const EdgeInsets.symmetric(horizontal: 12)),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [

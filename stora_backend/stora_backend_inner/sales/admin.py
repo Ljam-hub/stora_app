@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.utils.html import format_html
+from django.utils.safestring import mark_safe
 
 from stora_backend.admin_site import stora_admin_site
 
@@ -41,7 +42,6 @@ class SaleAdmin(admin.ModelAdmin):
         "items__product_name",
     )
     list_filter = ("channel", "created_at", "owner")
-    date_hierarchy = "created_at"
     readonly_fields = ("total_display", "receipt_number", "order_link", "created_at")
     inlines = [SaleItemInline]
     actions = ["recalculate_selected_sales"]
@@ -105,7 +105,7 @@ class SaleAdmin(admin.ModelAdmin):
                 '</span>'
             )
 
-        badge = ""
+        badge = mark_safe("")
         if obj.order_id or obj.channel == "online_order":
             if obj.order_id:
                 badge = format_html(
@@ -118,7 +118,7 @@ class SaleAdmin(admin.ModelAdmin):
                     '<span style="font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); margin-left: 6px;">ONLINE</span>'
                 )
 
-        account_sub = ""
+        account_sub = mark_safe("")
         if obj.order and obj.order.customer:
             account_sub = format_html(
                 '<div style="font-size: 11px; color: #8bd3ca; font-weight: 600; margin-top: 2px;">{}</div>',
@@ -139,7 +139,9 @@ class SaleAdmin(admin.ModelAdmin):
 
     @admin.display(description="Store / Owner", ordering="owner__business_name")
     def owner_display(self, obj):
-        name = obj.owner.business_name or obj.owner.email
+        if not obj.owner:
+            return format_html('<span style="color: #888888; font-style: italic;">\u2014</span>')
+        name = getattr(obj.owner, "business_name", None) or getattr(obj.owner, "email", None) or getattr(obj.owner, "username", "\u2014")
         return format_html(
             '<span style="font-weight: 600; color: #f5f8f8;">{}</span>',
             name,
@@ -147,9 +149,10 @@ class SaleAdmin(admin.ModelAdmin):
 
     @admin.display(description="Total", ordering="total")
     def total_display(self, obj):
+        val = f"\u20b1{obj.total:.2f}" if obj.total is not None else "\u20b10.00"
         return format_html(
-            '<span style="font-family: var(--stora-font-mono); font-weight: 700; color: #4ade80;">₱{:.2f}</span>',
-            obj.total,
+            '<span style="font-family: var(--stora-font-mono); font-weight: 700; color: #4ade80;">{}</span>',
+            val,
         )
 
     @admin.display(description="Originating Online Order")
@@ -168,11 +171,14 @@ class SaleAdmin(admin.ModelAdmin):
         if not items:
             return format_html('<span style="color: #888888; font-style: italic;">No items</span>')
         parts = [
-            f'<span style="font-weight: 700; color: #ffffff;">{it.product_name}</span> '
-            f'<span style="color: #FF6B00; font-weight: 600;">(x{it.quantity})</span>'
+            format_html(
+                '<span style="font-weight: 700; color: #ffffff;">{}</span> <span style="color: #FF6B00; font-weight: 600;">(x{})</span>',
+                it.product_name,
+                it.quantity,
+            )
             for it in items
         ]
-        return format_html(", ".join(parts))
+        return mark_safe(", ".join(parts))
 
     @admin.display(description="Total Qty")
     def total_quantity(self, obj):

@@ -142,3 +142,56 @@ class SaleAndReceiptTests(TestCase):
         sale.recalculate_total()
         self.assertEqual(sale.total, Decimal("180.00"))
 
+    def test_sale_admin_changelist_rendering(self):
+        admin_user = User.objects.create_superuser(
+            username="admin@test.com",
+            email="admin@test.com",
+            password="adminpassword123",
+            role="admin",
+        )
+        # Create a POS sale with items
+        pos_sale = Sale.objects.create(
+            owner=self.owner,
+            total=Decimal("150.75"),
+            customer_name="Walk-in Customer",
+        )
+        SaleItem.objects.create(
+            sale=pos_sale,
+            product=self.product,
+            product_name=self.product.name,
+            quantity=3,
+            unit_price=Decimal("50.25"),
+        )
+        # Create an online order sale with items
+        order = Order.objects.create(
+            owner=self.owner,
+            customer=self.customer,
+            customer_name="Maria Clara",
+            status=Order.STATUS_ACCEPTED,
+        )
+        order_sale = Sale.objects.create(
+            owner=self.owner,
+            order=order,
+            total=Decimal("99.99"),
+            channel="online_order",
+            customer_name="Maria Clara",
+        )
+        SaleItem.objects.create(
+            sale=order_sale,
+            product=self.product,
+            product_name="Special Item {Test}",
+            quantity=1,
+            unit_price=Decimal("99.99"),
+        )
+
+        self.client.force_login(admin_user)
+        response = self.client.get("/admin/sales/sale/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # Verify rendered content
+        content = response.content.decode("utf-8")
+        self.assertIn("Walk-in Customer", content)
+        self.assertIn("Maria Clara", content)
+        self.assertIn("ORD #", content)
+        self.assertIn("Special Item {Test}", content)
+
+
