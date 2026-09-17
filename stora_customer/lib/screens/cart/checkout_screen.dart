@@ -299,9 +299,18 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     final isStoreClosed = currentStore != null && !currentStore.isOpen;
 
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Checkout Order'),
-        backgroundColor: Colors.transparent,
+        title: Text(
+          'Checkout Order',
+          style: TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        backgroundColor: AppColors.background,
+        elevation: 0,
       ),
       body: SafeArea(
         child: SingleChildScrollView(
