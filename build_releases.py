@@ -12,10 +12,21 @@ def main():
 
     root_apk_dir = repo_root / "flutter-apk"
     apk_dir = repo_root / "apk"
-    cust_apk_dir = cust_dir / "flutter-apk"
-    owner_apk_dir = owner_dir / "flutter-apk"
+    cust_flutter_apk_dir = cust_dir / "flutter-apk"
+    cust_apk_dir = cust_dir / "apk"
+    owner_flutter_apk_dir = owner_dir / "flutter-apk"
+    owner_apk_dir = owner_dir / "apk"
 
-    for d in (root_apk_dir, apk_dir, cust_apk_dir, owner_apk_dir):
+    all_target_dirs = (
+        root_apk_dir,
+        apk_dir,
+        cust_flutter_apk_dir,
+        cust_apk_dir,
+        owner_flutter_apk_dir,
+        owner_apk_dir,
+    )
+
+    for d in all_target_dirs:
         d.mkdir(parents=True, exist_ok=True)
 
     print("=" * 60)
@@ -23,10 +34,9 @@ def main():
     print("=" * 60)
     print(f"Customer dir: {cust_dir}")
     print(f"Owner dir:    {owner_dir}")
-    print(f"Target dirs:  {root_apk_dir}")
-    print(f"              {apk_dir}")
-    print(f"              {cust_apk_dir}")
-    print(f"              {owner_apk_dir}")
+    print("Target dirs:")
+    for d in all_target_dirs:
+        print(f"  - {d}")
     print("=" * 60)
 
     start_time = time.time()
@@ -106,28 +116,26 @@ def main():
     print("\nCopying APKs to all destination folders...")
 
     if cust_built.exists():
-        shutil.copy2(cust_built, cust_apk_dir / "app-release.apk")
-        shutil.copy2(cust_built, cust_apk_dir / "Stora-Customer.apk")
-        shutil.copy2(cust_built, root_apk_dir / "Stora-Customer.apk")
-        shutil.copy2(cust_built, apk_dir / "Stora-Customer.apk")
-        print(f"-> Customer APK copied to:\n   - {cust_apk_dir / 'app-release.apk'}\n   - {cust_apk_dir / 'Stora-Customer.apk'}\n   - {root_apk_dir / 'Stora-Customer.apk'}\n   - {apk_dir / 'Stora-Customer.apk'}")
+        for d in (cust_flutter_apk_dir, cust_apk_dir, root_apk_dir, apk_dir):
+            shutil.copy2(cust_built, d / "Stora-Customer.apk")
+        shutil.copy2(cust_built, cust_flutter_apk_dir / "app-release.apk")
+        print("-> Customer APK copied to all target folders (apk & flutter-apk).")
     else:
         print(f"[ERROR] Customer output not found: {cust_built}")
 
     if owner_built.exists():
-        shutil.copy2(owner_built, owner_apk_dir / "app-release.apk")
-        shutil.copy2(owner_built, owner_apk_dir / "Stora.apk")
-        shutil.copy2(owner_built, root_apk_dir / "Stora.apk")
-        shutil.copy2(owner_built, apk_dir / "Stora.apk")
-        shutil.copy2(owner_built, apk_dir / "Stora-Owner.apk")
-        print(f"-> Owner APK copied to:\n   - {owner_apk_dir / 'app-release.apk'}\n   - {owner_apk_dir / 'Stora.apk'}\n   - {root_apk_dir / 'Stora.apk'}\n   - {apk_dir / 'Stora.apk'}\n   - {apk_dir / 'Stora-Owner.apk'}")
+        for d in (owner_flutter_apk_dir, owner_apk_dir, root_apk_dir, apk_dir):
+            shutil.copy2(owner_built, d / "Stora-Owner.apk")
+            shutil.copy2(owner_built, d / "Stora.apk")
+        shutil.copy2(owner_built, owner_flutter_apk_dir / "app-release.apk")
+        print("-> Owner APK copied to all target folders (apk & flutter-apk).")
     else:
         print(f"[ERROR] Owner output not found: {owner_built}")
 
     print("\n" + "=" * 60)
     print(" SUMMARY OF GENERATED APKS")
     print("=" * 60)
-    for folder in (root_apk_dir, apk_dir, cust_apk_dir, owner_apk_dir):
+    for folder in all_target_dirs:
         print(f"\nDirectory: {folder}")
         for apk in sorted(folder.glob("*.apk")):
             mb = apk.stat().st_size / (1024 * 1024)
