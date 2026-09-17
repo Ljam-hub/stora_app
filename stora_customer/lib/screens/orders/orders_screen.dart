@@ -40,7 +40,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
       {'id': 'all', 'label': 'All Orders'},
       {'id': 'pending', 'label': 'Pending'},
       {'id': 'counter_offer', 'label': 'Counter-Offers'},
-      {'id': 'accepted', 'label': 'Accepted'},
+      {'id': 'accepted', 'label': 'Accepted & Ready'},
       {'id': 'declined', 'label': 'Declined'},
     ];
 

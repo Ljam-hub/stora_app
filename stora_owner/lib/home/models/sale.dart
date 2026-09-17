@@ -29,9 +29,21 @@ class Sale {
     this.channel,
   });
 
+  int? get displayOrderId {
+    if (orderId != null) return orderId;
+    if (receiptNumber != null && receiptNumber!.startsWith('ORD-')) {
+      return int.tryParse(receiptNumber!.replaceFirst('ORD-', ''));
+    }
+    if (id.startsWith('ORD-')) {
+      return int.tryParse(id.replaceFirst('ORD-', ''));
+    }
+    return null;
+  }
+
   bool get isOnlineOrder =>
-      orderId != null ||
+      displayOrderId != null ||
       (receiptNumber != null && receiptNumber!.startsWith('ORD-')) ||
+      id.startsWith('ORD-') ||
       channel == 'online_order';
 
   String get displayCustomerName {
@@ -45,8 +57,8 @@ class Sale {
     if (receiptNumber != null && receiptNumber!.trim().isNotEmpty) {
       return receiptNumber!.trim();
     }
-    if (orderId != null) {
-      return 'ORD-$orderId';
+    if (displayOrderId != null) {
+      return 'ORD-$displayOrderId';
     }
     if (id.startsWith('local-')) {
       final suffix = id.replaceFirst('local-', '');
@@ -151,10 +163,20 @@ class Sale {
     final rawCustomerName = json['customer_name']?.toString();
     final rawReceiptNumber = json['receipt_number']?.toString();
     final rawOrderId = json['order_id'] ?? json['order'];
-    final int? orderId = (rawOrderId is num)
+    int? orderId = (rawOrderId is num)
         ? rawOrderId.toInt()
-        : (rawOrderId != null ? int.tryParse(rawOrderId.toString()) : null);
+        : (rawOrderId is Map && rawOrderId['id'] is num)
+            ? (rawOrderId['id'] as num).toInt()
+            : (rawOrderId != null ? int.tryParse(rawOrderId.toString()) : null);
+    if (orderId == null && rawReceiptNumber != null && rawReceiptNumber.startsWith('ORD-')) {
+      orderId = int.tryParse(rawReceiptNumber.replaceFirst('ORD-', ''));
+    }
     final rawChannel = json['channel']?.toString();
+    final effectiveChannel = (rawChannel == 'online_order' ||
+            (rawReceiptNumber != null && rawReceiptNumber.startsWith('ORD-')) ||
+            orderId != null)
+        ? 'online_order'
+        : (rawChannel ?? 'in_store');
 
     return Sale(
       id: json['id']?.toString() ?? '',
@@ -166,7 +188,7 @@ class Sale {
       customerName: rawCustomerName,
       receiptNumber: rawReceiptNumber,
       orderId: orderId,
-      channel: rawChannel,
+      channel: effectiveChannel,
     );
   }
 

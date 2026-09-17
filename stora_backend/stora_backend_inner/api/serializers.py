@@ -434,13 +434,27 @@ class SaleSerializer(serializers.ModelSerializer):
         data = super().to_representation(instance)
         data["items"] = data.pop("line_items")
         data["total"] = f"{instance.total:.2f}"
-        if not data.get("receipt_number"):
-            if instance.order_id:
-                data["receipt_number"] = f"ORD-{instance.order_id}"
-            else:
+        is_online = (
+            bool(instance.order_id)
+            or (instance.receipt_number and instance.receipt_number.startswith("ORD-"))
+            or instance.channel == "online_order"
+        )
+        if is_online:
+            data["channel"] = "online_order"
+            if not data.get("receipt_number"):
+                data["receipt_number"] = f"ORD-{instance.order_id or instance.id}"
+            if not data.get("order_id") and instance.order_id:
+                data["order_id"] = instance.order_id
+            elif not data.get("order_id") and instance.receipt_number and instance.receipt_number.startswith("ORD-"):
+                try:
+                    data["order_id"] = int(instance.receipt_number.replace("ORD-", ""))
+                except (ValueError, TypeError):
+                    pass
+        else:
+            if not data.get("receipt_number"):
                 data["receipt_number"] = f"POS-{instance.id}"
         if not data.get("customer_name"):
-            data["customer_name"] = "Customer" if instance.order_id else "Walk-in Customer"
+            data["customer_name"] = "Customer" if is_online else "Walk-in Customer"
         return data
 
     def create(self, validated_data):

@@ -31,6 +31,8 @@ class Sale(models.Model):
 
     def save(self, *args, **kwargs):
         is_new = self.pk is None
+        if (self.order_id or (self.receipt_number and self.receipt_number.startswith("ORD-"))) and self.channel != "online_order":
+            self.channel = "online_order"
         super().save(*args, **kwargs)
         if is_new and not self.receipt_number:
             if self.order_id:

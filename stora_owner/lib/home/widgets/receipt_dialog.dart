@@ -102,12 +102,13 @@ class _ReceiptDialogState extends State<ReceiptDialog> {
                         Text(formattedDate, style: const TextStyle(color: Colors.black54, fontSize: 11)),
                       ],
                     ),
-                    if (sale.orderId != null) ...[
+                    if (sale.isOnlineOrder) ...[
                       const SizedBox(height: 3),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text('Order #: #${sale.orderId}', style: const TextStyle(color: Colors.black54, fontSize: 11)),
+                          Text('Order #: #${sale.displayOrderId ?? sale.orderId ?? sale.displayReceiptNumber.replaceFirst('ORD-', '')}',
+                              style: const TextStyle(color: Colors.black54, fontSize: 11)),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                             decoration: BoxDecoration(
@@ -132,7 +133,7 @@ class _ReceiptDialogState extends State<ReceiptDialog> {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        if (sale.orderId == null) ...[
+                        if (!sale.isOnlineOrder) ...[
                           const SizedBox(width: 8),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),

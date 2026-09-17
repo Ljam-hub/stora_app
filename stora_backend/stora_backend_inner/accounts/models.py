@@ -254,12 +254,15 @@ class PaymentProof(models.Model):
     def approve(self):
         from django.db import transaction
         with transaction.atomic():
+            proof = PaymentProof.objects.select_for_update().get(pk=self.pk)
             now = timezone.now()
+            proof.status = self.STATUS_APPROVED
+            proof.reviewed_at = now
+            proof.save(update_fields=["status", "reviewed_at"])
             self.status = self.STATUS_APPROVED
             self.reviewed_at = now
-            self.save(update_fields=["status", "reviewed_at"])
 
-            user = self.user
+            user = User.objects.select_for_update().get(pk=self.user_id)
             user.is_premium = True
             base_time = user.premium_until if (user.premium_until and user.premium_until > now) else now
             user.premium_until = base_time + timedelta(days=31)

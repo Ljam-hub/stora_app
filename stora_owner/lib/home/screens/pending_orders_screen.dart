@@ -102,7 +102,7 @@ class _PendingOrdersScreenState extends State<PendingOrdersScreen> {
 
           final allOrders = store.orders;
           final displayedOrders = _filter == 'pending'
-              ? allOrders.where((o) => o['status'] == 'pending' || o['status'] == 'counter_offer' || o['status'] == 'accepted').toList()
+              ? allOrders.where((o) => o['status'] == 'pending' || o['status'] == 'counter_offer' || o['status'] == 'accepted' || o['status'] == 'ready').toList()
               : allOrders;
 
           return RefreshIndicator(
@@ -118,7 +118,7 @@ class _PendingOrdersScreenState extends State<PendingOrdersScreen> {
                   children: [
                     _FilterChip(
                       label: 'Active / Pending',
-                      badgeCount: store.pendingCount,
+                      badgeCount: store.activeCount,
                       isSelected: _filter == 'pending',
                       onTap: () => setState(() => _filter = 'pending'),
                     ),
@@ -153,7 +153,7 @@ class _PendingOrdersScreenState extends State<PendingOrdersScreen> {
                           ),
                           const SizedBox(height: 16),
                           Text(
-                            _filter == 'pending' ? 'No pending orders' : 'No orders found',
+                            _filter == 'pending' ? 'No active orders' : 'No orders found',
                             style: TextStyle(
                               color: HomeColors.textPrimary,
                               fontSize: 16,

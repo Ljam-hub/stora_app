@@ -21,6 +21,16 @@ class SalesDao {
     }
     return saleRows.map((sale) {
       final lines = bySale[sale.id] ?? const <SaleItemRow>[];
+      int? effectiveOrderId = sale.orderId;
+      if (effectiveOrderId == null && sale.receiptNumber != null && sale.receiptNumber!.startsWith('ORD-')) {
+        effectiveOrderId = int.tryParse(sale.receiptNumber!.replaceFirst('ORD-', ''));
+      }
+      final effectiveChannel = (sale.channel == 'online_order' ||
+              (sale.receiptNumber != null && sale.receiptNumber!.startsWith('ORD-')) ||
+              effectiveOrderId != null)
+          ? 'online_order'
+          : (sale.channel ?? 'in_store');
+
       return Sale(
         id: sale.id,
         date: sale.date,
@@ -29,8 +39,8 @@ class SalesDao {
         changeAmount: sale.changeAmount,
         customerName: sale.customerName,
         receiptNumber: sale.receiptNumber,
-        orderId: sale.orderId,
-        channel: sale.channel,
+        orderId: effectiveOrderId,
+        channel: effectiveChannel,
         items: lines
             .map(
               (line) => CartItem(

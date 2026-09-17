@@ -45,10 +45,19 @@ class Product {
         ? rawPrice.toDouble()
         : (double.tryParse(rawPrice?.toString() ?? '0') ?? 0.0);
 
+    final rawCatName = json['category_name']?.toString();
+    final rawCat = json['category'];
+    String category = '';
+    if (rawCatName != null && rawCatName.trim().isNotEmpty && int.tryParse(rawCatName.trim()) == null) {
+      category = rawCatName.trim();
+    } else if (rawCat is String && rawCat.trim().isNotEmpty && int.tryParse(rawCat.trim()) == null) {
+      category = rawCat.trim();
+    }
+
     return Product(
       id: json['id']?.toString() ?? '',
       name: json['name']?.toString() ?? '',
-      category: (json['category_name'] ?? json['category'])?.toString() ?? '',
+      category: category,
       price: parsedPrice,
       stock: parsedStock,
       barcode: json['barcode']?.toString(),
