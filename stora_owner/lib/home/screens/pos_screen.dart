@@ -158,17 +158,16 @@ class _PosScreenState extends State<PosScreen> {
       return;
     }
 
-    setState(() => _isCheckingOut = true);
     final total = cart.total;
     final paymentResult = await CashPaymentDialog.show(
       context,
       totalAmount: total,
     );
     if (paymentResult == null) {
-      if (mounted) setState(() => _isCheckingOut = false);
       return;
     }
 
+    setState(() => _isCheckingOut = true);
     final items = List<CartItem>.from(cart.items);
     Sale? recordedSale;
     try {

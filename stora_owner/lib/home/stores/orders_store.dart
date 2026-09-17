@@ -92,36 +92,74 @@ class OrdersStore extends ChangeNotifier {
   Future<void> acceptOrder(int orderId) async {
     if (_processingOrderIds.contains(orderId)) return;
     _processingOrderIds.add(orderId);
+    notifyListeners();
     try {
-      await ApiClient.instance.acceptOrder(orderId);
-      // Reload products & sales to sync decremented stock & new sale record
-      await InventoryStore.instance.loadProducts();
-      await SalesStore.instance.loadSales();
-      await fetchOrders();
+      final response = await ApiClient.instance.acceptOrder(orderId);
+      final updatedOrder = (response['order'] as Map<String, dynamic>?) ?? response;
+      final idx = _orders.indexWhere((o) => _parseOrderId(o['id']) == orderId);
+      if (idx != -1) {
+        _orders[idx] = Map<String, dynamic>.from(_orders[idx])
+          ..addAll(updatedOrder)
+          ..['status'] = 'accepted';
+      }
+      _processingOrderIds.remove(orderId);
+      notifyListeners();
+
+      // Parallel non-blocking background sync
+      unawaited(Future.wait([
+        InventoryStore.instance.loadProducts(),
+        SalesStore.instance.loadSales(),
+        fetchOrders(isSilent: true),
+      ]));
     } finally {
       _processingOrderIds.remove(orderId);
+      notifyListeners();
     }
   }
 
   Future<void> markOrderReady(int orderId) async {
     if (_processingOrderIds.contains(orderId)) return;
     _processingOrderIds.add(orderId);
+    notifyListeners();
     try {
-      await ApiClient.instance.markOrderReady(orderId);
-      await fetchOrders();
+      final response = await ApiClient.instance.markOrderReady(orderId);
+      final updatedOrder = (response['order'] as Map<String, dynamic>?) ?? response;
+      final idx = _orders.indexWhere((o) => _parseOrderId(o['id']) == orderId);
+      if (idx != -1) {
+        _orders[idx] = Map<String, dynamic>.from(_orders[idx])
+          ..addAll(updatedOrder)
+          ..['status'] = 'ready';
+      }
+      _processingOrderIds.remove(orderId);
+      notifyListeners();
+
+      unawaited(fetchOrders(isSilent: true));
     } finally {
       _processingOrderIds.remove(orderId);
+      notifyListeners();
     }
   }
 
   Future<void> declineOrder(int orderId, {String reason = ''}) async {
     if (_processingOrderIds.contains(orderId)) return;
     _processingOrderIds.add(orderId);
+    notifyListeners();
     try {
-      await ApiClient.instance.declineOrder(orderId, reason: reason);
-      await fetchOrders();
+      final response = await ApiClient.instance.declineOrder(orderId, reason: reason);
+      final updatedOrder = (response['order'] as Map<String, dynamic>?) ?? response;
+      final idx = _orders.indexWhere((o) => _parseOrderId(o['id']) == orderId);
+      if (idx != -1) {
+        _orders[idx] = Map<String, dynamic>.from(_orders[idx])
+          ..addAll(updatedOrder)
+          ..['status'] = 'declined';
+      }
+      _processingOrderIds.remove(orderId);
+      notifyListeners();
+
+      unawaited(fetchOrders(isSilent: true));
     } finally {
       _processingOrderIds.remove(orderId);
+      notifyListeners();
     }
   }
 
@@ -132,15 +170,27 @@ class OrdersStore extends ChangeNotifier {
   }) async {
     if (_processingOrderIds.contains(orderId)) return;
     _processingOrderIds.add(orderId);
+    notifyListeners();
     try {
-      await ApiClient.instance.counterOrder(
+      final response = await ApiClient.instance.counterOrder(
         orderId,
         notes: notes,
         counterPrice: counterPrice,
       );
-      await fetchOrders();
+      final updatedOrder = (response['order'] as Map<String, dynamic>?) ?? response;
+      final idx = _orders.indexWhere((o) => _parseOrderId(o['id']) == orderId);
+      if (idx != -1) {
+        _orders[idx] = Map<String, dynamic>.from(_orders[idx])
+          ..addAll(updatedOrder)
+          ..['status'] = 'counter_offer';
+      }
+      _processingOrderIds.remove(orderId);
+      notifyListeners();
+
+      unawaited(fetchOrders(isSilent: true));
     } finally {
       _processingOrderIds.remove(orderId);
+      notifyListeners();
     }
   }
 

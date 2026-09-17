@@ -62,6 +62,15 @@ class SalesHistoryScreen extends StatefulWidget {
 class _SalesHistoryScreenState extends State<SalesHistoryScreen> {
   String _selectedFilterKey = 'all'; // 'all', 'today', 'month_YYYY_MM'
 
+  @override
+  void initState() {
+    super.initState();
+    // Automatically load latest sales when opening history so walk-ins & online orders appear immediately
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      SalesStore.instance.loadSales();
+    });
+  }
+
   List<DateTime> _getAvailableMonths(List<Sale> allSales) {
     final nowManila = toManila(DateTime.now());
     final currentMonth = DateTime(nowManila.year, nowManila.month);

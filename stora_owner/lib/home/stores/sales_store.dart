@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 
@@ -87,7 +88,10 @@ class SalesStore extends ChangeNotifier {
       );
       _sales.add(withCashDetails);
       await _db.salesDao.upsertSale(withCashDetails);
-      await InventoryStore.instance.loadProducts();
+      for (final item in items) {
+        InventoryStore.instance.decrementStockLocally(item.product.id, item.quantity);
+      }
+      unawaited(InventoryStore.instance.loadProducts());
       sale = withCashDetails;
     } on ApiException catch (e) {
       if (e.statusCode != null && e.statusCode! < 500) {

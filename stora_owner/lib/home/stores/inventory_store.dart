@@ -28,6 +28,27 @@ class InventoryStore extends ChangeNotifier {
 
   List<Product> get lowStock => _products.where((p) => p.stock < 5).toList();
 
+  void decrementStockLocally(String productId, int quantity) {
+    final idx = _products.indexWhere((p) => p.id == productId);
+    if (idx != -1) {
+      final p = _products[idx];
+      final newStock = (p.stock - quantity).clamp(0, kMaxStock);
+      final updated = Product(
+        id: p.id,
+        name: p.name,
+        category: p.category,
+        price: p.price,
+        stock: newStock,
+        barcode: p.barcode,
+        imageBytes: p.imageBytes,
+        bio: p.bio,
+      );
+      _products[idx] = updated;
+      _db.productDao.upsertProduct(updated);
+      notifyListeners();
+    }
+  }
+
   Future<void> loadProducts() async {
     _loading = true;
     _error = null;

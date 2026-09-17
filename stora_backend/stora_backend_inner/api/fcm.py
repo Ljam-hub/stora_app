@@ -130,11 +130,19 @@ def send_push_notification(fcm_token: str, title: str, body: str, data: dict = N
                 token=fcm_token,
                 android=android_config,
             )
-            response = messaging.send(message)
-            logger.info("Successfully sent FCM message: %s", response)
+
+            def _dispatch_fcm_async():
+                try:
+                    response = messaging.send(message)
+                    logger.info("Successfully sent FCM message: %s", response)
+                except Exception as exc:
+                    logger.warning("Firebase Admin failed to send notification to token [%s...]: %s", fcm_token[:10], exc)
+
+            import threading
+            threading.Thread(target=_dispatch_fcm_async, daemon=True).start()
             return True
         except Exception as exc:
-            logger.warning("Firebase Admin failed to send notification to token [%s...]: %s", fcm_token[:10], exc)
+            logger.warning("Firebase Admin failed to prepare notification to token [%s...]: %s", fcm_token[:10], exc)
             return False
 
     # Graceful fallback: simulated push notification in development/testing
