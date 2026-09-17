@@ -199,7 +199,6 @@ class _MainShellState extends State<MainShell> {
 
   @override
   Widget build(BuildContext context) {
-    final themeCtrl = context.watch<CustomerThemeController>();
     final cart = context.watch<CartProvider>();
     final chat = context.watch<ChatProvider>();
     final orderProvider = context.watch<OrderProvider>();
@@ -233,7 +232,6 @@ class _MainShellState extends State<MainShell> {
 
     return Scaffold(
       body: IndexedStack(
-        key: ValueKey(themeCtrl.isDarkMode),
         index: _currentIndex,
         children: screens,
       ),

@@ -242,6 +242,7 @@ class InventoryStore extends ChangeNotifier {
     final idx = _products.indexWhere((p) => p.id == id);
     if (idx != -1) {
       _products[idx].stock = (_products[idx].stock + delta).clamp(0, kMaxStock);
+      await _db.productDao.upsertProduct(_products[idx]);
       notifyListeners();
     }
 
@@ -255,13 +256,16 @@ class InventoryStore extends ChangeNotifier {
           notifyListeners();
         }
         await _db.productDao.upsertProduct(updated);
-      } else {
-        if (currentIdx != -1) {
-          await _db.productDao.upsertProduct(_products[currentIdx]);
-        }
       }
     } catch (_) {
-      await loadProducts();
+      if (idx != -1) {
+        await _db.syncDao.enqueueSync(
+          entityType: 'product',
+          action: 'update',
+          entityId: id,
+          payload: jsonEncode(_products[idx].toJson()),
+        );
+      }
     }
   }
 

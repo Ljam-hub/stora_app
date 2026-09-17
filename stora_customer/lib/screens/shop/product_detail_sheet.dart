@@ -287,27 +287,7 @@ class _ProductDetailSheetState extends State<ProductDetailSheet> {
                                 if (_isActionInProgress) return;
                                 setState(() => _isActionInProgress = true);
                                 final added = cart.addItem(product, _quantity);
-                                if (!added && cart.isNotEmpty && cart.storeId != product.ownerId) {
-                                  setState(() => _isActionInProgress = false);
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        'Your cart contains items from another store. Clear cart first?',
-                                        style: TextStyle(color: AppColors.textPrimary),
-                                      ),
-                                      backgroundColor: AppColors.cardElevated,
-                                      action: SnackBarAction(
-                                        label: 'Clear & Add',
-                                        textColor: AppColors.accentText,
-                                        onPressed: () {
-                                          cart.clear();
-                                          cart.addItem(product, _quantity);
-                                          Navigator.pop(context);
-                                        },
-                                      ),
-                                    ),
-                                  );
-                                } else {
+                                if (added) {
                                   Navigator.pop(context);
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
@@ -334,6 +314,34 @@ class _ProductDetailSheetState extends State<ProductDetailSheet> {
                                         side: BorderSide(color: AppColors.secondary.withValues(alpha: 0.4)),
                                       ),
                                       duration: const Duration(seconds: 2),
+                                    ),
+                                  );
+                                } else if (cart.isNotEmpty && cart.storeId != product.ownerId) {
+                                  setState(() => _isActionInProgress = false);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        'Your cart contains items from another store. Clear cart first?',
+                                        style: TextStyle(color: AppColors.textPrimary),
+                                      ),
+                                      backgroundColor: AppColors.cardElevated,
+                                      action: SnackBarAction(
+                                        label: 'Clear & Add',
+                                        textColor: AppColors.accentText,
+                                        onPressed: () {
+                                          cart.clear();
+                                          cart.addItem(product, _quantity);
+                                          Navigator.pop(context);
+                                        },
+                                      ),
+                                    ),
+                                  );
+                                } else {
+                                  setState(() => _isActionInProgress = false);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Failed to add item to cart.'),
+                                      backgroundColor: AppColors.danger,
                                     ),
                                   );
                                 }

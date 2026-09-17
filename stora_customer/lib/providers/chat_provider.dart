@@ -74,7 +74,7 @@ class ChatProvider extends ChangeNotifier {
       if (a[i]['id'] != b[i]['id'] ||
           a[i]['unread_count'] != b[i]['unread_count'] ||
           a[i]['last_message'] != b[i]['last_message'] ||
-          a[i]['timestamp'] != b[i]['timestamp']) {
+          (a[i]['last_message_at'] ?? a[i]['timestamp']) != (b[i]['last_message_at'] ?? b[i]['timestamp'])) {
         return false;
       }
     }

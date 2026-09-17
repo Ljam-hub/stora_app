@@ -862,13 +862,16 @@ class ProductViewSet(OwnerQuerysetMixin, viewsets.ModelViewSet):
 
     @action(detail=True, methods=["patch"])
     def adjust_stock(self, request, pk=None):
-        product = self.get_object()
         try:
             delta = int(request.data.get("delta", 0))
         except (TypeError, ValueError):
             return Response({"detail": "delta must be an integer."}, status=400)
-        product.stock = max(0, min(MAX_STOCK, product.stock + delta))
-        product.save(update_fields=["stock", "updated_at"])
+            
+        with transaction.atomic():
+            product = Product.objects.select_for_update().get(pk=self.get_object().pk)
+            product.stock = max(0, min(MAX_STOCK, product.stock + delta))
+            product.save(update_fields=["stock", "updated_at"])
+            
         return Response(self.get_serializer(product).data)
 
 
@@ -886,12 +889,18 @@ class SaleViewSet(OwnerQuerysetMixin, viewsets.ModelViewSet):
 
     def perform_destroy(self, instance):
         with transaction.atomic():
-            for item in instance.items.select_related("product"):
-                product = item.product
-                if product is None or product.owner_id != instance.owner_id:
-                    continue
-                product.stock = min(MAX_STOCK, product.stock + item.quantity)
-                product.save(update_fields=["stock", "updated_at"])
+            product_quantities = {}
+            for item in instance.items.all():
+                if item.product_id:
+                    product_quantities[item.product_id] = product_quantities.get(item.product_id, 0) + item.quantity
+            
+            for pid, qty in product_quantities.items():
+                try:
+                    product = Product.objects.select_for_update().get(pk=pid, owner_id=instance.owner_id)
+                    product.stock = min(MAX_STOCK, product.stock + qty)
+                    product.save(update_fields=["stock", "updated_at"])
+                except Product.DoesNotExist:
+                    pass
             instance.delete()
 
 
@@ -908,6 +917,7 @@ def update_fcm_token(request):
 class OrderViewSet(viewsets.ModelViewSet):
     serializer_class = OrderSerializer
     permission_classes = [IsAuthenticated]
+    http_method_names = ['get', 'post', 'head', 'options']
 
     def get_queryset(self):
         user = self.request.user
@@ -1027,6 +1037,7 @@ def _haversine_km(lat1, lon1, lat2, lon2):
     a = (math.sin(d_lat / 2) ** 2 +
          math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) *
          math.sin(d_lon / 2) ** 2)
+    a = min(1.0, max(0.0, a))
     c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
     return 6371.0 * c
 

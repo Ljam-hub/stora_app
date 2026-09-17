@@ -66,6 +66,16 @@ class ChatStore extends ChangeNotifier {
   Future<void> deleteConversation(int withUserId) async {
     await ApiClient.instance.deleteConversation(withUserId);
     _conversations.removeWhere((c) => (c['id'] ?? c['user_id']) == withUserId);
+    _messagesCache.remove(withUserId);
+    notifyListeners();
+  }
+
+  void clear() {
+    stopPolling();
+    _conversations = [];
+    _messagesCache.clear();
+    _isLoading = false;
+    _error = null;
     notifyListeners();
   }
 }

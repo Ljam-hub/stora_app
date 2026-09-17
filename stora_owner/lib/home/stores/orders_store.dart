@@ -102,8 +102,6 @@ class OrdersStore extends ChangeNotifier {
           ..addAll(updatedOrder)
           ..['status'] = 'accepted';
       }
-      _processingOrderIds.remove(orderId);
-      notifyListeners();
 
       // Parallel non-blocking background sync
       unawaited(Future.wait([
@@ -130,8 +128,6 @@ class OrdersStore extends ChangeNotifier {
           ..addAll(updatedOrder)
           ..['status'] = 'ready';
       }
-      _processingOrderIds.remove(orderId);
-      notifyListeners();
 
       unawaited(fetchOrders(isSilent: true));
     } finally {
@@ -153,8 +149,6 @@ class OrdersStore extends ChangeNotifier {
           ..addAll(updatedOrder)
           ..['status'] = 'declined';
       }
-      _processingOrderIds.remove(orderId);
-      notifyListeners();
 
       unawaited(fetchOrders(isSilent: true));
     } finally {
@@ -184,8 +178,6 @@ class OrdersStore extends ChangeNotifier {
           ..addAll(updatedOrder)
           ..['status'] = 'counter_offer';
       }
-      _processingOrderIds.remove(orderId);
-      notifyListeners();
 
       unawaited(fetchOrders(isSilent: true));
     } finally {

@@ -146,6 +146,8 @@ class SalesStore extends ChangeNotifier {
     }
     final payload = jsonEncode({
       'customer_name': customerName ?? 'Walk-in Customer',
+      'cash_tendered': cashTendered,
+      'change_amount': changeAmount,
       'items': items
           .map(
             (item) => {

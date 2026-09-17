@@ -36,9 +36,10 @@ class CartProvider extends ChangeNotifier {
 
   bool addItem(ProductModel product, [int quantity = 1]) {
     if (product.stock <= 0 || quantity <= 0) return false;
+    if (product.ownerId == null) return false;
 
     // Check if adding from different store
-    if (_items.isNotEmpty && product.ownerId != null) {
+    if (_items.isNotEmpty) {
       final currentStore = storeId;
       if (currentStore != null && currentStore != product.ownerId) {
         // Will need user confirmation if from another store

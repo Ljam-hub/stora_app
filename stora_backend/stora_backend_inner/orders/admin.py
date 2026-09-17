@@ -131,12 +131,16 @@ class OrderAdmin(admin.ModelAdmin):
     @admin.action(description="✓ Accept selected orders (deduct stock & create sales)")
     def accept_orders(self, request, queryset):
         from api.fcm import notify_order_status_change
+        from django.contrib import messages
         accepted_count = 0
         for order in queryset:
             if order.status in (Order.STATUS_PENDING, Order.STATUS_COUNTER_OFFER):
-                order.accept()
-                notify_order_status_change(order, "accepted")
-                accepted_count += 1
+                try:
+                    order.accept()
+                    notify_order_status_change(order, "accepted")
+                    accepted_count += 1
+                except ValueError as e:
+                    self.message_user(request, f"Failed to accept Order #{order.id}: {str(e)}", level=messages.ERROR)
         self.message_user(
             request, f"Successfully accepted {accepted_count} order(s)."
         )

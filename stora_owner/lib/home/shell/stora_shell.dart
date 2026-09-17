@@ -228,18 +228,25 @@ class _StoraShellState extends State<StoraShell> {
         ThemeModeController.instance,
       ]),
       builder: (context, _) {
-        return Scaffold(
-          backgroundColor: HomeColors.background,
-          body: IndexedStack(
-            key: ValueKey(ThemeModeController.instance.isDarkMode),
-            index: _index,
-            children: _buildScreens(),
-          ),
-          bottomNavigationBar: _StoraNavBar(
-            currentIndex: _index,
-            onTap: (i) => setState(() => _index = i),
-            chatUnreadCount: ChatStore.instance.totalUnreadCount,
-            alertsCount: InventoryStore.instance.lowStock.length,
+        return PopScope(
+          canPop: _index == 0,
+          onPopInvokedWithResult: (didPop, _) {
+            if (!didPop) {
+              setState(() => _index = 0);
+            }
+          },
+          child: Scaffold(
+            backgroundColor: HomeColors.background,
+            body: IndexedStack(
+              index: _index,
+              children: _buildScreens(),
+            ),
+            bottomNavigationBar: _StoraNavBar(
+              currentIndex: _index,
+              onTap: (i) => setState(() => _index = i),
+              chatUnreadCount: ChatStore.instance.totalUnreadCount,
+              alertsCount: InventoryStore.instance.lowStock.length,
+            ),
           ),
         );
       },

@@ -585,9 +585,9 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         return token
 
     def validate(self, attrs):
+        data = super().validate(attrs)
         if getattr(self.user, "is_blocked", False) or not self.user.is_active:
             raise serializers.ValidationError("Your account has been suspended or blocked. Please contact support.")
-        data = super().validate(attrs)
         data["user"] = {
             "id": self.user.id,
             "email": self.user.email,
@@ -692,7 +692,7 @@ class OrderSerializer(serializers.ModelSerializer):
         return f"ORD-{obj.id}"
 
     def get_total_amount(self, obj):
-        if obj.status in (Order.STATUS_ACCEPTED, Order.STATUS_READY) and obj.counter_price is not None and obj.counter_price > 0:
+        if obj.status in (Order.STATUS_ACCEPTED, Order.STATUS_READY, Order.STATUS_COUNTER_OFFER) and obj.counter_price is not None and obj.counter_price > 0:
             return f"{obj.counter_price:.2f}"
         return f"{obj.total_amount():.2f}"
 
@@ -771,6 +771,10 @@ class OrderSerializer(serializers.ModelSerializer):
             items = attrs.get("items_data", [])
             if not items:
                 raise serializers.ValidationError({"items_data": "Order must contain at least one item."})
+            owner = attrs.get("owner")
+            for item in items:
+                if item["product"].owner_id != owner.id:
+                    raise serializers.ValidationError({"items_data": "All products must belong to the store owner."})
         return super().validate(attrs)
 
     def create(self, validated_data):
@@ -780,6 +784,8 @@ class OrderSerializer(serializers.ModelSerializer):
         with transaction.atomic():
             order = Order.objects.create(customer=customer, **validated_data)
             for item_data in items_data:
+                product = item_data["product"]
+                item_data["unit_price"] = product.price
                 OrderItem.objects.create(order=order, **item_data)
         return order
 
@@ -790,7 +796,7 @@ class OrderDeclineSerializer(serializers.Serializer):
 
 class OrderCounterSerializer(serializers.Serializer):
     notes = serializers.CharField(required=True)
-    counter_price = serializers.DecimalField(max_digits=10, decimal_places=2, required=False, allow_null=True)
+    counter_price = serializers.DecimalField(max_digits=10, decimal_places=2, required=False, allow_null=True, min_value=Decimal('0.01'))
 
 
 class FCMTokenSerializer(serializers.Serializer):

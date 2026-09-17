@@ -80,55 +80,55 @@ class Order(models.Model):
         """Mark as accepted and decrement product stock for each line item.
         Validates stock availability and performs updates atomically.
         """
-        if self.status != self.STATUS_PENDING and self.status != self.STATUS_COUNTER_OFFER:
-            return None
-
         with transaction.atomic():
-            items = list(self.items.select_related("product").all())
-            locked_products = {}
+            order = Order.objects.select_for_update().get(pk=self.pk)
+            if order.status != self.STATUS_PENDING and order.status != self.STATUS_COUNTER_OFFER:
+                return None
+
+            items = list(order.items.select_related("product").all())
+            
+            product_quantities = {}
             for item in items:
                 if item.product_id:
-                    if item.product_id not in locked_products:
-                        try:
-                            product = Product.objects.select_for_update().get(pk=item.product_id)
-                            locked_products[item.product_id] = product
-                        except Product.DoesNotExist:
-                            raise ValueError(
-                                f"Product '{item.product_name}' is no longer available in inventory."
-                            )
-                    else:
-                        product = locked_products[item.product_id]
+                    product_quantities[item.product_id] = product_quantities.get(item.product_id, 0) + item.quantity
+            
+            locked_products = {}
+            for pid, total_qty in product_quantities.items():
+                try:
+                    product = Product.objects.select_for_update().get(pk=pid)
+                    locked_products[pid] = product
+                except Product.DoesNotExist:
+                    raise ValueError(f"Product ID {pid} is no longer available in inventory.")
+                
+                if product.stock < total_qty:
+                    raise ValueError(
+                        f"Insufficient stock for '{product.name}'. Available: {product.stock}, requested: {total_qty}."
+                    )
 
-                    if product.stock < item.quantity:
-                        raise ValueError(
-                            f"Insufficient stock for '{item.product_name}'. Available: {product.stock}, requested: {item.quantity}."
-                        )
-
+            order.status = self.STATUS_ACCEPTED
+            order.save(update_fields=["status"])
             self.status = self.STATUS_ACCEPTED
-            self.save(update_fields=["status"])
 
-            for item in items:
-                if item.product_id and item.product_id in locked_products:
-                    product = locked_products[item.product_id]
-                    product.stock -= item.quantity
-                    product.save(update_fields=["stock", "updated_at"])
+            for pid, product in locked_products.items():
+                product.stock -= product_quantities[pid]
+                product.save(update_fields=["stock", "updated_at"])
 
-            total = self.counter_price if (self.counter_price is not None and self.counter_price > 0) else self.total_amount()
-            cust_name = (self.customer_name or "").strip()
-            if not cust_name and self.customer:
-                if hasattr(self.customer, "get_display_name"):
-                    cust_name = self.customer.get_display_name()
+            total = order.counter_price if (order.counter_price is not None and order.counter_price > 0) else order.total_amount()
+            cust_name = (order.customer_name or "").strip()
+            if not cust_name and order.customer:
+                if hasattr(order.customer, "get_display_name"):
+                    cust_name = order.customer.get_display_name()
                 else:
-                    cust_name = f"{self.customer.first_name} {self.customer.last_name}".strip() or getattr(self.customer, "business_name", "")
+                    cust_name = f"{order.customer.first_name} {order.customer.last_name}".strip() or getattr(order.customer, "business_name", "")
             if not cust_name:
                 cust_name = "Customer"
 
             sale = Sale.objects.create(
-                owner=self.owner,
+                owner=order.owner,
                 total=total,
-                order=self,
+                order=order,
                 customer_name=cust_name,
-                receipt_number=f"ORD-{self.id}",
+                receipt_number=f"ORD-{order.id}",
                 channel="online_order",
             )
             for item in items:

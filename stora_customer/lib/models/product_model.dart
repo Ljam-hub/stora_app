@@ -55,7 +55,10 @@ class ProductModel {
       id: parseId(json['id']) ?? 0,
       name: json['name']?.toString() ?? '',
       categoryId: parseId(json['category']),
-      categoryName: (json['category_name'] ?? json['category'])?.toString() ?? '',
+      categoryName: json['category_name']?.toString() ??
+          (json['category'] is String && int.tryParse(json['category'].toString()) == null
+              ? json['category'].toString()
+              : ''),
       price: parsedPrice,
       stock: parsedStock,
       barcode: json['barcode']?.toString(),

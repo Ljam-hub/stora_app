@@ -46,6 +46,7 @@ class ProductDao {
       stock: Value(item.stock),
       barcode: Value(item.barcode),
       imageBytes: Value(item.imageBytes),
+      bio: Value(item.bio),
     );
   }
 
@@ -58,6 +59,7 @@ class ProductDao {
       stock: row.stock,
       barcode: row.barcode,
       imageBytes: row.imageBytes,
+      bio: row.bio,
     );
   }
 }

@@ -296,12 +296,25 @@ class AuthProvider extends ChangeNotifier {
     } catch (_) {}
     _token = null;
     _currentUser = null;
+    _savedPhone = null;
+    _savedAddress = null;
     CustomerApiService.instance.accessToken = null;
     notifyListeners();
   }
 
   Future<void> deleteAccount() async {
-    await CustomerApiService.instance.deleteAccount();
-    await logout();
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+    try {
+      await CustomerApiService.instance.deleteAccount();
+      await logout();
+    } catch (e) {
+      _errorMessage = e.toString();
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 }

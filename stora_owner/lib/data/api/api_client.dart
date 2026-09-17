@@ -283,23 +283,42 @@ class ApiClient {
   }
 
   Future<Map<String, dynamic>> uploadAvatar(Uint8List imageBytes, String filename) async {
+    final uri = _uri('/auth/me/');
     final token = await AppDatabase.instance.authDao.readAccessToken();
-    final request = http.MultipartRequest('PATCH', _uri('/auth/me/'));
-    if (token != null && token.isNotEmpty) {
-      request.headers['Authorization'] = 'Bearer $token';
+
+    http.MultipartRequest buildRequest(String? bearerToken) {
+      final req = http.MultipartRequest('PATCH', uri);
+      if (bearerToken != null && bearerToken.isNotEmpty) {
+        req.headers['Authorization'] = 'Bearer $bearerToken';
+      }
+      req.headers['Accept'] = 'application/json';
+      req.files.add(
+        http.MultipartFile.fromBytes(
+          'avatar',
+          imageBytes,
+          filename: filename,
+        ),
+      );
+      return req;
     }
-    request.headers['Accept'] = 'application/json';
-    request.files.add(
-      http.MultipartFile.fromBytes(
-        'avatar',
-        imageBytes,
-        filename: filename,
-      ),
-    );
-    final streamedResponse = await request.send();
-    final response = await http.Response.fromStream(streamedResponse);
-    if (response.statusCode != 200) _throw(response);
-    return jsonDecode(response.body) as Map<String, dynamic>;
+
+    try {
+      var streamedResponse = await buildRequest(token).send().timeout(const Duration(seconds: 25));
+      var response = await http.Response.fromStream(streamedResponse);
+      if (response.statusCode == 401 && await _refreshAccessToken()) {
+        final newToken = await AppDatabase.instance.authDao.readAccessToken();
+        streamedResponse = await buildRequest(newToken).send().timeout(const Duration(seconds: 25));
+        response = await http.Response.fromStream(streamedResponse);
+      }
+      if (response.statusCode != 200) _throw(response);
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    } on TimeoutException {
+      throw ApiException('Server timed out. Is stora_backend running at ${ApiConfig.baseUrl}?');
+    } on SocketException {
+      throw ApiException('Could not reach the server at ${ApiConfig.baseUrl}');
+    } on http.ClientException {
+      throw ApiException('Could not reach the server at ${ApiConfig.baseUrl}');
+    }
   }
 
   Future<Map<String, dynamic>> removeAvatar() async {

@@ -5,6 +5,11 @@ import '../data/api/api_client.dart';
 import '../data/db/stora_database.dart';
 import '../data/services/notification_service.dart';
 import '../home/stores/orders_store.dart';
+import '../home/stores/inventory_store.dart';
+import '../home/stores/sales_store.dart';
+import '../home/stores/cart_store.dart';
+import '../home/stores/category_store.dart';
+import '../home/stores/chat_store.dart';
 
 class AuthStore extends ChangeNotifier {
   AuthStore._();
@@ -153,7 +158,20 @@ class AuthStore extends ChangeNotifier {
       await ApiClient.instance.clearFcmToken();
     } catch (_) {}
     OrdersStore.instance.clear();
-    await AppDatabase.instance.authDao.clearSession();
+    InventoryStore.instance.reset();
+    SalesStore.instance.reset();
+    CartStore.instance.clear();
+    CategoryStore.instance.reset();
+    ChatStore.instance.clear();
+
+    final db = AppDatabase.instance;
+    await db.delete(db.products).go();
+    await db.delete(db.categories).go();
+    await db.delete(db.sales).go();
+    await db.delete(db.saleItems).go();
+    await db.delete(db.syncQueueEntries).go();
+
+    await db.authDao.clearSession();
     email = null;
     businessName = null;
     avatarUrl = null;

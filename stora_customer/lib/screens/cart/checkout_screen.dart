@@ -128,14 +128,26 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     final catalog = context.read<CatalogProvider>();
     var store = catalog.stores.where((s) => s.id == storeOwnerId).firstOrNull ??
         (catalog.selectedStore?.id == storeOwnerId ? catalog.selectedStore : null);
-    if (store == null && catalog.stores.isEmpty) {
+    if (store == null) {
       try {
         await catalog.fetchStores();
         store = catalog.stores.where((s) => s.id == storeOwnerId).firstOrNull ??
             (catalog.selectedStore?.id == storeOwnerId ? catalog.selectedStore : null);
       } catch (_) {}
     }
-    if (store != null && !store.isOpen) {
+    if (store == null) {
+      setState(() => _isSubmitting = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Cannot place order: Store information could not be retrieved.'),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+      }
+      return;
+    }
+    if (!store.isOpen) {
       setState(() => _isSubmitting = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

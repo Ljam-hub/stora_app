@@ -25,6 +25,12 @@ class SalesDao {
         id: sale.id,
         date: sale.date,
         total: sale.total,
+        cashTendered: sale.cashTendered,
+        changeAmount: sale.changeAmount,
+        customerName: sale.customerName,
+        receiptNumber: sale.receiptNumber,
+        orderId: sale.orderId,
+        channel: sale.channel,
         items: lines
             .map(
               (line) => CartItem(
@@ -84,6 +90,12 @@ class SalesDao {
         id: Value(sale.id),
         date: Value(sale.date),
         total: Value(sale.total),
+        cashTendered: Value(sale.cashTendered),
+        changeAmount: Value(sale.changeAmount),
+        customerName: Value(sale.customerName),
+        receiptNumber: Value(sale.receiptNumber),
+        orderId: Value(sale.orderId),
+        channel: Value(sale.channel),
       ),
     );
     for (final item in sale.items) {

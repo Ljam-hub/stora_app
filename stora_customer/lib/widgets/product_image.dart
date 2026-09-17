@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 
+import '../config/api_config.dart';
+
 /// Shared widget for displaying product images from base64, URL, or a
 /// category-adaptive fallback icon. Replaces duplicated image-decoding
 /// logic formerly in ProductCard, CartItemTile, and ProductDetailSheet.
@@ -37,21 +39,30 @@ class ProductImage extends StatelessWidget {
   Widget _buildImage() {
     if (imageData != null && imageData!.isNotEmpty) {
       try {
-        if (imageData!.startsWith('data:image') || imageData!.length > 100) {
+        if (imageData!.startsWith('http')) {
+          return Image.network(
+            imageData!,
+            width: width,
+            height: height,
+            fit: fit,
+            errorBuilder: (context, error, stackTrace) => _buildFallback(),
+          );
+        } else if (imageData!.startsWith('/media/')) {
+          final host = ApiConfig.baseUrl.replaceAll(RegExp(r'/api/?$'), '');
+          return Image.network(
+            '$host${imageData!}',
+            width: width,
+            height: height,
+            fit: fit,
+            errorBuilder: (context, error, stackTrace) => _buildFallback(),
+          );
+        } else if (imageData!.startsWith('data:image') || (!imageData!.contains('/') && !imageData!.contains('://'))) {
           final clean = imageData!.contains(',')
               ? imageData!.split(',').last
               : imageData!;
           final bytes = base64Decode(clean);
           return Image.memory(
             bytes,
-            width: width,
-            height: height,
-            fit: fit,
-            errorBuilder: (context, error, stackTrace) => _buildFallback(),
-          );
-        } else if (imageData!.startsWith('http')) {
-          return Image.network(
-            imageData!,
             width: width,
             height: height,
             fit: fit,

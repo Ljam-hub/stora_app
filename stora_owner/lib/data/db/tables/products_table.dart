@@ -9,6 +9,7 @@ class Products extends Table {
   IntColumn get stock => integer()();
   TextColumn get barcode => text().nullable()();
   BlobColumn get imageBytes => blob().nullable()();
+  TextColumn get bio => text().withDefault(const Constant(''))();
 
   @override
   Set<Column<Object>> get primaryKey => {id};

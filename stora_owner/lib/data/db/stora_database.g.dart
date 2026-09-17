@@ -78,6 +78,16 @@ class $ProductsTable extends Products
     type: DriftSqlType.blob,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _bioMeta = const VerificationMeta('bio');
+  @override
+  late final GeneratedColumn<String> bio = GeneratedColumn<String>(
+    'bio',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -87,6 +97,7 @@ class $ProductsTable extends Products
     stock,
     barcode,
     imageBytes,
+    bio,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -149,6 +160,12 @@ class $ProductsTable extends Products
         imageBytes.isAcceptableOrUnknown(data['image_bytes']!, _imageBytesMeta),
       );
     }
+    if (data.containsKey('bio')) {
+      context.handle(
+        _bioMeta,
+        bio.isAcceptableOrUnknown(data['bio']!, _bioMeta),
+      );
+    }
     return context;
   }
 
@@ -186,6 +203,10 @@ class $ProductsTable extends Products
         DriftSqlType.blob,
         data['${effectivePrefix}image_bytes'],
       ),
+      bio: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}bio'],
+      )!,
     );
   }
 
@@ -203,6 +224,7 @@ class ProductRow extends DataClass implements Insertable<ProductRow> {
   final int stock;
   final String? barcode;
   final Uint8List? imageBytes;
+  final String bio;
   const ProductRow({
     required this.id,
     required this.name,
@@ -211,6 +233,7 @@ class ProductRow extends DataClass implements Insertable<ProductRow> {
     required this.stock,
     this.barcode,
     this.imageBytes,
+    required this.bio,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -226,6 +249,7 @@ class ProductRow extends DataClass implements Insertable<ProductRow> {
     if (!nullToAbsent || imageBytes != null) {
       map['image_bytes'] = Variable<Uint8List>(imageBytes);
     }
+    map['bio'] = Variable<String>(bio);
     return map;
   }
 
@@ -242,6 +266,7 @@ class ProductRow extends DataClass implements Insertable<ProductRow> {
       imageBytes: imageBytes == null && nullToAbsent
           ? const Value.absent()
           : Value(imageBytes),
+      bio: Value(bio),
     );
   }
 
@@ -258,6 +283,7 @@ class ProductRow extends DataClass implements Insertable<ProductRow> {
       stock: serializer.fromJson<int>(json['stock']),
       barcode: serializer.fromJson<String?>(json['barcode']),
       imageBytes: serializer.fromJson<Uint8List?>(json['imageBytes']),
+      bio: serializer.fromJson<String>(json['bio']),
     );
   }
   @override
@@ -271,6 +297,7 @@ class ProductRow extends DataClass implements Insertable<ProductRow> {
       'stock': serializer.toJson<int>(stock),
       'barcode': serializer.toJson<String?>(barcode),
       'imageBytes': serializer.toJson<Uint8List?>(imageBytes),
+      'bio': serializer.toJson<String>(bio),
     };
   }
 
@@ -282,6 +309,7 @@ class ProductRow extends DataClass implements Insertable<ProductRow> {
     int? stock,
     Value<String?> barcode = const Value.absent(),
     Value<Uint8List?> imageBytes = const Value.absent(),
+    String? bio,
   }) => ProductRow(
     id: id ?? this.id,
     name: name ?? this.name,
@@ -290,6 +318,7 @@ class ProductRow extends DataClass implements Insertable<ProductRow> {
     stock: stock ?? this.stock,
     barcode: barcode.present ? barcode.value : this.barcode,
     imageBytes: imageBytes.present ? imageBytes.value : this.imageBytes,
+    bio: bio ?? this.bio,
   );
   ProductRow copyWithCompanion(ProductsCompanion data) {
     return ProductRow(
@@ -302,6 +331,7 @@ class ProductRow extends DataClass implements Insertable<ProductRow> {
       imageBytes: data.imageBytes.present
           ? data.imageBytes.value
           : this.imageBytes,
+      bio: data.bio.present ? data.bio.value : this.bio,
     );
   }
 
@@ -314,7 +344,8 @@ class ProductRow extends DataClass implements Insertable<ProductRow> {
           ..write('price: $price, ')
           ..write('stock: $stock, ')
           ..write('barcode: $barcode, ')
-          ..write('imageBytes: $imageBytes')
+          ..write('imageBytes: $imageBytes, ')
+          ..write('bio: $bio')
           ..write(')'))
         .toString();
   }
@@ -328,6 +359,7 @@ class ProductRow extends DataClass implements Insertable<ProductRow> {
     stock,
     barcode,
     $driftBlobEquality.hash(imageBytes),
+    bio,
   );
   @override
   bool operator ==(Object other) =>
@@ -339,7 +371,8 @@ class ProductRow extends DataClass implements Insertable<ProductRow> {
           other.price == this.price &&
           other.stock == this.stock &&
           other.barcode == this.barcode &&
-          $driftBlobEquality.equals(other.imageBytes, this.imageBytes));
+          $driftBlobEquality.equals(other.imageBytes, this.imageBytes) &&
+          other.bio == this.bio);
 }
 
 class ProductsCompanion extends UpdateCompanion<ProductRow> {
@@ -350,6 +383,7 @@ class ProductsCompanion extends UpdateCompanion<ProductRow> {
   final Value<int> stock;
   final Value<String?> barcode;
   final Value<Uint8List?> imageBytes;
+  final Value<String> bio;
   final Value<int> rowid;
   const ProductsCompanion({
     this.id = const Value.absent(),
@@ -359,6 +393,7 @@ class ProductsCompanion extends UpdateCompanion<ProductRow> {
     this.stock = const Value.absent(),
     this.barcode = const Value.absent(),
     this.imageBytes = const Value.absent(),
+    this.bio = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   ProductsCompanion.insert({
@@ -369,6 +404,7 @@ class ProductsCompanion extends UpdateCompanion<ProductRow> {
     required int stock,
     this.barcode = const Value.absent(),
     this.imageBytes = const Value.absent(),
+    this.bio = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        name = Value(name),
@@ -383,6 +419,7 @@ class ProductsCompanion extends UpdateCompanion<ProductRow> {
     Expression<int>? stock,
     Expression<String>? barcode,
     Expression<Uint8List>? imageBytes,
+    Expression<String>? bio,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -393,6 +430,7 @@ class ProductsCompanion extends UpdateCompanion<ProductRow> {
       if (stock != null) 'stock': stock,
       if (barcode != null) 'barcode': barcode,
       if (imageBytes != null) 'image_bytes': imageBytes,
+      if (bio != null) 'bio': bio,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -405,6 +443,7 @@ class ProductsCompanion extends UpdateCompanion<ProductRow> {
     Value<int>? stock,
     Value<String?>? barcode,
     Value<Uint8List?>? imageBytes,
+    Value<String>? bio,
     Value<int>? rowid,
   }) {
     return ProductsCompanion(
@@ -415,6 +454,7 @@ class ProductsCompanion extends UpdateCompanion<ProductRow> {
       stock: stock ?? this.stock,
       barcode: barcode ?? this.barcode,
       imageBytes: imageBytes ?? this.imageBytes,
+      bio: bio ?? this.bio,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -443,6 +483,9 @@ class ProductsCompanion extends UpdateCompanion<ProductRow> {
     if (imageBytes.present) {
       map['image_bytes'] = Variable<Uint8List>(imageBytes.value);
     }
+    if (bio.present) {
+      map['bio'] = Variable<String>(bio.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -459,6 +502,7 @@ class ProductsCompanion extends UpdateCompanion<ProductRow> {
           ..write('stock: $stock, ')
           ..write('barcode: $barcode, ')
           ..write('imageBytes: $imageBytes, ')
+          ..write('bio: $bio, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -757,8 +801,84 @@ class $SalesTable extends Sales with TableInfo<$SalesTable, SaleRow> {
     type: DriftSqlType.double,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _cashTenderedMeta = const VerificationMeta(
+    'cashTendered',
+  );
   @override
-  List<GeneratedColumn> get $columns => [id, date, total];
+  late final GeneratedColumn<double> cashTendered = GeneratedColumn<double>(
+    'cash_tendered',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _changeAmountMeta = const VerificationMeta(
+    'changeAmount',
+  );
+  @override
+  late final GeneratedColumn<double> changeAmount = GeneratedColumn<double>(
+    'change_amount',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _customerNameMeta = const VerificationMeta(
+    'customerName',
+  );
+  @override
+  late final GeneratedColumn<String> customerName = GeneratedColumn<String>(
+    'customer_name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _receiptNumberMeta = const VerificationMeta(
+    'receiptNumber',
+  );
+  @override
+  late final GeneratedColumn<String> receiptNumber = GeneratedColumn<String>(
+    'receipt_number',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _orderIdMeta = const VerificationMeta(
+    'orderId',
+  );
+  @override
+  late final GeneratedColumn<int> orderId = GeneratedColumn<int>(
+    'order_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _channelMeta = const VerificationMeta(
+    'channel',
+  );
+  @override
+  late final GeneratedColumn<String> channel = GeneratedColumn<String>(
+    'channel',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    date,
+    total,
+    cashTendered,
+    changeAmount,
+    customerName,
+    receiptNumber,
+    orderId,
+    channel,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -792,6 +912,54 @@ class $SalesTable extends Sales with TableInfo<$SalesTable, SaleRow> {
     } else if (isInserting) {
       context.missing(_totalMeta);
     }
+    if (data.containsKey('cash_tendered')) {
+      context.handle(
+        _cashTenderedMeta,
+        cashTendered.isAcceptableOrUnknown(
+          data['cash_tendered']!,
+          _cashTenderedMeta,
+        ),
+      );
+    }
+    if (data.containsKey('change_amount')) {
+      context.handle(
+        _changeAmountMeta,
+        changeAmount.isAcceptableOrUnknown(
+          data['change_amount']!,
+          _changeAmountMeta,
+        ),
+      );
+    }
+    if (data.containsKey('customer_name')) {
+      context.handle(
+        _customerNameMeta,
+        customerName.isAcceptableOrUnknown(
+          data['customer_name']!,
+          _customerNameMeta,
+        ),
+      );
+    }
+    if (data.containsKey('receipt_number')) {
+      context.handle(
+        _receiptNumberMeta,
+        receiptNumber.isAcceptableOrUnknown(
+          data['receipt_number']!,
+          _receiptNumberMeta,
+        ),
+      );
+    }
+    if (data.containsKey('order_id')) {
+      context.handle(
+        _orderIdMeta,
+        orderId.isAcceptableOrUnknown(data['order_id']!, _orderIdMeta),
+      );
+    }
+    if (data.containsKey('channel')) {
+      context.handle(
+        _channelMeta,
+        channel.isAcceptableOrUnknown(data['channel']!, _channelMeta),
+      );
+    }
     return context;
   }
 
@@ -813,6 +981,30 @@ class $SalesTable extends Sales with TableInfo<$SalesTable, SaleRow> {
         DriftSqlType.double,
         data['${effectivePrefix}total'],
       )!,
+      cashTendered: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}cash_tendered'],
+      ),
+      changeAmount: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}change_amount'],
+      ),
+      customerName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}customer_name'],
+      ),
+      receiptNumber: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}receipt_number'],
+      ),
+      orderId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}order_id'],
+      ),
+      channel: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}channel'],
+      ),
     );
   }
 
@@ -826,13 +1018,47 @@ class SaleRow extends DataClass implements Insertable<SaleRow> {
   final String id;
   final DateTime date;
   final double total;
-  const SaleRow({required this.id, required this.date, required this.total});
+  final double? cashTendered;
+  final double? changeAmount;
+  final String? customerName;
+  final String? receiptNumber;
+  final int? orderId;
+  final String? channel;
+  const SaleRow({
+    required this.id,
+    required this.date,
+    required this.total,
+    this.cashTendered,
+    this.changeAmount,
+    this.customerName,
+    this.receiptNumber,
+    this.orderId,
+    this.channel,
+  });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
     map['date'] = Variable<DateTime>(date);
     map['total'] = Variable<double>(total);
+    if (!nullToAbsent || cashTendered != null) {
+      map['cash_tendered'] = Variable<double>(cashTendered);
+    }
+    if (!nullToAbsent || changeAmount != null) {
+      map['change_amount'] = Variable<double>(changeAmount);
+    }
+    if (!nullToAbsent || customerName != null) {
+      map['customer_name'] = Variable<String>(customerName);
+    }
+    if (!nullToAbsent || receiptNumber != null) {
+      map['receipt_number'] = Variable<String>(receiptNumber);
+    }
+    if (!nullToAbsent || orderId != null) {
+      map['order_id'] = Variable<int>(orderId);
+    }
+    if (!nullToAbsent || channel != null) {
+      map['channel'] = Variable<String>(channel);
+    }
     return map;
   }
 
@@ -841,6 +1067,24 @@ class SaleRow extends DataClass implements Insertable<SaleRow> {
       id: Value(id),
       date: Value(date),
       total: Value(total),
+      cashTendered: cashTendered == null && nullToAbsent
+          ? const Value.absent()
+          : Value(cashTendered),
+      changeAmount: changeAmount == null && nullToAbsent
+          ? const Value.absent()
+          : Value(changeAmount),
+      customerName: customerName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(customerName),
+      receiptNumber: receiptNumber == null && nullToAbsent
+          ? const Value.absent()
+          : Value(receiptNumber),
+      orderId: orderId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(orderId),
+      channel: channel == null && nullToAbsent
+          ? const Value.absent()
+          : Value(channel),
     );
   }
 
@@ -853,6 +1097,12 @@ class SaleRow extends DataClass implements Insertable<SaleRow> {
       id: serializer.fromJson<String>(json['id']),
       date: serializer.fromJson<DateTime>(json['date']),
       total: serializer.fromJson<double>(json['total']),
+      cashTendered: serializer.fromJson<double?>(json['cashTendered']),
+      changeAmount: serializer.fromJson<double?>(json['changeAmount']),
+      customerName: serializer.fromJson<String?>(json['customerName']),
+      receiptNumber: serializer.fromJson<String?>(json['receiptNumber']),
+      orderId: serializer.fromJson<int?>(json['orderId']),
+      channel: serializer.fromJson<String?>(json['channel']),
     );
   }
   @override
@@ -862,19 +1112,57 @@ class SaleRow extends DataClass implements Insertable<SaleRow> {
       'id': serializer.toJson<String>(id),
       'date': serializer.toJson<DateTime>(date),
       'total': serializer.toJson<double>(total),
+      'cashTendered': serializer.toJson<double?>(cashTendered),
+      'changeAmount': serializer.toJson<double?>(changeAmount),
+      'customerName': serializer.toJson<String?>(customerName),
+      'receiptNumber': serializer.toJson<String?>(receiptNumber),
+      'orderId': serializer.toJson<int?>(orderId),
+      'channel': serializer.toJson<String?>(channel),
     };
   }
 
-  SaleRow copyWith({String? id, DateTime? date, double? total}) => SaleRow(
+  SaleRow copyWith({
+    String? id,
+    DateTime? date,
+    double? total,
+    Value<double?> cashTendered = const Value.absent(),
+    Value<double?> changeAmount = const Value.absent(),
+    Value<String?> customerName = const Value.absent(),
+    Value<String?> receiptNumber = const Value.absent(),
+    Value<int?> orderId = const Value.absent(),
+    Value<String?> channel = const Value.absent(),
+  }) => SaleRow(
     id: id ?? this.id,
     date: date ?? this.date,
     total: total ?? this.total,
+    cashTendered: cashTendered.present ? cashTendered.value : this.cashTendered,
+    changeAmount: changeAmount.present ? changeAmount.value : this.changeAmount,
+    customerName: customerName.present ? customerName.value : this.customerName,
+    receiptNumber: receiptNumber.present
+        ? receiptNumber.value
+        : this.receiptNumber,
+    orderId: orderId.present ? orderId.value : this.orderId,
+    channel: channel.present ? channel.value : this.channel,
   );
   SaleRow copyWithCompanion(SalesCompanion data) {
     return SaleRow(
       id: data.id.present ? data.id.value : this.id,
       date: data.date.present ? data.date.value : this.date,
       total: data.total.present ? data.total.value : this.total,
+      cashTendered: data.cashTendered.present
+          ? data.cashTendered.value
+          : this.cashTendered,
+      changeAmount: data.changeAmount.present
+          ? data.changeAmount.value
+          : this.changeAmount,
+      customerName: data.customerName.present
+          ? data.customerName.value
+          : this.customerName,
+      receiptNumber: data.receiptNumber.present
+          ? data.receiptNumber.value
+          : this.receiptNumber,
+      orderId: data.orderId.present ? data.orderId.value : this.orderId,
+      channel: data.channel.present ? data.channel.value : this.channel,
     );
   }
 
@@ -883,37 +1171,77 @@ class SaleRow extends DataClass implements Insertable<SaleRow> {
     return (StringBuffer('SaleRow(')
           ..write('id: $id, ')
           ..write('date: $date, ')
-          ..write('total: $total')
+          ..write('total: $total, ')
+          ..write('cashTendered: $cashTendered, ')
+          ..write('changeAmount: $changeAmount, ')
+          ..write('customerName: $customerName, ')
+          ..write('receiptNumber: $receiptNumber, ')
+          ..write('orderId: $orderId, ')
+          ..write('channel: $channel')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, date, total);
+  int get hashCode => Object.hash(
+    id,
+    date,
+    total,
+    cashTendered,
+    changeAmount,
+    customerName,
+    receiptNumber,
+    orderId,
+    channel,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is SaleRow &&
           other.id == this.id &&
           other.date == this.date &&
-          other.total == this.total);
+          other.total == this.total &&
+          other.cashTendered == this.cashTendered &&
+          other.changeAmount == this.changeAmount &&
+          other.customerName == this.customerName &&
+          other.receiptNumber == this.receiptNumber &&
+          other.orderId == this.orderId &&
+          other.channel == this.channel);
 }
 
 class SalesCompanion extends UpdateCompanion<SaleRow> {
   final Value<String> id;
   final Value<DateTime> date;
   final Value<double> total;
+  final Value<double?> cashTendered;
+  final Value<double?> changeAmount;
+  final Value<String?> customerName;
+  final Value<String?> receiptNumber;
+  final Value<int?> orderId;
+  final Value<String?> channel;
   final Value<int> rowid;
   const SalesCompanion({
     this.id = const Value.absent(),
     this.date = const Value.absent(),
     this.total = const Value.absent(),
+    this.cashTendered = const Value.absent(),
+    this.changeAmount = const Value.absent(),
+    this.customerName = const Value.absent(),
+    this.receiptNumber = const Value.absent(),
+    this.orderId = const Value.absent(),
+    this.channel = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   SalesCompanion.insert({
     required String id,
     required DateTime date,
     required double total,
+    this.cashTendered = const Value.absent(),
+    this.changeAmount = const Value.absent(),
+    this.customerName = const Value.absent(),
+    this.receiptNumber = const Value.absent(),
+    this.orderId = const Value.absent(),
+    this.channel = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        date = Value(date),
@@ -922,12 +1250,24 @@ class SalesCompanion extends UpdateCompanion<SaleRow> {
     Expression<String>? id,
     Expression<DateTime>? date,
     Expression<double>? total,
+    Expression<double>? cashTendered,
+    Expression<double>? changeAmount,
+    Expression<String>? customerName,
+    Expression<String>? receiptNumber,
+    Expression<int>? orderId,
+    Expression<String>? channel,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (date != null) 'date': date,
       if (total != null) 'total': total,
+      if (cashTendered != null) 'cash_tendered': cashTendered,
+      if (changeAmount != null) 'change_amount': changeAmount,
+      if (customerName != null) 'customer_name': customerName,
+      if (receiptNumber != null) 'receipt_number': receiptNumber,
+      if (orderId != null) 'order_id': orderId,
+      if (channel != null) 'channel': channel,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -936,12 +1276,24 @@ class SalesCompanion extends UpdateCompanion<SaleRow> {
     Value<String>? id,
     Value<DateTime>? date,
     Value<double>? total,
+    Value<double?>? cashTendered,
+    Value<double?>? changeAmount,
+    Value<String?>? customerName,
+    Value<String?>? receiptNumber,
+    Value<int?>? orderId,
+    Value<String?>? channel,
     Value<int>? rowid,
   }) {
     return SalesCompanion(
       id: id ?? this.id,
       date: date ?? this.date,
       total: total ?? this.total,
+      cashTendered: cashTendered ?? this.cashTendered,
+      changeAmount: changeAmount ?? this.changeAmount,
+      customerName: customerName ?? this.customerName,
+      receiptNumber: receiptNumber ?? this.receiptNumber,
+      orderId: orderId ?? this.orderId,
+      channel: channel ?? this.channel,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -958,6 +1310,24 @@ class SalesCompanion extends UpdateCompanion<SaleRow> {
     if (total.present) {
       map['total'] = Variable<double>(total.value);
     }
+    if (cashTendered.present) {
+      map['cash_tendered'] = Variable<double>(cashTendered.value);
+    }
+    if (changeAmount.present) {
+      map['change_amount'] = Variable<double>(changeAmount.value);
+    }
+    if (customerName.present) {
+      map['customer_name'] = Variable<String>(customerName.value);
+    }
+    if (receiptNumber.present) {
+      map['receipt_number'] = Variable<String>(receiptNumber.value);
+    }
+    if (orderId.present) {
+      map['order_id'] = Variable<int>(orderId.value);
+    }
+    if (channel.present) {
+      map['channel'] = Variable<String>(channel.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -970,6 +1340,12 @@ class SalesCompanion extends UpdateCompanion<SaleRow> {
           ..write('id: $id, ')
           ..write('date: $date, ')
           ..write('total: $total, ')
+          ..write('cashTendered: $cashTendered, ')
+          ..write('changeAmount: $changeAmount, ')
+          ..write('customerName: $customerName, ')
+          ..write('receiptNumber: $receiptNumber, ')
+          ..write('orderId: $orderId, ')
+          ..write('channel: $channel, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -2137,6 +2513,7 @@ typedef $$ProductsTableCreateCompanionBuilder =
       required int stock,
       Value<String?> barcode,
       Value<Uint8List?> imageBytes,
+      Value<String> bio,
       Value<int> rowid,
     });
 typedef $$ProductsTableUpdateCompanionBuilder =
@@ -2148,6 +2525,7 @@ typedef $$ProductsTableUpdateCompanionBuilder =
       Value<int> stock,
       Value<String?> barcode,
       Value<Uint8List?> imageBytes,
+      Value<String> bio,
       Value<int> rowid,
     });
 
@@ -2192,6 +2570,11 @@ class $$ProductsTableFilterComposer
 
   ColumnFilters<Uint8List> get imageBytes => $composableBuilder(
     column: $table.imageBytes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get bio => $composableBuilder(
+    column: $table.bio,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -2239,6 +2622,11 @@ class $$ProductsTableOrderingComposer
     column: $table.imageBytes,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get bio => $composableBuilder(
+    column: $table.bio,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$ProductsTableAnnotationComposer
@@ -2272,6 +2660,9 @@ class $$ProductsTableAnnotationComposer
     column: $table.imageBytes,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get bio =>
+      $composableBuilder(column: $table.bio, builder: (column) => column);
 }
 
 class $$ProductsTableTableManager
@@ -2312,6 +2703,7 @@ class $$ProductsTableTableManager
                 Value<int> stock = const Value.absent(),
                 Value<String?> barcode = const Value.absent(),
                 Value<Uint8List?> imageBytes = const Value.absent(),
+                Value<String> bio = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ProductsCompanion(
                 id: id,
@@ -2321,6 +2713,7 @@ class $$ProductsTableTableManager
                 stock: stock,
                 barcode: barcode,
                 imageBytes: imageBytes,
+                bio: bio,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -2332,6 +2725,7 @@ class $$ProductsTableTableManager
                 required int stock,
                 Value<String?> barcode = const Value.absent(),
                 Value<Uint8List?> imageBytes = const Value.absent(),
+                Value<String> bio = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ProductsCompanion.insert(
                 id: id,
@@ -2341,6 +2735,7 @@ class $$ProductsTableTableManager
                 stock: stock,
                 barcode: barcode,
                 imageBytes: imageBytes,
+                bio: bio,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -2532,6 +2927,12 @@ typedef $$SalesTableCreateCompanionBuilder =
       required String id,
       required DateTime date,
       required double total,
+      Value<double?> cashTendered,
+      Value<double?> changeAmount,
+      Value<String?> customerName,
+      Value<String?> receiptNumber,
+      Value<int?> orderId,
+      Value<String?> channel,
       Value<int> rowid,
     });
 typedef $$SalesTableUpdateCompanionBuilder =
@@ -2539,6 +2940,12 @@ typedef $$SalesTableUpdateCompanionBuilder =
       Value<String> id,
       Value<DateTime> date,
       Value<double> total,
+      Value<double?> cashTendered,
+      Value<double?> changeAmount,
+      Value<String?> customerName,
+      Value<String?> receiptNumber,
+      Value<int?> orderId,
+      Value<String?> channel,
       Value<int> rowid,
     });
 
@@ -2585,6 +2992,36 @@ class $$SalesTableFilterComposer extends Composer<_$AppDatabase, $SalesTable> {
 
   ColumnFilters<double> get total => $composableBuilder(
     column: $table.total,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get cashTendered => $composableBuilder(
+    column: $table.cashTendered,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get changeAmount => $composableBuilder(
+    column: $table.changeAmount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get customerName => $composableBuilder(
+    column: $table.customerName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get receiptNumber => $composableBuilder(
+    column: $table.receiptNumber,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get orderId => $composableBuilder(
+    column: $table.orderId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get channel => $composableBuilder(
+    column: $table.channel,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -2637,6 +3074,36 @@ class $$SalesTableOrderingComposer
     column: $table.total,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<double> get cashTendered => $composableBuilder(
+    column: $table.cashTendered,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get changeAmount => $composableBuilder(
+    column: $table.changeAmount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get customerName => $composableBuilder(
+    column: $table.customerName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get receiptNumber => $composableBuilder(
+    column: $table.receiptNumber,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get orderId => $composableBuilder(
+    column: $table.orderId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get channel => $composableBuilder(
+    column: $table.channel,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$SalesTableAnnotationComposer
@@ -2656,6 +3123,32 @@ class $$SalesTableAnnotationComposer
 
   GeneratedColumn<double> get total =>
       $composableBuilder(column: $table.total, builder: (column) => column);
+
+  GeneratedColumn<double> get cashTendered => $composableBuilder(
+    column: $table.cashTendered,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get changeAmount => $composableBuilder(
+    column: $table.changeAmount,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get customerName => $composableBuilder(
+    column: $table.customerName,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get receiptNumber => $composableBuilder(
+    column: $table.receiptNumber,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get orderId =>
+      $composableBuilder(column: $table.orderId, builder: (column) => column);
+
+  GeneratedColumn<String> get channel =>
+      $composableBuilder(column: $table.channel, builder: (column) => column);
 
   Expression<T> saleItemsRefs<T extends Object>(
     Expression<T> Function($$SaleItemsTableAnnotationComposer a) f,
@@ -2714,11 +3207,23 @@ class $$SalesTableTableManager
                 Value<String> id = const Value.absent(),
                 Value<DateTime> date = const Value.absent(),
                 Value<double> total = const Value.absent(),
+                Value<double?> cashTendered = const Value.absent(),
+                Value<double?> changeAmount = const Value.absent(),
+                Value<String?> customerName = const Value.absent(),
+                Value<String?> receiptNumber = const Value.absent(),
+                Value<int?> orderId = const Value.absent(),
+                Value<String?> channel = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => SalesCompanion(
                 id: id,
                 date: date,
                 total: total,
+                cashTendered: cashTendered,
+                changeAmount: changeAmount,
+                customerName: customerName,
+                receiptNumber: receiptNumber,
+                orderId: orderId,
+                channel: channel,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -2726,11 +3231,23 @@ class $$SalesTableTableManager
                 required String id,
                 required DateTime date,
                 required double total,
+                Value<double?> cashTendered = const Value.absent(),
+                Value<double?> changeAmount = const Value.absent(),
+                Value<String?> customerName = const Value.absent(),
+                Value<String?> receiptNumber = const Value.absent(),
+                Value<int?> orderId = const Value.absent(),
+                Value<String?> channel = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => SalesCompanion.insert(
                 id: id,
                 date: date,
                 total: total,
+                cashTendered: cashTendered,
+                changeAmount: changeAmount,
+                customerName: customerName,
+                receiptNumber: receiptNumber,
+                orderId: orderId,
+                channel: channel,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

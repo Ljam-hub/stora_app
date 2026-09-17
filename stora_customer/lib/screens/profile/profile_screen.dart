@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/order_provider.dart';
+import '../../providers/chat_provider.dart';
+import '../../providers/cart_provider.dart';
 import '../../services/api_service.dart';
 import '../../services/location_service.dart';
 import '../../theme/app_theme.dart';
@@ -521,6 +524,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           TextButton(
             onPressed: () async {
               Navigator.pop(ctx);
+              context.read<OrderProvider>().reset();
+              context.read<ChatProvider>().reset();
+              context.read<CartProvider>().clear();
               await context.read<AuthProvider>().logout();
               if (mounted) {
                 Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
@@ -568,6 +574,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       final messenger = ScaffoldMessenger.of(context);
                       final nav = Navigator.of(context);
                       try {
+                        context.read<OrderProvider>().reset();
+                        context.read<ChatProvider>().reset();
+                        context.read<CartProvider>().clear();
                         await context.read<AuthProvider>().deleteAccount();
                         if (ctx.mounted) Navigator.pop(ctx);
                         messenger.showSnackBar(

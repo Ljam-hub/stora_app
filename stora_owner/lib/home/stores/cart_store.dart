@@ -11,8 +11,11 @@ class CartStore extends ChangeNotifier {
   double get total => _items.values.fold(0.0, (sum, i) => sum + i.subtotal);
 
   void add(Product product) {
+    if (product.stock <= 0) return;
     if (_items.containsKey(product.id)) {
-      _items[product.id]!.quantity++;
+      if (_items[product.id]!.quantity < product.stock) {
+        _items[product.id]!.quantity++;
+      }
     } else {
       _items[product.id] = CartItem(product: product);
     }
@@ -25,8 +28,11 @@ class CartStore extends ChangeNotifier {
   }
 
   void incrementQty(String productId) {
-    _items[productId]?.quantity++;
-    notifyListeners();
+    final item = _items[productId];
+    if (item != null && item.quantity < item.product.stock) {
+      item.quantity++;
+      notifyListeners();
+    }
   }
 
   /// Decrements quantity by 1; removes the line entirely once it hits 0.

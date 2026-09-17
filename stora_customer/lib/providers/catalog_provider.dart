@@ -113,23 +113,33 @@ class CatalogProvider extends ChangeNotifier {
 
 
   Future<void> fetchCategories() async {
+    final storeId = _selectedStore?.id;
     try {
-      _categories = await CustomerApiService.instance.fetchCategories(
-        storeId: _selectedStore?.id,
+      final res = await CustomerApiService.instance.fetchCategories(
+        storeId: storeId,
       );
+      if (_selectedStore?.id == storeId) {
+        _categories = res;
+      }
     } catch (e) {
       debugPrint('Error fetching categories: $e');
     }
   }
 
   Future<void> fetchProducts() async {
+    final storeId = _selectedStore?.id;
     try {
       _errorMessage = null;
-      _products = await CustomerApiService.instance.fetchProducts(
-        storeId: _selectedStore?.id,
+      final res = await CustomerApiService.instance.fetchProducts(
+        storeId: storeId,
       );
+      if (_selectedStore?.id == storeId) {
+        _products = res;
+      }
     } catch (e) {
-      _errorMessage = e.toString().replaceAll('Exception: ', '');
+      if (_selectedStore?.id == storeId) {
+        _errorMessage = e.toString().replaceAll('Exception: ', '');
+      }
     }
   }
 }

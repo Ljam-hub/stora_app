@@ -22,13 +22,13 @@ except ImportError:
 
 SECRET_KEY = os.getenv("SECRET_KEY", os.getenv("Secret_Key", "dev-insecure-secret-key-change-me"))
 
-DEBUG = os.getenv("DEBUG", "True").lower() in ("true", "1", "t", "yes")
+DEBUG = os.getenv("DEBUG", "False").lower() in ("true", "1", "t", "yes")
 
 allowed_hosts_env = os.getenv("ALLOWED_HOSTS")
 if allowed_hosts_env:
     ALLOWED_HOSTS = [h.strip() for h in allowed_hosts_env.split(",") if h.strip()]
-elif DEBUG or not os.getenv("RENDER"):
-    # Allow local development, Wi-Fi LAN IP testing, and test runners when not on Render
+elif DEBUG:
+    # Allow local development, Wi-Fi LAN IP testing, and test runners
     ALLOWED_HOSTS = ["*"]
 else:
     ALLOWED_HOSTS = [".onrender.com", "localhost", "127.0.0.1"]
@@ -96,7 +96,7 @@ MIDDLEWARE += [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_ALL_ORIGINS = DEBUG
 
 ROOT_URLCONF = "stora_backend.urls"
 

@@ -45,7 +45,7 @@ class AppDatabase extends _$AppDatabase {
   static final AppDatabase instance = AppDatabase._();
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -56,6 +56,15 @@ class AppDatabase extends _$AppDatabase {
         await customStatement(
           'ALTER TABLE auth_sessions ADD COLUMN is_email_verified INTEGER NOT NULL DEFAULT 0',
         );
+      }
+      if (from < 3) {
+        await m.addColumn(sales, sales.cashTendered);
+        await m.addColumn(sales, sales.changeAmount);
+        await m.addColumn(sales, sales.customerName);
+        await m.addColumn(sales, sales.receiptNumber);
+        await m.addColumn(sales, sales.orderId);
+        await m.addColumn(sales, sales.channel);
+        await m.addColumn(products, products.bio);
       }
     },
   );
