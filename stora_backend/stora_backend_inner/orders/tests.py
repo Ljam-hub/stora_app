@@ -246,3 +246,21 @@ class OrderAPITests(TestCase):
         resp = c.get("/admin/password_change/")
         self.assertEqual(resp.status_code, 200)
 
+    def test_expired_order_auto_declines_on_fetch(self):
+        from django.utils import timezone
+        from datetime import timedelta
+
+        order = Order.objects.create(
+            owner=self.owner,
+            customer=self.customer,
+            customer_name="Expired Customer",
+            status=Order.STATUS_PENDING,
+            expires_at=timezone.now() - timedelta(hours=1),
+        )
+        self.client.force_authenticate(user=self.customer)
+        response = self.client.get("/api/orders/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        order.refresh_from_db()
+        self.assertEqual(order.status, Order.STATUS_AUTO_DECLINED)
+
+

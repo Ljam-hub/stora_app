@@ -911,6 +911,16 @@ class OrderViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
+        # Automatically transition expired pending/counter_offer orders to auto_declined
+        now = timezone.now()
+        Order.objects.filter(
+            status__in=[Order.STATUS_PENDING, Order.STATUS_COUNTER_OFFER],
+            expires_at__lte=now,
+        ).update(
+            status=Order.STATUS_AUTO_DECLINED,
+            decline_reason="Order expired without store response.",
+        )
+
         if getattr(user, "role", "owner") == "admin" or user.is_superuser:
             return Order.objects.all().prefetch_related("items")
         elif getattr(user, "role", "owner") == "owner":
