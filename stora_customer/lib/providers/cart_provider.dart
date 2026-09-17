@@ -41,7 +41,7 @@ class CartProvider extends ChangeNotifier {
     // Check if adding from different store
     if (_items.isNotEmpty) {
       final currentStore = storeId;
-      if (currentStore != null && currentStore != product.ownerId) {
+      if (currentStore == null || currentStore != product.ownerId) {
         // Will need user confirmation if from another store
         return false;
       }

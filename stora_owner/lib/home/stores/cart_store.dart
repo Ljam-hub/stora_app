@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/cart_item.dart';
 import '../models/product.dart';
+import 'inventory_store.dart';
 
 class CartStore extends ChangeNotifier {
   CartStore._internal();
@@ -11,9 +12,12 @@ class CartStore extends ChangeNotifier {
   double get total => _items.values.fold(0.0, (sum, i) => sum + i.subtotal);
 
   void add(Product product) {
-    if (product.stock <= 0) return;
+    final currentStock = InventoryStore.instance.products
+        .firstWhere((p) => p.id == product.id, orElse: () => product)
+        .stock;
+    if (currentStock <= 0) return;
     if (_items.containsKey(product.id)) {
-      if (_items[product.id]!.quantity < product.stock) {
+      if (_items[product.id]!.quantity < currentStock) {
         _items[product.id]!.quantity++;
       }
     } else {
@@ -29,7 +33,11 @@ class CartStore extends ChangeNotifier {
 
   void incrementQty(String productId) {
     final item = _items[productId];
-    if (item != null && item.quantity < item.product.stock) {
+    if (item == null) return;
+    final currentStock = InventoryStore.instance.products
+        .firstWhere((p) => p.id == productId, orElse: () => item.product)
+        .stock;
+    if (item.quantity < currentStock) {
       item.quantity++;
       notifyListeners();
     }

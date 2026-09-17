@@ -1443,7 +1443,15 @@ def chat_messages(request):
 
         msg_text = (request.data.get("message") or "").strip()
         image = request.FILES.get("image")
-        order_id = request.data.get("order")
+        order_val = request.data.get("order")
+        order_id = None
+        if order_val not in (None, "", "null", "None", "undefined"):
+            try:
+                parsed_oid = int(order_val)
+                if Order.objects.filter(pk=parsed_oid).exists():
+                    order_id = parsed_oid
+            except (ValueError, TypeError):
+                order_id = None
 
         if not msg_text and not image:
             return Response(
@@ -1456,7 +1464,7 @@ def chat_messages(request):
             recipient=recipient,
             message=msg_text,
             image=image,
-            order_id=order_id if order_id else None,
+            order_id=order_id,
         )
         chat_msg.save()
 
