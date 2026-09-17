@@ -160,8 +160,21 @@ class SyncManager {
           if (body['customer_name'] != null) 'customer_name': body['customer_name'],
         });
         final serverSale = Sale.fromJson(res);
+        final rawTendered = body['cash_tendered'];
+        final tenderedVal = (rawTendered is num)
+            ? rawTendered.toDouble()
+            : (rawTendered != null ? double.tryParse(rawTendered.toString()) : null);
+        final rawChange = body['change_amount'];
+        final changeVal = (rawChange is num)
+            ? rawChange.toDouble()
+            : (rawChange != null ? double.tryParse(rawChange.toString()) : null);
+
+        final mergedSale = serverSale.copyWith(
+          cashTendered: serverSale.cashTendered ?? tenderedVal,
+          changeAmount: serverSale.changeAmount ?? changeVal,
+        );
         await _db.salesDao.deleteSale(entry.entityId);
-        await _db.salesDao.upsertSale(serverSale);
+        await _db.salesDao.upsertSale(mergedSale);
         return true;
       } else if (entry.action == 'delete') {
         if (!entry.entityId.startsWith('local-')) {

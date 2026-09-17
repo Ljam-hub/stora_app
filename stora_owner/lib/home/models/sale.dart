@@ -107,10 +107,11 @@ class Sale {
       final quantity = (rawQty is num)
           ? rawQty.toInt()
           : (int.tryParse(rawQty?.toString() ?? '1') ?? 1);
+      final prodId = (map['product'] ?? map['product_id'] ?? map['id'])?.toString() ?? '';
       final product = Product(
-        id: '',
+        id: prodId,
         name: map['product_name']?.toString() ?? 'Unknown Item',
-        category: '',
+        category: (map['category'] ?? '')?.toString() ?? '',
         price: price,
         stock: 0,
       );
