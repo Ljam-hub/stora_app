@@ -192,7 +192,7 @@ class _ReceiptDialogState extends State<ReceiptDialog> {
                     Builder(builder: (context) {
                       final itemsSum = sale.items.fold<double>(0.0, (sum, i) => sum + (i.product.price * i.quantity));
                       final diff = itemsSum - sale.total;
-                      if (diff.abs() > 0.01) {
+                      if (sale.items.isNotEmpty && diff.abs() > 0.01) {
                         return Column(
                           children: [
                             const SizedBox(height: 2),

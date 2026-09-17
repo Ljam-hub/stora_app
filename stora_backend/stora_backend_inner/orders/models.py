@@ -151,21 +151,30 @@ class Order(models.Model):
 
     def decline(self, reason: str = None, auto: bool = False):
         """Mark as declined (manual or auto) with an optional reason."""
-        if self.status != self.STATUS_PENDING and self.status != self.STATUS_COUNTER_OFFER:
-            return
-        self.status = self.STATUS_AUTO_DECLINED if auto else self.STATUS_DECLINED
-        self.decline_reason = reason
-        self.save(update_fields=["status", "decline_reason"])
+        with transaction.atomic():
+            order = Order.objects.select_for_update().get(pk=self.pk)
+            if order.status != self.STATUS_PENDING and order.status != self.STATUS_COUNTER_OFFER:
+                return
+            order.status = self.STATUS_AUTO_DECLINED if auto else self.STATUS_DECLINED
+            order.decline_reason = reason
+            order.save(update_fields=["status", "decline_reason"])
+            self.status = order.status
+            self.decline_reason = order.decline_reason
 
     def counter_offer(self, notes: str = "", counter_price=None):
         """Propose a counter-offer to the customer."""
-        if self.status != self.STATUS_PENDING:
-            return
-        self.status = self.STATUS_COUNTER_OFFER
-        self.counter_notes = notes
-        if counter_price is not None:
-            self.counter_price = counter_price
-        self.save(update_fields=["status", "counter_notes", "counter_price"])
+        with transaction.atomic():
+            order = Order.objects.select_for_update().get(pk=self.pk)
+            if order.status != self.STATUS_PENDING:
+                return
+            order.status = self.STATUS_COUNTER_OFFER
+            order.counter_notes = notes
+            if counter_price is not None:
+                order.counter_price = counter_price
+            order.save(update_fields=["status", "counter_notes", "counter_price"])
+            self.status = order.status
+            self.counter_notes = order.counter_notes
+            self.counter_price = order.counter_price
 
     def total_amount(self):
         return sum((item.subtotal for item in self.items.all()), Decimal("0"))

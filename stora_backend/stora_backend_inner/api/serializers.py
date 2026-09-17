@@ -786,8 +786,13 @@ class OrderSerializer(serializers.ModelSerializer):
             if not items:
                 raise serializers.ValidationError({"items_data": "Order must contain at least one item."})
             owner = attrs.get("owner")
+            if not owner:
+                raise serializers.ValidationError({"owner": "Owner is required."})
             for item in items:
-                if item["product"].owner_id != owner.id:
+                prod = item.get("product")
+                if not prod:
+                    raise serializers.ValidationError({"items_data": "Each line item must reference a valid product."})
+                if prod.owner_id != owner.id:
                     raise serializers.ValidationError({"items_data": "All products must belong to the store owner."})
         return super().validate(attrs)
 
@@ -800,6 +805,8 @@ class OrderSerializer(serializers.ModelSerializer):
             for item_data in items_data:
                 product = item_data["product"]
                 item_data["unit_price"] = product.price
+                if not item_data.get("product_name"):
+                    item_data["product_name"] = product.name
                 OrderItem.objects.create(order=order, **item_data)
         return order
 

@@ -56,9 +56,9 @@ class ReceiptService {
                 'Receipt #: ${sale.displayReceiptNumber}',
                 style: pw.TextStyle(fontSize: 7, fontWeight: pw.FontWeight.bold),
               ),
-              if (sale.orderId != null) ...[
+              if (sale.isOnlineOrder && (sale.displayOrderId != null || sale.orderId != null)) ...[
                 pw.Text(
-                  'Order #: #${sale.orderId}',
+                  'Order #: #${sale.displayOrderId ?? sale.orderId}',
                   style: const pw.TextStyle(fontSize: 7),
                 ),
               ],
@@ -161,7 +161,7 @@ class ReceiptService {
               ...() {
                 final itemsSum = sale.items.fold<double>(0.0, (sum, i) => sum + (i.product.price * i.quantity));
                 final diff = itemsSum - sale.total;
-                if (diff.abs() > 0.01) {
+                if (sale.items.isNotEmpty && diff.abs() > 0.01) {
                   return [
                     pw.SizedBox(height: 2),
                     pw.Row(
