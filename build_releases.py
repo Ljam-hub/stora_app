@@ -46,68 +46,55 @@ def main():
     cust_log_path = repo_root / "build_cust.log"
     owner_log_path = repo_root / "build_owner.log"
 
-    cust_log = open(cust_log_path, "w", encoding="utf-8", errors="replace")
-    owner_log = open(owner_log_path, "w", encoding="utf-8", errors="replace")
 
-    print("\n-> Launching Customer Release Build...")
-    p_cust = subprocess.Popen(
-        [flutter_cmd, "build", "apk", "--release"],
-        cwd=str(cust_dir),
-        stdout=cust_log,
-        stderr=subprocess.STDOUT
-    )
+    distribute_only = "--distribute-only" in sys.argv or "--skip-build" in sys.argv
 
-    print("-> Launching Owner Release Build...")
-    p_owner = subprocess.Popen(
-        [flutter_cmd, "build", "apk", "--release"],
-        cwd=str(owner_dir),
-        stdout=owner_log,
-        stderr=subprocess.STDOUT
-    )
+    if not distribute_only:
+        def build_app(app_name, app_dir, log_path):
+            print(f"\n-> Building {app_name} Release APK...")
+            with open(log_path, "w", encoding="utf-8", errors="replace") as log_file:
+                p = subprocess.Popen(
+                    [flutter_cmd, "build", "apk", "--release"],
+                    cwd=str(app_dir),
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    text=True,
+                    bufsize=1,
+                )
+                for line in p.stdout:
+                    log_file.write(line)
+                    stripped = line.strip()
+                    if stripped.startswith("Running Gradle task") or "Built " in stripped or "Tree-shaking" in stripped:
+                        print(f"   [{app_name}] {stripped}")
+                p.wait()
+                return p.returncode
 
-    print(f"Customer build PID: {p_cust.pid} | Owner build PID: {p_owner.pid}")
-    print("Compiling release APKs in parallel, please wait...\n")
+        cust_code = build_app("Customer", cust_dir, cust_log_path)
+        if cust_code != 0:
+            print(f"\n[ERROR] Customer build failed (code {cust_code}):")
+            if cust_log_path.exists():
+                lines = cust_log_path.read_text(encoding="utf-8", errors="replace").splitlines()
+                print("\n".join(lines[-30:]))
+            sys.exit(1)
+        else:
+            print("[SUCCESS] Stora Customer APK built successfully!")
+            cust_log_path.unlink(missing_ok=True)
 
-    # Monitor until both finish
-    while p_cust.poll() is None or p_owner.poll() is None:
-        time.sleep(3)
-        cust_status = "DONE" if p_cust.poll() is not None else "BUILDING"
-        owner_status = "DONE" if p_owner.poll() is not None else "BUILDING"
-        elapsed = int(time.time() - start_time)
-        print(f"[{elapsed:3d}s] Customer: {cust_status:<8} | Owner: {owner_status}")
+        owner_code = build_app("Owner", owner_dir, owner_log_path)
+        if owner_code != 0:
+            print(f"\n[ERROR] Owner build failed (code {owner_code}):")
+            if owner_log_path.exists():
+                lines = owner_log_path.read_text(encoding="utf-8", errors="replace").splitlines()
+                print("\n".join(lines[-30:]))
+            sys.exit(1)
+        else:
+            print("[SUCCESS] Stora Owner APK built successfully!")
+            owner_log_path.unlink(missing_ok=True)
 
-    cust_log.close()
-    owner_log.close()
-
-    total_elapsed = time.time() - start_time
-    print(f"\nAll builds finished in {total_elapsed:.1f} seconds.")
-
-    failed = False
-    if p_cust.returncode != 0:
-        print(f"\n[ERROR] Customer build failed (code {p_cust.returncode}):")
-        if cust_log_path.exists():
-            lines = cust_log_path.read_text(encoding="utf-8", errors="replace").splitlines()
-            print("\n".join(lines[-30:]))
-        failed = True
+        total_elapsed = time.time() - start_time
+        print(f"\nAll builds finished in {total_elapsed:.1f} seconds.")
     else:
-        print("[SUCCESS] Stora Customer APK built successfully!")
-
-    if p_owner.returncode != 0:
-        print(f"\n[ERROR] Owner build failed (code {p_owner.returncode}):")
-        if owner_log_path.exists():
-            lines = owner_log_path.read_text(encoding="utf-8", errors="replace").splitlines()
-            print("\n".join(lines[-30:]))
-        failed = True
-    else:
-        print("[SUCCESS] Stora Owner APK built successfully!")
-
-    # Clean up logs on success
-    if not failed:
-        cust_log_path.unlink(missing_ok=True)
-        owner_log_path.unlink(missing_ok=True)
-    else:
-        print("\nBuild failed. Aborting APK distribution.")
-        sys.exit(1)
+        print("\nSkipping compile (--distribute-only specified). Proceeding to distribution...")
 
     # Distribute APKs
     cust_built = cust_dir / "build" / "app" / "outputs" / "flutter-apk" / "app-release.apk"
