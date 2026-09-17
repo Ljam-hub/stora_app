@@ -1826,6 +1826,38 @@ select.select2-hidden-accessible,
   vertical-align: middle !important;
 }
 
+/* Eliminate phantom 'original' inline text and zero out the column */
+.inline-group .tabular td.original,
+.inline-group .tabular th.original {
+  width: 0 !important;
+  min-width: 0 !important;
+  max-width: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+  border-bottom: none !important;
+  overflow: hidden !important;
+  font-size: 0 !important;
+  line-height: 0 !important;
+  visibility: hidden !important;
+}
+
+.inline-group .tabular td.original p,
+.inline-group .tabular td.original span,
+.inline-group .tabular td.original a {
+  display: none !important;
+  position: absolute !important;
+  left: -99999px !important;
+  width: 0 !important;
+  height: 0 !important;
+  overflow: hidden !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
 /* Compact, proportional inline columns that fit cleanly without clipping */
 .inline-group .tabular td.field-product,
 .inline-group .tabular th.column-product {

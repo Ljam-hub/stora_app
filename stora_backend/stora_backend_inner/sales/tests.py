@@ -194,4 +194,34 @@ class SaleAndReceiptTests(TestCase):
         self.assertIn("ORD #", content)
         self.assertIn("Special Item {Test}", content)
 
+    def test_sale_admin_changeform_no_phantom_original_text(self):
+        admin_user = User.objects.create_superuser(
+            username="admin2@test.com",
+            email="admin2@test.com",
+            password="adminpassword123",
+            role="admin",
+        )
+        sale = Sale.objects.create(
+            owner=self.owner,
+            total=Decimal("150.00"),
+            customer_name="Walk-in Customer",
+        )
+        SaleItem.objects.create(
+            sale=sale,
+            product=self.product,
+            product_name="Sample Beverage",
+            quantity=2,
+            unit_price=Decimal("75.00"),
+        )
+        self.client.force_login(admin_user)
+        response = self.client.get(f"/admin/sales/sale/{sale.id}/change/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        content = response.content.decode("utf-8")
+        # Ensure the change form loads properly
+        self.assertIn("Sample Beverage", content)
+        # Ensure <td class="original"> does NOT output the phantom <p> text
+        self.assertNotIn('<td class="original">\n          <p>', content)
+        self.assertNotIn('<td class="original"><p>', content)
+
+
 
