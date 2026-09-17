@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../data/api/api_config.dart';
 import '../../data/stores/account_status_store.dart';
 import '../../subscription/subscription_screen.dart';
 import '../../stora_login/stora_login.dart';
@@ -44,6 +45,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
   late final TextEditingController _bioController;
   String? _category;
   Uint8List? _imageBytes;
+  bool _imageCleared = false;
   bool _saving = false;
 
   @override
@@ -138,6 +140,14 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
           ..barcode = barcode
           ..imageBytes = _imageBytes
           ..bio = bio;
+        if (_imageCleared) {
+          widget.existing!.imageUrl = null;
+          widget.existing!.imageBytes = null;
+          widget.existing!.isImageCleared = true;
+        } else if (_imageBytes != null) {
+          widget.existing!.imageUrl = null;
+          widget.existing!.isImageCleared = false;
+        }
       }
       final ok = widget.existing != null
           ? await store.updateProduct(widget.existing!)
@@ -301,7 +311,15 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                 const SizedBox(height: 18),
                 _ImagePickerField(
                   initialBytes: _imageBytes,
-                  onChanged: (bytes) => setState(() => _imageBytes = bytes),
+                  initialUrl: widget.existing?.imageUrl,
+                  onChanged: (bytes) => setState(() {
+                    _imageBytes = bytes;
+                    if (bytes == null) {
+                      _imageCleared = true;
+                    } else {
+                      _imageCleared = false;
+                    }
+                  }),
                 ),
                 const SizedBox(height: 28),
                 StoraGradientButton(
@@ -523,8 +541,9 @@ class _BarcodeField extends StatelessWidget {
 // ---------------------------------------------------------------------
 class _ImagePickerField extends StatefulWidget {
   final Uint8List? initialBytes;
+  final String? initialUrl;
   final ValueChanged<Uint8List?> onChanged;
-  const _ImagePickerField({this.initialBytes, required this.onChanged});
+  const _ImagePickerField({this.initialBytes, this.initialUrl, required this.onChanged});
 
   @override
   State<_ImagePickerField> createState() => _ImagePickerFieldState();
@@ -532,12 +551,14 @@ class _ImagePickerField extends StatefulWidget {
 
 class _ImagePickerFieldState extends State<_ImagePickerField> {
   Uint8List? _bytes;
+  String? _url;
   bool _loading = false;
 
   @override
   void initState() {
     super.initState();
     _bytes = widget.initialBytes;
+    _url = widget.initialUrl;
   }
 
   Future<void> _pickImage() async {
@@ -550,7 +571,10 @@ class _ImagePickerFieldState extends State<_ImagePickerField> {
         // Reading bytes (instead of relying on picked.path + File) works
         // consistently across mobile, desktop, and web.
         final bytes = await picked.readAsBytes();
-        setState(() => _bytes = bytes);
+        setState(() {
+          _bytes = bytes;
+          _url = null;
+        });
         widget.onChanged(bytes);
       }
     } catch (_) {
@@ -563,12 +587,17 @@ class _ImagePickerFieldState extends State<_ImagePickerField> {
   }
 
   void _clearImage() {
-    setState(() => _bytes = null);
+    setState(() {
+      _bytes = null;
+      _url = null;
+    });
     widget.onChanged(null);
   }
 
   @override
   Widget build(BuildContext context) {
+    final hasImage = _bytes != null || (_url != null && _url!.trim().isNotEmpty);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -613,11 +642,13 @@ class _ImagePickerFieldState extends State<_ImagePickerField> {
               border: Border.all(color: AppColors.fieldBorder, width: 1.2),
               image: _bytes != null
                   ? DecorationImage(image: MemoryImage(_bytes!), fit: BoxFit.cover)
-                  : null,
+                  : (_url != null && _url!.trim().isNotEmpty && ApiConfig.resolveMediaUrl(_url) != null
+                      ? DecorationImage(image: NetworkImage(ApiConfig.resolveMediaUrl(_url)!), fit: BoxFit.cover)
+                      : null),
             ),
             child: _loading
                 ? const Center(child: CircularProgressIndicator(color: AppColors.purpleLight, strokeWidth: 2))
-                : _bytes == null
+                : !hasImage
                     ? const Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [

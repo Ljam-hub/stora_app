@@ -25,6 +25,8 @@ def _safe_avatar_url(request, user):
         return None
     try:
         url = user.avatar.url
+        if url and not url.startswith("http://") and not url.startswith("https://") and not url.startswith("/"):
+            url = f"/{url}"
         return request.build_absolute_uri(url) if (url and request) else url
     except Exception:
         return None
@@ -35,6 +37,8 @@ def _safe_image_url(request, image_field):
         return None
     try:
         url = image_field.url
+        if url and not url.startswith("http://") and not url.startswith("https://") and not url.startswith("/"):
+            url = f"/{url}"
         return request.build_absolute_uri(url) if (url and request) else url
     except Exception:
         return None

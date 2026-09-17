@@ -109,6 +109,8 @@ class OrdersStore extends ChangeNotifier {
         SalesStore.instance.loadSales(),
         fetchOrders(isSilent: true),
       ]));
+    } catch (e) {
+      _error = e.toString();
     } finally {
       _processingOrderIds.remove(orderId);
       notifyListeners();
@@ -130,6 +132,8 @@ class OrdersStore extends ChangeNotifier {
       }
 
       unawaited(fetchOrders(isSilent: true));
+    } catch (e) {
+      _error = e.toString();
     } finally {
       _processingOrderIds.remove(orderId);
       notifyListeners();

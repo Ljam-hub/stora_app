@@ -204,6 +204,7 @@ class Sale {
       if (channel != null) 'channel': channel,
       'items': items
           .map((item) => <String, dynamic>{
+                'product': int.tryParse(item.product.id) ?? item.product.id,
                 'product_name': item.product.name,
                 'product_price': item.product.price.toStringAsFixed(2),
                 'quantity': item.quantity,

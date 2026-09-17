@@ -2,6 +2,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 
 import '../data/api/api_client.dart';
+import '../data/api/api_config.dart';
 import '../data/db/stora_database.dart';
 import '../data/services/notification_service.dart';
 import '../home/stores/orders_store.dart';
@@ -10,6 +11,8 @@ import '../home/stores/sales_store.dart';
 import '../home/stores/cart_store.dart';
 import '../home/stores/category_store.dart';
 import '../home/stores/chat_store.dart';
+import '../data/stores/account_status_store.dart';
+import '../home/stores/store_status_store.dart';
 
 class AuthStore extends ChangeNotifier {
   AuthStore._();
@@ -41,7 +44,7 @@ class AuthStore extends ChangeNotifier {
     try {
       final me = await ApiClient.instance.getMe();
       isEmailVerified = me['is_email_verified'] == true;
-      avatarUrl = me['avatar_url'] as String?;
+      avatarUrl = ApiConfig.resolveMediaUrl(me['avatar_url'] as String?);
       // Re-persist the refreshed verification status
       await AppDatabase.instance.authDao.saveSession(
         accessToken: session.accessToken,
@@ -143,13 +146,13 @@ class AuthStore extends ChangeNotifier {
 
   Future<void> uploadAvatar(Uint8List imageBytes, String filename) async {
     final res = await ApiClient.instance.uploadAvatar(imageBytes, filename);
-    avatarUrl = res['avatar_url'] as String?;
+    avatarUrl = ApiConfig.resolveMediaUrl(res['avatar_url'] as String?);
     notifyListeners();
   }
 
   Future<void> removeAvatar() async {
     final res = await ApiClient.instance.removeAvatar();
-    avatarUrl = res['avatar_url'] as String?;
+    avatarUrl = ApiConfig.resolveMediaUrl(res['avatar_url'] as String?);
     notifyListeners();
   }
 
@@ -163,6 +166,8 @@ class AuthStore extends ChangeNotifier {
     CartStore.instance.clear();
     CategoryStore.instance.reset();
     ChatStore.instance.clear();
+    AccountStatusStore.instance.reset();
+    StoreStatusStore.instance.reset();
 
     final db = AppDatabase.instance;
     await db.delete(db.products).go();

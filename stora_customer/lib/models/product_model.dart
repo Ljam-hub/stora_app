@@ -1,3 +1,5 @@
+import '../config/api_config.dart';
+
 class ProductModel {
   final int id;
   final String name;
@@ -62,10 +64,12 @@ class ProductModel {
       price: parsedPrice,
       stock: parsedStock,
       barcode: json['barcode']?.toString(),
-      image: json['image']?.toString(),
+      image: (json['image'] != null && json['image'].toString().isNotEmpty)
+          ? json['image'].toString()
+          : json['image_url']?.toString(),
       ownerId: parseId(json['owner']),
       storeName: json['store_name']?.toString() ?? '',
-      storeAvatarUrl: json['store_avatar_url']?.toString(),
+      storeAvatarUrl: ApiConfig.resolveMediaUrl(json['store_avatar_url']?.toString()),
       bio: json['bio']?.toString() ?? '',
     );
   }

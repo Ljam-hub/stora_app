@@ -449,10 +449,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(
-                                '${i.quantity}x ${i.product.name}',
-                                style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                              Expanded(
+                                child: Text(
+                                  '${i.quantity}x ${i.product.name}',
+                                  style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                               ),
+                              const SizedBox(width: 8),
                               Text(
                                 i.formattedSubtotal,
                                 style: TextStyle(color: AppColors.textPrimary, fontSize: 13),

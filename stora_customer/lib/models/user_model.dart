@@ -1,3 +1,5 @@
+import '../config/api_config.dart';
+
 class UserModel {
   final int id;
   final String email;
@@ -30,8 +32,8 @@ class UserModel {
       name: (json['business_name'] as String?) ?? (json['name'] as String?) ?? '',
       role: (json['role'] as String?) ?? 'customer',
       isPremium: json['is_premium'] == true,
-      isEmailVerified: json['is_email_verified'] == true,
-      avatarUrl: (json['avatar_url'] as String?),
+      isEmailVerified: json['is_email_verified'] == true || json['is_email_verified'] == 1,
+      avatarUrl: ApiConfig.resolveMediaUrl(json['avatar_url'] as String?),
     );
   }
 

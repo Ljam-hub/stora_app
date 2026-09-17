@@ -252,6 +252,7 @@ class PaymentProof(models.Model):
         return f"PaymentProof #{self.id} ({self.user.email} - {self.reference_number}) [{self.status}]"
 
     def approve(self):
+        if self.status == self.STATUS_APPROVED: return
         from django.db import transaction
         with transaction.atomic():
             proof = PaymentProof.objects.select_for_update().get(pk=self.pk)

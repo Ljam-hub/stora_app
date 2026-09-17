@@ -26,6 +26,8 @@ def _safe_avatar_url(request, user):
         return None
     try:
         url = user.avatar.url
+        if url and not url.startswith("http://") and not url.startswith("https://") and not url.startswith("/"):
+            url = f"/{url}"
         return request.build_absolute_uri(url) if (url and request) else url
     except Exception:
         return None
@@ -957,6 +959,8 @@ class OrderViewSet(viewsets.ModelViewSet):
             )
         try:
             sale = order.accept()
+            if sale is None:
+                return Response({"error": "Order has already been processed."}, status=status.HTTP_409_CONFLICT)
         except ValueError as err:
             return Response(
                 {"error": str(err)},
@@ -966,7 +970,7 @@ class OrderViewSet(viewsets.ModelViewSet):
         return Response({
             "status": "accepted",
             "receipt_number": sale.receipt_number if sale else f"ORD-{order.id}",
-            "order": OrderSerializer(order).data,
+            "order": OrderSerializer(order, context={"request": request}).data,
             "sale_id": sale.id if sale else None,
         })
 
@@ -985,7 +989,7 @@ class OrderViewSet(viewsets.ModelViewSet):
         return Response({
             "status": "ready",
             "receipt_number": f"ORD-{order.id}",
-            "order": OrderSerializer(order).data,
+            "order": OrderSerializer(order, context={"request": request}).data,
         })
 
     @action(detail=True, methods=["post"])
@@ -1005,7 +1009,7 @@ class OrderViewSet(viewsets.ModelViewSet):
         notify_order_status_change(order, "declined")
         return Response({
             "status": "declined",
-            "order": OrderSerializer(order).data,
+            "order": OrderSerializer(order, context={"request": request}).data,
         })
 
     @action(detail=True, methods=["post"])
@@ -1026,7 +1030,7 @@ class OrderViewSet(viewsets.ModelViewSet):
         notify_order_status_change(order, "counter")
         return Response({
             "status": "counter_offer",
-            "order": OrderSerializer(order).data,
+            "order": OrderSerializer(order, context={"request": request}).data,
         })
 
 
@@ -1343,6 +1347,10 @@ def chat_messages(request):
         with_user_id = request.query_params.get("with_user")
         if not with_user_id:
             return Response({"error": "Query parameter 'with_user' is required."}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            with_user_id = int(with_user_id)
+        except (ValueError, TypeError):
+            return Response({"error": "Invalid user ID."}, status=status.HTTP_400_BAD_REQUEST)
 
         from django.db.models import Q, Count
         messages = ChatMessage.objects.filter(
@@ -1549,7 +1557,7 @@ def list_conversations(request):
         customer_pids = [pid for pid, p in partner_users.items() if p.role == User.ROLE_CUSTOMER]
         if customer_pids:
             orders = (
-                Order.objects.filter(customer_id__in=customer_pids)
+                Order.objects.filter(customer_id__in=customer_pids, owner=user)
                 .exclude(customer_name="")
                 .order_by("-created_at")
                 .values("customer_id", "customer_name")
@@ -1792,7 +1800,7 @@ def block_customer(request):
 
     try:
         customer = User.objects.get(pk=customer_id)
-    except User.DoesNotExist:
+    except (User.DoesNotExist, ValueError, TypeError):
         return Response({"error": "Customer not found."}, status=status.HTTP_404_NOT_FOUND)
 
     block_side = request.data.get("block_side", BlockedCustomer.BLOCK_SIDE_BOTH)
@@ -1844,7 +1852,7 @@ def unblock_customer(request):
 
     try:
         customer = User.objects.get(pk=customer_id)
-    except User.DoesNotExist:
+    except (User.DoesNotExist, ValueError, TypeError):
         return Response({"error": "Customer not found."}, status=status.HTTP_404_NOT_FOUND)
 
     # Decoupled: removing BlockedCustomer record does NOT touch User.is_blocked or User.is_active

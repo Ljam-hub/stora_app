@@ -18,17 +18,21 @@ class PaymentProofInfo {
   });
 
   factory PaymentProofInfo.fromJson(Map<String, dynamic> json) {
+    DateTime? tryParseDate(String? s) {
+      if (s == null) return null;
+      try {
+        return parseApiDateTime(s);
+      } catch (_) {
+        return DateTime.tryParse(s);
+      }
+    }
     return PaymentProofInfo(
-      id: json['id'] as int?,
-      referenceNumber: (json['reference_number'] as String?) ?? '',
-      amount: (json['amount'] as String?) ?? '0.00',
-      status: (json['status'] as String?) ?? 'pending',
-      submittedAt: json['submitted_at'] != null
-          ? parseApiDateTime(json['submitted_at'] as String)
-          : DateTime.now(),
-      reviewedAt: json['reviewed_at'] != null
-          ? parseApiDateTime(json['reviewed_at'] as String)
-          : null,
+      id: json['id'] is int ? json['id'] as int : int.tryParse(json['id']?.toString() ?? ''),
+      referenceNumber: json['reference_number']?.toString() ?? '',
+      amount: json['amount']?.toString() ?? '0.00',
+      status: json['status']?.toString() ?? 'pending',
+      submittedAt: tryParseDate(json['submitted_at']?.toString()) ?? DateTime.now(),
+      reviewedAt: tryParseDate(json['reviewed_at']?.toString()),
     );
   }
 
@@ -69,26 +73,28 @@ class AccountStatus {
   });
 
   factory AccountStatus.fromJson(Map<String, dynamic> json) {
-    final proofJson = json['latest_payment_proof'] as Map<String, dynamic>?;
+    final proofJson = json['latest_payment_proof'] is Map ? Map<String, dynamic>.from(json['latest_payment_proof'] as Map) : null;
+    DateTime? tryParseDate(String? s) {
+      if (s == null) return null;
+      try {
+        return parseApiDateTime(s);
+      } catch (_) {
+        return DateTime.tryParse(s);
+      }
+    }
     return AccountStatus(
-      isPremium: json['is_premium'] as bool? ?? false,
-      premiumUntil: json['premium_until'] != null
-          ? parseApiDateTime(json['premium_until'] as String)
-          : null,
-      trialStartedAt: json['trial_started_at'] != null
-          ? parseApiDateTime(json['trial_started_at'] as String)
-          : null,
-      trialEndsAt: json['trial_ends_at'] != null
-          ? parseApiDateTime(json['trial_ends_at'] as String)
-          : null,
+      isPremium: json['is_premium'] == true,
+      premiumUntil: tryParseDate(json['premium_until']?.toString()),
+      trialStartedAt: tryParseDate(json['trial_started_at']?.toString()),
+      trialEndsAt: tryParseDate(json['trial_ends_at']?.toString()),
       productCount: _asInt(json['product_count'], 0),
       productLimit: json['product_limit'] == null ? 0 : _asInt(json['product_limit'], 20),
       daysLeft: _asInt(json['days_left'], 0),
-      canAddProduct: json['can_add_product'] as bool? ?? false,
+      canAddProduct: json['can_add_product'] == true,
       monthlyPrice: _asDouble(json['monthly_price'], 70.0),
-      gcashNumber: (json['gcash_number'] as String?) ?? '0917 000 0070',
-      gcashName: (json['gcash_name'] as String?) ?? 'STORA Admin',
-      qrCodeUrl: json['qr_code'] as String?,
+      gcashNumber: json['gcash_number']?.toString() ?? '0917 000 0070',
+      gcashName: json['gcash_name']?.toString() ?? 'STORA Admin',
+      qrCodeUrl: json['qr_code']?.toString(),
       latestPaymentProof: proofJson != null ? PaymentProofInfo.fromJson(proofJson) : null,
     );
   }

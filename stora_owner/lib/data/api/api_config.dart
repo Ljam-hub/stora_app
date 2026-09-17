@@ -28,6 +28,21 @@ class ApiConfig {
 
   static String get baseUrl => _baseUrl;
 
+  /// Resolves any relative or full media URL to a complete, absolute URL using the active backend host.
+  static String? resolveMediaUrl(String? url) {
+    if (url == null) return null;
+    final trimmed = url.trim();
+    if (trimmed.isEmpty) return null;
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:')) {
+      return trimmed;
+    }
+    if (trimmed.startsWith('//')) {
+      return 'https:$trimmed';
+    }
+    final host = baseUrl.replaceAll(RegExp(r'/api/?$'), '');
+    return trimmed.startsWith('/') ? '$host$trimmed' : '$host/$trimmed';
+  }
+
   static String _defaultUrl() {
     if (_customUrl != null && _customUrl!.isNotEmpty) return _customUrl!;
     if (_envUrl.isNotEmpty) return _envUrl;

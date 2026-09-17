@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:typed_data';
+import '../../data/api/api_config.dart';
 
 class Product {
   String id;
@@ -9,7 +10,9 @@ class Product {
   int stock;
   String? barcode;
   Uint8List? imageBytes;
+  String? imageUrl;
   String bio;
+  bool isImageCleared;
 
   Product({
     required this.id,
@@ -19,18 +22,37 @@ class Product {
     required this.stock,
     this.barcode,
     this.imageBytes,
+    this.imageUrl,
     this.bio = '',
+    this.isImageCleared = false,
   });
 
   /// Create a [Product] from a JSON map returned by the Django API.
   factory Product.fromJson(Map<String, dynamic> json) {
     Uint8List? imageBytes;
-    final image = json['image'];
-    if (image is String && image.isNotEmpty && !image.startsWith('http')) {
-      try {
-        imageBytes = base64Decode(image);
-      } catch (_) {
-        imageBytes = null;
+    String? imageUrl;
+    final image = json['image'] ?? json['image_url'];
+    if (image is String && image.trim().isNotEmpty) {
+      final img = image.trim();
+      if (img.startsWith('http://') ||
+          img.startsWith('https://') ||
+          img.startsWith('//') ||
+          img.startsWith('/media/') ||
+          img.startsWith('media/') ||
+          img.startsWith('/static/') ||
+          img.startsWith('static/')) {
+        imageUrl = ApiConfig.resolveMediaUrl(img);
+      } else {
+        try {
+          var clean = img.contains(',') ? img.split(',').last.trim() : img;
+          clean = clean.replaceAll(RegExp(r'\s+'), '');
+          while (clean.length % 4 != 0) {
+            clean += '=';
+          }
+          imageBytes = base64Decode(clean);
+        } catch (_) {
+          imageBytes = null;
+        }
       }
     }
 
@@ -62,6 +84,7 @@ class Product {
       stock: parsedStock,
       barcode: json['barcode']?.toString(),
       imageBytes: imageBytes,
+      imageUrl: imageUrl,
       bio: json['bio']?.toString() ?? '',
     );
   }
@@ -78,6 +101,8 @@ class Product {
     };
     if (imageBytes != null) {
       map['image'] = base64Encode(imageBytes!);
+    } else if (isImageCleared) {
+      map['image'] = '';
     }
     return map;
   }

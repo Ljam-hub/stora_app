@@ -11,7 +11,7 @@ class StockStepButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTap: onTap,
+      onTap: disabled ? null : onTap,
       child: Container(
         width: 20,
         height: 20,

@@ -19,7 +19,7 @@ class MenuTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = destructive ? AppColors.error : Colors.white;
+    final color = destructive ? AppColors.error : HomeColors.textPrimary;
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: InkWell(

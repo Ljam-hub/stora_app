@@ -78,4 +78,14 @@ class StoreStatusStore extends ChangeNotifier {
     if (isOpen != null) _isOpen = isOpen;
     notifyListeners();
   }
+
+  void reset() {
+    _isOpen = true;
+    _isLoaded = false;
+    _isUpdating = false;
+    _latitude = 14.5995;
+    _longitude = 120.9842;
+    _address = '';
+    notifyListeners();
+  }
 }

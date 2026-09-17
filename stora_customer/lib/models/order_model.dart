@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../config/api_config.dart';
 import '../theme/app_theme.dart';
 import '../utils/date_utils.dart';
 
@@ -195,7 +196,7 @@ class CustomerOrder {
       id: json['id'] is int ? json['id'] as int : (int.tryParse(json['id']?.toString() ?? '0') ?? 0),
       ownerId: json['owner'] is int ? json['owner'] as int : (int.tryParse(json['owner']?.toString() ?? '0') ?? 0),
       storeName: (json['store_name'] as String?) ?? '',
-      storeAvatarUrl: json['store_avatar_url'] as String?,
+      storeAvatarUrl: ApiConfig.resolveMediaUrl(json['store_avatar_url'] as String?),
       customerName: (json['customer_name'] as String?) ?? '',
       customerPhone: (json['customer_phone'] as String?) ?? '',
       customerAddress: (json['customer_address'] as String?) ?? '',

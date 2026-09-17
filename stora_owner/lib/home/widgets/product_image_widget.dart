@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import '../../data/api/api_config.dart';
 import '../../stora_login/theme/app_colors.dart';
 import '../theme/home_colors.dart';
 
@@ -7,6 +8,7 @@ import '../theme/home_colors.dart';
 /// or a category-adaptive glowing retail placeholder badge if no image exists.
 class ProductImageWidget extends StatelessWidget {
   final Uint8List? imageBytes;
+  final String? imageUrl;
   final String productName;
   final String category;
   final double? width;
@@ -18,6 +20,7 @@ class ProductImageWidget extends StatelessWidget {
   const ProductImageWidget({
     super.key,
     required this.imageBytes,
+    this.imageUrl,
     required this.productName,
     required this.category,
     this.width,
@@ -36,6 +39,20 @@ class ProductImageWidget extends StatelessWidget {
         borderRadius: radius,
         child: Image.memory(
           imageBytes!,
+          width: width,
+          height: height,
+          fit: fit,
+          errorBuilder: (context, error, stackTrace) => _buildPlaceholder(radius),
+        ),
+      );
+    }
+
+    final resolvedUrl = ApiConfig.resolveMediaUrl(imageUrl);
+    if (resolvedUrl != null && resolvedUrl.isNotEmpty) {
+      return ClipRRect(
+        borderRadius: radius,
+        child: Image.network(
+          resolvedUrl,
           width: width,
           height: height,
           fit: fit,

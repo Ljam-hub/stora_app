@@ -1,3 +1,5 @@
+import '../config/api_config.dart';
+
 class StoreModel {
   final int id;
   final String businessName;
@@ -44,7 +46,7 @@ class StoreModel {
       distanceKm: json['distance_km'] is num
           ? (json['distance_km'] as num).toDouble()
           : (json['distance_km'] != null ? double.tryParse(json['distance_km'].toString()) : null),
-      avatarUrl: (json['avatar_url'] as String?),
+      avatarUrl: ApiConfig.resolveMediaUrl(json['avatar_url'] as String?),
       isOpen: json['is_open'] == false ||
               json['is_open'] == 0 ||
               json['is_open'] == 'false' ||

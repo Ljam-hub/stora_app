@@ -64,6 +64,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> with WidgetsB
   Future<void> _checkClipboardForToken() async {
     try {
       final data = await Clipboard.getData('text/plain');
+      if (!mounted) return;
       final text = data?.text?.trim() ?? '';
       final token = _extractResetToken(text);
       if (token.isNotEmpty && _tokenController.text != token) {
@@ -80,6 +81,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> with WidgetsB
   Future<void> _pasteFromClipboard() async {
     try {
       final data = await Clipboard.getData('text/plain');
+      if (!mounted) return;
       final text = data?.text?.trim() ?? '';
       final token = _extractResetToken(text);
       if (token.isNotEmpty) {

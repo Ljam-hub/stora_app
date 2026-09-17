@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../data/api/api_config.dart';
 import '../../data/services/notification_service.dart';
 import '../../stora_login/theme/app_colors.dart';
 import '../stores/orders_store.dart';
@@ -250,7 +251,7 @@ class _OrderCardState extends State<_OrderCard> {
   String get status => (widget.order['status'] as String?) ?? 'pending';
   String get customerName => (widget.order['customer_name'] as String?) ?? 'Customer';
   String get customerEmail => (widget.order['customer_email'] as String?) ?? (widget.order['email'] as String?) ?? '';
-  String? get customerAvatarUrl => widget.order['customer_avatar_url'] as String?;
+  String? get customerAvatarUrl => ApiConfig.resolveMediaUrl(widget.order['customer_avatar_url'] as String?);
   int? get customerId {
     final val = widget.order['customer'] ?? widget.order['customer_id'];
     if (val is int) return val;

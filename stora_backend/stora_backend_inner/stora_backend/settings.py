@@ -24,6 +24,10 @@ SECRET_KEY = os.getenv("SECRET_KEY", os.getenv("Secret_Key", "dev-insecure-secre
 
 DEBUG = os.getenv("DEBUG", "False").lower() in ("true", "1", "t", "yes")
 
+if not DEBUG and SECRET_KEY == "dev-insecure-secret-key-change-me":
+    from django.core.exceptions import ImproperlyConfigured
+    raise ImproperlyConfigured("SECRET_KEY is securely not set.")
+
 allowed_hosts_env = os.getenv("ALLOWED_HOSTS")
 if allowed_hosts_env:
     ALLOWED_HOSTS = [h.strip() for h in allowed_hosts_env.split(",") if h.strip()]
@@ -97,6 +101,9 @@ MIDDLEWARE += [
 ]
 
 CORS_ALLOW_ALL_ORIGINS = DEBUG
+
+_cors_origins = os.getenv("CORS_ALLOWED_ORIGINS", "")
+CORS_ALLOWED_ORIGINS = [o.strip() for o in _cors_origins.split(",") if o.strip()] if _cors_origins else []
 
 ROOT_URLCONF = "stora_backend.urls"
 
@@ -179,7 +186,7 @@ TIME_ZONE = "Asia/Manila"
 USE_I18N = True
 USE_TZ = True
 
-STATIC_URL = "static/"
+STATIC_URL = "/static/"
 STATICFILES_DIRS = [BASE_DIR / "static"] if (BASE_DIR / "static").exists() else []
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
@@ -196,7 +203,7 @@ STORAGES = {
     },
 }
 
-MEDIA_URL = "media/"
+MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
 if os.getenv("CLOUDINARY_URL"):

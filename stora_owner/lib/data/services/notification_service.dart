@@ -77,8 +77,12 @@ class OwnerNotificationService {
           await ApiClient.instance.updateFcmToken(token);
         }
 
-        messaging.onTokenRefresh.listen((newToken) {
-          ApiClient.instance.updateFcmToken(newToken);
+        messaging.onTokenRefresh.listen((newToken) async {
+          try {
+            await ApiClient.instance.updateFcmToken(newToken);
+          } catch (e) {
+            debugPrint('Failed to send refreshed FCM token: $e');
+          }
         });
 
         // ── Foreground message handler ──

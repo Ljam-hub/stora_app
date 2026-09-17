@@ -12,7 +12,7 @@ class AuthDao {
     required String refreshToken,
     required String email,
     required String businessName,
-    bool isEmailVerified = false,
+    bool? isEmailVerified,
   }) async {
     await _db.into(_db.authSessions).insertOnConflictUpdate(
       AuthSessionsCompanion(
@@ -24,10 +24,12 @@ class AuthDao {
       ),
     );
     // Persist isEmailVerified via raw SQL (column added in migration v2)
-    await _db.customStatement(
-      'UPDATE auth_sessions SET is_email_verified = ? WHERE id = 1',
-      [isEmailVerified ? 1 : 0],
-    );
+    if (isEmailVerified != null) {
+      await _db.customStatement(
+        'UPDATE auth_sessions SET is_email_verified = ? WHERE id = 1',
+        [isEmailVerified ? 1 : 0],
+      );
+    }
   }
 
   Future<AuthSession?> readSession() {

@@ -37,39 +37,49 @@ class ProductImage extends StatelessWidget {
   }
 
   Widget _buildImage() {
-    if (imageData != null && imageData!.isNotEmpty) {
+    final raw = imageData?.trim();
+    if (raw != null && raw.isNotEmpty) {
       try {
-        if (imageData!.startsWith('http')) {
-          return Image.network(
-            imageData!,
-            width: width,
-            height: height,
-            fit: fit,
-            errorBuilder: (context, error, stackTrace) => _buildFallback(),
-          );
-        } else if (imageData!.startsWith('/media/')) {
-          final host = ApiConfig.baseUrl.replaceAll(RegExp(r'/api/?$'), '');
-          return Image.network(
-            '$host${imageData!}',
-            width: width,
-            height: height,
-            fit: fit,
-            errorBuilder: (context, error, stackTrace) => _buildFallback(),
-          );
-        } else if (imageData!.startsWith('data:image') || (!imageData!.contains('/') && !imageData!.contains('://'))) {
-          final clean = imageData!.contains(',')
-              ? imageData!.split(',').last
-              : imageData!;
-          final bytes = base64Decode(clean);
-          return Image.memory(
-            bytes,
-            width: width,
-            height: height,
-            fit: fit,
-            errorBuilder: (context, error, stackTrace) => _buildFallback(),
-          );
+        if (raw.startsWith('http://') ||
+            raw.startsWith('https://') ||
+            raw.startsWith('//') ||
+            raw.startsWith('/media/') ||
+            raw.startsWith('media/') ||
+            raw.startsWith('/static/') ||
+            raw.startsWith('static/')) {
+          final resolved = ApiConfig.resolveMediaUrl(raw);
+          if (resolved != null) {
+            return Image.network(
+              resolved,
+              width: width,
+              height: height,
+              fit: fit,
+              errorBuilder: (context, error, stackTrace) => _buildFallback(),
+            );
+          }
+        } else {
+          // Decode base64 image (handles raw base64, data URIs, JPEG headers with /9j/, etc.)
+          var clean = raw.contains(',') ? raw.split(',').last.trim() : raw;
+          clean = clean.replaceAll(RegExp(r'\s+'), '');
+          if (clean.isNotEmpty) {
+            while (clean.length % 4 != 0) {
+              clean += '=';
+            }
+            final bytes = base64Decode(clean);
+            if (bytes.isNotEmpty) {
+              return Image.memory(
+                bytes,
+                width: width,
+                height: height,
+                fit: fit,
+                errorBuilder: (context, error, stackTrace) => _buildFallback(),
+              );
+            }
+          }
         }
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('ProductImage decode error: $e');
+      }
     }
     return _buildFallback();
   }

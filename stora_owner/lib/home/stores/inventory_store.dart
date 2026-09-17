@@ -41,6 +41,7 @@ class InventoryStore extends ChangeNotifier {
         stock: newStock,
         barcode: p.barcode,
         imageBytes: p.imageBytes,
+        imageUrl: p.imageUrl,
         bio: p.bio,
       );
       _products[idx] = updated;

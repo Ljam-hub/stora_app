@@ -159,5 +159,49 @@ void main() {
       expect(janSales, isEmpty);
     });
   });
+
+  group('Product Image Serialization & Clearing', () {
+    test('resolves relative media URL from json', () {
+      final json = {
+        'id': '1',
+        'name': 'Test Item',
+        'category': 'Drinks',
+        'price': 10.0,
+        'stock': 5,
+        'image': '/media/products/test.jpg',
+      };
+      final p = Product.fromJson(json);
+      expect(p.imageUrl, isNotNull);
+      expect(p.imageUrl, contains('/media/products/test.jpg'));
+      expect(p.imageUrl!.startsWith('http'), isTrue);
+    });
+
+    test('omits image field in toJson when image not changed', () {
+      final p = Product(
+        id: '1',
+        name: 'Test Item',
+        category: 'Drinks',
+        price: 10.0,
+        stock: 5,
+        imageUrl: 'http://example.com/test.jpg',
+      );
+      final json = p.toJson();
+      expect(json.containsKey('image'), isFalse);
+    });
+
+    test('emits empty string image field in toJson when isImageCleared is true', () {
+      final p = Product(
+        id: '1',
+        name: 'Test Item',
+        category: 'Drinks',
+        price: 10.0,
+        stock: 5,
+        isImageCleared: true,
+      );
+      final json = p.toJson();
+      expect(json.containsKey('image'), isTrue);
+      expect(json['image'], equals(''));
+    });
+  });
 }
 

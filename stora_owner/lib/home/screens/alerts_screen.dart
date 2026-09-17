@@ -148,6 +148,7 @@ class _AlertCardState extends State<_AlertCard> {
         children: [
           ProductImageWidget(
             imageBytes: product.imageBytes,
+            imageUrl: product.imageUrl,
             productName: product.name,
             category: product.category,
             width: 44,
@@ -169,7 +170,7 @@ class _AlertCardState extends State<_AlertCard> {
                 const SizedBox(height: 3),
                 Row(
                   children: [
-                    Text(product.category, style: TextStyle(color: HomeColors.textSecondary, fontSize: 12)),
+                    Flexible(child: Text(product.category, overflow: TextOverflow.ellipsis, maxLines: 1, style: TextStyle(color: HomeColors.textSecondary, fontSize: 12))),
                     const SizedBox(width: 6),
                     Text('• ₱${product.price.toStringAsFixed(2)}',
                         style: TextStyle(color: HomeColors.accentText, fontSize: 12, fontWeight: FontWeight.w700)),

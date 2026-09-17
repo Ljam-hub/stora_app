@@ -128,7 +128,7 @@ class _OwnerChatScreenState extends State<OwnerChatScreen> {
       (c) => c['is_support'] == true,
       orElse: () => const {},
     );
-    final supportAvatar = supportConvo['avatar_url']?.toString();
+    final supportAvatar = ApiConfig.resolveMediaUrl(supportConvo['avatar_url']?.toString());
     final hasSupportAvatar = supportAvatar != null && supportAvatar.isNotEmpty;
 
     return Padding(
@@ -377,7 +377,7 @@ class _OwnerChatScreenState extends State<OwnerChatScreen> {
                             ? c['name'] as String
                             : 'Customer #$id';
                         final email = (c['email'] as String?) ?? '';
-                        final avatar = c['avatar_url'] as String?;
+                        final avatar = ApiConfig.resolveMediaUrl(c['avatar_url'] as String?);
                         final orderCount = c['order_count'] as int? ?? 0;
 
                         return ListTile(
@@ -568,7 +568,7 @@ class _OwnerChatScreenState extends State<OwnerChatScreen> {
                                 final lastMessage = conv['last_message'] as String? ?? '';
                                 final unreadCount = (conv['unread_count'] as int?) ?? 0;
                                 final lastMessageAt = conv['last_message_at'] as String?;
-                                final avatarUrl = conv['avatar_url'] as String?;
+                                final avatarUrl = ApiConfig.resolveMediaUrl(conv['avatar_url'] as String?);
 
                                 String timeDisplay = '';
                                 if (lastMessageAt != null && lastMessageAt.isNotEmpty) {
@@ -1201,10 +1201,7 @@ class _OwnerChatThreadScreenState extends State<OwnerChatThreadScreen> {
   }
 
   String _resolveImageUrl(String? url) {
-    if (url == null || url.isEmpty) return '';
-    if (url.startsWith('http://') || url.startsWith('https://')) return url;
-    final base = ApiConfig.baseUrl.replaceAll(RegExp(r'/api/?$'), '');
-    return url.startsWith('/') ? '$base$url' : '$base/$url';
+    return ApiConfig.resolveMediaUrl(url) ?? '';
   }
 
   void _showImageFullscreen(String imageUrl) {
@@ -1226,6 +1223,7 @@ class _OwnerChatThreadScreenState extends State<OwnerChatThreadScreen> {
                     if (progress == null) return child;
                     return const Center(child: CircularProgressIndicator(color: AppColors.purpleLight));
                   },
+                  errorBuilder: (ctx, err, stack) => const Center(child: Icon(Icons.broken_image, color: Colors.white70, size: 48)),
                 ),
               ),
             ),
@@ -1313,34 +1311,39 @@ class _OwnerChatThreadScreenState extends State<OwnerChatThreadScreen> {
         titleSpacing: 0,
         title: Row(
           children: [
-            if (_isSupportChat)
-              (widget.customerAvatarUrl != null && widget.customerAvatarUrl!.isNotEmpty)
-                  ? CircleAvatar(
-                      radius: 19,
-                      backgroundColor: const Color(0xFFF97316).withValues(alpha: 0.15),
-                      backgroundImage: NetworkImage(widget.customerAvatarUrl!),
-                    )
-                  : Container(
-                      width: 38,
-                      height: 38,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF97316).withValues(alpha: 0.15),
-                        shape: BoxShape.circle,
-                        border: Border.all(color: const Color(0xFFF97316).withValues(alpha: 0.5), width: 1.5),
-                      ),
-                      child: const Icon(Icons.support_agent_rounded, color: Color(0xFFF97316), size: 22),
-                    )
-            else
-              CircleAvatar(
-                radius: 19,
-                backgroundColor: const Color(0xFF3A3B3C),
-                backgroundImage: (widget.customerAvatarUrl != null && widget.customerAvatarUrl!.isNotEmpty)
-                    ? NetworkImage(widget.customerAvatarUrl!)
-                    : null,
-                child: (widget.customerAvatarUrl == null || widget.customerAvatarUrl!.isEmpty)
-                    ? const Icon(Icons.person, color: Colors.white, size: 22)
-                    : null,
-              ),
+            Builder(
+              builder: (context) {
+                final customerAvatar = _resolveImageUrl(widget.customerAvatarUrl);
+                if (_isSupportChat) {
+                  return customerAvatar.isNotEmpty
+                      ? CircleAvatar(
+                          radius: 19,
+                          backgroundColor: const Color(0xFFF97316).withValues(alpha: 0.15),
+                          backgroundImage: NetworkImage(customerAvatar),
+                        )
+                      : Container(
+                          width: 38,
+                          height: 38,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF97316).withValues(alpha: 0.15),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: const Color(0xFFF97316).withValues(alpha: 0.5), width: 1.5),
+                          ),
+                          child: const Icon(Icons.support_agent_rounded, color: Color(0xFFF97316), size: 22),
+                        );
+                }
+                return CircleAvatar(
+                  radius: 19,
+                  backgroundColor: const Color(0xFF3A3B3C),
+                  backgroundImage: customerAvatar.isNotEmpty
+                      ? NetworkImage(customerAvatar)
+                      : null,
+                  child: customerAvatar.isEmpty
+                      ? const Icon(Icons.person, color: Colors.white, size: 22)
+                      : null,
+                );
+              },
+            ),
             const SizedBox(width: 10),
             Expanded(
               child: Column(
@@ -1554,34 +1557,39 @@ class _OwnerChatThreadScreenState extends State<OwnerChatThreadScreen> {
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                if (_isSupportChat)
-                                  (widget.customerAvatarUrl != null && widget.customerAvatarUrl!.isNotEmpty)
-                                      ? CircleAvatar(
-                                          radius: 38,
-                                          backgroundColor: const Color(0xFFF97316).withValues(alpha: 0.15),
-                                          backgroundImage: NetworkImage(widget.customerAvatarUrl!),
-                                        )
-                                      : Container(
-                                          width: 76,
-                                          height: 76,
-                                          decoration: BoxDecoration(
-                                            shape: BoxShape.circle,
-                                            color: const Color(0xFFF97316).withValues(alpha: 0.15),
-                                            border: Border.all(color: const Color(0xFFF97316).withValues(alpha: 0.5), width: 1.5),
-                                          ),
-                                          child: const Icon(Icons.support_agent_rounded, color: Color(0xFFF97316), size: 44),
-                                        )
-                                else
-                                  CircleAvatar(
-                                    radius: 38,
-                                    backgroundColor: const Color(0xFF3A3B3C),
-                                    backgroundImage: (widget.customerAvatarUrl != null && widget.customerAvatarUrl!.isNotEmpty)
-                                        ? NetworkImage(widget.customerAvatarUrl!)
-                                        : null,
-                                    child: (widget.customerAvatarUrl == null || widget.customerAvatarUrl!.isEmpty)
-                                        ? const Icon(Icons.person, color: Colors.white, size: 44)
-                                        : null,
-                                  ),
+                                Builder(
+                                  builder: (context) {
+                                    final customerAvatar = _resolveImageUrl(widget.customerAvatarUrl);
+                                    if (_isSupportChat) {
+                                      return customerAvatar.isNotEmpty
+                                          ? CircleAvatar(
+                                              radius: 38,
+                                              backgroundColor: const Color(0xFFF97316).withValues(alpha: 0.15),
+                                              backgroundImage: NetworkImage(customerAvatar),
+                                            )
+                                          : Container(
+                                              width: 76,
+                                              height: 76,
+                                              decoration: BoxDecoration(
+                                                shape: BoxShape.circle,
+                                                color: const Color(0xFFF97316).withValues(alpha: 0.15),
+                                                border: Border.all(color: const Color(0xFFF97316).withValues(alpha: 0.5), width: 1.5),
+                                              ),
+                                              child: const Icon(Icons.support_agent_rounded, color: Color(0xFFF97316), size: 44),
+                                            );
+                                    }
+                                    return CircleAvatar(
+                                      radius: 38,
+                                      backgroundColor: const Color(0xFF3A3B3C),
+                                      backgroundImage: customerAvatar.isNotEmpty
+                                          ? NetworkImage(customerAvatar)
+                                          : null,
+                                      child: customerAvatar.isEmpty
+                                          ? const Icon(Icons.person, color: Colors.white, size: 44)
+                                          : null,
+                                    );
+                                  },
+                                ),
                                 const SizedBox(height: 14),
                                 Text(
                                   _isSupportChat ? 'STORA Support' : widget.customerName,
@@ -1730,8 +1738,8 @@ class _OwnerChatThreadScreenState extends State<OwnerChatThreadScreen> {
                                                if (!isMe) ...[
                                                 Builder(
                                                   builder: (context) {
-                                                    final bubbleAvatar = (msg['sender_avatar_url'] ?? widget.customerAvatarUrl)?.toString();
-                                                    final hasBubbleAvatar = bubbleAvatar != null && bubbleAvatar.isNotEmpty;
+                                                    final bubbleAvatar = _resolveImageUrl((msg['sender_avatar_url'] ?? widget.customerAvatarUrl)?.toString());
+                                                    final hasBubbleAvatar = bubbleAvatar.isNotEmpty;
                                                     if (_isSupportChat) {
                                                       return hasBubbleAvatar
                                                           ? CircleAvatar(
@@ -1824,8 +1832,8 @@ class _OwnerChatThreadScreenState extends State<OwnerChatThreadScreen> {
                                               if (isLastOfCluster)
                                                 Builder(
                                                   builder: (context) {
-                                                    final bubbleAvatar = (msg['sender_avatar_url'] ?? widget.customerAvatarUrl)?.toString();
-                                                    final hasBubbleAvatar = bubbleAvatar != null && bubbleAvatar.isNotEmpty;
+                                                    final bubbleAvatar = _resolveImageUrl((msg['sender_avatar_url'] ?? widget.customerAvatarUrl)?.toString());
+                                                    final hasBubbleAvatar = bubbleAvatar.isNotEmpty;
                                                     if (_isSupportChat) {
                                                       return hasBubbleAvatar
                                                           ? CircleAvatar(

@@ -505,6 +505,7 @@ class _PosProductCard extends StatelessWidget {
                     Positioned.fill(
                       child: ProductImageWidget(
                         imageBytes: product.imageBytes,
+                        imageUrl: product.imageUrl,
                         productName: product.name,
                         category: product.category,
                         borderRadius: BorderRadius.circular(10),
@@ -586,6 +587,7 @@ class _CartRow extends StatelessWidget {
         children: [
           ProductImageWidget(
             imageBytes: item.product.imageBytes,
+            imageUrl: item.product.imageUrl,
             productName: item.product.name,
             category: item.product.category,
             width: 36,

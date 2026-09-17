@@ -411,6 +411,7 @@ class ProductCard extends StatelessWidget {
                         Positioned.fill(
                           child: ProductImageWidget(
                             imageBytes: product.imageBytes,
+                            imageUrl: product.imageUrl,
                             productName: product.name,
                             category: product.category,
                             borderRadius: BorderRadius.circular(14),

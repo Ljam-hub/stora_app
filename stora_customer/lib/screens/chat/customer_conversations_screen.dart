@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import '../../config/api_config.dart';
 import '../../providers/chat_provider.dart';
 import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
@@ -87,32 +88,7 @@ class _CustomerConversationsScreenState extends State<CustomerConversationsScree
       ),
     );
 
-    if (confirmed == true) {
-      try {
-        if (!mounted) return false;
-        await context.read<ChatProvider>().deleteConversation(storeOwnerId);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Conversation with $storeName deleted', style: const TextStyle(color: Colors.white)),
-              backgroundColor: AppColors.cardElevated,
-            ),
-          );
-        }
-        return true;
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Failed to delete conversation: $e'),
-              backgroundColor: AppColors.danger,
-            ),
-          );
-        }
-        return false;
-      }
-    }
-    return false;
+    return confirmed == true;
   }
 
   Future<void> _openSupportChat() async {
@@ -156,7 +132,7 @@ class _CustomerConversationsScreenState extends State<CustomerConversationsScree
       (c) => c['is_support'] == true,
       orElse: () => const {},
     );
-    final supportAvatar = supportConvo['avatar_url']?.toString();
+    final supportAvatar = ApiConfig.resolveMediaUrl(supportConvo['avatar_url']?.toString());
     final hasSupportAvatar = supportAvatar != null && supportAvatar.isNotEmpty;
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 10),
@@ -376,7 +352,7 @@ class _CustomerConversationsScreenState extends State<CustomerConversationsScree
                             final conv = filtered[index];
                             final storeOwnerId = (conv['id'] ?? conv['user_id']) as int? ?? 0;
                             final storeName = (conv['name'] as String?)?.trim() ?? 'Store';
-                            final avatarUrl = conv['avatar_url'] as String?;
+                            final avatarUrl = ApiConfig.resolveMediaUrl(conv['avatar_url'] as String?);
                             final unreadCount = (conv['unread_count'] as int?) ?? 0;
                             final lastMsg = (conv['last_message'] as String?) ?? '';
                             final timeText = _formatTime(conv['last_message_at'] as String?);
@@ -404,6 +380,27 @@ class _CustomerConversationsScreenState extends State<CustomerConversationsScree
                                 ),
                               ),
                               confirmDismiss: (_) => _confirmDeleteConversation(storeOwnerId, storeName),
+                              onDismissed: (_) async {
+                                final chatProvider = context.read<ChatProvider>();
+                                final messenger = ScaffoldMessenger.of(context);
+                                try {
+                                  await chatProvider.deleteConversation(storeOwnerId);
+                                  messenger.showSnackBar(
+                                    SnackBar(
+                                      content: Text('Conversation with $storeName deleted', style: const TextStyle(color: Colors.white)),
+                                      backgroundColor: AppColors.cardElevated,
+                                    ),
+                                  );
+                                } catch (e) {
+                                  messenger.showSnackBar(
+                                    SnackBar(
+                                      content: Text('Failed to delete conversation: $e'),
+                                      backgroundColor: AppColors.danger,
+                                    ),
+                                  );
+                                  chatProvider.fetchConversations();
+                                }
+                              },
                               child: Builder(
                                 builder: (context) {
                                   final isSupport = conv['is_support'] == true ||

@@ -331,7 +331,7 @@ class _ProductDetailSheetState extends State<ProductDetailSheet> {
                                         onPressed: () {
                                           cart.clear();
                                           cart.addItem(product, _quantity);
-                                          Navigator.pop(context);
+                                          if (mounted) Navigator.pop(context);
                                         },
                                       ),
                                     ),

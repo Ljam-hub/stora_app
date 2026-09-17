@@ -178,11 +178,14 @@ class AuthProvider extends ChangeNotifier {
             accessToken: _token!,
             refreshToken: res['refresh'] as String? ?? '',
             user: _currentUser!,
+            savedPhone: _savedPhone,
+            savedAddress: _savedAddress,
           );
         }
       } else if (_currentUser != null) {
         await SessionManager.instance.updateUser(_currentUser!);
       }
+      await NotificationService.instance.init();
       _isLoading = false;
       notifyListeners();
       return true;

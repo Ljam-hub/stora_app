@@ -26,7 +26,7 @@ class CatalogProvider extends ChangeNotifier {
 
   List<ProductModel> _filteredProducts() {
     return _products.where((p) {
-      if (_selectedStore != null && p.ownerId != null && p.ownerId != _selectedStore!.id) {
+      if (_selectedStore != null && p.ownerId != _selectedStore!.id) {
         return false;
       }
       if (_selectedCategory != null && p.categoryId != _selectedCategory!.id) {

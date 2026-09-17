@@ -251,6 +251,7 @@ class CategorySerializer(serializers.ModelSerializer):
 class ProductSerializer(serializers.ModelSerializer):
     category_name = serializers.CharField(required=False, allow_blank=False)
     image = serializers.CharField(required=False, allow_null=True, allow_blank=True, write_only=True)
+    image_url = serializers.SerializerMethodField()
     store_name = serializers.CharField(source="owner.business_name", read_only=True)
     store_avatar_url = serializers.SerializerMethodField()
 
@@ -265,25 +266,43 @@ class ProductSerializer(serializers.ModelSerializer):
             "stock",
             "barcode",
             "image",
+            "image_url",
             "bio",
             "owner",
             "store_name",
             "store_avatar_url",
         )
-        read_only_fields = ("id", "owner", "store_name", "store_avatar_url")
+        read_only_fields = ("id", "owner", "store_name", "store_avatar_url", "image_url")
         extra_kwargs = {
             "category": {"required": False},
             "barcode": {"required": False, "allow_null": True, "allow_blank": True},
             "bio": {"required": False, "allow_blank": True},
         }
 
+    def get_image_url(self, obj):
+        if obj.image:
+            try:
+                url = obj.image.url
+                if url and not url.startswith("http://") and not url.startswith("https://") and not url.startswith("/"):
+                    url = f"/{url}"
+                request = self.context.get("request")
+                if request and url:
+                    return request.build_absolute_uri(url)
+                return url
+            except Exception:
+                return None
+        return None
+
     def get_store_avatar_url(self, obj):
         if obj.owner and getattr(obj.owner, "avatar", None):
             try:
+                url = obj.owner.avatar.url
+                if url and not url.startswith("http://") and not url.startswith("https://") and not url.startswith("/"):
+                    url = f"/{url}"
                 request = self.context.get("request")
-                if request:
-                    return request.build_absolute_uri(obj.owner.avatar.url)
-                return obj.owner.avatar.url
+                if request and url:
+                    return request.build_absolute_uri(url)
+                return url
             except Exception:
                 return None
         return None
@@ -295,7 +314,8 @@ class ProductSerializer(serializers.ModelSerializer):
         data["bio"] = instance.bio or ""
         data["owner"] = instance.owner_id
         data["price"] = f"{instance.price:.2f}"
-        data["image"] = self._encode_image(instance)
+        encoded_image = self._encode_image(instance)
+        data["image"] = encoded_image or data.get("image_url")
         return data
 
     def validate_stock(self, value):
@@ -333,7 +353,8 @@ class ProductSerializer(serializers.ModelSerializer):
         return product
 
     def update(self, instance, validated_data):
-        owner = validated_data.pop("owner", None) or self.context["request"].user
+        owner = instance.owner
+        validated_data.pop("owner", None)
         if "category_name" in validated_data or "category" in validated_data:
             instance.category = self._resolve_category(validated_data, owner)
         image_payload = validated_data.pop("image", serializers.empty)
@@ -373,6 +394,11 @@ class ProductSerializer(serializers.ModelSerializer):
             instance.image.close()
             return encoded
         except Exception:
+            try:
+                if hasattr(instance.image, "url"):
+                    return instance.image.url
+            except Exception:
+                pass
             return None
 
     @staticmethod

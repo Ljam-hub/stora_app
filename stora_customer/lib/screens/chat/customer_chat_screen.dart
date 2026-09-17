@@ -435,10 +435,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
   }
 
   String _resolveImageUrl(String? url) {
-    if (url == null || url.isEmpty) return '';
-    if (url.startsWith('http://') || url.startsWith('https://')) return url;
-    final base = ApiConfig.baseUrl.replaceAll(RegExp(r'/api/?$'), '');
-    return url.startsWith('/') ? '$base$url' : '$base/$url';
+    return ApiConfig.resolveMediaUrl(url) ?? '';
   }
 
   void _showImageFullscreen(String imageUrl) {
@@ -556,34 +553,39 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
         titleSpacing: 0,
         title: Row(
           children: [
-            if (_isSupportChat)
-              (widget.storeAvatarUrl != null && widget.storeAvatarUrl!.isNotEmpty)
-                  ? CircleAvatar(
-                      radius: 19,
-                      backgroundColor: AppColors.primary.withValues(alpha: 0.15),
-                      backgroundImage: NetworkImage(widget.storeAvatarUrl!),
-                    )
-                  : Container(
-                      width: 38,
-                      height: 38,
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.15),
-                        shape: BoxShape.circle,
-                        border: Border.all(color: AppColors.primary.withValues(alpha: 0.5), width: 1.5),
-                      ),
-                      child: Icon(Icons.support_agent_rounded, color: AppColors.accentText, size: 22),
-                    )
-            else
-              CircleAvatar(
-                radius: 19,
-                backgroundColor: AppColors.cardElevated,
-                backgroundImage: (widget.storeAvatarUrl != null && widget.storeAvatarUrl!.isNotEmpty)
-                    ? NetworkImage(widget.storeAvatarUrl!)
-                    : null,
-                child: (widget.storeAvatarUrl == null || widget.storeAvatarUrl!.isEmpty)
-                    ? const Icon(Icons.storefront_rounded, color: AppColors.primary, size: 20)
-                    : null,
-              ),
+            Builder(
+              builder: (context) {
+                final storeAvatar = _resolveImageUrl(widget.storeAvatarUrl);
+                if (_isSupportChat) {
+                  return storeAvatar.isNotEmpty
+                      ? CircleAvatar(
+                          radius: 19,
+                          backgroundColor: AppColors.primary.withValues(alpha: 0.15),
+                          backgroundImage: NetworkImage(storeAvatar),
+                        )
+                      : Container(
+                          width: 38,
+                          height: 38,
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withValues(alpha: 0.15),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: AppColors.primary.withValues(alpha: 0.5), width: 1.5),
+                          ),
+                          child: Icon(Icons.support_agent_rounded, color: AppColors.accentText, size: 22),
+                        );
+                }
+                return CircleAvatar(
+                  radius: 19,
+                  backgroundColor: AppColors.cardElevated,
+                  backgroundImage: storeAvatar.isNotEmpty
+                      ? NetworkImage(storeAvatar)
+                      : null,
+                  child: storeAvatar.isEmpty
+                      ? const Icon(Icons.storefront_rounded, color: AppColors.primary, size: 20)
+                      : null,
+                );
+              },
+            ),
             const SizedBox(width: 10),
             Expanded(
               child: Column(
@@ -771,38 +773,43 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                if (_isSupportChat)
-                                  (widget.storeAvatarUrl != null && widget.storeAvatarUrl!.isNotEmpty)
-                                      ? CircleAvatar(
-                                          radius: 38,
-                                          backgroundColor: const Color(0xFFF97316).withValues(alpha: 0.15),
-                                          backgroundImage: NetworkImage(widget.storeAvatarUrl!),
-                                        )
-                                      : Container(
-                                          width: 76,
-                                          height: 76,
-                                          decoration: BoxDecoration(
-                                            shape: BoxShape.circle,
-                                            color: const Color(0xFFF97316).withValues(alpha: 0.15),
-                                            border: Border.all(color: const Color(0xFFF97316).withValues(alpha: 0.5), width: 2),
-                                          ),
-                                          child: const Icon(
-                                            Icons.support_agent_rounded,
-                                            color: Color(0xFFF97316),
-                                            size: 42,
-                                          ),
-                                        )
-                                else
-                                  CircleAvatar(
-                                    radius: 38,
-                                    backgroundColor: AppColors.cardElevated,
-                                    backgroundImage: (widget.storeAvatarUrl != null && widget.storeAvatarUrl!.isNotEmpty)
-                                        ? NetworkImage(widget.storeAvatarUrl!)
-                                        : null,
-                                    child: (widget.storeAvatarUrl == null || widget.storeAvatarUrl!.isEmpty)
-                                        ? const Icon(Icons.storefront_rounded, color: AppColors.primary, size: 44)
-                                        : null,
-                                  ),
+                                Builder(
+                                  builder: (context) {
+                                    final storeAvatar = _resolveImageUrl(widget.storeAvatarUrl);
+                                    if (_isSupportChat) {
+                                      return storeAvatar.isNotEmpty
+                                          ? CircleAvatar(
+                                              radius: 38,
+                                              backgroundColor: const Color(0xFFF97316).withValues(alpha: 0.15),
+                                              backgroundImage: NetworkImage(storeAvatar),
+                                            )
+                                          : Container(
+                                              width: 76,
+                                              height: 76,
+                                              decoration: BoxDecoration(
+                                                shape: BoxShape.circle,
+                                                color: const Color(0xFFF97316).withValues(alpha: 0.15),
+                                                border: Border.all(color: const Color(0xFFF97316).withValues(alpha: 0.5), width: 2),
+                                              ),
+                                              child: const Icon(
+                                                Icons.support_agent_rounded,
+                                                color: Color(0xFFF97316),
+                                                size: 42,
+                                              ),
+                                            );
+                                    }
+                                    return CircleAvatar(
+                                      radius: 38,
+                                      backgroundColor: AppColors.cardElevated,
+                                      backgroundImage: storeAvatar.isNotEmpty
+                                          ? NetworkImage(storeAvatar)
+                                          : null,
+                                      child: storeAvatar.isEmpty
+                                          ? const Icon(Icons.storefront_rounded, color: AppColors.primary, size: 44)
+                                          : null,
+                                    );
+                                  },
+                                ),
                                 const SizedBox(height: 14),
                                 Text(_isSupportChat ? 'Message STORA Support' : 'Message ${widget.storeName}', style: TextStyle(color: AppColors.textPrimary, fontSize: 18, fontWeight: FontWeight.bold)),
                                 const SizedBox(height: 4),
@@ -833,7 +840,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
                                   final isMe = (msg['is_me'] is bool)
                                       ? (msg['is_me'] as bool)
                                       : (msg['sender_role'] == 'customer');
-                                  final msgAvatar = (msg['sender_avatar_url'] as String?) ?? widget.storeAvatarUrl;
+                                  final msgAvatar = _resolveImageUrl((msg['sender_avatar_url'] as String?) ?? widget.storeAvatarUrl);
                                   final text = msg['message'] as String? ?? '';
                                   final rawImg = msg['image'] as String?;
                                   final orderId = msg['order'] as int?;
@@ -939,7 +946,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
                                             children: [
                                               if (!isMe) ...[
                                                 if (_isSupportChat)
-                                                  (msgAvatar != null && msgAvatar.isNotEmpty)
+                                                  msgAvatar.isNotEmpty
                                                       ? CircleAvatar(
                                                           radius: 14,
                                                           backgroundColor: const Color(0xFFF97316).withValues(alpha: 0.15),
@@ -959,10 +966,10 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
                                                   CircleAvatar(
                                                     radius: 14,
                                                     backgroundColor: AppColors.cardElevated,
-                                                    backgroundImage: (msgAvatar != null && msgAvatar.isNotEmpty)
+                                                    backgroundImage: msgAvatar.isNotEmpty
                                                         ? NetworkImage(msgAvatar)
                                                         : null,
-                                                    child: (msgAvatar == null || msgAvatar.isEmpty)
+                                                    child: msgAvatar.isEmpty
                                                         ? const Icon(Icons.storefront_rounded, color: AppColors.primary, size: 14)
                                                         : null,
                                                   ),
@@ -1031,7 +1038,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
                                             if (!isMe) ...[
                                               if (isLastOfCluster)
                                                 _isSupportChat
-                                                    ? ((msgAvatar != null && msgAvatar.isNotEmpty)
+                                                    ? (msgAvatar.isNotEmpty
                                                         ? CircleAvatar(
                                                             radius: 14,
                                                             backgroundColor: const Color(0xFFF97316).withValues(alpha: 0.15),
@@ -1050,10 +1057,10 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
                                                     : CircleAvatar(
                                                         radius: 14,
                                                         backgroundColor: AppColors.cardElevated,
-                                                        backgroundImage: (msgAvatar != null && msgAvatar.isNotEmpty)
+                                                        backgroundImage: msgAvatar.isNotEmpty
                                                             ? NetworkImage(msgAvatar)
                                                             : null,
-                                                        child: (msgAvatar == null || msgAvatar.isEmpty)
+                                                        child: msgAvatar.isEmpty
                                                             ? const Icon(Icons.storefront_rounded, color: AppColors.primary, size: 14)
                                                             : null,
                                                       )

@@ -221,14 +221,13 @@ class AuthAndPaymentProofTests(APITestCase):
         self.assertIsNotNone(user.premium_until)
         self.assertGreater(user.premium_until, timezone.now())
 
-        # Test stacking renewal
+        # Test re-approval guard – should NOT stack additional premium
         old_until = user.premium_until
         admin_instance.approve_selected(req, PaymentProof.objects.filter(pk=proof.pk))
         user.refresh_from_db()
-        self.assertAlmostEqual(
-            (user.premium_until - old_until).total_seconds(),
-            timedelta(days=31).total_seconds(),
-            delta=60,
+        self.assertEqual(
+            user.premium_until, old_until,
+            "Re-approving the same proof should not add more premium time",
         )
 
 

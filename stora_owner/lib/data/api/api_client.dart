@@ -60,6 +60,8 @@ class ApiClient {
     if (response.body.isEmpty) return null;
     try {
       return jsonDecode(response.body);
+    } on FormatException {
+      throw ApiException('Server error (${response.statusCode}). Please try again.', statusCode: response.statusCode);
     } catch (_) {
       return null;
     }
