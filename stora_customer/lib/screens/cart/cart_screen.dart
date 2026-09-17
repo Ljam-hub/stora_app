@@ -94,8 +94,18 @@ class _CartScreenState extends State<CartScreen> {
     final isStoreClosed = currentStore != null && !currentStore.isOpen;
 
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('My Shopping Cart'),
+        backgroundColor: AppColors.background,
+        elevation: 0,
+        title: Text(
+          'My Shopping Cart',
+          style: TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         actions: [
           if (cart.isNotEmpty)
             TextButton.icon(

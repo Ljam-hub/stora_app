@@ -45,8 +45,18 @@ class _OrdersScreenState extends State<OrdersScreen> {
     ];
 
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('My Orders'),
+        backgroundColor: AppColors.background,
+        elevation: 0,
+        title: Text(
+          'My Orders',
+          style: TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
       ),
       body: Column(
         children: [

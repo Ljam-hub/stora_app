@@ -276,8 +276,18 @@ class _CustomerConversationsScreenState extends State<CustomerConversationsScree
           }).toList();
 
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Store Messages'),
+        backgroundColor: AppColors.background,
+        elevation: 0,
+        title: Text(
+          'Store Messages',
+          style: TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
