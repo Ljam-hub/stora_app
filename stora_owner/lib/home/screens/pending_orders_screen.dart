@@ -603,9 +603,27 @@ class _OrderCardState extends State<_OrderCard> {
             onPressed: () async {
               if (isSubmitting) return;
               final notes = notesController.text.trim();
-              if (notes.isEmpty) return;
+              if (notes.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Please enter notes explaining the counter-offer.'),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+                return;
+              }
+              final priceText = priceController.text.trim();
+              final price = priceText.isNotEmpty ? double.tryParse(priceText) : null;
+              if (price != null && price <= 0) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Adjusted total must be greater than zero.'),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+                return;
+              }
               isSubmitting = true;
-              final price = double.tryParse(priceController.text.trim());
               Navigator.of(ctx).pop();
               setState(() => _isProcessing = true);
               try {
