@@ -8,6 +8,7 @@ class StoreModel {
   final double? distanceKm;
   final String? avatarUrl;
   final bool isOpen;
+  final String role;
 
   StoreModel({
     required this.id,
@@ -19,6 +20,7 @@ class StoreModel {
     this.distanceKm,
     this.avatarUrl,
     this.isOpen = true,
+    this.role = 'owner',
   });
 
   String get displayName {
@@ -49,6 +51,7 @@ class StoreModel {
               json['is_open'] == '0'
           ? false
           : true,
+      role: (json['role'] as String?) ?? 'owner',
     );
   }
 
@@ -63,6 +66,7 @@ class StoreModel {
       'distance_km': distanceKm,
       'avatar_url': avatarUrl,
       'is_open': isOpen,
+      'role': role,
     };
   }
 }

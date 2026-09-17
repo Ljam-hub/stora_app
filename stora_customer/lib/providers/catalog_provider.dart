@@ -99,7 +99,12 @@ class CatalogProvider extends ChangeNotifier {
 
   Future<void> fetchStores({double? lat, double? lng}) async {
     try {
-      _stores = await CustomerApiService.instance.fetchStores(lat: lat, lng: lng);
+      final list = await CustomerApiService.instance.fetchStores(lat: lat, lng: lng);
+      // Filter out any admin/support accounts to ensure only actual stores are listed
+      _stores = list.where((s) => s.role.toLowerCase() != 'admin' && !s.email.toLowerCase().startsWith('admin@')).toList();
+      if (_selectedStore != null && !_stores.any((s) => s.id == _selectedStore!.id)) {
+        _selectedStore = null;
+      }
       notifyListeners();
     } catch (e) {
       debugPrint('Error fetching stores: $e');

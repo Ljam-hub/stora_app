@@ -770,10 +770,15 @@ class OwnerQuerysetMixin:
             return super().get_queryset().all()
         if getattr(user, "role", "owner") == "customer":
             owner_id = self.request.query_params.get("owner") or self.request.query_params.get("store")
+            qs = super().get_queryset().filter(
+                owner__role=User.ROLE_OWNER,
+                owner__is_active=True,
+                owner__is_blocked=False,
+            ).exclude(owner__is_superuser=True).exclude(owner__is_staff=True)
             if owner_id:
-                return super().get_queryset().filter(owner_id=owner_id)
-            # When customer selects 'All Stores' (no store param), return products/categories from all stores
-            return super().get_queryset().all()
+                return qs.filter(owner_id=owner_id)
+            # When customer selects 'All Stores' (no store param), return products from all active store owners
+            return qs
         return super().get_queryset().filter(owner=user)
 
 
@@ -788,7 +793,13 @@ class CategoryViewSet(OwnerQuerysetMixin, viewsets.ModelViewSet):
             return super().get_queryset().all()
         if getattr(user, "role", "owner") == "customer":
             owner_id = self.request.query_params.get("owner") or self.request.query_params.get("store")
-            qs = Category.objects.filter(is_archived=False, is_hidden=False)
+            qs = Category.objects.filter(
+                is_archived=False,
+                is_hidden=False,
+                owner__role=User.ROLE_OWNER,
+                owner__is_active=True,
+                owner__is_blocked=False,
+            ).exclude(owner__is_superuser=True).exclude(owner__is_staff=True)
             if owner_id:
                 qs = qs.filter(owner_id=owner_id)
             return qs
@@ -1012,7 +1023,16 @@ def _haversine_km(lat1, lon1, lat2, lon2):
 @permission_classes([IsAuthenticated])
 def list_stores(request):
     """List stores for customers with location and optional GPS proximity sorting."""
-    owners = User.objects.filter(role__in=["owner", "admin"]).select_related("location")
+    owners = (
+        User.objects.filter(
+            role=User.ROLE_OWNER,
+            is_active=True,
+            is_blocked=False,
+        )
+        .exclude(is_superuser=True)
+        .exclude(is_staff=True)
+        .select_related("location")
+    )
     
     # Optional GPS coordinates from query params
     user_lat = request.query_params.get("lat")
@@ -1050,6 +1070,7 @@ def list_stores(request):
             "address": address,
             "distance_km": distance_km,
             "is_open": is_open,
+            "role": owner.role,
         })
 
     if user_lat is not None and user_lng is not None:

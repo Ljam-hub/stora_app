@@ -1625,7 +1625,7 @@ class StoreLocationAndStatusTests(APITestCase):
         res_put = self.client.put("/api/stores/my-location/", {"is_open": False}, format="json")
         self.assertEqual(res_put.status_code, 403)
 
-    def test_list_stores_includes_admin_and_returns_open_status(self):
+    def test_list_stores_excludes_admin_and_returns_open_status(self):
         StoreLocation.objects.create(owner=self.owner, is_open=False, is_visible=True)
         StoreLocation.objects.create(owner=self.admin, is_open=True, is_visible=True)
 
@@ -1635,12 +1635,10 @@ class StoreLocationAndStatusTests(APITestCase):
 
         store_ids = [s["id"] for s in res.data]
         self.assertIn(self.owner.id, store_ids)
-        self.assertIn(self.admin.id, store_ids)
+        self.assertNotIn(self.admin.id, store_ids)
 
         owner_entry = next(s for s in res.data if s["id"] == self.owner.id)
-        admin_entry = next(s for s in res.data if s["id"] == self.admin.id)
         self.assertFalse(owner_entry["is_open"])
-        self.assertTrue(admin_entry["is_open"])
 
 
 class AdminNotificationsAndBlockedUserTests(APITestCase):
