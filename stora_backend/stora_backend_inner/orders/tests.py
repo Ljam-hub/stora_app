@@ -263,4 +263,41 @@ class OrderAPITests(TestCase):
         order.refresh_from_db()
         self.assertEqual(order.status, Order.STATUS_AUTO_DECLINED)
 
+    def test_order_admin_changelist_view(self):
+        from django.test import Client
+        self.owner.is_staff = True
+        self.owner.is_superuser = True
+        self.owner.save()
+
+        # Create orders with edge cases: special chars in name, counter offer, guest
+        order1 = Order.objects.create(
+            owner=self.owner,
+            customer=self.customer,
+            customer_name="Test {Customer} <b>Name</b>",
+            status=Order.STATUS_COUNTER_OFFER,
+            counter_price=Decimal("199.50"),
+        )
+        OrderItem.objects.create(
+            order=order1,
+            product=self.product,
+            product_name="Product with {brackets} & <tags>",
+            quantity=2,
+            unit_price=Decimal("100.00"),
+        )
+
+        order2 = Order.objects.create(
+            owner=self.owner,
+            customer=None,
+            customer_name="Guest Buyer",
+            status=Order.STATUS_PENDING,
+        )
+
+        client = Client()
+        client.force_login(self.owner)
+        resp = client.get("/admin/orders/order/")
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "COUNTER")
+        self.assertContains(resp, "Guest")
+
+
 

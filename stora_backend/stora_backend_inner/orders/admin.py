@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.utils.html import format_html
+from django.utils.safestring import mark_safe
 from stora_backend.admin_site import stora_admin_site
 from .models import Order, OrderItem
 
@@ -65,6 +66,8 @@ class OrderAdmin(admin.ModelAdmin):
 
     @admin.display(description="Store / Owner")
     def owner_display(self, obj):
+        if not obj.owner:
+            return format_html('<span style="color: #888888; font-style: italic;">\u2014</span>')
         return obj.owner.business_name or obj.owner.email
 
     @admin.display(description="User Account")
@@ -82,11 +85,15 @@ class OrderAdmin(admin.ModelAdmin):
         if not items:
             return format_html('<span style="color: #888888; font-style: italic;">No items</span>')
         parts = [
-            f'<span style="font-weight: 700; color: #ffffff;">{it.product_name}</span> '
-            f'<span style="color: #FF6B00; font-weight: 600;">(x{it.quantity})</span>'
+            format_html(
+                '<span style="font-weight: 700; color: #ffffff;">{}</span> '
+                '<span style="color: #FF6B00; font-weight: 600;">(x{})</span>',
+                it.product_name,
+                it.quantity,
+            )
             for it in items
         ]
-        return format_html(", ".join(parts))
+        return mark_safe(", ".join(parts))
 
     @admin.display(description="Total Qty")
     def items_count(self, obj):
@@ -120,7 +127,22 @@ class OrderAdmin(admin.ModelAdmin):
 
     @admin.display(description="Total Amount")
     def total_amount_display(self, obj):
-        return f"₱{obj.total_amount():.2f}"
+        if (
+            obj.status in (Order.STATUS_ACCEPTED, Order.STATUS_READY, Order.STATUS_COUNTER_OFFER)
+            and obj.counter_price is not None
+            and obj.counter_price > 0
+        ):
+            val = f"\u20b1{obj.counter_price:.2f}"
+            return format_html(
+                '<span style="font-family: var(--stora-font-mono); font-weight: 700; color: #fbbf24;">{}</span> '
+                '<span style="font-size: 10px; color: #fbbf24; font-weight: 700; background: rgba(251, 191, 36, 0.15); padding: 2px 5px; border-radius: 4px;">COUNTER</span>',
+                val,
+            )
+        val = f"\u20b1{obj.total_amount():.2f}"
+        return format_html(
+            '<span style="font-family: var(--stora-font-mono); font-weight: 700; color: #4ade80;">{}</span>',
+            val,
+        )
 
     def get_queryset(self, request):
         qs = super().get_queryset(request).prefetch_related("items")
