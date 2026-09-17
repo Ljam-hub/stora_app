@@ -410,23 +410,56 @@ class SaleSerializer(serializers.ModelSerializer):
     date = UTCDateTimeField(source="created_at", read_only=True)
     items = SaleItemWriteSerializer(many=True, write_only=True)
     line_items = SaleItemReadSerializer(source="items", many=True, read_only=True)
+    customer_name = serializers.CharField(required=False, default="Walk-in Customer")
+    receipt_number = serializers.CharField(read_only=True)
+    order_id = serializers.IntegerField(source="order.id", read_only=True, allow_null=True)
+    channel = serializers.CharField(read_only=True)
 
     class Meta:
         model = Sale
-        fields = ("id", "date", "total", "items", "line_items")
-        read_only_fields = ("total",)
+        fields = (
+            "id",
+            "date",
+            "total",
+            "customer_name",
+            "receipt_number",
+            "order_id",
+            "channel",
+            "items",
+            "line_items",
+        )
+        read_only_fields = ("total", "receipt_number", "order_id", "channel")
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
         data["items"] = data.pop("line_items")
         data["total"] = f"{instance.total:.2f}"
+        if not data.get("receipt_number"):
+            if instance.order_id:
+                data["receipt_number"] = f"ORD-{instance.order_id}"
+            else:
+                data["receipt_number"] = f"POS-{instance.id}"
+        if not data.get("customer_name"):
+            data["customer_name"] = "Customer" if instance.order_id else "Walk-in Customer"
         return data
 
     def create(self, validated_data):
         owner = self.context["request"].user
         raw_items = validated_data.pop("items")
+        cust_name = validated_data.get("customer_name", "Walk-in Customer")
+        if not cust_name or not cust_name.strip():
+            cust_name = "Walk-in Customer"
+        else:
+            cust_name = cust_name.strip()
         with transaction.atomic():
-            sale = Sale.objects.create(owner=owner, total=0)
+            sale = Sale.objects.create(
+                owner=owner,
+                total=0,
+                customer_name=cust_name,
+                channel="in_store",
+            )
+            sale.receipt_number = f"POS-{sale.id}"
+            sale.save(update_fields=["receipt_number"])
             total = 0
             for raw in raw_items:
                 try:
@@ -594,11 +627,13 @@ class OrderSerializer(serializers.ModelSerializer):
     store_name = serializers.CharField(source="owner.business_name", read_only=True, default="")
     latest_message = serializers.SerializerMethodField()
     unread_message_count = serializers.SerializerMethodField()
+    receipt_number = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
         fields = (
             "id",
+            "receipt_number",
             "owner",
             "store_name",
             "store_avatar_url",
@@ -623,6 +658,7 @@ class OrderSerializer(serializers.ModelSerializer):
         )
         read_only_fields = (
             "id",
+            "receipt_number",
             "store_name",
             "store_avatar_url",
             "customer",
@@ -652,7 +688,12 @@ class OrderSerializer(serializers.ModelSerializer):
                 )
         return ret
 
+    def get_receipt_number(self, obj):
+        return f"ORD-{obj.id}"
+
     def get_total_amount(self, obj):
+        if obj.status in (Order.STATUS_ACCEPTED, Order.STATUS_READY) and obj.counter_price is not None and obj.counter_price > 0:
+            return f"{obj.counter_price:.2f}"
         return f"{obj.total_amount():.2f}"
 
     def get_customer_email(self, obj):

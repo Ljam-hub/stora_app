@@ -155,7 +155,10 @@ class SyncManager {
           });
         }
 
-        final res = await _api.createSale({'items': itemsPayload});
+        final res = await _api.createSale({
+          'items': itemsPayload,
+          if (body['customer_name'] != null) 'customer_name': body['customer_name'],
+        });
         final serverSale = Sale.fromJson(res);
         await _db.salesDao.deleteSale(entry.entityId);
         await _db.salesDao.upsertSale(serverSale);

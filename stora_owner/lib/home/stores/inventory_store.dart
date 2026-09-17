@@ -36,8 +36,10 @@ class InventoryStore extends ChangeNotifier {
       _products = await _db.productDao.loadProducts();
       notifyListeners();
       final remote = await _api.listProducts();
-      _products = remote.map(Product.fromJson).toList();
-      await _db.productDao.replaceProducts(_products);
+      final remoteProducts = remote.map(Product.fromJson).toList();
+      final pendingLocal = _products.where((p) => p.id.startsWith('local-')).toList();
+      _products = [...remoteProducts, ...pendingLocal];
+      await _db.productDao.replaceProducts(remoteProducts);
     } on ApiException catch (e) {
       if (_products.isEmpty) _error = e.message;
     } catch (e) {

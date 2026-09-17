@@ -64,12 +64,23 @@ class _OrderCardState extends State<OrderCard> {
               ),
               const SizedBox(height: 16),
               Text(
-                'Order #${order.id} Receipt',
+                'Receipt #${order.receiptNumber}',
                 style: TextStyle(
                   color: AppColors.textPrimary,
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Order #${order.id} • ${order.customerDisplayName}',
+                style: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 20),
               Row(

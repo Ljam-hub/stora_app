@@ -75,6 +75,7 @@ class CustomerOrder {
   final int unreadMessageCount;
   final DateTime? latestMessageAt;
   final bool latestMessageIsUnsent;
+  final String? receiptNumberField;
 
   CustomerOrder({
     required this.id,
@@ -98,8 +99,13 @@ class CustomerOrder {
     this.unreadMessageCount = 0,
     this.latestMessageAt,
     this.latestMessageIsUnsent = false,
+    this.receiptNumberField,
   });
 
+  String get receiptNumber => (receiptNumberField != null && receiptNumberField!.trim().isNotEmpty)
+      ? receiptNumberField!.trim()
+      : 'ORD-$id';
+  String get customerDisplayName => customerName.trim().isNotEmpty ? customerName.trim() : 'Customer';
   String get formattedTotal => '₱${totalAmount.toStringAsFixed(2)}';
   String get formattedCounterPrice => counterPrice != null ? '₱${counterPrice!.toStringAsFixed(2)}' : '';
   int get totalQuantity => items.fold(0, (sum, i) => sum + i.quantity);
@@ -198,7 +204,11 @@ class CustomerOrder {
       declineReason: json['decline_reason'] as String?,
       counterNotes: json['counter_notes'] as String?,
       counterPrice: json['counter_price'] != null ? double.tryParse(json['counter_price'].toString()) : null,
-      totalAmount: double.tryParse(json['total_amount']?.toString() ?? '0') ?? 0.0,
+      totalAmount: (((json['status'] as String?) == 'accepted' || (json['status'] as String?) == 'ready') &&
+              json['counter_price'] != null &&
+              (double.tryParse(json['counter_price'].toString()) ?? 0.0) > 0)
+          ? (double.tryParse(json['counter_price'].toString()) ?? 0.0)
+          : (double.tryParse(json['total_amount']?.toString() ?? '0') ?? 0.0),
       createdAt: json['created_at'] != null ? DateTime.tryParse(json['created_at'].toString()) : null,
       expiresAt: json['expires_at'] != null ? DateTime.tryParse(json['expires_at'].toString()) : null,
       items: rawItems
@@ -215,6 +225,7 @@ class CustomerOrder {
                   (json['latest_message'] is Map && json['latest_message']['is_read'] == false && json['latest_message']['is_me'] == false ? 1 : 0))),
       latestMessageAt: json['latest_message'] is Map && json['latest_message']['created_at'] != null ? DateTime.tryParse(json['latest_message']['created_at'].toString()) : null,
       latestMessageIsUnsent: json['latest_message'] is Map ? (json['latest_message']['is_unsent'] as bool? ?? false) : false,
+      receiptNumberField: json['receipt_number'] as String?,
     );
   }
 }

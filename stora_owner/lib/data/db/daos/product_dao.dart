@@ -15,9 +15,14 @@ class ProductDao {
 
   Future<void> replaceProducts(List<Product> items) async {
     await _db.transaction(() async {
+      final existingProducts = await loadProducts();
+      final pendingLocal = existingProducts.where((p) => p.id.startsWith('local-')).toList();
       await _db.delete(_db.products).go();
       for (final item in items) {
         await _db.into(_db.products).insert(_productToCompanion(item));
+      }
+      for (final local in pendingLocal) {
+        await _db.into(_db.products).insertOnConflictUpdate(_productToCompanion(local));
       }
     });
   }

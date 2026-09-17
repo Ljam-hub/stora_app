@@ -945,6 +945,7 @@ class OrderViewSet(viewsets.ModelViewSet):
         notify_order_status_change(order, "accepted")
         return Response({
             "status": "accepted",
+            "receipt_number": sale.receipt_number if sale else f"ORD-{order.id}",
             "order": OrderSerializer(order).data,
             "sale_id": sale.id if sale else None,
         })
@@ -963,6 +964,7 @@ class OrderViewSet(viewsets.ModelViewSet):
         notify_order_status_change(order, "ready")
         return Response({
             "status": "ready",
+            "receipt_number": f"ORD-{order.id}",
             "order": OrderSerializer(order).data,
         })
 

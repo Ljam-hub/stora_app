@@ -4,8 +4,13 @@ import '../../stora_login/theme/app_colors.dart';
 import '../stores/orders_store.dart';
 import '../theme/home_colors.dart';
 import '../theme/theme_mode_controller.dart';
+import '../models/cart_item.dart';
+import '../models/product.dart';
+import '../models/sale.dart';
+import '../utils/date_utils.dart';
 import '../widgets/customer_location_map_sheet.dart';
 import '../widgets/notification_badge.dart';
+import '../widgets/receipt_dialog.dart';
 import 'owner_chat_screen.dart';
 
 class PendingOrdersScreen extends StatefulWidget {
@@ -256,10 +261,54 @@ class _OrderCardState extends State<_OrderCard> {
   String get customerPhone => (widget.order['customer_phone'] as String?) ?? '';
   String get customerAddress => (widget.order['customer_address'] as String?) ?? '';
   String get notes => (widget.order['notes'] as String?) ?? '';
-  String get totalAmount => widget.order['total_amount']?.toString() ?? '0.00';
+  String get totalAmount {
+    if ((status == 'accepted' || status == 'ready') && widget.order['counter_price'] != null) {
+      final cp = double.tryParse(widget.order['counter_price'].toString());
+      if (cp != null && cp > 0) return cp.toStringAsFixed(2);
+    }
+    return widget.order['total_amount']?.toString() ?? '0.00';
+  }
   List get items => (widget.order['items'] as List?) ?? [];
   int get totalQuantity => items.fold<int>(
       0, (sum, i) => sum + ((i is Map ? (i['quantity'] as num?)?.toInt() : null) ?? 1));
+
+  Sale _createSaleFromOrder() {
+    final rawDate = widget.order['created_at']?.toString();
+    DateTime parsedDate;
+    try {
+      parsedDate = rawDate != null ? parseApiDateTime(rawDate) : DateTime.now();
+    } catch (_) {
+      parsedDate = DateTime.now();
+    }
+    final orderItems = items.whereType<Map>().map((it) {
+      final price = double.tryParse(it['unit_price']?.toString() ?? '0') ?? 0.0;
+      final qty = (it['quantity'] as num?)?.toInt() ?? 1;
+      return CartItem(
+        product: Product(
+          id: it['product']?.toString() ?? '',
+          name: it['product_name']?.toString() ?? 'Item',
+          category: '',
+          price: price,
+          stock: 0,
+        ),
+        quantity: qty,
+      );
+    }).toList();
+
+    final rNum = (widget.order['receipt_number'] as String?)?.trim();
+    final receiptNum = (rNum != null && rNum.isNotEmpty) ? rNum : 'ORD-$orderId';
+
+    return Sale(
+      id: orderId.toString(),
+      date: parsedDate,
+      items: orderItems,
+      total: double.tryParse(totalAmount) ?? 0.0,
+      customerName: customerName,
+      receiptNumber: receiptNum,
+      orderId: orderId,
+      channel: 'online_order',
+    );
+  }
 
   Color get _statusColor {
     switch (status) {
@@ -691,48 +740,84 @@ class _OrderCardState extends State<_OrderCard> {
                         letterSpacing: -0.3,
                       ),
                     ),
-                    if (customerId != null) ...[
-                      const SizedBox(height: 4),
-                      InkWell(
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => OwnerChatThreadScreen(
-                                customerId: customerId!,
-                                customerName: customerName,
-                                customerEmail: customerEmail,
-                                customerAvatarUrl: customerAvatarUrl,
-                                orderId: orderId,
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (status == 'accepted' || status == 'ready') ...[
+                          const SizedBox(height: 4),
+                          InkWell(
+                            onTap: () => ReceiptDialog.show(context, _createSaleFromOrder()),
+                            borderRadius: BorderRadius.circular(8),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFE8F5E9),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: const Color(0xFF81C784).withValues(alpha: 0.5)),
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.receipt_long_rounded, color: Color(0xFF2E7D32), size: 12),
+                                  SizedBox(width: 4),
+                                  Text(
+                                    'Receipt',
+                                    style: TextStyle(
+                                      color: Color(0xFF2E7D32),
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                          );
-                        },
-                        borderRadius: BorderRadius.circular(8),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: AppColors.purpleLight.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: AppColors.purpleLight.withValues(alpha: 0.3)),
                           ),
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.chat_bubble_outline_rounded, color: AppColors.purpleLight, size: 12),
-                              SizedBox(width: 4),
-                              Text(
-                                'Chat',
-                                style: TextStyle(
-                                  color: AppColors.purpleLight,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
+                          const SizedBox(width: 6),
+                        ],
+                        if (customerId != null) ...[
+                          const SizedBox(height: 4),
+                          InkWell(
+                            onTap: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => OwnerChatThreadScreen(
+                                    customerId: customerId!,
+                                    customerName: customerName,
+                                    customerEmail: customerEmail,
+                                    customerAvatarUrl: customerAvatarUrl,
+                                    orderId: orderId,
+                                  ),
                                 ),
+                              );
+                            },
+                            borderRadius: BorderRadius.circular(8),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: AppColors.purpleLight.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: AppColors.purpleLight.withValues(alpha: 0.3)),
                               ),
-                            ],
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.chat_bubble_outline_rounded, color: AppColors.purpleLight, size: 12),
+                                  SizedBox(width: 4),
+                                  Text(
+                                    'Chat',
+                                    style: TextStyle(
+                                      color: AppColors.purpleLight,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
-                    ],
+                        ],
+                      ],
+                    ),
                   ],
                 ),
               ],
@@ -1030,7 +1115,7 @@ class _OrderCardState extends State<_OrderCard> {
                     ),
             ),
 
-          // Action Button for Accepted Orders (Mark as Ready)
+          // Action Button for Accepted Orders (Mark as Ready & Receipt)
           if (status == 'accepted')
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -1041,24 +1126,65 @@ class _OrderCardState extends State<_OrderCard> {
                         child: CircularProgressIndicator(color: AppColors.purpleLight),
                       ),
                     )
-                  : SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        icon: const Icon(Icons.done_all_rounded, size: 18),
-                        label: const Text(
-                          'Mark as Ready for Pickup',
-                          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+                  : Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            icon: const Icon(Icons.receipt_long_rounded, size: 16),
+                            label: const Text('Receipt', style: TextStyle(fontWeight: FontWeight.bold)),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: const Color(0xFF2E7D32),
+                              side: const BorderSide(color: Color(0xFF81C784)),
+                              padding: const EdgeInsets.symmetric(vertical: 13),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                            ),
+                            onPressed: () => ReceiptDialog.show(context, _createSaleFromOrder()),
+                          ),
                         ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF00E676),
-                          foregroundColor: Colors.black,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                          padding: const EdgeInsets.symmetric(vertical: 13),
-                          elevation: 0,
+                        const SizedBox(width: 8),
+                        Expanded(
+                          flex: 2,
+                          child: ElevatedButton.icon(
+                            icon: const Icon(Icons.done_all_rounded, size: 18),
+                            label: const Text(
+                              'Mark as Ready',
+                              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF00E676),
+                              foregroundColor: Colors.black,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                              padding: const EdgeInsets.symmetric(vertical: 13),
+                              elevation: 0,
+                            ),
+                            onPressed: _handleMarkReady,
+                          ),
                         ),
-                        onPressed: _handleMarkReady,
-                      ),
+                      ],
                     ),
+            ),
+
+          // Action Button for Ready Orders (View / Print Receipt)
+          if (status == 'ready')
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  icon: const Icon(Icons.receipt_long_rounded, size: 18),
+                  label: const Text(
+                    'View / Print Order Receipt',
+                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF2E7D32),
+                    side: const BorderSide(color: Color(0xFF81C784)),
+                    padding: const EdgeInsets.symmetric(vertical: 13),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                  onPressed: () => ReceiptDialog.show(context, _createSaleFromOrder()),
+                ),
+              ),
             ),
         ],
       ),

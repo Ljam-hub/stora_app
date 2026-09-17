@@ -45,10 +45,15 @@ class SalesDao {
 
   Future<void> replaceSales(List<Sale> items) async {
     await _db.transaction(() async {
+      final existingSales = await loadSales();
+      final pendingLocal = existingSales.where((s) => s.id.startsWith('local-')).toList();
       await _db.delete(_db.saleItems).go();
       await _db.delete(_db.sales).go();
       for (final sale in items) {
         await _insertSale(sale);
+      }
+      for (final local in pendingLocal) {
+        await _insertSale(local);
       }
     });
   }

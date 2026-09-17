@@ -15,9 +15,29 @@ class Sale(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True)
     total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    order = models.ForeignKey(
+        "orders.Order",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="sales",
+    )
+    customer_name = models.CharField(max_length=150, blank=True, default="Walk-in Customer")
+    receipt_number = models.CharField(max_length=64, blank=True, default="")
+    channel = models.CharField(max_length=20, default="in_store")
 
     class Meta:
         ordering = ["-created_at"]
+
+    def save(self, *args, **kwargs):
+        is_new = self.pk is None
+        super().save(*args, **kwargs)
+        if is_new and not self.receipt_number:
+            if self.order_id:
+                self.receipt_number = f"ORD-{self.order_id}"
+            else:
+                self.receipt_number = f"POS-{self.pk}"
+            super().save(update_fields=["receipt_number"])
 
     def __str__(self):
         items = list(self.items.all())

@@ -248,15 +248,42 @@ class _SaleCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: HomeColors.cardElevated,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: HomeColors.cardBorder),
-                ),
-                child: Text(formatDateTime(sale.date),
-                    style: TextStyle(color: HomeColors.textSecondary, fontSize: 11, fontWeight: FontWeight.w600)),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: HomeColors.cardElevated,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: HomeColors.cardBorder),
+                    ),
+                    child: Text(formatDateTime(sale.date),
+                        style: TextStyle(color: HomeColors.textSecondary, fontSize: 11, fontWeight: FontWeight.w600)),
+                  ),
+                  const SizedBox(width: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: sale.isOnlineOrder
+                          ? const Color(0xFFE8F5E9)
+                          : HomeColors.cardElevated,
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                        color: sale.isOnlineOrder
+                            ? const Color(0xFF81C784)
+                            : HomeColors.cardBorder,
+                      ),
+                    ),
+                    child: Text(
+                      sale.isOnlineOrder ? 'Online Order' : 'In-Store',
+                      style: TextStyle(
+                        color: sale.isOnlineOrder ? const Color(0xFF2E7D32) : HomeColors.textSecondary,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
               ),
               Row(
                 children: [
@@ -292,7 +319,42 @@ class _SaleCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Row(
+                  children: [
+                    Icon(Icons.person_outline_rounded, size: 14, color: HomeColors.textSecondary),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        sale.displayCustomerName,
+                        style: TextStyle(
+                          color: HomeColors.textPrimary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Receipt #: ${sale.displayReceiptNumber}',
+                style: TextStyle(
+                  color: HomeColors.textSecondary,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
           Divider(color: HomeColors.cardBorder, height: 1),
           const SizedBox(height: 10),
           ...sale.items.map((item) => Padding(

@@ -48,25 +48,31 @@ class CustomerReceiptService {
               ),
               pw.SizedBox(height: 2),
               pw.Text(
-                'ORDER RECEIPT',
+                'OFFICIAL RECEIPT',
                 style: const pw.TextStyle(fontSize: 8),
               ),
               pw.SizedBox(height: 4),
               pw.Text(
-                'Order #${order.id}',
+                'Receipt #: ${order.receiptNumber}',
+                style: pw.TextStyle(fontSize: 7, fontWeight: pw.FontWeight.bold),
+              ),
+              pw.Text(
+                'Order #: #${order.id}',
                 style: const pw.TextStyle(fontSize: 7),
               ),
               pw.Text(
                 formattedDate,
                 style: const pw.TextStyle(fontSize: 7),
               ),
-              if (order.customerName.isNotEmpty) ...[
-                pw.SizedBox(height: 2),
-                pw.Text(
-                  'Customer: ${order.customerName}',
-                  style: const pw.TextStyle(fontSize: 7),
-                ),
-              ],
+              pw.SizedBox(height: 2),
+              pw.Text(
+                'Customer: ${order.customerDisplayName}',
+                style: pw.TextStyle(fontSize: 7, fontWeight: pw.FontWeight.bold),
+              ),
+              pw.Text(
+                'Type: Online Order',
+                style: const pw.TextStyle(fontSize: 6, color: PdfColors.grey700),
+              ),
               pw.SizedBox(height: 2),
               pw.Container(
                 padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -232,7 +238,7 @@ class CustomerReceiptService {
     final pdfBytes = await generateOrderReceiptPdf(order);
     await Printing.layoutPdf(
       onLayout: (PdfPageFormat format) async => pdfBytes,
-      name: 'Order_Receipt_${order.id}.pdf',
+      name: 'Receipt_${order.receiptNumber}.pdf',
     );
   }
 
@@ -240,14 +246,14 @@ class CustomerReceiptService {
   Future<void> shareReceipt(CustomerOrder order) async {
     final pdfBytes = await generateOrderReceiptPdf(order);
     final output = await getTemporaryDirectory();
-    final file = File('${output.path}/order_receipt_${order.id}.pdf');
+    final file = File('${output.path}/receipt_${order.receiptNumber}.pdf');
     await file.writeAsBytes(pdfBytes);
 
     final storeName = order.storeName.isNotEmpty ? order.storeName : 'Stora Store';
     await Share.shareXFiles(
       [XFile(file.path)],
-      text: 'Here is my order receipt from $storeName for PHP ${order.totalAmount.toStringAsFixed(2)}.',
-      subject: 'Order Receipt #${order.id}',
+      text: 'Here is my receipt from $storeName for PHP ${order.totalAmount.toStringAsFixed(2)}. Receipt #: ${order.receiptNumber}',
+      subject: 'Receipt #${order.receiptNumber}',
     );
   }
 }

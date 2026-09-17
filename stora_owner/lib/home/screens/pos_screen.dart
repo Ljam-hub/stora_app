@@ -177,6 +177,7 @@ class _PosScreenState extends State<PosScreen> {
         total,
         cashTendered: paymentResult.tendered,
         changeAmount: paymentResult.change,
+        customerName: paymentResult.customerName,
       );
       cart.clear();
       if (!mounted) return;

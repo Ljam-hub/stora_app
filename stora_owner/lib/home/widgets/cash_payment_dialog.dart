@@ -5,10 +5,12 @@ import '../theme/home_colors.dart';
 class CashPaymentResult {
   final double tendered;
   final double change;
+  final String customerName;
 
   const CashPaymentResult({
     required this.tendered,
     required this.change,
+    this.customerName = 'Walk-in Customer',
   });
 }
 
@@ -43,6 +45,7 @@ class CashPaymentDialog extends StatefulWidget {
 
 class _CashPaymentDialogState extends State<CashPaymentDialog> {
   late final TextEditingController _controller;
+  late final TextEditingController _customerNameController;
   double _tendered = 0.0;
   bool _isSubmitted = false;
 
@@ -54,11 +57,13 @@ class _CashPaymentDialogState extends State<CashPaymentDialog> {
     _controller = TextEditingController(
       text: widget.totalAmount.toStringAsFixed(2),
     );
+    _customerNameController = TextEditingController();
   }
 
   @override
   void dispose() {
     _controller.dispose();
+    _customerNameController.dispose();
     super.dispose();
   }
 
@@ -120,10 +125,12 @@ class _CashPaymentDialogState extends State<CashPaymentDialog> {
     if (change < -0.001) return;
     _isSubmitted = true;
 
+    final name = _customerNameController.text.trim();
     Navigator.of(context).pop(
       CashPaymentResult(
         tendered: _tendered,
         change: change < 0 ? 0.0 : change,
+        customerName: name.isNotEmpty ? name : 'Walk-in Customer',
       ),
     );
   }
@@ -238,6 +245,49 @@ class _CashPaymentDialogState extends State<CashPaymentDialog> {
                 ),
               ),
               const SizedBox(height: 18),
+
+              // Customer Name Label & Input (Optional)
+              Text(
+                'CUSTOMER NAME (OPTIONAL)',
+                style: TextStyle(
+                  color: HomeColors.textMuted,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.6,
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _customerNameController,
+                textCapitalization: TextCapitalization.words,
+                textInputAction: TextInputAction.next,
+                style: TextStyle(
+                  color: HomeColors.textPrimary,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                ),
+                decoration: InputDecoration(
+                  hintText: 'Walk-in Customer',
+                  hintStyle: TextStyle(
+                    color: HomeColors.textMuted,
+                    fontSize: 14,
+                    fontWeight: FontWeight.normal,
+                  ),
+                  prefixIcon: Icon(Icons.person_outline_rounded, color: HomeColors.textMuted, size: 20),
+                  filled: true,
+                  fillColor: HomeColors.cardElevated,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide(color: HomeColors.cardBorder),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: const BorderSide(color: HomeColors.primary, width: 1.5),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
 
               // Cash Tendered Label & Input
               Text(

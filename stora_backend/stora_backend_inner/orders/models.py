@@ -1,4 +1,5 @@
 from datetime import timedelta
+from decimal import Decimal
 from django.conf import settings
 from django.db import models, transaction
 from django.utils import timezone
@@ -113,7 +114,23 @@ class Order(models.Model):
                     product.save(update_fields=["stock", "updated_at"])
 
             total = self.counter_price if (self.counter_price is not None and self.counter_price > 0) else self.total_amount()
-            sale = Sale.objects.create(owner=self.owner, total=total)
+            cust_name = (self.customer_name or "").strip()
+            if not cust_name and self.customer:
+                if hasattr(self.customer, "get_display_name"):
+                    cust_name = self.customer.get_display_name()
+                else:
+                    cust_name = f"{self.customer.first_name} {self.customer.last_name}".strip() or getattr(self.customer, "business_name", "")
+            if not cust_name:
+                cust_name = "Customer"
+
+            sale = Sale.objects.create(
+                owner=self.owner,
+                total=total,
+                order=self,
+                customer_name=cust_name,
+                receipt_number=f"ORD-{self.id}",
+                channel="online_order",
+            )
             for item in items:
                 SaleItem.objects.create(
                     sale=sale,
@@ -151,7 +168,7 @@ class Order(models.Model):
         self.save(update_fields=["status", "counter_notes", "counter_price"])
 
     def total_amount(self):
-        return sum(item.subtotal for item in self.items.all())
+        return sum((item.subtotal for item in self.items.all()), Decimal("0"))
 
 
 class OrderItem(models.Model):

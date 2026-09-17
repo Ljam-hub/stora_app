@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:stora/data/models/account_status.dart';
 import 'package:stora/home/models/product.dart';
+import 'package:stora/home/models/sale.dart';
 import 'package:stora/home/stores/cart_store.dart';
 
 void main() {
@@ -63,6 +64,68 @@ void main() {
       expect(status.monthlyPrice, 85.50);
       expect(status.gcashNumber, '0918 888 9999');
       expect(status.gcashName, 'STORA Payments');
+    });
+  });
+
+  group('Sale & Receipt model verification', () {
+    test('parses in-store walk-in sale correctly', () {
+      final json = {
+        'id': '101',
+        'date': '2026-09-17T10:00:00Z',
+        'total': '150.00',
+        'customer_name': 'Walk-in Customer',
+        'receipt_number': 'POS-101',
+        'channel': 'in_store',
+        'items': [],
+      };
+
+      final sale = Sale.fromJson(json);
+      expect(sale.id, '101');
+      expect(sale.displayCustomerName, 'Walk-in Customer');
+      expect(sale.displayReceiptNumber, 'POS-101');
+      expect(sale.isOnlineOrder, isFalse);
+      expect(sale.orderId, isNull);
+    });
+
+    test('parses online order sale correctly with ORD receipt number', () {
+      final json = {
+        'id': '102',
+        'date': '2026-09-17T10:00:00Z',
+        'total': '250.00',
+        'customer_name': 'Maria Clara',
+        'receipt_number': 'ORD-42',
+        'order_id': 42,
+        'channel': 'online_order',
+        'items': [],
+      };
+
+      final sale = Sale.fromJson(json);
+      expect(sale.id, '102');
+      expect(sale.displayCustomerName, 'Maria Clara');
+      expect(sale.displayReceiptNumber, 'ORD-42');
+      expect(sale.isOnlineOrder, isTrue);
+      expect(sale.orderId, 42);
+    });
+
+    test('fallbacks work when receipt_number and customer_name are missing', () {
+      final sale = Sale(
+        id: '103',
+        date: DateTime.now(),
+        items: [],
+        total: 50.0,
+      );
+      expect(sale.displayCustomerName, 'Walk-in Customer');
+      expect(sale.displayReceiptNumber, 'POS-103');
+
+      final orderSale = Sale(
+        id: '104',
+        date: DateTime.now(),
+        items: [],
+        total: 50.0,
+        orderId: 77,
+      );
+      expect(sale.displayCustomerName, 'Walk-in Customer');
+      expect(orderSale.displayReceiptNumber, 'ORD-77');
     });
   });
 }

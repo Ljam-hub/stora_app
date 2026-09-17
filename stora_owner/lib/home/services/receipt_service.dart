@@ -53,12 +53,27 @@ class ReceiptService {
               ),
               pw.SizedBox(height: 4),
               pw.Text(
-                'Rcpt #: ${sale.id}',
-                style: const pw.TextStyle(fontSize: 7),
+                'Receipt #: ${sale.displayReceiptNumber}',
+                style: pw.TextStyle(fontSize: 7, fontWeight: pw.FontWeight.bold),
               ),
+              if (sale.orderId != null) ...[
+                pw.Text(
+                  'Order #: #${sale.orderId}',
+                  style: const pw.TextStyle(fontSize: 7),
+                ),
+              ],
               pw.Text(
                 formattedDate,
                 style: const pw.TextStyle(fontSize: 7),
+              ),
+              pw.SizedBox(height: 2),
+              pw.Text(
+                'Customer: ${sale.displayCustomerName}',
+                style: pw.TextStyle(fontSize: 7, fontWeight: pw.FontWeight.bold),
+              ),
+              pw.Text(
+                'Type: ${sale.isOnlineOrder ? "Online Order" : "In-Store / Walk-in"}',
+                style: const pw.TextStyle(fontSize: 6, color: PdfColors.grey700),
               ),
               pw.SizedBox(height: 4),
               pw.Divider(thickness: 0.5, borderStyle: pw.BorderStyle.dashed),
@@ -205,9 +220,10 @@ class ReceiptService {
   /// Sends receipt to Bluetooth or system thermal printer
   Future<void> printReceipt(Sale sale, {String? businessName}) async {
     final pdfBytes = await generateReceiptPdf(sale, businessName: businessName);
+    final safeId = sale.displayReceiptNumber.replaceAll(RegExp(r'[^a-zA-Z0-9_\-]'), '_');
     await Printing.layoutPdf(
       onLayout: (PdfPageFormat format) async => pdfBytes,
-      name: 'Receipt_${sale.id.replaceAll(RegExp(r'[^a-zA-Z0-9_\-]'), '_')}.pdf',
+      name: 'Receipt_$safeId.pdf',
     );
   }
 
@@ -215,14 +231,14 @@ class ReceiptService {
   Future<void> shareReceipt(Sale sale, {String? businessName}) async {
     final pdfBytes = await generateReceiptPdf(sale, businessName: businessName);
     final output = await getTemporaryDirectory();
-    final safeId = sale.id.replaceAll(RegExp(r'[^a-zA-Z0-9_\-]'), '_');
+    final safeId = sale.displayReceiptNumber.replaceAll(RegExp(r'[^a-zA-Z0-9_\-]'), '_');
     final file = File('${output.path}/receipt_$safeId.pdf');
     await file.writeAsBytes(pdfBytes);
 
     await Share.shareXFiles(
       [XFile(file.path)],
-      text: 'Here is your receipt from ${businessName ?? "Stora Store"} for PHP ${sale.total.toStringAsFixed(2)}.',
-      subject: 'Receipt #${sale.id}',
+      text: 'Here is the receipt for ${sale.displayCustomerName} from ${businessName ?? "Stora Store"} for PHP ${sale.total.toStringAsFixed(2)}. Receipt #: ${sale.displayReceiptNumber}',
+      subject: 'Receipt #${sale.displayReceiptNumber}',
     );
   }
 

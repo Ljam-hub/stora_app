@@ -93,15 +93,60 @@ class _ReceiptDialogState extends State<ReceiptDialog> {
                       'OFFICIAL RECEIPT',
                       style: TextStyle(color: Colors.black54, fontSize: 11, fontWeight: FontWeight.w600),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 10),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('Receipt #: ${sale.id}', style: const TextStyle(color: Colors.black54, fontSize: 11)),
+                        Text('Receipt #: ${sale.displayReceiptNumber}',
+                            style: const TextStyle(color: Colors.black87, fontSize: 11, fontWeight: FontWeight.bold)),
                         Text(formattedDate, style: const TextStyle(color: Colors.black54, fontSize: 11)),
                       ],
                     ),
-                    const Divider(color: Colors.black26, thickness: 1, height: 24),
+                    if (sale.orderId != null) ...[
+                      const SizedBox(height: 3),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('Order #: #${sale.orderId}', style: const TextStyle(color: Colors.black54, fontSize: 11)),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFE8F5E9),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: const Text('Online Order',
+                                style: TextStyle(color: Color(0xFF2E7D32), fontSize: 9, fontWeight: FontWeight.bold)),
+                          ),
+                        ],
+                      ),
+                    ],
+                    const SizedBox(height: 4),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Customer: ${sale.displayCustomerName}',
+                            style: const TextStyle(color: Colors.black87, fontSize: 11, fontWeight: FontWeight.w600),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (sale.orderId == null) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF3E5F5),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: const Text('In-Store',
+                                style: TextStyle(color: Color(0xFF7B1FA2), fontSize: 9, fontWeight: FontWeight.bold)),
+                          ),
+                        ],
+                      ],
+                    ),
+                    const Divider(color: Colors.black26, thickness: 1, height: 20),
 
                     // Items
                     ListView.separated(

@@ -27,8 +27,10 @@ class SalesStore extends ChangeNotifier {
     notifyListeners();
     try {
       final remote = await _api.listSales();
-      _sales = remote.map(Sale.fromJson).toList();
-      await _db.salesDao.replaceSales(_sales);
+      final remoteSales = remote.map(Sale.fromJson).toList();
+      final pendingLocal = _sales.where((s) => s.id.startsWith('local-')).toList();
+      _sales = [...remoteSales, ...pendingLocal];
+      await _db.salesDao.replaceSales(remoteSales);
     } catch (_) {}
     notifyListeners();
   }
@@ -41,6 +43,7 @@ class SalesStore extends ChangeNotifier {
     double total, {
     double? cashTendered,
     double? changeAmount,
+    String? customerName,
   }) async {
     if (_recording) {
       throw ApiException('A sale is already being processed.');
@@ -55,6 +58,7 @@ class SalesStore extends ChangeNotifier {
           total,
           cashTendered: cashTendered,
           changeAmount: changeAmount,
+          customerName: customerName,
         );
       } finally {
         _recording = false;
@@ -65,6 +69,7 @@ class SalesStore extends ChangeNotifier {
     try {
       final created = Sale.fromJson(
         await _api.createSale({
+          'customer_name': customerName ?? 'Walk-in Customer',
           'items': items
               .map(
                 (item) => {
@@ -78,6 +83,7 @@ class SalesStore extends ChangeNotifier {
       final withCashDetails = created.copyWith(
         cashTendered: cashTendered,
         changeAmount: changeAmount,
+        customerName: created.customerName ?? customerName ?? 'Walk-in Customer',
       );
       _sales.add(withCashDetails);
       await _db.salesDao.upsertSale(withCashDetails);
@@ -92,6 +98,7 @@ class SalesStore extends ChangeNotifier {
         total,
         cashTendered: cashTendered,
         changeAmount: changeAmount,
+        customerName: customerName,
       );
     } catch (_) {
       sale = await _recordOfflineSale(
@@ -99,6 +106,7 @@ class SalesStore extends ChangeNotifier {
         total,
         cashTendered: cashTendered,
         changeAmount: changeAmount,
+        customerName: customerName,
       );
     } finally {
       _recording = false;
@@ -112,14 +120,20 @@ class SalesStore extends ChangeNotifier {
     double total, {
     double? cashTendered,
     double? changeAmount,
+    String? customerName,
   }) async {
+    final timestamp = DateTime.now().microsecondsSinceEpoch;
+    final shortId = (timestamp % 1000000).toString().padLeft(6, '0');
     final local = Sale(
-      id: 'local-${DateTime.now().microsecondsSinceEpoch}',
+      id: 'local-$timestamp',
       date: DateTime.now(),
       items: items.map((i) => CartItem(product: i.product, quantity: i.quantity)).toList(),
       total: total,
       cashTendered: cashTendered,
       changeAmount: changeAmount,
+      customerName: customerName ?? 'Walk-in Customer',
+      receiptNumber: 'POS-OFF-$shortId',
+      channel: 'in_store',
     );
     _sales.add(local);
     await _db.salesDao.upsertSale(local);
@@ -127,6 +141,7 @@ class SalesStore extends ChangeNotifier {
       await InventoryStore.instance.applyLocalStockDelta(item.product.id, -item.quantity);
     }
     final payload = jsonEncode({
+      'customer_name': customerName ?? 'Walk-in Customer',
       'items': items
           .map(
             (item) => {

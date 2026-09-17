@@ -94,6 +94,34 @@ class OrderAPITests(TestCase):
         self.assertEqual(sale.total, Decimal("360.00"))
         self.assertEqual(sale.items.count(), 1)
 
+    def test_owner_accept_order_with_counter_price(self):
+        order = Order.objects.create(
+            owner=self.owner,
+            customer=self.customer,
+            customer_name="Juan Dela Cruz",
+            customer_phone="09171234567",
+            status=Order.STATUS_COUNTER_OFFER,
+            counter_notes="Discount applied",
+            counter_price=Decimal("200.00"),
+        )
+        OrderItem.objects.create(
+            order=order,
+            product=self.product,
+            product_name=self.product.name,
+            quantity=2,
+            unit_price=Decimal("120.00"),
+        )
+
+        self.client.force_authenticate(user=self.owner)
+        response = self.client.post(f"/api/orders/{order.id}/accept/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["status"], "accepted")
+        self.assertEqual(response.data["order"]["total_amount"], "200.00")
+
+        sale = Sale.objects.get(order=order)
+        self.assertEqual(sale.total, Decimal("200.00"))
+        self.assertEqual(sale.receipt_number, f"ORD-{order.id}")
+
     def test_owner_decline_order(self):
         order = Order.objects.create(
             owner=self.owner,
