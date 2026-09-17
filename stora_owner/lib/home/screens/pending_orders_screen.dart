@@ -675,7 +675,10 @@ class _OrderCardState extends State<_OrderCard> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
+                      Wrap(
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: 6,
+                        runSpacing: 3,
                         children: [
                           Text(
                             'Order #$orderId',
@@ -686,28 +689,23 @@ class _OrderCardState extends State<_OrderCard> {
                               letterSpacing: -0.2,
                             ),
                           ),
-                          const SizedBox(width: 6),
-                          Flexible(
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: _statusColor.withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(6),
-                                border: Border.all(
-                                  color: _statusColor.withValues(alpha: 0.3),
-                                  width: 0.8,
-                                ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
+                            decoration: BoxDecoration(
+                              color: _statusColor.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(
+                                color: _statusColor.withValues(alpha: 0.35),
+                                width: 0.8,
                               ),
-                              child: Text(
-                                _statusLabel,
-                                style: TextStyle(
-                                  color: _statusColor,
-                                  fontSize: 8.5,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: 0.2,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                            ),
+                            child: Text(
+                              _statusLabel,
+                              style: TextStyle(
+                                color: _statusColor,
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.2,
                               ),
                             ),
                           ),
@@ -740,84 +738,48 @@ class _OrderCardState extends State<_OrderCard> {
                         letterSpacing: -0.3,
                       ),
                     ),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (status == 'accepted' || status == 'ready') ...[
-                          const SizedBox(height: 4),
-                          InkWell(
-                            onTap: () => ReceiptDialog.show(context, _createSaleFromOrder()),
-                            borderRadius: BorderRadius.circular(8),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFE8F5E9),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: const Color(0xFF81C784).withValues(alpha: 0.5)),
-                              ),
-                              child: const Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(Icons.receipt_long_rounded, color: Color(0xFF2E7D32), size: 12),
-                                  SizedBox(width: 4),
-                                  Text(
-                                    'Receipt',
-                                    style: TextStyle(
-                                      color: Color(0xFF2E7D32),
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
+                    if (customerId != null) ...[
+                      const SizedBox(height: 4),
+                      InkWell(
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => OwnerChatThreadScreen(
+                                customerId: customerId!,
+                                customerName: customerName,
+                                customerEmail: customerEmail,
+                                customerAvatarUrl: customerAvatarUrl,
+                                orderId: orderId,
                               ),
                             ),
+                          );
+                        },
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: AppColors.purpleLight.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: AppColors.purpleLight.withValues(alpha: 0.3)),
                           ),
-                          const SizedBox(width: 6),
-                        ],
-                        if (customerId != null) ...[
-                          const SizedBox(height: 4),
-                          InkWell(
-                            onTap: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) => OwnerChatThreadScreen(
-                                    customerId: customerId!,
-                                    customerName: customerName,
-                                    customerEmail: customerEmail,
-                                    customerAvatarUrl: customerAvatarUrl,
-                                    orderId: orderId,
-                                  ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.chat_bubble_outline_rounded, color: AppColors.purpleLight, size: 12),
+                              SizedBox(width: 4),
+                              Text(
+                                'Chat',
+                                style: TextStyle(
+                                  color: AppColors.purpleLight,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
                                 ),
-                              );
-                            },
-                            borderRadius: BorderRadius.circular(8),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: AppColors.purpleLight.withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: AppColors.purpleLight.withValues(alpha: 0.3)),
                               ),
-                              child: const Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(Icons.chat_bubble_outline_rounded, color: AppColors.purpleLight, size: 12),
-                                  SizedBox(width: 4),
-                                  Text(
-                                    'Chat',
-                                    style: TextStyle(
-                                      color: AppColors.purpleLight,
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
+                            ],
                           ),
-                        ],
-                      ],
-                    ),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ],

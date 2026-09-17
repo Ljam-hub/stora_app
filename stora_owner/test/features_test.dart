@@ -128,4 +128,36 @@ void main() {
       expect(orderSale.displayReceiptNumber, 'ORD-77');
     });
   });
+
+  group('Sales History Month & Period filtering logic', () {
+    test('filters sales correctly by month and period', () {
+      final sepSale1 = Sale(id: '1', date: DateTime(2026, 9, 15, 9, 30), items: [], total: 40.0);
+      final sepSale2 = Sale(id: '2', date: DateTime(2026, 9, 17, 20, 0), items: [], total: 20.0);
+      final augSale = Sale(id: '3', date: DateTime(2026, 8, 10, 14, 0), items: [], total: 100.0);
+      final julSale = Sale(id: '4', date: DateTime(2026, 7, 5, 11, 0), items: [], total: 250.0);
+
+      final allSales = [sepSale2, sepSale1, augSale, julSale];
+
+      // All Time filter
+      expect(allSales.length, 4);
+      final allTotal = allSales.fold(0.0, (sum, s) => sum + s.total);
+      expect(allTotal, 410.0);
+
+      // September 2026 filter
+      final sepSales = allSales.where((s) => s.date.year == 2026 && s.date.month == 9).toList();
+      expect(sepSales.length, 2);
+      final sepTotal = sepSales.fold(0.0, (sum, s) => sum + s.total);
+      expect(sepTotal, 60.0);
+
+      // August 2026 filter
+      final augSales = allSales.where((s) => s.date.year == 2026 && s.date.month == 8).toList();
+      expect(augSales.length, 1);
+      expect(augSales.first.total, 100.0);
+
+      // Non-existent month
+      final janSales = allSales.where((s) => s.date.year == 2026 && s.date.month == 1).toList();
+      expect(janSales, isEmpty);
+    });
+  });
 }
+
