@@ -388,6 +388,11 @@ class ProductSerializer(serializers.ModelSerializer):
             content = base64.b64decode(raw)
         except Exception as exc:
             raise serializers.ValidationError({"image": "Invalid image data."}) from exc
+        if product.image:
+            try:
+                product.image.delete(save=False)
+            except Exception:
+                pass
         product.image.save(f"{uuid.uuid4().hex}.jpg", ContentFile(content), save=True)
 
 
