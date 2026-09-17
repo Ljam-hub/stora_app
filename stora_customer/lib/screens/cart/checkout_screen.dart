@@ -126,16 +126,21 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     }
 
     final catalog = context.read<CatalogProvider>();
-    final store = catalog.stores.where((s) => s.id == storeOwnerId).firstOrNull ??
+    var store = catalog.stores.where((s) => s.id == storeOwnerId).firstOrNull ??
         (catalog.selectedStore?.id == storeOwnerId ? catalog.selectedStore : null);
-    if (store == null || !store.isOpen) {
+    if (store == null && catalog.stores.isEmpty) {
+      try {
+        await catalog.fetchStores();
+        store = catalog.stores.where((s) => s.id == storeOwnerId).firstOrNull ??
+            (catalog.selectedStore?.id == storeOwnerId ? catalog.selectedStore : null);
+      } catch (_) {}
+    }
+    if (store != null && !store.isOpen) {
       setState(() => _isSubmitting = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(store == null
-                ? 'Cannot place order: Store information unavailable.'
-                : 'Cannot place order: This store is currently closed.'),
+          const SnackBar(
+            content: Text('Cannot place order: This store is currently closed.'),
             backgroundColor: AppColors.danger,
           ),
         );
