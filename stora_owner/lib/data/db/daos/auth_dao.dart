@@ -21,15 +21,11 @@ class AuthDao {
         refreshToken: Value(refreshToken),
         email: Value(email),
         businessName: Value(businessName),
+        isEmailVerified: isEmailVerified != null
+            ? Value(isEmailVerified)
+            : const Value.absent(),
       ),
     );
-    // Persist isEmailVerified via raw SQL (column added in migration v2)
-    if (isEmailVerified != null) {
-      await _db.customStatement(
-        'UPDATE auth_sessions SET is_email_verified = ? WHERE id = 1',
-        [isEmailVerified ? 1 : 0],
-      );
-    }
   }
 
   Future<AuthSession?> readSession() {
@@ -44,11 +40,8 @@ class AuthDao {
 
   /// Read the locally persisted isEmailVerified flag.
   Future<bool> readIsEmailVerified() async {
-    final result = await _db.customSelect(
-      'SELECT is_email_verified FROM auth_sessions WHERE id = 1',
-    ).getSingleOrNull();
-    if (result == null) return false;
-    return result.read<int>('is_email_verified') == 1;
+    final session = await readSession();
+    return session?.isEmailVerified ?? false;
   }
 
   Future<void> clearSession() async {

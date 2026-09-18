@@ -1773,6 +1773,21 @@ class $AuthSessionsTable extends AuthSessions
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _isEmailVerifiedMeta = const VerificationMeta(
+    'isEmailVerified',
+  );
+  @override
+  late final GeneratedColumn<bool> isEmailVerified = GeneratedColumn<bool>(
+    'is_email_verified',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_email_verified" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1780,6 +1795,7 @@ class $AuthSessionsTable extends AuthSessions
     refreshToken,
     email,
     businessName,
+    isEmailVerified,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1837,6 +1853,15 @@ class $AuthSessionsTable extends AuthSessions
     } else if (isInserting) {
       context.missing(_businessNameMeta);
     }
+    if (data.containsKey('is_email_verified')) {
+      context.handle(
+        _isEmailVerifiedMeta,
+        isEmailVerified.isAcceptableOrUnknown(
+          data['is_email_verified']!,
+          _isEmailVerifiedMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -1866,6 +1891,10 @@ class $AuthSessionsTable extends AuthSessions
         DriftSqlType.string,
         data['${effectivePrefix}business_name'],
       )!,
+      isEmailVerified: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_email_verified'],
+      )!,
     );
   }
 
@@ -1881,12 +1910,14 @@ class AuthSession extends DataClass implements Insertable<AuthSession> {
   final String refreshToken;
   final String email;
   final String businessName;
+  final bool isEmailVerified;
   const AuthSession({
     required this.id,
     required this.accessToken,
     required this.refreshToken,
     required this.email,
     required this.businessName,
+    required this.isEmailVerified,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1896,6 +1927,7 @@ class AuthSession extends DataClass implements Insertable<AuthSession> {
     map['refresh_token'] = Variable<String>(refreshToken);
     map['email'] = Variable<String>(email);
     map['business_name'] = Variable<String>(businessName);
+    map['is_email_verified'] = Variable<bool>(isEmailVerified);
     return map;
   }
 
@@ -1906,6 +1938,7 @@ class AuthSession extends DataClass implements Insertable<AuthSession> {
       refreshToken: Value(refreshToken),
       email: Value(email),
       businessName: Value(businessName),
+      isEmailVerified: Value(isEmailVerified),
     );
   }
 
@@ -1920,6 +1953,7 @@ class AuthSession extends DataClass implements Insertable<AuthSession> {
       refreshToken: serializer.fromJson<String>(json['refreshToken']),
       email: serializer.fromJson<String>(json['email']),
       businessName: serializer.fromJson<String>(json['businessName']),
+      isEmailVerified: serializer.fromJson<bool>(json['isEmailVerified']),
     );
   }
   @override
@@ -1931,6 +1965,7 @@ class AuthSession extends DataClass implements Insertable<AuthSession> {
       'refreshToken': serializer.toJson<String>(refreshToken),
       'email': serializer.toJson<String>(email),
       'businessName': serializer.toJson<String>(businessName),
+      'isEmailVerified': serializer.toJson<bool>(isEmailVerified),
     };
   }
 
@@ -1940,12 +1975,14 @@ class AuthSession extends DataClass implements Insertable<AuthSession> {
     String? refreshToken,
     String? email,
     String? businessName,
+    bool? isEmailVerified,
   }) => AuthSession(
     id: id ?? this.id,
     accessToken: accessToken ?? this.accessToken,
     refreshToken: refreshToken ?? this.refreshToken,
     email: email ?? this.email,
     businessName: businessName ?? this.businessName,
+    isEmailVerified: isEmailVerified ?? this.isEmailVerified,
   );
   AuthSession copyWithCompanion(AuthSessionsCompanion data) {
     return AuthSession(
@@ -1960,6 +1997,9 @@ class AuthSession extends DataClass implements Insertable<AuthSession> {
       businessName: data.businessName.present
           ? data.businessName.value
           : this.businessName,
+      isEmailVerified: data.isEmailVerified.present
+          ? data.isEmailVerified.value
+          : this.isEmailVerified,
     );
   }
 
@@ -1970,14 +2010,21 @@ class AuthSession extends DataClass implements Insertable<AuthSession> {
           ..write('accessToken: $accessToken, ')
           ..write('refreshToken: $refreshToken, ')
           ..write('email: $email, ')
-          ..write('businessName: $businessName')
+          ..write('businessName: $businessName, ')
+          ..write('isEmailVerified: $isEmailVerified')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, accessToken, refreshToken, email, businessName);
+  int get hashCode => Object.hash(
+    id,
+    accessToken,
+    refreshToken,
+    email,
+    businessName,
+    isEmailVerified,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1986,7 +2033,8 @@ class AuthSession extends DataClass implements Insertable<AuthSession> {
           other.accessToken == this.accessToken &&
           other.refreshToken == this.refreshToken &&
           other.email == this.email &&
-          other.businessName == this.businessName);
+          other.businessName == this.businessName &&
+          other.isEmailVerified == this.isEmailVerified);
 }
 
 class AuthSessionsCompanion extends UpdateCompanion<AuthSession> {
@@ -1995,12 +2043,14 @@ class AuthSessionsCompanion extends UpdateCompanion<AuthSession> {
   final Value<String> refreshToken;
   final Value<String> email;
   final Value<String> businessName;
+  final Value<bool> isEmailVerified;
   const AuthSessionsCompanion({
     this.id = const Value.absent(),
     this.accessToken = const Value.absent(),
     this.refreshToken = const Value.absent(),
     this.email = const Value.absent(),
     this.businessName = const Value.absent(),
+    this.isEmailVerified = const Value.absent(),
   });
   AuthSessionsCompanion.insert({
     this.id = const Value.absent(),
@@ -2008,6 +2058,7 @@ class AuthSessionsCompanion extends UpdateCompanion<AuthSession> {
     required String refreshToken,
     required String email,
     required String businessName,
+    this.isEmailVerified = const Value.absent(),
   }) : accessToken = Value(accessToken),
        refreshToken = Value(refreshToken),
        email = Value(email),
@@ -2018,6 +2069,7 @@ class AuthSessionsCompanion extends UpdateCompanion<AuthSession> {
     Expression<String>? refreshToken,
     Expression<String>? email,
     Expression<String>? businessName,
+    Expression<bool>? isEmailVerified,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -2025,6 +2077,7 @@ class AuthSessionsCompanion extends UpdateCompanion<AuthSession> {
       if (refreshToken != null) 'refresh_token': refreshToken,
       if (email != null) 'email': email,
       if (businessName != null) 'business_name': businessName,
+      if (isEmailVerified != null) 'is_email_verified': isEmailVerified,
     });
   }
 
@@ -2034,6 +2087,7 @@ class AuthSessionsCompanion extends UpdateCompanion<AuthSession> {
     Value<String>? refreshToken,
     Value<String>? email,
     Value<String>? businessName,
+    Value<bool>? isEmailVerified,
   }) {
     return AuthSessionsCompanion(
       id: id ?? this.id,
@@ -2041,6 +2095,7 @@ class AuthSessionsCompanion extends UpdateCompanion<AuthSession> {
       refreshToken: refreshToken ?? this.refreshToken,
       email: email ?? this.email,
       businessName: businessName ?? this.businessName,
+      isEmailVerified: isEmailVerified ?? this.isEmailVerified,
     );
   }
 
@@ -2062,6 +2117,9 @@ class AuthSessionsCompanion extends UpdateCompanion<AuthSession> {
     if (businessName.present) {
       map['business_name'] = Variable<String>(businessName.value);
     }
+    if (isEmailVerified.present) {
+      map['is_email_verified'] = Variable<bool>(isEmailVerified.value);
+    }
     return map;
   }
 
@@ -2072,7 +2130,8 @@ class AuthSessionsCompanion extends UpdateCompanion<AuthSession> {
           ..write('accessToken: $accessToken, ')
           ..write('refreshToken: $refreshToken, ')
           ..write('email: $email, ')
-          ..write('businessName: $businessName')
+          ..write('businessName: $businessName, ')
+          ..write('isEmailVerified: $isEmailVerified')
           ..write(')'))
         .toString();
   }
@@ -3623,6 +3682,7 @@ typedef $$AuthSessionsTableCreateCompanionBuilder =
       required String refreshToken,
       required String email,
       required String businessName,
+      Value<bool> isEmailVerified,
     });
 typedef $$AuthSessionsTableUpdateCompanionBuilder =
     AuthSessionsCompanion Function({
@@ -3631,6 +3691,7 @@ typedef $$AuthSessionsTableUpdateCompanionBuilder =
       Value<String> refreshToken,
       Value<String> email,
       Value<String> businessName,
+      Value<bool> isEmailVerified,
     });
 
 class $$AuthSessionsTableFilterComposer
@@ -3664,6 +3725,11 @@ class $$AuthSessionsTableFilterComposer
 
   ColumnFilters<String> get businessName => $composableBuilder(
     column: $table.businessName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isEmailVerified => $composableBuilder(
+    column: $table.isEmailVerified,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -3701,6 +3767,11 @@ class $$AuthSessionsTableOrderingComposer
     column: $table.businessName,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<bool> get isEmailVerified => $composableBuilder(
+    column: $table.isEmailVerified,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$AuthSessionsTableAnnotationComposer
@@ -3730,6 +3801,11 @@ class $$AuthSessionsTableAnnotationComposer
 
   GeneratedColumn<String> get businessName => $composableBuilder(
     column: $table.businessName,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get isEmailVerified => $composableBuilder(
+    column: $table.isEmailVerified,
     builder: (column) => column,
   );
 }
@@ -3770,12 +3846,14 @@ class $$AuthSessionsTableTableManager
                 Value<String> refreshToken = const Value.absent(),
                 Value<String> email = const Value.absent(),
                 Value<String> businessName = const Value.absent(),
+                Value<bool> isEmailVerified = const Value.absent(),
               }) => AuthSessionsCompanion(
                 id: id,
                 accessToken: accessToken,
                 refreshToken: refreshToken,
                 email: email,
                 businessName: businessName,
+                isEmailVerified: isEmailVerified,
               ),
           createCompanionCallback:
               ({
@@ -3784,12 +3862,14 @@ class $$AuthSessionsTableTableManager
                 required String refreshToken,
                 required String email,
                 required String businessName,
+                Value<bool> isEmailVerified = const Value.absent(),
               }) => AuthSessionsCompanion.insert(
                 id: id,
                 accessToken: accessToken,
                 refreshToken: refreshToken,
                 email: email,
                 businessName: businessName,
+                isEmailVerified: isEmailVerified,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))

@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
@@ -44,30 +45,69 @@ class AppDatabase extends _$AppDatabase {
 
   static final AppDatabase instance = AppDatabase._();
 
+  /// Test-only constructor that accepts an in-memory or custom executor.
+  @visibleForTesting
+  AppDatabase.forTesting(super.e);
+
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) => m.createAll(),
     onUpgrade: (m, from, to) async {
       if (from < 2) {
-        // Add is_email_verified column with default false
-        await customStatement(
-          'ALTER TABLE auth_sessions ADD COLUMN is_email_verified INTEGER NOT NULL DEFAULT 0',
-        );
+        await _safeAddColumn('auth_sessions', 'is_email_verified', 'INTEGER NOT NULL DEFAULT 0');
       }
       if (from < 3) {
-        await m.addColumn(sales, sales.cashTendered);
-        await m.addColumn(sales, sales.changeAmount);
-        await m.addColumn(sales, sales.customerName);
-        await m.addColumn(sales, sales.receiptNumber);
-        await m.addColumn(sales, sales.orderId);
-        await m.addColumn(sales, sales.channel);
-        await m.addColumn(products, products.bio);
+        await _safeAddColumn('sales', 'cash_tendered', 'REAL');
+        await _safeAddColumn('sales', 'change_amount', 'REAL');
+        await _safeAddColumn('sales', 'customer_name', 'TEXT');
+        await _safeAddColumn('sales', 'receipt_number', 'TEXT');
+        await _safeAddColumn('sales', 'order_id', 'INTEGER');
+        await _safeAddColumn('sales', 'channel', 'TEXT');
+        await _safeAddColumn('products', 'bio', "TEXT NOT NULL DEFAULT ''");
+      }
+      if (from < 4) {
+        // Databases created at schema v2/v3 had a Drift table definition
+        // that was missing is_email_verified, so onCreate never created
+        // the column even though raw SQL in AuthDao referenced it.
+        await _safeAddColumn('auth_sessions', 'is_email_verified', 'INTEGER NOT NULL DEFAULT 0');
       }
     },
+    beforeOpen: (details) async {
+      // Defensive safety net: ensure every column exists regardless of the
+      // migration path a device went through. This prevents crashes on
+      // devices whose database was created at any prior schema version
+      // where the Drift table definition was incomplete.
+      await _safeAddColumn('auth_sessions', 'is_email_verified', 'INTEGER NOT NULL DEFAULT 0');
+      await _safeAddColumn('sales', 'cash_tendered', 'REAL');
+      await _safeAddColumn('sales', 'change_amount', 'REAL');
+      await _safeAddColumn('sales', 'customer_name', 'TEXT');
+      await _safeAddColumn('sales', 'receipt_number', 'TEXT');
+      await _safeAddColumn('sales', 'order_id', 'INTEGER');
+      await _safeAddColumn('sales', 'channel', 'TEXT');
+      await _safeAddColumn('products', 'bio', "TEXT NOT NULL DEFAULT ''");
+    },
   );
+
+  /// Adds [columnName] to [tableName] only if the column does not already
+  /// exist, preventing duplicate-column errors on re-runs.
+  Future<void> _safeAddColumn(
+    String tableName,
+    String columnName,
+    String columnDefinition,
+  ) async {
+    final result = await customSelect(
+      'PRAGMA table_info($tableName)',
+    ).get();
+    final exists = result.any((row) => row.data['name'] == columnName);
+    if (!exists) {
+      await customStatement(
+        'ALTER TABLE $tableName ADD COLUMN $columnName $columnDefinition',
+      );
+    }
+  }
 
   // ── DAOs ──────────────────────────────────────────────────────────────
   late final AuthDao authDao = AuthDao(this);

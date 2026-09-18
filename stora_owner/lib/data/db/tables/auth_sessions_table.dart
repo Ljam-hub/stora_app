@@ -6,6 +6,7 @@ class AuthSessions extends Table {
   TextColumn get refreshToken => text()();
   TextColumn get email => text()();
   TextColumn get businessName => text()();
+  BoolColumn get isEmailVerified => boolean().withDefault(const Constant(false))();
 
   @override
   Set<Column<Object>> get primaryKey => {id};
