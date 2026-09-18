@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/product_model.dart';
 import '../../providers/cart_provider.dart';
+import '../../storage/hidden_products_store.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/navigation_guard.dart';
 import '../../widgets/gradient_button.dart';
 import '../../widgets/product_image.dart';
+import '../../widgets/product_report_dialog.dart';
 import '../chat/customer_chat_screen.dart';
 
 class ProductDetailSheet extends StatefulWidget {
@@ -27,7 +30,7 @@ class _ProductDetailSheetState extends State<ProductDetailSheet> {
   Widget build(BuildContext context) {
     final product = widget.product;
     final cart = context.watch<CartProvider>();
-    final maxAvailable = product.stock;
+    final maxAvailable = product.stock - cart.getQuantity(product.id);
 
     return Container(
       decoration: BoxDecoration(
@@ -331,7 +334,6 @@ class _ProductDetailSheetState extends State<ProductDetailSheet> {
                                         onPressed: () {
                                           cart.clear();
                                           cart.addItem(product, _quantity);
-                                          if (mounted) Navigator.pop(context);
                                         },
                                       ),
                                     ),
@@ -375,9 +377,10 @@ class _ProductDetailSheetState extends State<ProductDetailSheet> {
                             : () {
                                 if (_isActionInProgress) return;
                                 setState(() => _isActionInProgress = true);
-                                final nav = Navigator.of(context);
-                                nav.pop();
-                                nav.push(
+                                final navigator = Navigator.of(context);
+                                navigator.pop();
+                                NavigationGuard.pushSafely(
+                                  navigator.context,
                                   MaterialPageRoute(
                                     builder: (_) => CustomerChatScreen(
                                       storeOwnerId: product.ownerId!,
@@ -399,6 +402,35 @@ class _ProductDetailSheetState extends State<ProductDetailSheet> {
                         ),
                       ),
                     ],
+
+                    const SizedBox(height: 8),
+                    Center(
+                      child: TextButton.icon(
+                        onPressed: () {
+                          final nav = Navigator.of(context);
+                          nav.pop();
+                          if (HiddenProductsStore.instance.isReported(product.id)) {
+                            ScaffoldMessenger.of(nav.context).showSnackBar(
+                              SnackBar(
+                                content: const Text('You have already reported this product in the last 24 hours.'),
+                                backgroundColor: AppColors.cardElevated,
+                              ),
+                            );
+                            return;
+                          }
+                          showProductReportDialog(context: nav.context, product: product);
+                        },
+                        icon: Icon(Icons.flag_outlined, size: 14, color: AppColors.textMuted),
+                        label: Text(
+                          'Report this product',
+                          style: TextStyle(
+                            color: AppColors.textMuted,
+                            fontSize: 12,
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),

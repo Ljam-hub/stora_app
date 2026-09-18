@@ -23,21 +23,37 @@ class SalesStore extends ChangeNotifier {
   /// Most recent sale first.
   List<Sale> get sales => List.unmodifiable(_sales.reversed);
 
+  bool _isSyncing = false;
+
   Future<void> loadSales() async {
+    if (_isSyncing) return;
     _sales = await _db.salesDao.loadSales();
     notifyListeners();
+    _isSyncing = true;
     try {
       final remote = await _api.listSales();
       final remoteSales = remote.map(Sale.fromJson).toList();
       final pendingLocal = _sales.where((s) => s.id.startsWith('local-')).toList();
       _sales = [...remoteSales, ...pendingLocal];
       await _db.salesDao.replaceSales(remoteSales);
-    } catch (_) {}
-    notifyListeners();
+    } catch (_) {
+    } finally {
+      _isSyncing = false;
+      notifyListeners();
+    }
   }
 
   bool _recording = false;
   bool get recording => _recording;
+
+  @visibleForTesting
+  Future<Sale> Function(
+    List<CartItem> items,
+    double total, {
+    double? cashTendered,
+    double? changeAmount,
+    String? customerName,
+  })? mockRecordSaleHandler;
 
   Future<Sale> recordSale(
     List<CartItem> items,
@@ -46,8 +62,24 @@ class SalesStore extends ChangeNotifier {
     double? changeAmount,
     String? customerName,
   }) async {
-    if (_recording) {
-      throw ApiException('A sale is already being processed.');
+    if (mockRecordSaleHandler != null) {
+      final sale = await mockRecordSaleHandler!(
+        items,
+        total,
+        cashTendered: cashTendered,
+        changeAmount: changeAmount,
+        customerName: customerName,
+      );
+      _sales.add(sale);
+      for (final item in items) {
+        InventoryStore.instance.decrementStockLocally(item.product.id, item.quantity);
+      }
+      notifyListeners();
+      return sale;
+    }
+
+    if (_recording || _isSyncing) {
+      throw ApiException('A sale or sync is currently in progress. Please try again in a moment.');
     }
     _recording = true;
     Sale sale;
@@ -67,36 +99,46 @@ class SalesStore extends ChangeNotifier {
       notifyListeners();
       return sale;
     }
+    Map<String, dynamic>? apiData;
     try {
-      final created = Sale.fromJson(
-        await _api.createSale({
-          'customer_name': customerName ?? 'Walk-in Customer',
-          'items': items
-              .map(
-                (item) => {
-                  'product': int.tryParse(item.product.id) ?? 0,
-                  'quantity': item.quantity,
-                },
-              )
-              .toList(),
-        }),
-      );
-      final withCashDetails = created.copyWith(
-        cashTendered: cashTendered,
-        changeAmount: changeAmount,
-        customerName: created.customerName ?? customerName ?? 'Walk-in Customer',
-      );
-      _sales.add(withCashDetails);
-      await _db.salesDao.upsertSale(withCashDetails);
-      for (final item in items) {
-        InventoryStore.instance.decrementStockLocally(item.product.id, item.quantity);
-      }
-      unawaited(InventoryStore.instance.loadProducts());
-      sale = withCashDetails;
+      apiData = await _api.createSale({
+        'customer_name': customerName ?? 'Walk-in Customer',
+        'items': items
+            .map(
+              (item) => {
+                'product': int.tryParse(item.product.id) ?? 0,
+                'quantity': item.quantity,
+              },
+            )
+            .toList(),
+      });
     } on ApiException catch (e) {
       if (e.statusCode != null && e.statusCode! < 500) {
+        _recording = false;
         rethrow;
       }
+    } catch (_) {}
+
+    if (apiData != null) {
+      try {
+        final created = Sale.fromJson(apiData);
+        final withCashDetails = created.copyWith(
+          cashTendered: cashTendered,
+          changeAmount: changeAmount,
+          customerName: created.customerName ?? customerName ?? 'Walk-in Customer',
+        );
+        _sales.add(withCashDetails);
+        await _db.salesDao.upsertSale(withCashDetails);
+        for (final item in items) {
+          InventoryStore.instance.decrementStockLocally(item.product.id, item.quantity);
+        }
+        unawaited(InventoryStore.instance.loadProducts());
+        sale = withCashDetails;
+      } catch (e) {
+        _recording = false;
+        throw ApiException('Failed to parse sale response: $e');
+      }
+    } else {
       sale = await _recordOfflineSale(
         items,
         total,
@@ -104,17 +146,8 @@ class SalesStore extends ChangeNotifier {
         changeAmount: changeAmount,
         customerName: customerName,
       );
-    } catch (_) {
-      sale = await _recordOfflineSale(
-        items,
-        total,
-        cashTendered: cashTendered,
-        changeAmount: changeAmount,
-        customerName: customerName,
-      );
-    } finally {
-      _recording = false;
     }
+    _recording = false;
     notifyListeners();
     return sale;
   }
@@ -197,6 +230,7 @@ class SalesStore extends ChangeNotifier {
 
   void reset() {
     _sales = [];
+    mockRecordSaleHandler = null;
     notifyListeners();
   }
 

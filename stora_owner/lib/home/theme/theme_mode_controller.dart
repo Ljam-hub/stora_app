@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
-class ThemeModeController extends ChangeNotifier {
+class ThemeModeController extends ChangeNotifier with WidgetsBindingObserver {
   ThemeModeController._();
   static final ThemeModeController instance = ThemeModeController._();
 
@@ -35,26 +35,38 @@ class ThemeModeController extends ChangeNotifier {
       }
     } catch (_) {}
 
-    WidgetsBinding.instance.platformDispatcher.onPlatformBrightnessChanged = () {
-      if (_themeMode == ThemeMode.system) {
-        notifyListeners();
-      }
-    };
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangePlatformBrightness() {
+    super.didChangePlatformBrightness();
+    if (_themeMode == ThemeMode.system) {
+      notifyListeners();
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
   }
 
   Future<void> setThemeMode(ThemeMode mode) async {
     _themeMode = mode;
     notifyListeners();
     try {
-      if (_settingsFile != null) {
-        if (!await _settingsFile!.parent.exists()) {
-          await _settingsFile!.parent.create(recursive: true);
-        }
-        String val = 'dark';
-        if (mode == ThemeMode.light) val = 'light';
-        if (mode == ThemeMode.system) val = 'system';
-        await _settingsFile!.writeAsString(val);
+      if (_settingsFile == null) {
+        final dir = await getApplicationDocumentsDirectory();
+        _settingsFile = File(p.join(dir.path, 'theme_preference.txt'));
       }
+      if (!await _settingsFile!.parent.exists()) {
+        await _settingsFile!.parent.create(recursive: true);
+      }
+      String val = 'dark';
+      if (mode == ThemeMode.light) val = 'light';
+      if (mode == ThemeMode.system) val = 'system';
+      await _settingsFile!.writeAsString(val);
     } catch (_) {}
   }
 
@@ -63,3 +75,4 @@ class ThemeModeController extends ChangeNotifier {
     await setThemeMode(next);
   }
 }
+

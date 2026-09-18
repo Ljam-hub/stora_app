@@ -19,6 +19,7 @@ import '../stores/store_status_store.dart';
 import '../theme/home_colors.dart';
 import '../theme/theme_mode_controller.dart';
 import '../widgets/notification_badge.dart';
+import '../widgets/offline_banner.dart';
 
 /// App shell — bottom nav with 5 tabs including Chat. "Add / Edit product" and "Sales
 /// history" are pushed on top rather than being tabs, since they're
@@ -30,20 +31,37 @@ class StoraShell extends StatefulWidget {
   State<StoraShell> createState() => _StoraShellState();
 }
 
-class _StoraShellState extends State<StoraShell> {
+class _StoraShellState extends State<StoraShell> with WidgetsBindingObserver {
   int _index = 0;
 
-  List<Widget> _buildScreens() => [
-    DashboardScreen(onNavigateToChat: () => setState(() => _index = 1)),
-    const OwnerChatScreen(isTab: true),
-    const InventoryListScreen(),
-    const PosScreen(),
-    const AlertsScreen(),
-  ];
+  late final List<Widget> _screens;
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      OrdersStore.instance.fetchOrders(isSilent: true);
+      ChatStore.instance.fetchConversations(isSilent: true);
+      InventoryStore.instance.loadProducts(isSilent: true);
+      StoreStatusStore.instance.fetchStatus();
+      OrdersStore.instance.startPolling();
+      ChatStore.instance.startPolling();
+    } else if (state == AppLifecycleState.paused) {
+      OrdersStore.instance.stopPolling();
+      ChatStore.instance.stopPolling();
+    }
+  }
 
   @override
   void initState() {
     super.initState();
+    _screens = const [
+      DashboardScreen(),
+      OwnerChatScreen(isTab: true),
+      InventoryListScreen(),
+      PosScreen(),
+      AlertsScreen(),
+    ];
+    WidgetsBinding.instance.addObserver(this);
     AccountStatusStore.instance.addListener(_checkPriceChange);
     AccountStatusStore.instance.fetchStatus();
     InventoryStore.instance.loadProducts();
@@ -63,6 +81,7 @@ class _StoraShellState extends State<StoraShell> {
       final name = (cust != null && cust.isNotEmpty) ? cust : 'A customer';
       final total = order['total_amount']?.toString() ?? '0.00';
       _showInAppOrderPopup(
+        orderId: int.tryParse(id.toString()),
         title: '🔔 New Order #$id Received!',
         message: '$name placed an order for ₱$total.',
         onAction: () {
@@ -75,9 +94,16 @@ class _StoraShellState extends State<StoraShell> {
 
     OwnerNotificationService.instance.onForegroundMessageReceived = (message) {
       if (!mounted) return;
+      OrdersStore.instance.fetchOrders(isSilent: true);
+      ChatStore.instance.fetchConversations(isSilent: true);
+      InventoryStore.instance.loadProducts(isSilent: true);
+
       final title = message.notification?.title ?? message.data['title'] ?? 'New Customer Order';
       final body = message.notification?.body ?? message.data['body'] ?? 'A customer just placed an order!';
+      final rawOrderId = message.data['order_id'] ?? message.data['id'];
+      
       _showInAppOrderPopup(
+        orderId: rawOrderId != null ? int.tryParse(rawOrderId.toString()) : null,
         title: title,
         message: body,
         onAction: () {
@@ -89,12 +115,25 @@ class _StoraShellState extends State<StoraShell> {
     };
   }
 
+  int? _lastPopupOrderId;
+
   void _showInAppOrderPopup({
+    int? orderId,
     required String title,
     required String message,
     required VoidCallback onAction,
   }) {
     if (!mounted) return;
+    if (orderId != null && orderId == _lastPopupOrderId) return;
+    if (orderId != null) {
+      _lastPopupOrderId = orderId;
+      Future.delayed(const Duration(seconds: 10), () {
+        if (mounted && _lastPopupOrderId == orderId) {
+          _lastPopupOrderId = null;
+        }
+      });
+    }
+
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -177,6 +216,7 @@ class _StoraShellState extends State<StoraShell> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     OrdersStore.instance.stopPolling();
     OrdersStore.instance.onNewOrderReceived = null;
     ChatStore.instance.stopPolling();
@@ -225,9 +265,12 @@ class _StoraShellState extends State<StoraShell> {
       animation: Listenable.merge([
         ChatStore.instance,
         InventoryStore.instance,
+        StoreStatusStore.instance,
         ThemeModeController.instance,
       ]),
       builder: (context, _) {
+        final locationMissing = !StoreStatusStore.instance.hasValidLocation;
+        final alertsBadgeCount = InventoryStore.instance.lowStock.length + (locationMissing ? 1 : 0);
         return PopScope(
           canPop: _index == 0,
           onPopInvokedWithResult: (didPop, _) {
@@ -237,15 +280,17 @@ class _StoraShellState extends State<StoraShell> {
           },
           child: Scaffold(
             backgroundColor: HomeColors.background,
-            body: IndexedStack(
-              index: _index,
-              children: _buildScreens(),
+            body: OfflineBannerWrapper(
+              child: IndexedStack(
+                index: _index,
+                children: _screens,
+              ),
             ),
             bottomNavigationBar: _StoraNavBar(
               currentIndex: _index,
               onTap: (i) => setState(() => _index = i),
               chatUnreadCount: ChatStore.instance.totalUnreadCount,
-              alertsCount: InventoryStore.instance.lowStock.length,
+              alertsCount: alertsBadgeCount,
             ),
           ),
         );
@@ -348,6 +393,7 @@ class _StoraNavBar extends StatelessWidget {
 
               return Expanded(
                 child: GestureDetector(
+                  key: Key('nav_tab_${item.label.toLowerCase()}'),
                   behavior: HitTestBehavior.opaque,
                   onTap: () {
                     HapticFeedback.lightImpact();

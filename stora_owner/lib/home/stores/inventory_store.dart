@@ -19,10 +19,23 @@ class InventoryStore extends ChangeNotifier {
   List<Product> _products = [];
   bool _loading = false;
   String? _error;
+  bool _isTestingLocked = false;
 
   List<Product> get products => _products;
   bool get loading => _loading;
   String? get error => _error;
+
+  @visibleForTesting
+  void setProductsForTesting(List<Product> products, {bool lock = true}) {
+    _products = List.from(products);
+    _isTestingLocked = lock;
+    notifyListeners();
+  }
+
+  @visibleForTesting
+  void clearTestingLock() {
+    _isTestingLocked = false;
+  }
 
   int get totalStock => _products.fold(0, (sum, p) => sum + p.stock);
 
@@ -43,6 +56,7 @@ class InventoryStore extends ChangeNotifier {
         imageBytes: p.imageBytes,
         imageUrl: p.imageUrl,
         bio: p.bio,
+        isImageCleared: p.isImageCleared,
       );
       _products[idx] = updated;
       _db.productDao.upsertProduct(updated);
@@ -50,13 +64,18 @@ class InventoryStore extends ChangeNotifier {
     }
   }
 
-  Future<void> loadProducts() async {
-    _loading = true;
-    _error = null;
-    notifyListeners();
-    try {
-      _products = await _db.productDao.loadProducts();
+  Future<void> loadProducts({bool isSilent = false}) async {
+    if (_isTestingLocked) return;
+    if (!isSilent && _products.isEmpty) {
+      _loading = true;
+      _error = null;
       notifyListeners();
+    }
+    try {
+      if (_products.isEmpty) {
+        _products = await _db.productDao.loadProducts();
+        notifyListeners();
+      }
       final remote = await _api.listProducts();
       final remoteProducts = remote.map(Product.fromJson).toList();
       final pendingLocal = _products.where((p) => p.id.startsWith('local-')).toList();
@@ -67,7 +86,9 @@ class InventoryStore extends ChangeNotifier {
     } catch (e) {
       if (_products.isEmpty) _error = 'Network error: $e';
     } finally {
-      _loading = false;
+      if (_loading) {
+        _loading = false;
+      }
       notifyListeners();
     }
   }
@@ -97,23 +118,33 @@ class InventoryStore extends ChangeNotifier {
       }
     }
 
+    Map<String, dynamic>? apiData;
     try {
-      final created = Product.fromJson(await _api.createProduct(p.toJson()));
-      _products.add(created);
-      await _db.productDao.upsertProduct(created);
-      _error = null;
-      notifyListeners();
-      AccountStatusStore.instance.fetchStatus();
-      return true;
+      apiData = await _api.createProduct(p.toJson());
     } on ApiException catch (e) {
       if (e.statusCode != null && e.statusCode! < 500) {
         _error = e.message;
         notifyListeners();
         return false;
       }
-      // If network error (statusCode == null or 5xx), fall through to offline save
     } catch (_) {
       // Offline fallback
+    }
+
+    if (apiData != null) {
+      try {
+        final created = Product.fromJson(apiData);
+        _products.add(created);
+        await _db.productDao.upsertProduct(created);
+        _error = null;
+        notifyListeners();
+        AccountStatusStore.instance.fetchStatus();
+        return true;
+      } catch (e) {
+        _error = 'Parse error: $e';
+        notifyListeners();
+        return false;
+      }
     }
 
     // Offline fallback: save locally with temporary local ID and queue sync
@@ -259,12 +290,13 @@ class InventoryStore extends ChangeNotifier {
         await _db.productDao.upsertProduct(updated);
       }
     } catch (_) {
-      if (idx != -1) {
+      final currentIdx = _products.indexWhere((p) => p.id == id);
+      if (currentIdx != -1) {
         await _db.syncDao.enqueueSync(
           entityType: 'product',
           action: 'update',
           entityId: id,
-          payload: jsonEncode(_products[idx].toJson()),
+          payload: jsonEncode(_products[currentIdx].toJson()),
         );
       }
     }
@@ -282,6 +314,7 @@ class InventoryStore extends ChangeNotifier {
     _products = [];
     _error = null;
     _loading = false;
+    _isTestingLocked = false;
     notifyListeners();
   }
 

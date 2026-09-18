@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import '../../stora_login/stora_login.dart';
 import '../models/product.dart';
 import '../stores/inventory_store.dart';
+import '../stores/store_status_store.dart';
 import '../theme/home_colors.dart';
 import '../theme/theme_mode_controller.dart';
 import '../widgets/product_image_widget.dart';
 import 'add_edit_product_screen.dart';
+import 'set_store_location_screen.dart';
 
 class AlertsScreen extends StatelessWidget {
   const AlertsScreen({super.key});
@@ -13,9 +15,16 @@ class AlertsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: Listenable.merge([InventoryStore.instance, ThemeModeController.instance]),
+      animation: Listenable.merge([
+        InventoryStore.instance,
+        StoreStatusStore.instance,
+        ThemeModeController.instance,
+      ]),
       builder: (context, _) {
         final lowStock = InventoryStore.instance.lowStock;
+        final hasLocationIssue = !StoreStatusStore.instance.hasValidLocation;
+        final totalAlerts = lowStock.length + (hasLocationIssue ? 1 : 0);
+
         return SafeArea(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
@@ -30,23 +39,23 @@ class AlertsScreen extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: lowStock.isNotEmpty ? HomeColors.dangerBg : HomeColors.successBg,
+                            color: totalAlerts > 0 ? HomeColors.dangerBg : HomeColors.successBg,
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Icon(
-                            lowStock.isNotEmpty ? Icons.warning_amber_rounded : Icons.check_circle_outline_rounded,
-                            color: lowStock.isNotEmpty ? AppColors.error : HomeColors.successText,
+                            totalAlerts > 0 ? Icons.warning_amber_rounded : Icons.check_circle_outline_rounded,
+                            color: totalAlerts > 0 ? AppColors.error : HomeColors.successText,
                             size: 20,
                           ),
                         ),
                         const SizedBox(width: 10),
                         Text(
-                          'Stock Alerts',
+                          'Alerts',
                           style: TextStyle(color: HomeColors.textPrimary, fontSize: 18, fontWeight: FontWeight.w800),
                         ),
                       ],
                     ),
-                    if (lowStock.isNotEmpty)
+                    if (totalAlerts > 0)
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
@@ -55,7 +64,7 @@ class AlertsScreen extends StatelessWidget {
                           border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
                         ),
                         child: Text(
-                          '${lowStock.length} items low',
+                          '$totalAlerts alert${totalAlerts > 1 ? 's' : ''}',
                           style: const TextStyle(color: AppColors.error, fontSize: 11, fontWeight: FontWeight.w800),
                         ),
                       ),
@@ -63,7 +72,7 @@ class AlertsScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 Expanded(
-                  child: lowStock.isEmpty
+                  child: totalAlerts == 0
                       ? Center(
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -79,12 +88,12 @@ class AlertsScreen extends StatelessWidget {
                               ),
                               const SizedBox(height: 18),
                               Text(
-                                'All inventory is healthy',
+                                'All systems healthy',
                                 style: TextStyle(color: HomeColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w800),
                               ),
                               const SizedBox(height: 6),
                               Text(
-                                'No items are currently below 5 units in stock.',
+                                'Store location is configured and no items are low in stock.',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(color: HomeColors.textSecondary, fontSize: 13),
                               ),
@@ -92,9 +101,18 @@ class AlertsScreen extends StatelessWidget {
                           ),
                         )
                       : ListView.separated(
-                          itemCount: lowStock.length,
+                          itemCount: (hasLocationIssue ? 1 : 0) + lowStock.length,
                           separatorBuilder: (_, _) => const SizedBox(height: 12),
-                          itemBuilder: (context, i) => _AlertCard(product: lowStock[i]),
+                          itemBuilder: (context, i) {
+                            if (hasLocationIssue && i == 0) {
+                              return const _LocationAlertCard(key: ValueKey('location_alert'));
+                            }
+                            final productIndex = hasLocationIssue ? i - 1 : i;
+                            return _AlertCard(
+                              key: ValueKey(lowStock[productIndex].id),
+                              product: lowStock[productIndex],
+                            );
+                          },
                         ),
                 ),
               ],
@@ -106,9 +124,127 @@ class AlertsScreen extends StatelessWidget {
   }
 }
 
+class _LocationAlertCard extends StatefulWidget {
+  const _LocationAlertCard({super.key});
+
+  @override
+  State<_LocationAlertCard> createState() => _LocationAlertCardState();
+}
+
+class _LocationAlertCardState extends State<_LocationAlertCard> {
+  bool _isNavigating = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: HomeColors.warningBg,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: HomeColors.warningText.withValues(alpha: 0.4), width: 1.2),
+        boxShadow: HomeColors.cardShadow,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: HomeColors.warningText.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.location_off_rounded, color: HomeColors.warningText, size: 22),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Store Location Not Configured',
+                      style: TextStyle(
+                        color: HomeColors.warningText,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Hidden from customer map pins',
+                      style: TextStyle(
+                        color: HomeColors.textSecondary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: HomeColors.warningText.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  'ACTION REQUIRED',
+                  style: TextStyle(
+                    color: HomeColors.warningText,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Customers in your area cannot see your store on their map screen until you pin your store address.',
+            style: TextStyle(
+              color: HomeColors.textSecondary,
+              fontSize: 12,
+              height: 1.35,
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () async {
+                if (_isNavigating) return;
+                setState(() => _isNavigating = true);
+                try {
+                  await Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const SetStoreLocationScreen()),
+                  );
+                } finally {
+                  if (mounted) setState(() => _isNavigating = false);
+                }
+              },
+              icon: const Icon(Icons.pin_drop_rounded, size: 16, color: Colors.white),
+              label: const Text(
+                'Set Location Pin Now',
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: HomeColors.warningText,
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                elevation: 0,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _AlertCard extends StatefulWidget {
   final Product product;
-  const _AlertCard({required this.product});
+  const _AlertCard({super.key, required this.product});
 
   @override
   State<_AlertCard> createState() => _AlertCardState();

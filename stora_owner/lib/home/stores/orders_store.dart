@@ -11,6 +11,7 @@ class OrdersStore extends ChangeNotifier {
 
   List<Map<String, dynamic>> _orders = [];
   bool _isLoading = false;
+  bool _isFetching = false;
   String? _error;
   final Set<int> _knownOrderIds = {};
   final Set<int> _processingOrderIds = <int>{};
@@ -30,7 +31,7 @@ class OrdersStore extends ChangeNotifier {
   int get activeCount =>
       _orders.where((o) => o['status'] == 'pending' || o['status'] == 'counter_offer' || o['status'] == 'accepted' || o['status'] == 'ready').length;
 
-  void startPolling({Duration interval = const Duration(seconds: 12)}) {
+  void startPolling({Duration interval = const Duration(seconds: 8)}) {
     _pollingTimer?.cancel();
     _pollingTimer = Timer.periodic(interval, (_) => fetchOrders(isSilent: true));
   }
@@ -41,6 +42,8 @@ class OrdersStore extends ChangeNotifier {
   }
 
   Future<void> fetchOrders({bool isSilent = false}) async {
+    if (_isFetching) return;
+    _isFetching = true;
     if (!isSilent) {
       _isLoading = true;
       _error = null;
@@ -82,6 +85,7 @@ class OrdersStore extends ChangeNotifier {
     } catch (e) {
       if (!isSilent) _error = e.toString();
     } finally {
+      _isFetching = false;
       if (!isSilent) {
         _isLoading = false;
       }
@@ -111,6 +115,7 @@ class OrdersStore extends ChangeNotifier {
       ]));
     } catch (e) {
       _error = e.toString();
+      rethrow;
     } finally {
       _processingOrderIds.remove(orderId);
       notifyListeners();
@@ -134,6 +139,7 @@ class OrdersStore extends ChangeNotifier {
       unawaited(fetchOrders(isSilent: true));
     } catch (e) {
       _error = e.toString();
+      rethrow;
     } finally {
       _processingOrderIds.remove(orderId);
       notifyListeners();

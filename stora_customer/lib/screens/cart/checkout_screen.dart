@@ -100,6 +100,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   Future<void> _handlePlaceOrder() async {
+    final cart = context.read<CartProvider>();
+    if (cart.isEmpty) return;
+
     if (_isSubmitting) return;
     setState(() => _isSubmitting = true);
 
@@ -108,8 +111,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       return;
     }
     FocusScope.of(context).unfocus();
-
-    final cart = context.read<CartProvider>();
     final orderProvider = context.read<OrderProvider>();
     final auth = context.read<AuthProvider>();
 
@@ -136,27 +137,25 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       } catch (_) {}
     }
     if (store == null) {
+      if (!mounted) return;
       setState(() => _isSubmitting = false);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Cannot place order: Store information could not be retrieved.'),
-            backgroundColor: AppColors.danger,
-          ),
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Cannot place order: Store information could not be retrieved.'),
+          backgroundColor: AppColors.danger,
+        ),
+      );
       return;
     }
     if (!store.isOpen) {
+      if (!mounted) return;
       setState(() => _isSubmitting = false);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Cannot place order: This store is currently closed.'),
-            backgroundColor: AppColors.danger,
-          ),
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Cannot place order: This store is currently closed.'),
+          backgroundColor: AppColors.danger,
+        ),
+      );
       return;
     }
 
@@ -196,6 +195,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   void _showOrderSuccessDialog(int orderId) {
+    bool dismissed = false;
     showGeneralDialog(
       context: context,
       barrierDismissible: false,
@@ -203,7 +203,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       barrierColor: Colors.black.withValues(alpha: 0.7),
       transitionDuration: const Duration(milliseconds: 400),
       pageBuilder: (ctx, anim1, anim2) {
-        return Center(
+        return PopScope(
+          canPop: false,
+          child: Center(
           child: ScaleTransition(
             scale: CurvedAnimation(parent: anim1, curve: Curves.elasticOut),
             child: Material(
@@ -214,48 +216,38 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 decoration: BoxDecoration(
                   color: AppColors.cardBackground,
                   borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: AppColors.success.withValues(alpha: 0.4)),
-                  boxShadow: AppColors.glowShadow(AppColors.success, opacity: 0.3),
+                  border: Border.all(color: AppColors.cardBorder),
+                  boxShadow: AppColors.cardShadow,
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Animated check icon
-                    TweenAnimationBuilder<double>(
-                      tween: Tween(begin: 0.0, end: 1.0),
-                      duration: const Duration(milliseconds: 600),
-                      curve: Curves.elasticOut,
-                      builder: (context, value, child) => Transform.scale(
-                        scale: value,
-                        child: child,
+                    Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.15),
+                        shape: BoxShape.circle,
                       ),
-                      child: Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: AppColors.successBg,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: AppColors.success, width: 2),
-                          boxShadow: AppColors.glowShadow(AppColors.success, opacity: 0.4),
-                        ),
-                        child: const Icon(
-                          Icons.check_rounded,
-                          color: AppColors.success,
+                      child: const Center(
+                        child: Icon(
+                          Icons.check_circle_rounded,
+                          color: AppColors.primary,
                           size: 48,
                         ),
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 20),
                     Text(
-                      'Order Placed! 🎉',
-                      textAlign: TextAlign.center,
+                      'Order Placed!',
                       style: TextStyle(
                         fontSize: 22,
-                        fontWeight: FontWeight.w900,
+                        fontWeight: FontWeight.bold,
                         color: AppColors.textPrimary,
                         letterSpacing: -0.5,
                       ),
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 8),
                     Text(
                       'Order #$orderId has been submitted to the store. You will receive real-time updates as the owner accepts or prepares your order.',
                       textAlign: TextAlign.center,
@@ -267,8 +259,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     ),
                     const SizedBox(height: 24),
                     GradientButton(
+                      key: const Key('checkout_track_order_button'),
                       text: 'Track Order',
                       onPressed: () {
+                        if (dismissed) return;
+                        dismissed = true;
                         Navigator.pop(ctx);
                         if (mounted) {
                           Navigator.pop(context);
@@ -280,6 +275,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 ),
               ),
             ),
+          ),
           ),
         );
       },
@@ -370,6 +366,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 const SizedBox(height: 14),
 
                 CustomTextField(
+                  key: const Key('checkout_name_field'),
+                  fieldKey: const Key('checkout_name_input'),
                   controller: _nameController,
                   label: 'Customer Full Name',
                   hint: 'Juan Dela Cruz',
@@ -379,6 +377,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 const SizedBox(height: 14),
 
                 CustomTextField(
+                  key: const Key('checkout_phone_field'),
+                  fieldKey: const Key('checkout_phone_input'),
                   controller: _phoneController,
                   label: 'Contact Phone Number',
                   hint: '0912 345 6789',
@@ -389,6 +389,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 const SizedBox(height: 14),
 
                 CustomTextField(
+                  key: const Key('checkout_address_field'),
+                  fieldKey: const Key('checkout_address_input'),
                   controller: _addressController,
                   label: 'Delivery / Pickup Address',
                   hint: 'House/Unit No., Street, Barangay, City',
@@ -518,12 +520,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
                 // Place Order Button
                 GradientButton(
+                  key: const Key('checkout_place_order_button'),
                   text: isStoreClosed
                       ? 'Store is Currently Closed'
                       : 'Place Order (${cart.formattedTotal})',
                   icon: isStoreClosed ? Icons.lock_outline : Icons.send_rounded,
                   isLoading: _isSubmitting,
-                  onPressed: (_isSubmitting || isStoreClosed) ? null : _handlePlaceOrder,
+                  onPressed: (_isSubmitting || isStoreClosed || cart.isEmpty) ? null : _handlePlaceOrder,
                 ),
                 const SizedBox(height: 20),
               ],

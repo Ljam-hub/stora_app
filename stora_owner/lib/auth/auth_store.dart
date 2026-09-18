@@ -24,6 +24,23 @@ class AuthStore extends ChangeNotifier {
   bool isEmailVerified = false;
   bool get isLoggedIn => email != null && email!.isNotEmpty;
 
+  @visibleForTesting
+  Future<void> Function({required String email, required String password})? mockLoginHandler;
+
+  @visibleForTesting
+  void setUserForTesting({
+    required String email,
+    required String businessName,
+    bool isEmailVerified = true,
+    String? avatarUrl,
+  }) {
+    this.email = email;
+    this.businessName = businessName;
+    this.isEmailVerified = isEmailVerified;
+    this.avatarUrl = avatarUrl;
+    notifyListeners();
+  }
+
   String get greetingName {
     final name = (businessName ?? '').trim();
     if (name.isEmpty) {
@@ -64,6 +81,10 @@ class AuthStore extends ChangeNotifier {
   Future<bool> restore() => init();
 
   Future<void> login({required String email, required String password}) async {
+    if (mockLoginHandler != null) {
+      await mockLoginHandler!(email: email, password: password);
+      return;
+    }
     final result = await ApiClient.instance.login(email: email, password: password);
     await _persist(result);
   }

@@ -31,7 +31,12 @@ DateTime parseApiDateTime(String raw) {
 /// Wall-clock time in Asia/Manila (UTC+8), independent of the device timezone.
 DateTime toManila(DateTime d) {
   final utc = d.isUtc ? d : d.toUtc();
-  return tz.TZDateTime.from(utc, tz.getLocation(kManilaTimezone));
+  try {
+    return tz.TZDateTime.from(utc, tz.getLocation(kManilaTimezone));
+  } catch (_) {
+    // Fallback if timezone database is not initialized (e.g. in tests)
+    return utc.add(const Duration(hours: 8));
+  }
 }
 
 String formatFriendlyDate(DateTime d) {

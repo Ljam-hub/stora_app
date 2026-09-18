@@ -6,6 +6,7 @@ import 'package:sqlite3/sqlite3.dart';
 import 'package:sqlite3_flutter_libs/sqlite3_flutter_libs.dart';
 import 'package:stora/auth/auth_store.dart';
 import 'package:stora/data/api/api_config.dart';
+import 'package:stora/data/services/connectivity_service.dart';
 import 'package:stora/data/sync/sync_manager.dart';
 import 'package:stora/home/shell/stora_shell.dart';
 import 'package:timezone/data/latest.dart' as tzdata;
@@ -22,6 +23,7 @@ Future<void> _initSqlite() async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  ConnectivityService.instance.init();
   tzdata.initializeTimeZones();
   await _initSqlite();
   // Don't block startup on network probe — resolve in background
@@ -30,6 +32,8 @@ void main() async {
     if (AuthStore.instance.isLoggedIn) {
       SyncManager.instance.syncNow();
     }
+  }).catchError((e) {
+    debugPrint('ApiConfig resolve failed: $e');
   });
   SyncManager.instance.init();
   await ThemeModeController.instance.init();
@@ -81,6 +85,11 @@ class MyApp extends StatelessWidget {
             colorScheme: ColorScheme.fromSeed(
               seedColor: const Color(0xFFFF6B00),
               brightness: Brightness.dark,
+            ),
+            cardTheme: CardThemeData(
+              color: const Color(0xFF1E1E1E),
+              elevation: 1,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             ),
             useMaterial3: true,
             fontFamily: GoogleFonts.inter().fontFamily,

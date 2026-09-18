@@ -61,10 +61,30 @@ class AuthProvider extends ChangeNotifier {
     return false;
   }
 
+  @visibleForTesting
+  void setUserForTesting(UserModel user, {String token = 'test-token', String? phone, String? address}) {
+    _currentUser = user;
+    _token = token;
+    _savedPhone = phone;
+    _savedAddress = address;
+    CustomerApiService.instance.accessToken = token;
+    notifyListeners();
+  }
+
+  @visibleForTesting
+  Future<bool> Function(String email, String password)? mockLoginHandler;
+
   Future<bool> login(String email, String password) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
+
+    if (mockLoginHandler != null) {
+      final success = await mockLoginHandler!(email, password);
+      _isLoading = false;
+      notifyListeners();
+      return success;
+    }
 
     try {
       final res = await CustomerApiService.instance.login(email, password);

@@ -4,9 +4,11 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
+import 'package:sqflite/sqflite.dart';
 import '../../models/store_model.dart';
 import '../../providers/catalog_provider.dart';
 import '../../services/location_service.dart';
+import '../../storage/session_manager.dart';
 import '../../theme/app_theme.dart';
 
 class StoreMapScreen extends StatefulWidget {
@@ -48,7 +50,45 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
       duration: const Duration(seconds: 2),
     )..repeat();
 
+    _loadCachedLocation();
     _acquireLocation();
+  }
+
+  Future<void> _saveCachedLocation(double lat, double lng) async {
+    try {
+      final db = await SessionManager.instance.database;
+      await db.insert(
+        'app_settings',
+        {'key': 'last_lat', 'value': lat.toString()},
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+      await db.insert(
+        'app_settings',
+        {'key': 'last_lng', 'value': lng.toString()},
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    } catch (_) {}
+  }
+
+  Future<void> _loadCachedLocation() async {
+    try {
+      final db = await SessionManager.instance.database;
+      final latRows = await db.query('app_settings', where: 'key = ?', whereArgs: ['last_lat']);
+      final lngRows = await db.query('app_settings', where: 'key = ?', whereArgs: ['last_lng']);
+      if (latRows.isNotEmpty && lngRows.isNotEmpty) {
+        final lat = double.tryParse(latRows.first['value'] as String);
+        final lng = double.tryParse(lngRows.first['value'] as String);
+        if (lat != null && lng != null && mounted) {
+          setState(() {
+            _userLat = lat;
+            _userLng = lng;
+          });
+          try {
+            _mapController.move(LatLng(_userLat, _userLng), 15.0);
+          } catch (_) {}
+        }
+      }
+    } catch (_) {}
   }
 
   Future<void> _acquireLocation() async {
@@ -74,23 +114,23 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
       }
 
       Position? position;
-      // 1. Try high/medium accuracy with 8s timeout
+      // 1. Try high accuracy with 8s timeout for maximum map precision
       try {
         position = await Geolocator.getCurrentPosition(
           locationSettings: const LocationSettings(
-            accuracy: LocationAccuracy.medium,
+            accuracy: LocationAccuracy.high,
             timeLimit: Duration(seconds: 8),
           ),
         );
       } catch (_) {
         // 2. Fallback: cached last known position
         position = await Geolocator.getLastKnownPosition();
-        // 3. Fallback: low accuracy with 5s timeout
+        // 3. Fallback: medium/low accuracy with 5s timeout
         if (position == null) {
           try {
             position = await Geolocator.getCurrentPosition(
               locationSettings: const LocationSettings(
-                accuracy: LocationAccuracy.low,
+                accuracy: LocationAccuracy.medium,
                 timeLimit: Duration(seconds: 5),
               ),
             );
@@ -104,6 +144,7 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
           _userLat = pos.latitude;
           _userLng = pos.longitude;
         });
+        _saveCachedLocation(_userLat, _userLng);
         try {
           _mapController.move(LatLng(_userLat, _userLng), 15.0);
         } catch (_) {}
@@ -168,6 +209,7 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
           _userLat = position.latitude;
           _userLng = position.longitude;
         });
+        _saveCachedLocation(_userLat, _userLng);
         try {
           _mapController.move(LatLng(_userLat, _userLng), 16.0);
         } catch (_) {}
@@ -297,9 +339,11 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
                         separatorBuilder: (context, index) => const Divider(height: 1, indent: 68),
                         itemBuilder: (ctx, i) {
                           final s = stores[i];
-                          final dist = s.distanceKm != null
-                              ? '${s.distanceKm!.toStringAsFixed(1)} km away'
-                              : 'Nearby';
+                          final dist = !s.hasValidLocation
+                              ? 'Location not set'
+                              : (s.distanceKm != null
+                                  ? '${s.distanceKm!.toStringAsFixed(1)} km away'
+                                  : 'Nearby');
                           return ListTile(
                             leading: Container(
                               width: 44,
@@ -383,7 +427,13 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
   Widget build(BuildContext context) {
     context.watch<CustomerThemeController>();
     final catalog = context.watch<CatalogProvider>();
-    final allStores = catalog.stores;
+    final allStores = List<StoreModel>.from(catalog.stores);
+    // Sort nearest-first: located stores first sorted by distance, unlocated stores at end
+    allStores.sort((a, b) {
+      if (a.hasValidLocation && !b.hasValidLocation) return -1;
+      if (!a.hasValidLocation && b.hasValidLocation) return 1;
+      return (a.distanceKm ?? 999999).compareTo(b.distanceKm ?? 999999);
+    });
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final filteredStores = allStores.where((s) {
@@ -421,17 +471,18 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
               MarkerLayer(
                 markers: [
                   for (int i = 0; i < filteredStores.length; i++)
-                    Marker(
-                      point: LatLng(filteredStores[i].latitude, filteredStores[i].longitude),
-                      width: 140,
-                      height: 100,
-                      alignment: Alignment.topCenter,
-                      child: _buildStorePin(
-                        store: filteredStores[i],
-                        isSelected: activeStore?.id == filteredStores[i].id,
-                        index: i,
+                    if (filteredStores[i].hasValidLocation)
+                      Marker(
+                        point: LatLng(filteredStores[i].latitude, filteredStores[i].longitude),
+                        width: 140,
+                        height: 100,
+                        alignment: Alignment.topCenter,
+                        child: _buildStorePin(
+                          store: filteredStores[i],
+                          isSelected: activeStore?.id == filteredStores[i].id,
+                          index: i,
+                        ),
                       ),
-                    ),
                 ],
               ),
               MarkerLayer(
@@ -473,7 +524,18 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
                     ),
                     child: TextField(
                       controller: _searchController,
-                      onChanged: (val) => setState(() => _searchFilter = val),
+                      onChanged: (val) {
+                        setState(() => _searchFilter = val);
+                        // Reset PageController if current page would be out of bounds
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          if (_pageController.hasClients && mounted) {
+                            final currentPage = _pageController.page?.round() ?? 0;
+                            if (currentPage > 0) {
+                              _pageController.jumpToPage(0);
+                            }
+                          }
+                        });
+                      },
                       style: TextStyle(
                         color: isDark ? Colors.white : Colors.black87,
                         fontSize: 14,
@@ -559,6 +621,23 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                _buildFloatingButton(
+                  icon: Icons.refresh_rounded,
+                  tooltip: 'Refresh Stores',
+                  isDark: isDark,
+                  onTap: () {
+                    context.read<CatalogProvider>().fetchStores(lat: _userLat, lng: _userLng);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: const Text('Refreshing nearby stores...'),
+                        backgroundColor: AppColors.cardElevated,
+                        duration: const Duration(seconds: 1),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 8),
                 _buildFloatingButton(
                   icon: Icons.my_location_rounded,
                   tooltip: 'My Location',
@@ -686,7 +765,9 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
                     setState(() {
                       _selectedStore = store;
                     });
-                    _mapController.move(LatLng(store.latitude, store.longitude), _mapController.camera.zoom);
+                    if (store.hasValidLocation) {
+                      _mapController.move(LatLng(store.latitude, store.longitude), _mapController.camera.zoom);
+                    }
                   },
                   itemBuilder: (ctx, i) {
                     final store = filteredStores[i];
@@ -985,9 +1066,11 @@ class _StoreCarouselCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final distText = store.distanceKm != null
-        ? '${store.distanceKm!.toStringAsFixed(1)} km away'
-        : 'Nearby store';
+    final distText = !store.hasValidLocation
+        ? 'Location not set'
+        : (store.distanceKm != null
+            ? '${store.distanceKm!.toStringAsFixed(1)} km away'
+            : 'Nearby store');
 
     return Container(
       padding: const EdgeInsets.all(14),

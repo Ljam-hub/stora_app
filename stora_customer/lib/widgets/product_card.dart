@@ -4,7 +4,9 @@ import 'product_image.dart';
 import 'package:provider/provider.dart';
 import '../models/product_model.dart';
 import '../providers/cart_provider.dart';
+import '../storage/hidden_products_store.dart';
 import '../theme/app_theme.dart';
+import 'product_report_dialog.dart';
 
 class ProductCard extends StatelessWidget {
   final ProductModel product;
@@ -16,6 +18,129 @@ class ProductCard extends StatelessWidget {
     this.onTap,
   });
 
+  void _showProductOptions(BuildContext context) {
+    HapticFeedback.mediumImpact();
+    final isReported = HiddenProductsStore.instance.isReported(product.id);
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (bottomSheetContext) => Container(
+        decoration: BoxDecoration(
+          color: AppColors.cardBackground,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          border: Border.all(color: AppColors.cardBorder),
+        ),
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: AppColors.cardBorderLight,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (product.storeName != null && product.storeName!.isNotEmpty)
+                          Text(
+                            product.storeName!,
+                            style: TextStyle(
+                              color: AppColors.textMuted,
+                              fontSize: 12,
+                            ),
+                          ),
+                        Text(
+                          product.name,
+                          style: TextStyle(
+                            color: AppColors.textPrimary,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                  Text(
+                    product.formattedPrice,
+                    style: const TextStyle(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              const Divider(height: 1),
+              const SizedBox(height: 8),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: isReported
+                        ? AppColors.cardElevated
+                        : AppColors.danger.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    isReported ? Icons.check_circle_outline_rounded : Icons.flag_rounded,
+                    color: isReported ? AppColors.textMuted : AppColors.danger,
+                    size: 20,
+                  ),
+                ),
+                title: Text(
+                  isReported ? 'Product Reported (24h Cooldown)' : 'Report Product',
+                  style: TextStyle(
+                    color: isReported ? AppColors.textMuted : AppColors.danger,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+                subtitle: Text(
+                  isReported
+                      ? 'You have already submitted a report for this product today.'
+                      : 'Flag inappropriate content, misleading details, or counterfeit items',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
+                  ),
+                ),
+                onTap: () {
+                  Navigator.pop(bottomSheetContext);
+                  if (isReported) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: const Text('You have already reported this product in the last 24 hours.'),
+                        backgroundColor: AppColors.cardElevated,
+                      ),
+                    );
+                  } else {
+                    showProductReportDialog(context: context, product: product);
+                  }
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,6 +162,7 @@ class ProductCard extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
+        onLongPress: () => _showProductOptions(context),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -216,6 +342,7 @@ class ProductCard extends StatelessWidget {
                             color: AppColors.primary,
                             borderRadius: BorderRadius.circular(12),
                             child: InkWell(
+                              key: ValueKey('product_add_button_${product.id}'),
                               onTap: () {
                                 HapticFeedback.lightImpact();
                                 final added = cart.addItem(product, 1);
@@ -232,6 +359,12 @@ class ProductCard extends StatelessWidget {
                                           cart.addItem(product, 1);
                                         },
                                       ),
+                                    ),
+                                  );
+                                } else if (!added) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Maximum available stock reached.'),
                                     ),
                                   );
                                 }

@@ -19,6 +19,17 @@ class StoreStatusStore extends ChangeNotifier {
   double get longitude => _longitude;
   String get address => _address;
 
+  bool get hasValidLocation {
+    if (!_isLoaded) return true;
+    if (_latitude == 0 && _longitude == 0) return false;
+    final isDefaultManila = (_latitude - 14.5995).abs() < 0.0001 &&
+                            (_longitude - 120.9842).abs() < 0.0001;
+    if (isDefaultManila && (_address.isEmpty || _address == 'Metro Manila, Philippines')) {
+      return false;
+    }
+    return true;
+  }
+
   static bool _parseBool(dynamic value, bool fallback) {
     if (value is bool) return value;
     if (value is num) return value == 1;
@@ -30,7 +41,9 @@ class StoreStatusStore extends ChangeNotifier {
     if (_isUpdating) return;
     try {
       final data = await ApiClient.instance.getStoreLocation();
-      _isOpen = _parseBool(data['is_open'], _isOpen);
+      if (!_isUpdating) {
+        _isOpen = _parseBool(data['is_open'], _isOpen);
+      }
       _latitude = (data['latitude'] is num)
           ? (data['latitude'] as num).toDouble()
           : (double.tryParse(data['latitude']?.toString() ?? '14.5995') ?? 14.5995);

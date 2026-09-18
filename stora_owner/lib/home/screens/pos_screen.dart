@@ -317,6 +317,7 @@ class _PosScreenState extends State<PosScreen> {
                         (allIdx >= freeLimit || (allIdx == -1 && i >= freeLimit));
                     return RepaintBoundary(
                       child: _PosProductCard(
+                        key: ValueKey('pos_product_${p.id}'),
                         product: p,
                         isLocked: isLocked,
                         onTap: () {
@@ -453,6 +454,7 @@ class _PosScreenState extends State<PosScreen> {
                   ),
                   const SizedBox(height: 12),
                   StoraGradientButton(
+                    buttonKey: const Key('pos_checkout_button'),
                     label: 'CHECKOUT',
                     isLoading: _isCheckingOut,
                     onPressed: (_isCheckingOut || cart.items.isEmpty) ? null : _checkout,
@@ -476,6 +478,7 @@ class _PosProductCard extends StatelessWidget {
   final bool isLocked;
   final VoidCallback onTap;
   const _PosProductCard({
+    super.key,
     required this.product,
     required this.onTap,
     this.isLocked = false,

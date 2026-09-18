@@ -1051,6 +1051,49 @@ class OrderViewSet(viewsets.ModelViewSet):
             "order": OrderSerializer(order, context={"request": request}).data,
         })
 
+    @action(detail=True, methods=["post"])
+    def customer_respond(self, request, pk=None):
+        order = self.get_object()
+        if order.customer and request.user != order.customer and not request.user.is_staff:
+            raise PermissionDenied("Only the customer who placed this order can respond to the counter-offer.")
+        if order.status != Order.STATUS_COUNTER_OFFER:
+            return Response(
+                {"error": f"Cannot respond to counter-offer for order in '{order.status}' status."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        action_type = str(request.data.get("action", "")).lower().strip()
+        if action_type not in ("accept", "decline"):
+            return Response(
+                {"error": "Invalid action. Must be 'accept' or 'decline'."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if action_type == "accept":
+            try:
+                sale = order.accept()
+                if sale is None:
+                    return Response({"error": "Order has already been processed."}, status=status.HTTP_409_CONFLICT)
+            except ValueError as err:
+                return Response(
+                    {"error": str(err)},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            notify_order_status_change(order, "customer_accepted_counter")
+            return Response({
+                "status": "accepted",
+                "receipt_number": sale.receipt_number if sale else f"ORD-{order.id}",
+                "order": OrderSerializer(order, context={"request": request}).data,
+                "sale_id": sale.id if sale else None,
+            })
+        else:
+            reason = request.data.get("reason", "Customer declined the counter-offer.")
+            order.decline(reason=reason, auto=False)
+            notify_order_status_change(order, "customer_declined_counter")
+            return Response({
+                "status": "declined",
+                "order": OrderSerializer(order, context={"request": request}).data,
+            })
+
 
 def _haversine_km(lat1, lon1, lat2, lon2):
     """Calculate the great circle distance in kilometers between two points."""

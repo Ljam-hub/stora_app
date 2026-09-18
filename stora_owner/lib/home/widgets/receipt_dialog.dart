@@ -328,6 +328,7 @@ class _ReceiptDialogState extends State<ReceiptDialog> {
               ),
               const SizedBox(height: 10),
               TextButton(
+                key: const Key('receipt_done_button'),
                 onPressed: () => Navigator.of(context).pop(),
                 child: const Text('Done / Close', style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w600)),
               ),

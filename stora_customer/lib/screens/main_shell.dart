@@ -15,6 +15,7 @@ import 'map/store_map_screen.dart';
 import 'orders/orders_screen.dart';
 import 'profile/profile_screen.dart';
 import 'shop/shop_screen.dart';
+import '../widgets/offline_banner.dart';
 
 
 
@@ -27,7 +28,7 @@ class MainShell extends StatefulWidget {
   State<MainShell> createState() => _MainShellState();
 }
 
-class _MainShellState extends State<MainShell> {
+class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
   late int _currentIndex;
   OrderProvider? _orderProvider;
   ChatProvider? _chatProvider;
@@ -40,7 +41,26 @@ class _MainShellState extends State<MainShell> {
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // Instant fresh data and resume polling
+      _orderProvider?.refresh(isSilent: true);
+      _chatProvider?.fetchConversations(isSilent: true);
+      if (mounted) {
+        context.read<CatalogProvider>().fetchProducts();
+      }
+      _orderProvider?.startPolling();
+      _chatProvider?.startPolling();
+    } else if (state == AppLifecycleState.paused) {
+      // Pause polling to conserve resources and battery
+      _orderProvider?.stopPolling();
+      _chatProvider?.stopPolling();
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     NotificationService.instance.onForegroundMessageReceived = null;
     _orderProvider?.onOrderStatusChanged = null;
     _orderProvider?.stopPolling();
@@ -52,6 +72,7 @@ class _MainShellState extends State<MainShell> {
   void initState() {
     super.initState();
     _currentIndex = widget.initialTab;
+    WidgetsBinding.instance.addObserver(this);
     NotificationService.instance.init();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -61,27 +82,36 @@ class _MainShellState extends State<MainShell> {
       context.read<ChatProvider>().startPolling();
       orderProvider.onOrderStatusChanged = (order, newStatus) {
         if (!mounted) return;
+        final isCompleted = newStatus == 'completed';
         final isReady = newStatus == 'ready';
         final isAccepted = newStatus == 'accepted';
         final isDeclined = newStatus == 'declined' || newStatus == 'auto_declined';
 
         _showInAppCustomerPopup(
-          title: isReady
-              ? '🎉 Order #${order.id} Ready for Pickup!'
-              : (isAccepted
-                  ? '👨‍🍳 Order #${order.id} Accepted!'
-                  : (isDeclined ? 'Order #${order.id} Declined' : 'Order #${order.id} Update')),
-          message: isReady
-              ? 'Your items are packed and ready for pickup at the store!'
-              : (isAccepted
-                  ? 'The store accepted your order and is now preparing it.'
-                  : (isDeclined ? 'The store was unable to fulfill your order.' : 'The store updated your order.')),
-          icon: isReady
-              ? Icons.storefront_rounded
-              : (isAccepted ? Icons.check_circle_rounded : (isDeclined ? Icons.cancel_outlined : Icons.info_outline_rounded)),
-          accentColor: isReady
+          title: isCompleted
+              ? '🎉 Order #${order.id} Completed!'
+              : (isReady
+                  ? '🎉 Order #${order.id} Ready for Pickup!'
+                  : (isAccepted
+                      ? '👨‍🍳 Order #${order.id} Accepted!'
+                      : (isDeclined ? 'Order #${order.id} Declined' : 'Order #${order.id} Update'))),
+          message: isCompleted
+              ? 'Thank you for your purchase from ${order.storeName.isNotEmpty ? order.storeName : "the store"}!'
+              : (isReady
+                  ? 'Your items are packed and ready for pickup at the store!'
+                  : (isAccepted
+                      ? 'The store accepted your order and is now preparing it.'
+                      : (isDeclined ? 'The store was unable to fulfill your order.' : 'The store updated your order.'))),
+          icon: isCompleted
+              ? Icons.verified_rounded
+              : (isReady
+                  ? Icons.storefront_rounded
+                  : (isAccepted ? Icons.check_circle_rounded : (isDeclined ? Icons.cancel_outlined : Icons.info_outline_rounded))),
+          accentColor: isCompleted
               ? const Color(0xFF00E676)
-              : (isAccepted ? const Color(0xFFFF6B00) : (isDeclined ? const Color(0xFFEF4444) : const Color(0xFFFFA726))),
+              : (isReady
+                  ? const Color(0xFF00E676)
+                  : (isAccepted ? const Color(0xFFFF6B00) : (isDeclined ? const Color(0xFFEF4444) : const Color(0xFFFFA726)))),
         );
       };
     });
@@ -89,8 +119,10 @@ class _MainShellState extends State<MainShell> {
     NotificationService.instance.onForegroundMessageReceived = (message) {
       if (!mounted) return;
 
-      // Auto refresh customer orders when an update is pushed
-      context.read<OrderProvider>().refresh();
+      // Auto refresh customer orders, chat, and catalog when push notification arrives
+      context.read<OrderProvider>().refresh(isSilent: true);
+      context.read<ChatProvider>().fetchConversations(isSilent: true);
+      context.read<CatalogProvider>().fetchProducts();
 
       final title = message.notification?.title ?? message.data['title'] ?? 'Order Update';
       final body = message.notification?.body ?? message.data['body'] ?? 'Your order status has changed.';
@@ -166,7 +198,7 @@ class _MainShellState extends State<MainShell> {
             TextButton(
               onPressed: () {
                 ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                setState(() => _currentIndex = 4);
+                _onTabTapped(4);
               },
               style: TextButton.styleFrom(
                 backgroundColor: accentColor,
@@ -233,9 +265,11 @@ class _MainShellState extends State<MainShell> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: IndexedStack(
-        index: _currentIndex,
-        children: screens,
+      body: OfflineBannerWrapper(
+        child: IndexedStack(
+          index: _currentIndex,
+          children: screens,
+        ),
       ),
       bottomNavigationBar: SafeArea(
         top: false,
@@ -318,6 +352,7 @@ class _MainShellState extends State<MainShell> {
   }) {
     final isSelected = _currentIndex == index;
     return GestureDetector(
+      key: Key('nav_tab_${label.toLowerCase()}'),
       behavior: HitTestBehavior.opaque,
       onTap: () => _onTabTapped(index),
       child: AnimatedContainer(

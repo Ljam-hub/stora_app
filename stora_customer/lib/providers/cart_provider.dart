@@ -49,6 +49,7 @@ class CartProvider extends ChangeNotifier {
 
     if (_items.containsKey(product.id)) {
       final current = _items[product.id]!;
+      if (current.quantity >= product.stock) return false;
       final newQty = current.quantity + quantity;
       if (newQty <= product.stock) {
         current.quantity = newQty;
@@ -121,5 +122,50 @@ class CartProvider extends ChangeNotifier {
         unitPrice: item.product.price,
       );
     }).toList();
+  }
+
+  /// Reorder items from a previous order into the cart.
+  /// If [freshProducts] is provided, uses real stock limits and latest pricing.
+  /// Returns count of items added, or -1 if there is a store conflict without clearing.
+  int addOrderItems(
+    CustomerOrder order, {
+    bool clearExisting = false,
+    List<ProductModel>? freshProducts,
+  }) {
+    if (clearExisting) {
+      clear();
+    } else if (_items.isNotEmpty && storeId != order.ownerId) {
+      return -1;
+    }
+
+    final productMap = <int, ProductModel>{};
+    if (freshProducts != null) {
+      for (final p in freshProducts) {
+        productMap[p.id] = p;
+      }
+    }
+
+    int count = 0;
+    for (final item in order.items) {
+      if (item.productId == null || item.productId! <= 0) continue;
+      final fresh = productMap[item.productId!];
+      final productToAdd = fresh ??
+          ProductModel(
+            id: item.productId!,
+            name: item.productName,
+            price: item.unitPrice,
+            stock: 999,
+            ownerId: order.ownerId,
+            storeName: order.storeName,
+          );
+      final qty = fresh != null
+          ? (item.quantity <= fresh.stock ? item.quantity : fresh.stock)
+          : item.quantity;
+      if (qty > 0) {
+        final added = addItem(productToAdd, qty);
+        if (added) count++;
+      }
+    }
+    return count;
   }
 }

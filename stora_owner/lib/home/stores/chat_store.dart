@@ -28,9 +28,13 @@ class ChatStore extends ChangeNotifier {
   }
 
   int get totalUnreadCount => _conversations.fold<int>(
-        0,
-        (sum, c) => sum + ((c['unread_count'] as int?) ?? 0),
-      );
+    0,
+    (sum, c) {
+      final count = c['unread_count'];
+      final parsed = count is num ? count.toInt() : int.tryParse(count?.toString() ?? '0');
+      return sum + (parsed ?? 0);
+    },
+  );
 
   void startPolling({Duration interval = const Duration(seconds: 8)}) {
     _pollingTimer?.cancel();
@@ -65,7 +69,7 @@ class ChatStore extends ChangeNotifier {
 
   Future<void> deleteConversation(int withUserId) async {
     await ApiClient.instance.deleteConversation(withUserId);
-    _conversations.removeWhere((c) => (c['id'] ?? c['user_id']) == withUserId);
+    _conversations.removeWhere((c) => (c['customer_id'] ?? c['user_id'] ?? c['id']) == withUserId);
     _messagesCache.remove(withUserId);
     notifyListeners();
   }

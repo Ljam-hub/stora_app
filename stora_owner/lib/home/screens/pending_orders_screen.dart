@@ -263,7 +263,7 @@ class _OrderCardState extends State<_OrderCard> {
   String get customerAddress => (widget.order['customer_address'] as String?) ?? '';
   String get notes => (widget.order['notes'] as String?) ?? '';
   String get totalAmount {
-    if ((status == 'accepted' || status == 'ready') && widget.order['counter_price'] != null) {
+    if ((status == 'accepted' || status == 'ready' || status == 'completed') && widget.order['counter_price'] != null) {
       final cp = double.tryParse(widget.order['counter_price'].toString());
       if (cp != null && cp > 0) return cp.toStringAsFixed(2);
     }
@@ -563,7 +563,9 @@ class _OrderCardState extends State<_OrderCard> {
           ],
         ),
       ),
-    );
+    ).then((_) {
+      controller.dispose();
+    });
   }
 
   void _showCounterDialog() {
@@ -677,7 +679,10 @@ class _OrderCardState extends State<_OrderCard> {
           ),
         ],
       ),
-    );
+    ).then((_) {
+      notesController.dispose();
+      priceController.dispose();
+    });
   }
 
   @override
@@ -1163,7 +1168,7 @@ class _OrderCardState extends State<_OrderCard> {
                               padding: const EdgeInsets.symmetric(vertical: 13),
                               elevation: 0,
                             ),
-                            onPressed: _handleMarkReady,
+                            onPressed: _isProcessing ? null : _handleMarkReady,
                           ),
                         ),
                       ],
@@ -1212,7 +1217,7 @@ class _OrderCardState extends State<_OrderCard> {
                               padding: const EdgeInsets.symmetric(vertical: 13),
                               elevation: 0,
                             ),
-                            onPressed: _handleComplete,
+                            onPressed: _isProcessing ? null : _handleComplete,
                           ),
                         ),
                       ],

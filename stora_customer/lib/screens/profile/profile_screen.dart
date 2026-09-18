@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/order_provider.dart';
 import '../../providers/chat_provider.dart';
 import '../../providers/cart_provider.dart';
 import '../../services/api_service.dart';
+import '../../storage/hidden_products_store.dart';
 import '../../services/location_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/custom_text_field.dart';
@@ -211,12 +213,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   name: nameController.text,
                   email: emailController.text,
                 );
-                if (ctx.mounted) Navigator.of(ctx).pop();
-                if (mounted && ok) {
+                if (ok) {
+                  if (ctx.mounted) Navigator.of(ctx).pop();
+                  if (mounted) {
+                    messenger.showSnackBar(
+                      const SnackBar(
+                        content: Text('Profile updated successfully!', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                        backgroundColor: Color(0xFF059669),
+                      ),
+                    );
+                  }
+                } else {
                   messenger.showSnackBar(
                     const SnackBar(
-                      content: Text('Profile updated successfully!', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                      backgroundColor: Color(0xFF059669),
+                      content: Text('Failed to update profile. Please try again.'),
+                      backgroundColor: AppColors.danger,
                     ),
                   );
                 }
@@ -527,6 +538,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               context.read<OrderProvider>().reset();
               context.read<ChatProvider>().reset();
               context.read<CartProvider>().clear();
+              HiddenProductsStore.instance.clear();
               await context.read<AuthProvider>().logout();
               if (mounted) {
                 Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
@@ -577,6 +589,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         context.read<OrderProvider>().reset();
                         context.read<ChatProvider>().reset();
                         context.read<CartProvider>().clear();
+                        HiddenProductsStore.instance.clear();
                         await context.read<AuthProvider>().deleteAccount();
                         if (ctx.mounted) Navigator.pop(ctx);
                         messenger.showSnackBar(
@@ -587,7 +600,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         );
                         nav.pushNamedAndRemoveUntil('/login', (route) => false);
                       } catch (e) {
-                        setDialogState(() => isDeleting = false);
+                        if (ctx.mounted) {
+                          setDialogState(() => isDeleting = false);
+                        }
                         messenger.showSnackBar(
                           SnackBar(
                             content: Text(e.toString().replaceAll('Exception: ', '')),
@@ -922,7 +937,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
             // App Appearance / Theme Mode Tile
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: AppColors.cardBackground,
                 borderRadius: BorderRadius.circular(16),
@@ -930,53 +945,103 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               child: Consumer<CustomerThemeController>(
                 builder: (context, themeCtrl, _) {
-                  final isDark = themeCtrl.isDarkMode;
-                  return Row(
+                  final currentMode = themeCtrl.themeMode;
+
+                  IconData icon;
+                  String title;
+                  String subtitle;
+                  if (currentMode == ThemeMode.system) {
+                    icon = Icons.brightness_auto_rounded;
+                    title = 'System Theme';
+                    subtitle = 'Follows your device dark / light mode';
+                  } else if (currentMode == ThemeMode.dark) {
+                    icon = Icons.dark_mode_rounded;
+                    title = 'Dark Mode';
+                    subtitle = 'Comfortable for low-light browsing';
+                  } else {
+                    icon = Icons.light_mode_rounded;
+                    title = 'Light Mode';
+                    subtitle = 'Crisp high-contrast retail mode';
+                  }
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Icon(
-                          isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
-                          color: AppColors.primary,
-                          size: 20,
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              isDark ? 'Dark Mode' : 'Light Mode',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 15,
-                                color: AppColors.textPrimary,
+                      Row(
+                        children: [
+                          AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 250),
+                            transitionBuilder: (child, anim) => ScaleTransition(scale: anim, child: child),
+                            child: Container(
+                              key: ValueKey(icon),
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Icon(
+                                icon,
+                                color: AppColors.primary,
+                                size: 20,
                               ),
                             ),
-                            const SizedBox(height: 2),
-                            Text(
-                              isDark ? 'Comfortable for low-light browsing' : 'Crisp high-contrast retail mode',
-                              style: TextStyle(
-                                color: AppColors.textSecondary,
-                                fontSize: 12,
-                              ),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  title,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 15,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  subtitle,
+                                  style: TextStyle(
+                                    color: AppColors.textSecondary,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: AppColors.cardElevated,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppColors.cardBorderLight),
+                        ),
+                        padding: const EdgeInsets.all(4),
+                        child: Row(
+                          children: [
+                            _buildThemeSegment(
+                              label: 'Light',
+                              icon: Icons.light_mode_rounded,
+                              isSelected: currentMode == ThemeMode.light,
+                              onTap: () => themeCtrl.setThemeMode(ThemeMode.light),
+                            ),
+                            _buildThemeSegment(
+                              label: 'Dark',
+                              icon: Icons.dark_mode_rounded,
+                              isSelected: currentMode == ThemeMode.dark,
+                              onTap: () => themeCtrl.setThemeMode(ThemeMode.dark),
+                            ),
+                            _buildThemeSegment(
+                              label: 'System',
+                              icon: Icons.brightness_auto_rounded,
+                              isSelected: currentMode == ThemeMode.system,
+                              onTap: () => themeCtrl.setThemeMode(ThemeMode.system),
                             ),
                           ],
                         ),
-                      ),
-                      Switch.adaptive(
-                        value: isDark,
-                        activeTrackColor: AppColors.primary,
-                        activeThumbColor: Colors.white,
-                        onChanged: (val) {
-                          themeCtrl.setThemeMode(val ? ThemeMode.dark : ThemeMode.light);
-                          setState(() {});
-                        },
                       ),
                     ],
                   );
@@ -1135,6 +1200,60 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             const SizedBox(height: 24),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildThemeSegment({
+    required String label,
+    required IconData icon,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return Expanded(
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () {
+          HapticFeedback.lightImpact();
+          onTap();
+          setState(() {});
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            color: isSelected ? AppColors.primary : Colors.transparent,
+            borderRadius: BorderRadius.circular(9),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.35),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 15,
+                color: isSelected ? Colors.white : AppColors.textSecondary,
+              ),
+              const SizedBox(width: 5),
+              Text(
+                label,
+                style: TextStyle(
+                  color: isSelected ? Colors.white : AppColors.textSecondary,
+                  fontSize: 12,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

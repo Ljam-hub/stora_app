@@ -5,7 +5,9 @@ import '../../providers/auth_provider.dart';
 import '../../providers/cart_provider.dart';
 import '../../providers/catalog_provider.dart';
 import '../../providers/chat_provider.dart';
+import '../../storage/hidden_products_store.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/navigation_guard.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/notification_badge.dart';
 import '../../widgets/product_card.dart';
@@ -28,6 +30,7 @@ class _ShopScreenState extends State<ShopScreen> {
   @override
   void initState() {
     super.initState();
+    HiddenProductsStore.instance.init();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<CatalogProvider>().loadInitial();
     });
@@ -98,7 +101,8 @@ class _ShopScreenState extends State<ShopScreen> {
                   if (store == null || _isNavigatingToChat) return;
                   setState(() => _isNavigatingToChat = true);
                   try {
-                    await Navigator.of(context).push(
+                    await NavigationGuard.pushSafely(
+                      context,
                       MaterialPageRoute(
                         builder: (_) => CustomerChatScreen(
                           storeOwnerId: store.id,
@@ -396,7 +400,8 @@ class _ShopScreenState extends State<ShopScreen> {
                         onPressed: () {
                           final store = catalog.selectedStore;
                           if (store == null) return;
-                          Navigator.of(context).push(
+                          NavigationGuard.pushSafely(
+                            context,
                             MaterialPageRoute(
                               builder: (_) => CustomerChatScreen(
                                 storeOwnerId: store.id,
@@ -453,8 +458,15 @@ class _ShopScreenState extends State<ShopScreen> {
 
             // Product Grid or Empty/Loading State
             Expanded(
-              child: catalog.isLoading && catalog.products.isEmpty
-                  ? GridView.builder(
+              child: ListenableBuilder(
+                listenable: HiddenProductsStore.instance,
+                builder: (context, _) {
+                  final visibleProducts = catalog.products
+                      .where((p) => !HiddenProductsStore.instance.isHidden(p.id))
+                      .toList();
+
+                  if (catalog.isLoading && catalog.products.isEmpty) {
+                    return GridView.builder(
                       physics: const NeverScrollableScrollPhysics(),
                       padding: const EdgeInsets.all(16),
                       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -465,51 +477,58 @@ class _ShopScreenState extends State<ShopScreen> {
                       ),
                       itemCount: 6,
                       itemBuilder: (_, index) => const ShimmerProductCard(),
-                    )
-                  : catalog.products.isEmpty
-                      ? LayoutBuilder(
-                          builder: (context, constraints) => SingleChildScrollView(
-                            physics: const AlwaysScrollableScrollPhysics(),
-                            child: ConstrainedBox(
-                              constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                              child: EmptyState(
-                                icon: Icons.search_off_rounded,
-                                title: 'No Products Found',
-                                message: catalog.searchQuery.isNotEmpty
-                                    ? 'No items matched "${catalog.searchQuery}". Try a different keyword.'
-                                    : 'There are no products listed here yet. Swipe down to refresh.',
-                                buttonText: catalog.searchQuery.isNotEmpty ? 'Clear Search' : null,
-                                onButtonPressed: catalog.searchQuery.isNotEmpty
-                                    ? () {
-                                        _searchController.clear();
-                                        catalog.setSearchQuery('');
-                                      }
-                                    : null,
-                              ),
-                            ),
+                    );
+                  }
+
+                  if (visibleProducts.isEmpty) {
+                    return LayoutBuilder(
+                      builder: (context, constraints) => SingleChildScrollView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                          child: EmptyState(
+                            icon: Icons.search_off_rounded,
+                            title: 'No Products Found',
+                            message: catalog.searchQuery.isNotEmpty
+                                ? 'No items matched "${catalog.searchQuery}". Try a different keyword.'
+                                : 'There are no products listed here yet. Swipe down to refresh.',
+                            buttonText: catalog.searchQuery.isNotEmpty ? 'Clear Search' : null,
+                            onButtonPressed: catalog.searchQuery.isNotEmpty
+                                ? () {
+                                    _searchController.clear();
+                                    catalog.setSearchQuery('');
+                                  }
+                                : null,
                           ),
-                        )
-                      : GridView.builder(
-                          physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
-                          cacheExtent: 600,
-                          padding: const EdgeInsets.all(16),
-                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            childAspectRatio: 0.72,
-                            crossAxisSpacing: 14,
-                            mainAxisSpacing: 14,
-                          ),
-                          itemCount: catalog.products.length,
-                          itemBuilder: (context, index) {
-                            final product = catalog.products[index];
-                            return RepaintBoundary(
-                              child: ProductCard(
-                                product: product,
-                                onTap: () => _openProductDetail(product),
-                              ),
-                            );
-                          },
                         ),
+                      ),
+                    );
+                  }
+
+                  return GridView.builder(
+                    physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+                    cacheExtent: 600,
+                    padding: const EdgeInsets.all(16),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      childAspectRatio: 0.72,
+                      crossAxisSpacing: 14,
+                      mainAxisSpacing: 14,
+                    ),
+                    itemCount: visibleProducts.length,
+                    itemBuilder: (context, index) {
+                      final product = visibleProducts[index];
+                      return RepaintBoundary(
+                        child: ProductCard(
+                          key: ValueKey('product-${product.id}'),
+                          product: product,
+                          onTap: () => _openProductDetail(product),
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
             ),
           ],
         ),

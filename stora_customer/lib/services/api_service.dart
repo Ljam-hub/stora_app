@@ -557,6 +557,31 @@ class CustomerApiService {
     _throw(response);
   }
 
+  Future<CustomerOrder> respondToCounterOffer(
+    int orderId, {
+    required bool accept,
+    String? reason,
+  }) async {
+    final body = <String, dynamic>{
+      'action': accept ? 'accept' : 'decline',
+      if (!accept && reason != null && reason.trim().isNotEmpty)
+        'reason': reason.trim(),
+    };
+    final response = await _dispatch(
+      'POST',
+      _uri('/orders/$orderId/customer_respond/'),
+      body: body,
+    );
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      if (data.containsKey('order') && data['order'] is Map) {
+        return CustomerOrder.fromJson(data['order'] as Map<String, dynamic>);
+      }
+      return CustomerOrder.fromJson(data);
+    }
+    _throw(response);
+  }
+
   Future<void> updateFcmToken(String fcmToken) async {
     try {
       await _dispatch(

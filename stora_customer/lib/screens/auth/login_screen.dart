@@ -121,6 +121,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
                   // Email Field
                   CustomTextField(
+                    key: const Key('login_email_field'),
+                    fieldKey: const Key('login_email_input'),
                     controller: _emailController,
                     label: 'Email Address',
                     hint: 'customer@example.com',
@@ -140,6 +142,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
                   // Password Field
                   CustomTextField(
+                    key: const Key('login_password_field'),
+                    fieldKey: const Key('login_password_input'),
                     controller: _passwordController,
                     label: 'Password',
                     hint: '••••••••',
@@ -178,6 +182,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                   // Login Button
                   GradientButton(
+                    key: const Key('login_submit_button'),
                     text: 'Sign In',
                     isLoading: auth.isLoading,
                     onPressed: auth.isLoading ? null : _handleLogin,

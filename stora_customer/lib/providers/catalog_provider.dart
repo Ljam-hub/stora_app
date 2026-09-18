@@ -24,6 +24,27 @@ class CatalogProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
+  @visibleForTesting
+  bool lockCatalogForTesting = false;
+
+  @visibleForTesting
+  void setCatalogDataForTesting({
+    List<ProductModel>? products,
+    List<CategoryModel>? categories,
+    List<StoreModel>? stores,
+    StoreModel? selectedStore,
+    CategoryModel? selectedCategory,
+    bool lock = true,
+  }) {
+    if (products != null) _products = List.from(products);
+    if (categories != null) _categories = List.from(categories);
+    if (stores != null) _stores = List.from(stores);
+    if (selectedStore != null) _selectedStore = selectedStore;
+    if (selectedCategory != null) _selectedCategory = selectedCategory;
+    lockCatalogForTesting = lock;
+    notifyListeners();
+  }
+
   List<ProductModel> _filteredProducts() {
     return _products.where((p) {
       if (_selectedStore != null && p.ownerId != _selectedStore!.id) {
@@ -44,18 +65,25 @@ class CatalogProvider extends ChangeNotifier {
   }
 
   Future<void> selectStore(StoreModel? store) async {
+    if (_selectedStore?.id == store?.id) return;
     _selectedStore = store;
     _selectedCategory = null;
-    _isLoading = true;
-    notifyListeners();
+    if (_products.isEmpty) {
+      _isLoading = true;
+      notifyListeners();
+    }
+
+    final targetStoreId = store?.id;
 
     await Future.wait([
       fetchCategories(),
       fetchProducts(),
     ]);
 
-    _isLoading = false;
-    notifyListeners();
+    if (_selectedStore?.id == targetStoreId) {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
   void selectCategory(CategoryModel? category) {
@@ -73,9 +101,12 @@ class CatalogProvider extends ChangeNotifier {
   }
 
   Future<void> loadInitial() async {
-    _isLoading = true;
-    _errorMessage = null;
-    notifyListeners();
+    if (lockCatalogForTesting) return;
+    if (_products.isEmpty) {
+      _isLoading = true;
+      _errorMessage = null;
+      notifyListeners();
+    }
 
     await Future.wait([
       fetchStores(),
@@ -88,6 +119,7 @@ class CatalogProvider extends ChangeNotifier {
   }
 
   Future<void> refresh() async {
+    if (lockCatalogForTesting) return;
     _errorMessage = null;
     await Future.wait([
       fetchStores(),
@@ -98,12 +130,15 @@ class CatalogProvider extends ChangeNotifier {
   }
 
   Future<void> fetchStores({double? lat, double? lng}) async {
+    if (lockCatalogForTesting) return;
     try {
       final list = await CustomerApiService.instance.fetchStores(lat: lat, lng: lng);
       // Filter out any admin/support accounts to ensure only actual stores are listed
       _stores = list.where((s) => s.role.toLowerCase() != 'admin' && !s.email.toLowerCase().startsWith('admin@')).toList();
       if (_selectedStore != null && !_stores.any((s) => s.id == _selectedStore!.id)) {
         _selectedStore = null;
+        fetchCategories();
+        fetchProducts();
       }
       notifyListeners();
     } catch (e) {
@@ -113,6 +148,7 @@ class CatalogProvider extends ChangeNotifier {
 
 
   Future<void> fetchCategories() async {
+    if (lockCatalogForTesting) return;
     final storeId = _selectedStore?.id;
     try {
       final res = await CustomerApiService.instance.fetchCategories(
@@ -127,6 +163,7 @@ class CatalogProvider extends ChangeNotifier {
   }
 
   Future<void> fetchProducts() async {
+    if (lockCatalogForTesting) return;
     final storeId = _selectedStore?.id;
     try {
       _errorMessage = null;

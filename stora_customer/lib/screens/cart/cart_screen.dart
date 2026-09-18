@@ -323,6 +323,7 @@ class _CartScreenState extends State<CartScreen> {
                             ),
                           ),
                         GradientButton(
+                          key: const Key('cart_checkout_button'),
                           text: isStoreClosed ? 'Store is Currently Closed' : 'Proceed to Checkout',
                           icon: isStoreClosed ? Icons.lock_outline_rounded : Icons.arrow_forward_rounded,
                           isLoading: _isNavigatingToCheckout,

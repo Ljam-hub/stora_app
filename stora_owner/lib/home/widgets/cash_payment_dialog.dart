@@ -451,6 +451,7 @@ class _CashPaymentDialogState extends State<CashPaymentDialog> {
 
               // Complete Sale Button
               ElevatedButton(
+                key: const Key('confirm_payment_button'),
                 onPressed: isSufficient ? _confirmPayment : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: HomeColors.primary,

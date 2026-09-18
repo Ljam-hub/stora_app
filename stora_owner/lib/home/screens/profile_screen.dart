@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../data/api/api_client.dart';
 import '../../data/stores/account_status_store.dart';
@@ -16,6 +17,8 @@ import '../../subscription/subscription_status.dart';
 import '../../subscription/past_receipts_sheet.dart';
 import '../theme/theme_mode_controller.dart';
 import '../stores/store_status_store.dart';
+import '../stores/orders_store.dart';
+import '../stores/chat_store.dart';
 import 'owner_chat_screen.dart';
 
 // ---------------------------------------------------------------------
@@ -126,6 +129,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     try {
       final picked = await picker.pickImage(source: source, maxWidth: 800, maxHeight: 800, imageQuality: 85);
       if (picked == null) return;
+      if (!mounted) return;
 
       setState(() => _isUploadingAvatar = true);
       final bytes = await picked.readAsBytes();
@@ -795,7 +799,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     label: 'Subscription Plan',
                     onTap: () {
                       final proof = account.latestPaymentProof;
-                      if (!account.isPremium && proof != null && (proof.isPending || proof.isRejected)) {
+                      if (proof != null && (proof.isPending || proof.isRejected)) {
                         final proofAmount = proof.amount.isNotEmpty
                             ? double.tryParse(proof.amount)
                             : null;
@@ -910,54 +914,105 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     animation: ThemeModeController.instance,
                     builder: (context, _) {
                       final themeCtrl = ThemeModeController.instance;
-                      final isDark = themeCtrl.isDarkMode;
+                      final currentMode = themeCtrl.themeMode;
+
+                      IconData icon;
+                      String title;
+                      String subtitle;
+                      if (currentMode == ThemeMode.system) {
+                        icon = Icons.brightness_auto_rounded;
+                        title = 'System Theme';
+                        subtitle = 'Follows your device dark / light mode';
+                      } else if (currentMode == ThemeMode.dark) {
+                        icon = Icons.dark_mode_rounded;
+                        title = 'Dark Mode';
+                        subtitle = 'Comfortable dark theme';
+                      } else {
+                        icon = Icons.light_mode_rounded;
+                        title = 'Light Mode';
+                        subtitle = 'Crisp light retail theme';
+                      }
+
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 12),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                          padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
                             color: HomeColors.cardBackground,
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(color: HomeColors.cardBorder),
                             boxShadow: HomeColors.cardShadow,
                           ),
-                          child: Row(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: AppColors.primary.withValues(alpha: 0.12),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Icon(
-                                  isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
-                                  size: 18,
-                                  color: AppColors.primaryLight,
-                                ),
-                              ),
-                              const SizedBox(width: 14),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      isDark ? 'Dark Mode' : 'Light Mode',
-                                      style: TextStyle(color: HomeColors.textPrimary, fontSize: 14, fontWeight: FontWeight.w700),
+                              Row(
+                                children: [
+                                  AnimatedSwitcher(
+                                    duration: const Duration(milliseconds: 250),
+                                    transitionBuilder: (child, anim) => ScaleTransition(scale: anim, child: child),
+                                    child: Container(
+                                      key: ValueKey(icon),
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.primary.withValues(alpha: 0.12),
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: Icon(
+                                        icon,
+                                        size: 18,
+                                        color: AppColors.primaryLight,
+                                      ),
                                     ),
-                                    Text(
-                                      isDark ? 'Comfortable dark theme' : 'Crisp light retail theme',
-                                      style: TextStyle(color: HomeColors.textSecondary, fontSize: 11),
+                                  ),
+                                  const SizedBox(width: 14),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          title,
+                                          style: TextStyle(color: HomeColors.textPrimary, fontSize: 14, fontWeight: FontWeight.w700),
+                                        ),
+                                        Text(
+                                          subtitle,
+                                          style: TextStyle(color: HomeColors.textSecondary, fontSize: 11),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: HomeColors.cardElevated,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: HomeColors.cardBorder),
+                                ),
+                                padding: const EdgeInsets.all(4),
+                                child: Row(
+                                  children: [
+                                    _buildOwnerThemeSegment(
+                                      label: 'Light',
+                                      icon: Icons.light_mode_rounded,
+                                      isSelected: currentMode == ThemeMode.light,
+                                      onTap: () => themeCtrl.setThemeMode(ThemeMode.light),
+                                    ),
+                                    _buildOwnerThemeSegment(
+                                      label: 'Dark',
+                                      icon: Icons.dark_mode_rounded,
+                                      isSelected: currentMode == ThemeMode.dark,
+                                      onTap: () => themeCtrl.setThemeMode(ThemeMode.dark),
+                                    ),
+                                    _buildOwnerThemeSegment(
+                                      label: 'System',
+                                      icon: Icons.brightness_auto_rounded,
+                                      isSelected: currentMode == ThemeMode.system,
+                                      onTap: () => themeCtrl.setThemeMode(ThemeMode.system),
                                     ),
                                   ],
                                 ),
-                              ),
-                              Switch.adaptive(
-                                value: isDark,
-                                activeTrackColor: AppColors.primary,
-                                activeThumbColor: Colors.white,
-                                onChanged: (val) {
-                                  themeCtrl.setThemeMode(val ? ThemeMode.dark : ThemeMode.light);
-                                },
                               ),
                             ],
                           ),
@@ -986,6 +1041,60 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  Widget _buildOwnerThemeSegment({
+    required String label,
+    required IconData icon,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return Expanded(
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () {
+          HapticFeedback.lightImpact();
+          onTap();
+          setState(() {});
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            color: isSelected ? AppColors.primary : Colors.transparent,
+            borderRadius: BorderRadius.circular(9),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.35),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 15,
+                color: isSelected ? Colors.white : HomeColors.textSecondary,
+              ),
+              const SizedBox(width: 5),
+              Text(
+                label,
+                style: TextStyle(
+                  color: isSelected ? Colors.white : HomeColors.textSecondary,
+                  fontSize: 12,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   void _confirmLogout(BuildContext context) {
     showDialog(
       context: context,
@@ -1010,6 +1119,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
               final nav = Navigator.of(context);
               Navigator.of(ctx).pop();
               await AuthStore.instance.logout();
+              OrdersStore.instance.stopPolling();
+              OrdersStore.instance.clear();
+              ChatStore.instance.stopPolling();
+              ChatStore.instance.clear();
+              StoreStatusStore.instance.reset();
               InventoryStore.instance.reset();
               CategoryStore.instance.reset();
               SalesStore.instance.reset();
@@ -1064,6 +1178,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       final nav = Navigator.of(context);
                       try {
                         await AuthStore.instance.deleteAccount();
+                        OrdersStore.instance.stopPolling();
+                        OrdersStore.instance.clear();
+                        ChatStore.instance.stopPolling();
+                        ChatStore.instance.clear();
+                        StoreStatusStore.instance.reset();
                         InventoryStore.instance.reset();
                         CategoryStore.instance.reset();
                         SalesStore.instance.reset();

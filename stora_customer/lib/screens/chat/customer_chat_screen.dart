@@ -831,10 +831,15 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
                                 }
                               }
 
-                              return ListView.builder(
-                                controller: _scrollController,
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                                itemCount: _messages.length,
+                              return RefreshIndicator(
+                                color: AppColors.primary,
+                                backgroundColor: AppColors.cardElevated,
+                                onRefresh: () => _fetchMessages(silent: true),
+                                child: ListView.builder(
+                                  physics: const AlwaysScrollableScrollPhysics(),
+                                  controller: _scrollController,
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                  itemCount: _messages.length,
                                 itemBuilder: (context, index) {
                                   final msg = _messages[index];
                                   final isMe = (msg['is_me'] is bool)
@@ -1186,9 +1191,10 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
                                     ],
                                   );
                                 },
-                              );
-                            },
-                          ),
+                              ),
+                            );
+                          },
+                        ),
           ),
           if (_selectedImageBytes != null)
             Container(

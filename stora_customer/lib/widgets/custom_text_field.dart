@@ -15,6 +15,7 @@ class CustomTextField extends StatefulWidget {
   final Widget? suffix;
   final VoidCallback? onPrefixIconPressed;
   final String? prefixIconTooltip;
+  final Key? fieldKey;
 
   const CustomTextField({
     super.key,
@@ -31,6 +32,7 @@ class CustomTextField extends StatefulWidget {
     this.suffix,
     this.onPrefixIconPressed,
     this.prefixIconTooltip,
+    this.fieldKey,
   });
 
   @override
@@ -59,6 +61,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
         ),
         const SizedBox(height: 6),
         TextFormField(
+          key: widget.fieldKey,
           controller: widget.controller,
           obscureText: widget.isPassword ? _obscureText : false,
           keyboardType: widget.keyboardType,

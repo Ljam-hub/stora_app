@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:sqflite/sqflite.dart';
 import '../storage/session_manager.dart';
 
-class CustomerThemeController extends ChangeNotifier {
+class CustomerThemeController extends ChangeNotifier with WidgetsBindingObserver {
   CustomerThemeController._();
   static final CustomerThemeController instance = CustomerThemeController._();
 
@@ -20,6 +20,7 @@ class CustomerThemeController extends ChangeNotifier {
   }
 
   Future<void> init() async {
+    WidgetsBinding.instance.addObserver(this);
     try {
       final db = await SessionManager.instance.database;
       // Ensure settings table exists
@@ -43,6 +44,20 @@ class CustomerThemeController extends ChangeNotifier {
         notifyListeners();
       }
     } catch (_) {}
+  }
+
+  @override
+  void didChangePlatformBrightness() {
+    if (_themeMode == ThemeMode.system) {
+      notifyListeners();
+    }
+    super.didChangePlatformBrightness();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
   }
 
   Future<void> setThemeMode(ThemeMode mode) async {

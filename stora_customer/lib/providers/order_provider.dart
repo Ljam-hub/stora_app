@@ -25,6 +25,12 @@ class OrderProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
+  @visibleForTesting
+  void setOrdersForTesting(List<CustomerOrder> orders) {
+    _orders = List.from(orders);
+    notifyListeners();
+  }
+
   int get activePendingCount => _orders.where((o) =>
       o.status == 'pending' ||
       o.status == 'counter_offer' ||
@@ -58,12 +64,19 @@ class OrderProvider extends ChangeNotifier {
     return unread;
   }
 
+  Future<void>? _loadPersistedSeenFuture;
+
   OrderProvider() {
-    _loadPersistedSeen();
+    _loadPersistedSeenFuture = _loadPersistedSeen();
   }
 
   Future<void> _loadPersistedSeen() async {
     try {
+      final tabSeen = await SessionManager.instance.getSetting('orders_tab_seen');
+      if (tabSeen == 'true') {
+        _ordersTabSeen = true;
+      }
+
       final raw = await SessionManager.instance.getSetting('seen_orders_snapshot');
       if (raw != null && raw.isNotEmpty) {
         final decoded = jsonDecode(raw);
@@ -87,6 +100,9 @@ class OrderProvider extends ChangeNotifier {
   Future<void> markOrdersTabSeen() async {
     _ordersTabSeen = true;
     notifyListeners();
+    try {
+      await SessionManager.instance.setSetting('orders_tab_seen', 'true');
+    } catch (_) {}
   }
 
   Future<void> markFilterSeen(String filterId) async {
@@ -105,6 +121,10 @@ class OrderProvider extends ChangeNotifier {
       for (final o in _orders.where((o) => o.status == 'accepted' || o.status == 'ready')) {
         _persistedSeenStatuses[o.id] = o.status;
       }
+    } else if (filterId == 'completed') {
+      for (final o in _orders.where((o) => o.status == 'completed')) {
+        _persistedSeenStatuses[o.id] = o.status;
+      }
     } else {
       for (final o in _orders.where((o) => o.status == filterId)) {
         _persistedSeenStatuses[o.id] = o.status;
@@ -117,6 +137,19 @@ class OrderProvider extends ChangeNotifier {
       await SessionManager.instance.setSetting('seen_orders_snapshot', raw);
       await SessionManager.instance.setSetting('has_initialized_seen_orders', 'true');
     } catch (_) {}
+  }
+
+  int get unreadCompletedCount {
+    if (_seenFilters.contains('completed')) {
+      return 0;
+    }
+    int unread = 0;
+    for (final o in _orders) {
+      if (o.status == 'completed' && _persistedSeenStatuses[o.id] != 'completed') {
+        unread++;
+      }
+    }
+    return unread;
   }
 
   int get unreadPendingCount {
@@ -181,7 +214,8 @@ class OrderProvider extends ChangeNotifier {
       final isActive = o.status == 'pending' ||
           o.status == 'counter_offer' ||
           o.status == 'accepted' ||
-          o.status == 'ready';
+          o.status == 'ready' ||
+          o.status == 'completed';
       if (!isActive) continue;
 
       final lastSeenStatus = _persistedSeenStatuses[o.id];
@@ -192,7 +226,7 @@ class OrderProvider extends ChangeNotifier {
     return unread;
   }
 
-  void startPolling({Duration interval = const Duration(seconds: 12)}) {
+  void startPolling({Duration interval = const Duration(seconds: 8)}) {
     _pollingTimer?.cancel();
     _pollingTimer = Timer.periodic(interval, (_) => refresh(isSilent: true));
   }
@@ -251,6 +285,14 @@ class OrderProvider extends ChangeNotifier {
             payload: o.id.toString(),
           );
           onOrderStatusChanged?.call(o, 'counter_offer');
+        } else if (o.status == 'completed') {
+          _seenFilters.remove('completed');
+          NotificationService.instance.showNotification(
+            title: '🎉 Order #${o.id} Completed!',
+            body: 'Thank you for purchasing from ${o.storeName}! Tap to view receipt.',
+            payload: o.id.toString(),
+          );
+          onOrderStatusChanged?.call(o, 'completed');
         }
       }
       _knownStatuses[o.id] = o.status;
@@ -271,6 +313,9 @@ class OrderProvider extends ChangeNotifier {
       if (_selectedStatusFilter == 'accepted') {
         return o.status == 'accepted' || o.status == 'ready';
       }
+      if (_selectedStatusFilter == 'completed') {
+        return o.status == 'completed';
+      }
       if (_selectedStatusFilter == 'declined') {
         return o.status == 'declined' || o.status == 'auto_declined';
       }
@@ -287,6 +332,8 @@ class OrderProvider extends ChangeNotifier {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
+
+    await _loadPersistedSeenFuture;
 
     try {
       final fetched = await CustomerApiService.instance.fetchMyOrders();
@@ -310,7 +357,11 @@ class OrderProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  bool _isRefreshing = false;
+
   Future<void> refresh({bool isSilent = false}) async {
+    if (_isRefreshing) return;
+    _isRefreshing = true;
     try {
       final fetched = await CustomerApiService.instance.fetchMyOrders();
       _checkStatusTransitions(fetched);
@@ -318,8 +369,20 @@ class OrderProvider extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       if (!isSilent) debugPrint('Error refreshing orders: $e');
+    } finally {
+      _isRefreshing = false;
     }
   }
+
+  @visibleForTesting
+  Future<CustomerOrder> Function({
+    required int ownerId,
+    required String customerName,
+    required String customerPhone,
+    required String customerAddress,
+    String notes,
+    required List<CustomerOrderItem> items,
+  })? mockPlaceOrderHandler;
 
   Future<CustomerOrder> placeOrder({
     required int ownerId,
@@ -338,14 +401,23 @@ class OrderProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final order = await CustomerApiService.instance.placeOrder(
-        ownerId: ownerId,
-        customerName: customerName,
-        customerPhone: customerPhone,
-        customerAddress: customerAddress,
-        notes: notes,
-        items: items,
-      );
+      final order = mockPlaceOrderHandler != null
+          ? await mockPlaceOrderHandler!(
+              ownerId: ownerId,
+              customerName: customerName,
+              customerPhone: customerPhone,
+              customerAddress: customerAddress,
+              notes: notes,
+              items: items,
+            )
+          : await CustomerApiService.instance.placeOrder(
+              ownerId: ownerId,
+              customerName: customerName,
+              customerPhone: customerPhone,
+              customerAddress: customerAddress,
+              notes: notes,
+              items: items,
+            );
       _orders.insert(0, order);
       _knownStatuses[order.id] = order.status;
       _seenFilters.remove('pending');
@@ -362,6 +434,38 @@ class OrderProvider extends ChangeNotifier {
       rethrow;
     } finally {
       _isPlacingOrder = false;
+    }
+  }
+
+  Future<CustomerOrder> respondToCounterOffer(
+    int orderId, {
+    required bool accept,
+    String? reason,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final updatedOrder = await CustomerApiService.instance.respondToCounterOffer(
+        orderId,
+        accept: accept,
+        reason: reason,
+      );
+      final idx = _orders.indexWhere((o) => o.id == orderId);
+      if (idx != -1) {
+        _orders[idx] = updatedOrder;
+        _knownStatuses[updatedOrder.id] = updatedOrder.status;
+        _persistedSeenStatuses[updatedOrder.id] = updatedOrder.status;
+      }
+      _isLoading = false;
+      notifyListeners();
+      return updatedOrder;
+    } catch (e) {
+      _errorMessage = e.toString().replaceAll('Exception: ', '');
+      _isLoading = false;
+      notifyListeners();
+      rethrow;
     }
   }
 

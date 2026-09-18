@@ -242,6 +242,28 @@ def notify_order_status_change(order, action: str, extra_msg: str = ""):
         else:
             logger.info("Customer for Order #%s has no registered FCM token.", order.id)
 
+    elif action == "customer_accepted_counter":
+        if order.owner and getattr(order.owner, "fcm_token", None):
+            title = f"Counter-Offer Accepted! (Order #{order.id}) 🎉"
+            body = f"{order.customer_name or 'Customer'} accepted your counter-offer for Order #{order.id}."
+            data_payload["title"] = title
+            data_payload["body"] = body
+            data_payload["channel_id"] = "stora_owner_orders"
+            send_push_notification(order.owner.fcm_token, title, body, data_payload)
+        else:
+            logger.info("Owner for Order #%s has no registered FCM token.", order.id)
+
+    elif action == "customer_declined_counter":
+        if order.owner and getattr(order.owner, "fcm_token", None):
+            title = f"Counter-Offer Declined (Order #{order.id})"
+            body = f"{order.customer_name or 'Customer'} declined your counter-offer for Order #{order.id}."
+            data_payload["title"] = title
+            data_payload["body"] = body
+            data_payload["channel_id"] = "stora_owner_orders"
+            send_push_notification(order.owner.fcm_token, title, body, data_payload)
+        else:
+            logger.info("Owner for Order #%s has no registered FCM token.", order.id)
+
 
 def notify_admin(title: str, body: str, data: dict = None) -> int:
     """

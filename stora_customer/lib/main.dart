@@ -11,10 +11,12 @@ import 'screens/auth/forgot_password_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
 import 'screens/main_shell.dart';
+import 'services/connectivity_service.dart';
 import 'theme/app_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  ConnectivityService.instance.init();
   // Don't block startup on network probe — resolve in background
   ApiConfig.resolve();
 

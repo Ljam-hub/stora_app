@@ -14,19 +14,23 @@ class OrderStatusStepper extends StatelessWidget {
     final isCounter = status == 'counter_offer';
     final isAccepted = status == 'accepted';
     final isReady = status == 'ready';
+    final isCompleted = status == 'completed';
 
     // Step calculation:
     // Step 0: Placed
     // Step 1: Confirmed / Accepted / Counter / Declined
     // Step 2: Preparing
     // Step 3: Ready for Pickup
+    // Step 4: Completed
     int currentStep = 0;
-    if (isCounter) {
-      currentStep = 1;
-    } else if (isAccepted) {
-      currentStep = 2;
+    if (isCompleted) {
+      currentStep = 4;
     } else if (isReady) {
       currentStep = 3;
+    } else if (isAccepted) {
+      currentStep = 1;
+    } else if (isCounter) {
+      currentStep = 1;
     } else if (isDeclined) {
       currentStep = 1;
     }
@@ -126,17 +130,39 @@ class OrderStatusStepper extends StatelessWidget {
                 ),
               ),
               _StepNode(
-                icon: Icons.done_all_rounded,
-                title: 'Ready',
+                icon: isCompleted ? Icons.verified_rounded : Icons.done_all_rounded,
+                title: isCompleted ? 'Completed' : 'Ready',
                 isActive: currentStep >= 3,
-                isCompleted: currentStep >= 3,
+                isCompleted: currentStep >= 4,
                 color: const Color(0xFF00E676),
               ),
             ],
           ),
 
-          // Contextual Message Box for Ready, Preparing, Counter or Decline
-          if (isReady) ...[
+          // Contextual Message Box for Completed, Ready, Preparing, Counter or Decline
+          if (isCompleted) ...[
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF00E676).withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFF00E676).withValues(alpha: 0.4)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.verified_rounded, color: Color(0xFF00E676), size: 20),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Order completed! Thank you for purchasing from ${order.storeName.isNotEmpty ? order.storeName : "the store"}. 🎉',
+                      style: TextStyle(color: AppColors.textPrimary, fontSize: 12, fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ] else if (isReady) ...[
             const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.all(12),

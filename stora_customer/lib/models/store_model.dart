@@ -31,6 +31,17 @@ class StoreModel {
     return 'Store #$id';
   }
 
+  /// Whether the store has an actual custom location set (not the default Manila coordinates or 0,0).
+  bool get hasValidLocation {
+    if (latitude == 0 && longitude == 0) return false;
+    final isDefaultManila = (latitude - 14.5995).abs() < 0.0001 &&
+        (longitude - 120.9842).abs() < 0.0001;
+    if (isDefaultManila && (address.isEmpty || address == 'Metro Manila, Philippines')) {
+      return false;
+    }
+    return true;
+  }
+
   factory StoreModel.fromJson(Map<String, dynamic> json) {
     return StoreModel(
       id: json['id'] is int ? json['id'] as int : (int.tryParse(json['id']?.toString() ?? '0') ?? 0),

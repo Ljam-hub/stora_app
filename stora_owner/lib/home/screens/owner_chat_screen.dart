@@ -33,7 +33,9 @@ class _OwnerChatScreenState extends State<OwnerChatScreen> {
   void initState() {
     super.initState();
     ThemeModeController.instance.addListener(_onThemeChanged);
-    _loadConversations();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _loadConversations();
+    });
     _pollTimer = Timer.periodic(const Duration(seconds: 6), (_) {
       if (mounted) _loadConversations(silent: true);
     });

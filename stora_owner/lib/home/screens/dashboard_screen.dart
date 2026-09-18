@@ -23,22 +23,17 @@ import '../widgets/fade_slide_in.dart';
 import '../widgets/notification_badge.dart';
 
 class DashboardScreen extends StatelessWidget {
-  final VoidCallback? onNavigateToChat;
-
-  const DashboardScreen({super.key, this.onNavigateToChat});
+  const DashboardScreen({super.key});
 
   static bool _isNavigating = false;
 
   static Future<T?> safeNavigate<T>(BuildContext context, Widget screen) async {
     if (_isNavigating) return null;
     _isNavigating = true;
-    try {
-      return await Navigator.of(context).push<T>(
-        MaterialPageRoute(builder: (_) => screen),
-      );
-    } finally {
-      _isNavigating = false;
-    }
+    Future.delayed(const Duration(milliseconds: 500), () => _isNavigating = false);
+    return Navigator.of(context).push<T>(
+      MaterialPageRoute(builder: (_) => screen),
+    );
   }
 
   @override
@@ -144,6 +139,15 @@ class DashboardScreen extends StatelessWidget {
                   delay: const Duration(milliseconds: 0),
                   child: _StoreOpenClosedCard(),
                 ),
+                if (!StoreStatusStore.instance.hasValidLocation) ...[
+                  const SizedBox(height: 14),
+                  FadeSlideIn(
+                    delay: const Duration(milliseconds: 25),
+                    child: _MissingLocationBanner(
+                      onTap: () => DashboardScreen.safeNavigate(context, const SetStoreLocationScreen()),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 14),
                 FadeSlideIn(
                   delay: const Duration(milliseconds: 50),
@@ -1166,6 +1170,98 @@ class _StoreOpenClosedCard extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class _MissingLocationBanner extends StatelessWidget {
+  final VoidCallback onTap;
+  const _MissingLocationBanner({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: HomeColors.warningBg,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: HomeColors.warningText.withValues(alpha: 0.4), width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: HomeColors.warningText.withValues(alpha: 0.08),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: HomeColors.warningText.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.location_off_rounded, color: HomeColors.warningText, size: 20),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Store Location Not Set',
+                      style: TextStyle(
+                        color: HomeColors.warningText,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Hidden from customer map pins until configured',
+                      style: TextStyle(
+                        color: HomeColors.textSecondary,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'Customers in your area cannot find your store on the map until you confirm your accurate pin.',
+            style: TextStyle(
+              color: HomeColors.textSecondary,
+              fontSize: 12,
+              height: 1.35,
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: onTap,
+              icon: const Icon(Icons.pin_drop_rounded, size: 16, color: Colors.white),
+              label: const Text(
+                'Set Store Location Pin',
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: HomeColors.warningText,
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                elevation: 0,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -41,6 +41,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
       {'id': 'pending', 'label': 'Pending'},
       {'id': 'counter_offer', 'label': 'Counter-Offers'},
       {'id': 'accepted', 'label': 'Accepted & Ready'},
+      {'id': 'completed', 'label': 'Completed'},
       {'id': 'declined', 'label': 'Declined'},
     ];
 
@@ -75,6 +76,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                 if (f['id'] == 'pending') badgeCount = orderProvider.unreadPendingCount;
                 if (f['id'] == 'counter_offer') badgeCount = orderProvider.unreadCounterOfferCount;
                 if (f['id'] == 'accepted') badgeCount = orderProvider.unreadAcceptedCount;
+                if (f['id'] == 'completed') badgeCount = orderProvider.unreadCompletedCount;
                 if (f['id'] == 'declined') badgeCount = orderProvider.unreadDeclinedCount;
 
                 return Padding(
@@ -128,6 +130,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
               onRefresh: () async {
                 NotificationService.instance.cancelAll();
                 await orderProvider.refresh();
+                if (!mounted) return;
                 orderProvider.markOrdersTabSeen();
                 orderProvider.markFilterSeen(orderProvider.selectedStatusFilter);
               },
@@ -179,6 +182,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                           itemBuilder: (context, index) {
                             final order = orderProvider.orders[index];
                             return FadeSlideIn(
+                              key: ValueKey('order-${order.id}'),
                               delay: Duration(milliseconds: 60 * (index % 8)),
                               child: OrderCard(order: order),
                             );
