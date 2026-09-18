@@ -7,10 +7,25 @@ class HiddenProductsStore extends ChangeNotifier {
   static final HiddenProductsStore instance = HiddenProductsStore._();
 
   final Set<int> _hiddenProductIds = {};
+  final Map<int, Map<String, dynamic>> _hiddenProductDetails = {};
   final Map<int, DateTime> _reportedTimestamps = {};
   bool _initialized = false;
 
   Set<int> get hiddenProductIds => Set.unmodifiable(_hiddenProductIds);
+
+  List<Map<String, dynamic>> get hiddenProductsList {
+    return _hiddenProductIds.map((id) {
+      return _hiddenProductDetails[id] ?? {
+        'id': id,
+        'name': 'Product #$id',
+        'price': 0.0,
+        'imageUrl': '',
+        'storeName': '',
+        'categoryName': '',
+        'hiddenAt': DateTime.now().toIso8601String(),
+      };
+    }).toList();
+  }
 
   Future<void>? _initFuture;
 
@@ -24,6 +39,19 @@ class HiddenProductsStore extends ChangeNotifier {
         final decoded = jsonDecode(rawHidden);
         if (decoded is List) {
           _hiddenProductIds.addAll(decoded.map((e) => int.tryParse(e.toString()) ?? 0).where((e) => e > 0));
+        }
+      }
+
+      final rawDetails = await SessionManager.instance.getSetting('hidden_product_details');
+      if (rawDetails != null && rawDetails.isNotEmpty) {
+        final decoded = jsonDecode(rawDetails);
+        if (decoded is Map) {
+          for (final entry in decoded.entries) {
+            final id = int.tryParse(entry.key.toString());
+            if (id != null && entry.value is Map) {
+              _hiddenProductDetails[id] = Map<String, dynamic>.from(entry.value as Map);
+            }
+          }
         }
       }
 
@@ -61,28 +89,63 @@ class HiddenProductsStore extends ChangeNotifier {
   /// Reset all state — call on logout to prevent data leaking between sessions.
   void clear() {
     _hiddenProductIds.clear();
+    _hiddenProductDetails.clear();
     _reportedTimestamps.clear();
     _initialized = false;
     _initFuture = null;
     notifyListeners();
   }
 
-  Future<void> hideProduct(int productId) async {
+  Future<void> hideProduct(
+    int productId, {
+    String? name,
+    double? price,
+    String? imageUrl,
+    String? storeName,
+    String? categoryName,
+  }) async {
     if (productId <= 0) return;
     _hiddenProductIds.add(productId);
+    _hiddenProductDetails[productId] = {
+      'id': productId,
+      'name': name ?? 'Product #$productId',
+      'price': price ?? 0.0,
+      'imageUrl': imageUrl ?? '',
+      'storeName': storeName ?? '',
+      'categoryName': categoryName ?? '',
+      'hiddenAt': DateTime.now().toIso8601String(),
+    };
     notifyListeners();
     try {
       final raw = jsonEncode(_hiddenProductIds.toList());
       await SessionManager.instance.setSetting('hidden_product_ids', raw);
+      final rawDetails = jsonEncode(_hiddenProductDetails);
+      await SessionManager.instance.setSetting('hidden_product_details', rawDetails);
     } catch (_) {}
   }
 
   Future<void> unhideProduct(int productId) async {
-    if (_hiddenProductIds.remove(productId)) {
+    bool changed = _hiddenProductIds.remove(productId);
+    _hiddenProductDetails.remove(productId);
+    if (changed) {
       notifyListeners();
       try {
         final raw = jsonEncode(_hiddenProductIds.toList());
         await SessionManager.instance.setSetting('hidden_product_ids', raw);
+        final rawDetails = jsonEncode(_hiddenProductDetails);
+        await SessionManager.instance.setSetting('hidden_product_details', rawDetails);
+      } catch (_) {}
+    }
+  }
+
+  Future<void> unhideAll() async {
+    if (_hiddenProductIds.isNotEmpty) {
+      _hiddenProductIds.clear();
+      _hiddenProductDetails.clear();
+      notifyListeners();
+      try {
+        await SessionManager.instance.setSetting('hidden_product_ids', '[]');
+        await SessionManager.instance.setSetting('hidden_product_details', '{}');
       } catch (_) {}
     }
   }

@@ -76,6 +76,9 @@ class _CustomerLocationMapSheetState extends State<CustomerLocationMapSheet> {
   LatLng? _customerPoint;
   LatLng? _storePoint;
   double? _distanceKm;
+  List<LatLng> _roadRoutePoints = [];
+  double? _drivingDistanceKm;
+  int? _drivingDurationMinutes;
 
   @override
   void initState() {
@@ -198,34 +201,97 @@ class _CustomerLocationMapSheetState extends State<CustomerLocationMapSheet> {
       }
     });
 
+    _fetchRoadRoute(store, customer);
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       _fitMapBounds();
     });
   }
 
+  Future<void> _fetchRoadRoute(LatLng start, LatLng end) async {
+    try {
+      final url = Uri.parse(
+        'https://router.project-osrm.org/route/v1/driving/'
+        '${start.longitude},${start.latitude};${end.longitude},${end.latitude}'
+        '?overview=full&geometries=geojson',
+      );
+      final res = await http.get(
+        url,
+        headers: {'User-Agent': 'StoraOwnerApp/1.0 (support@stora.ph)'},
+      ).timeout(const Duration(seconds: 8));
+
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body);
+        if (data is Map && data['code'] == 'Ok' && data['routes'] is List && (data['routes'] as List).isNotEmpty) {
+          final route = data['routes'][0];
+          final geometry = route['geometry'];
+          final coords = geometry['coordinates'] as List;
+          final points = coords.map<LatLng>((c) {
+            final lon = (c[0] as num).toDouble();
+            final lat = (c[1] as num).toDouble();
+            return LatLng(lat, lon);
+          }).toList();
+
+          final distanceMeters = (route['distance'] as num?)?.toDouble() ?? 0.0;
+          final durationSeconds = (route['duration'] as num?)?.toDouble() ?? 0.0;
+
+          if (mounted && points.isNotEmpty) {
+            setState(() {
+              _roadRoutePoints = points;
+              _drivingDistanceKm = double.parse((distanceMeters / 1000.0).toStringAsFixed(1));
+              _drivingDurationMinutes = (durationSeconds / 60.0).round();
+            });
+            return;
+          }
+        }
+      }
+    } catch (_) {}
+
+    // Fallback: straight line
+    if (mounted) {
+      setState(() {
+        _roadRoutePoints = [start, end];
+      });
+    }
+  }
+
   Future<void> _openNavigation() async {
     if (_customerPoint == null) return;
     final lat = _customerPoint!.latitude;
     final lon = _customerPoint!.longitude;
+
+    // 1. Native turn-by-turn navigation intent
     final googleNavUri = Uri.parse('google.navigation:q=$lat,$lon&mode=d');
-    final mapsUrl = Uri.parse('https://www.google.com/maps/dir/?api=1&destination=$lat,$lon&travelmode=driving');
     try {
-      if (await canLaunchUrl(googleNavUri)) {
-        await launchUrl(googleNavUri, mode: LaunchMode.externalApplication);
-        return;
-      }
+      final launched = await launchUrl(googleNavUri, mode: LaunchMode.externalNonBrowserApplication);
+      if (launched) return;
     } catch (_) {}
+
+    // 2. Generic geo: intent with marker label
+    final geoUri = Uri.parse('geo:$lat,$lon?q=$lat,$lon(Delivery%20Location)');
     try {
-      if (await canLaunchUrl(mapsUrl)) {
-        await launchUrl(mapsUrl, mode: LaunchMode.externalApplication);
-      }
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not open map navigation app.')),
-        );
-      }
+      final launched = await launchUrl(geoUri, mode: LaunchMode.externalNonBrowserApplication);
+      if (launched) return;
+    } catch (_) {}
+
+    // 3. Google Maps directions URL in external app/browser
+    final mapsDirUrl = Uri.parse('https://www.google.com/maps/dir/?api=1&destination=$lat,$lon&travelmode=driving');
+    try {
+      final launched = await launchUrl(mapsDirUrl, mode: LaunchMode.externalApplication);
+      if (launched) return;
+    } catch (_) {}
+
+    // 4. Platform default fallback
+    try {
+      final launched = await launchUrl(mapsDirUrl, mode: LaunchMode.platformDefault);
+      if (launched) return;
+    } catch (_) {}
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not open map navigation app.')),
+      );
     }
   }
 
@@ -390,20 +456,35 @@ class _CustomerLocationMapSheetState extends State<CustomerLocationMapSheet> {
                         urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                         userAgentPackageName: 'com.example.stora_owner',
                       ),
-                      // Direct Connection Line (Dashed straight-line distance indicator)
+                      // Road Route Polyline (or straight dashed line while loading/fallback)
                       PolylineLayer(
                         polylines: [
-                          Polyline(
-                            points: [_storePoint!, _customerPoint!],
-                            color: const Color(0xFF0F172A),
-                            strokeWidth: 4.5,
-                          ),
-                          Polyline(
-                            points: [_storePoint!, _customerPoint!],
-                            color: const Color(0xFF38BDF8),
-                            strokeWidth: 3.0,
-                            pattern: StrokePattern.dashed(segments: const [8, 6]),
-                          ),
+                          if (_roadRoutePoints.isNotEmpty) ...[
+                            // Contrast outline/casing
+                            Polyline(
+                              points: _roadRoutePoints,
+                              color: const Color(0xFF0F172A),
+                              strokeWidth: 6.5,
+                            ),
+                            // Vibrant road line
+                            Polyline(
+                              points: _roadRoutePoints,
+                              color: const Color(0xFF38BDF8),
+                              strokeWidth: 4.5,
+                            ),
+                          ] else ...[
+                            Polyline(
+                              points: [_storePoint!, _customerPoint!],
+                              color: const Color(0xFF0F172A),
+                              strokeWidth: 4.5,
+                            ),
+                            Polyline(
+                              points: [_storePoint!, _customerPoint!],
+                              color: const Color(0xFF38BDF8),
+                              strokeWidth: 3.0,
+                              pattern: StrokePattern.dashed(segments: const [8, 6]),
+                            ),
+                          ],
                         ],
                       ),
                       // Markers
@@ -537,7 +618,7 @@ class _CustomerLocationMapSheetState extends State<CustomerLocationMapSheet> {
                 ),
 
                 // Distance Badge Overlay
-                if (_distanceKm != null)
+                if (_drivingDistanceKm != null || _distanceKm != null)
                   Positioned(
                     top: 12,
                     left: 12,
@@ -557,14 +638,18 @@ class _CustomerLocationMapSheetState extends State<CustomerLocationMapSheet> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(
-                            Icons.straighten_rounded,
-                            color: Color(0xFF38BDF8),
+                          Icon(
+                            _drivingDurationMinutes != null
+                                ? Icons.directions_car_rounded
+                                : Icons.straighten_rounded,
+                            color: const Color(0xFF38BDF8),
                             size: 16,
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            '$_distanceKm km straight-line distance',
+                            _drivingDistanceKm != null && _drivingDurationMinutes != null
+                                ? '$_drivingDistanceKm km by road • ~$_drivingDurationMinutes min'
+                                : '$_distanceKm km straight-line distance',
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 12,
@@ -644,9 +729,9 @@ class _CustomerLocationMapSheetState extends State<CustomerLocationMapSheet> {
                         elevation: 2,
                       ),
                       onPressed: _customerPoint != null ? _openNavigation : null,
-                      icon: const Icon(Icons.map_rounded, size: 20, color: Colors.black),
+                      icon: const Icon(Icons.navigation_rounded, size: 20, color: Colors.black),
                       label: const Text(
-                        'Open in Google Maps',
+                        'Start Road Navigation (Google Maps)',
                         style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5, color: Colors.black),
                       ),
                     ),

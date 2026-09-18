@@ -12,6 +12,7 @@ import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
 import 'screens/main_shell.dart';
 import 'services/connectivity_service.dart';
+import 'storage/hidden_products_store.dart';
 import 'theme/app_theme.dart';
 
 void main() async {
@@ -38,6 +39,7 @@ void main() async {
         ChangeNotifierProvider<CartProvider>(create: (_) => CartProvider()),
         ChangeNotifierProvider<OrderProvider>(create: (_) => OrderProvider()),
         ChangeNotifierProvider<ChatProvider>(create: (_) => ChatProvider()),
+        ChangeNotifierProvider<HiddenProductsStore>.value(value: HiddenProductsStore.instance),
       ],
       child: StoraCustomerApp(initialRoute: initialRoute),
     ),

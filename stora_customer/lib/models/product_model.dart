@@ -32,6 +32,7 @@ class ProductModel {
   bool get isOutOfStock => stock <= 0;
   bool get isLowStock => stock > 0 && stock <= 5;
   String get formattedPrice => '₱${price.toStringAsFixed(2)}';
+  String? get imageUrl => image;
 
   factory ProductModel.fromJson(Map<String, dynamic> json) {
     int? parseId(dynamic val) {

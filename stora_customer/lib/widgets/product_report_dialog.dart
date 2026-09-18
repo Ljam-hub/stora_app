@@ -418,7 +418,14 @@ Future<void> showProductReportDialog({
 
                                       // Hide product if requested
                                       if (hideProductAfterReport) {
-                                        await HiddenProductsStore.instance.hideProduct(product.id);
+                                        await HiddenProductsStore.instance.hideProduct(
+                                          product.id,
+                                          name: product.name,
+                                          price: product.price,
+                                          imageUrl: product.imageUrl,
+                                          storeName: product.storeName,
+                                          categoryName: product.categoryName,
+                                        );
                                       }
 
                                       if (modalContext.mounted) {
@@ -426,17 +433,35 @@ Future<void> showProductReportDialog({
                                       }
 
                                       if (context.mounted) {
-                                        ScaffoldMessenger.of(context).showSnackBar(
+                                        final messenger = ScaffoldMessenger.of(context);
+                                        messenger.hideCurrentSnackBar();
+                                        messenger.showSnackBar(
                                           SnackBar(
+                                            duration: const Duration(seconds: 5),
+                                            behavior: SnackBarBehavior.floating,
                                             content: Row(
-                                              children: const [
-                                                Icon(Icons.check_circle_rounded, color: Colors.white, size: 18),
-                                                SizedBox(width: 8),
+                                              children: [
+                                                const Icon(Icons.check_circle_rounded, color: Colors.white, size: 18),
+                                                const SizedBox(width: 8),
                                                 Expanded(
-                                                  child: Text('Product report submitted. Admin will review.'),
+                                                  child: Text(
+                                                    hideProductAfterReport
+                                                        ? 'Report submitted and product hidden.'
+                                                        : 'Product report submitted. Admin will review.',
+                                                  ),
                                                 ),
                                               ],
                                             ),
+                                            action: hideProductAfterReport
+                                                ? SnackBarAction(
+                                                    label: 'UNDO',
+                                                    textColor: Colors.amberAccent,
+                                                    onPressed: () async {
+                                                      await HiddenProductsStore.instance.unhideProduct(product.id);
+                                                      onReportSubmitted?.call();
+                                                    },
+                                                  )
+                                                : null,
                                             backgroundColor: AppColors.success,
                                           ),
                                         );

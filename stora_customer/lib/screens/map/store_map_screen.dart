@@ -1,10 +1,13 @@
+import 'dart:convert';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import 'package:sqflite/sqflite.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../models/store_model.dart';
 import '../../providers/catalog_provider.dart';
 import '../../services/location_service.dart';
@@ -33,6 +36,12 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
 
   bool _isRecentering = false;
   bool _isShowingStoresSheet = false;
+
+  // Road route state
+  List<LatLng> _roadRoutePoints = [];
+  double? _roadDistanceKm;
+  int? _roadDurationMinutes;
+  bool _isLoadingRoute = false;
 
   // Radar beacon pulse animation
   late final AnimationController _pulseAnim;
@@ -213,6 +222,12 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
         try {
           _mapController.move(LatLng(_userLat, _userLng), 16.0);
         } catch (_) {}
+        if (_selectedStore != null && _selectedStore!.hasValidLocation) {
+          _fetchRoadRoute(
+            LatLng(_userLat, _userLng),
+            LatLng(_selectedStore!.latitude, _selectedStore!.longitude),
+          );
+        }
         _fetchStores();
         messenger.showSnackBar(
           const SnackBar(
@@ -250,10 +265,138 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
     } catch (_) {}
   }
 
-  void _onStoreSelected(StoreModel store, int index, {bool animatePage = true}) {
+  void _fitRouteBounds(LatLng p1, LatLng p2) {
+    try {
+      if (p1.latitude == p2.latitude && p1.longitude == p2.longitude) {
+        _mapController.move(p1, 15.0);
+        return;
+      }
+      final bounds = _roadRoutePoints.isNotEmpty
+          ? LatLngBounds.fromPoints(_roadRoutePoints)
+          : LatLngBounds.fromPoints([p1, p2]);
+      _mapController.fitCamera(
+        CameraFit.bounds(
+          bounds: bounds,
+          padding: const EdgeInsets.fromLTRB(40, 160, 40, 240),
+        ),
+      );
+    } catch (_) {}
+  }
+
+  Future<void> _fetchRoadRoute(LatLng start, LatLng end, {bool fitCamera = false}) async {
+    _isLoadingRoute = true;
+    try {
+      final url = Uri.parse(
+        'https://router.project-osrm.org/route/v1/driving/'
+        '${start.longitude},${start.latitude};${end.longitude},${end.latitude}'
+        '?overview=full&geometries=geojson',
+      );
+      final res = await http.get(
+        url,
+        headers: {'User-Agent': 'StoraCustomerApp/1.0 (support@stora.ph)'},
+      ).timeout(const Duration(seconds: 8));
+
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body);
+        if (data is Map && data['code'] == 'Ok' && data['routes'] is List && (data['routes'] as List).isNotEmpty) {
+          final route = data['routes'][0];
+          final geometry = route['geometry'];
+          final coords = geometry['coordinates'] as List;
+          final points = coords.map<LatLng>((c) {
+            final lon = (c[0] as num).toDouble();
+            final lat = (c[1] as num).toDouble();
+            return LatLng(lat, lon);
+          }).toList();
+
+          final distanceMeters = (route['distance'] as num?)?.toDouble() ?? 0.0;
+          final durationSeconds = (route['duration'] as num?)?.toDouble() ?? 0.0;
+
+          if (mounted && points.isNotEmpty) {
+            setState(() {
+              _roadRoutePoints = points;
+              _roadDistanceKm = double.parse((distanceMeters / 1000.0).toStringAsFixed(1));
+              _roadDurationMinutes = (durationSeconds / 60.0).round();
+              _isLoadingRoute = false;
+            });
+            if (fitCamera) {
+              _fitRouteBounds(start, end);
+            }
+            return;
+          }
+        }
+      }
+    } catch (_) {}
+
+    // Fallback: straight line
+    if (mounted) {
+      setState(() {
+        _roadRoutePoints = [start, end];
+        _roadDistanceKm = null;
+        _roadDurationMinutes = null;
+        _isLoadingRoute = false;
+      });
+      if (fitCamera) {
+        _fitRouteBounds(start, end);
+      }
+    }
+  }
+
+  Future<void> _openGoogleMapsDirections(StoreModel store) async {
+    if (!store.hasValidLocation) return;
+    final lat = store.latitude;
+    final lon = store.longitude;
+
+    // 1. Native turn-by-turn navigation intent
+    final googleNavUri = Uri.parse('google.navigation:q=$lat,$lon&mode=d');
+    try {
+      final launched = await launchUrl(googleNavUri, mode: LaunchMode.externalNonBrowserApplication);
+      if (launched) return;
+    } catch (_) {}
+
+    // 2. Generic geo: intent with store title
+    final geoUri = Uri.parse('geo:$lat,$lon?q=$lat,$lon(${Uri.encodeComponent(store.displayName)})');
+    try {
+      final launched = await launchUrl(geoUri, mode: LaunchMode.externalNonBrowserApplication);
+      if (launched) return;
+    } catch (_) {}
+
+    // 3. Google Maps directions URL in external browser/app
+    final mapsDirUrl = Uri.parse('https://www.google.com/maps/dir/?api=1&destination=$lat,$lon&travelmode=driving');
+    try {
+      final launched = await launchUrl(mapsDirUrl, mode: LaunchMode.externalApplication);
+      if (launched) return;
+    } catch (_) {}
+
+    // 4. Platform default fallback
+    try {
+      final launched = await launchUrl(mapsDirUrl, mode: LaunchMode.platformDefault);
+      if (launched) return;
+    } catch (_) {}
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not open map navigation app.')),
+      );
+    }
+  }
+
+  void _onStoreSelected(StoreModel store, int index, {bool animatePage = true, bool fitCamera = false}) {
     setState(() {
       _selectedStore = store;
     });
+    if (store.hasValidLocation) {
+      _fetchRoadRoute(
+        LatLng(_userLat, _userLng),
+        LatLng(store.latitude, store.longitude),
+        fitCamera: fitCamera,
+      );
+    } else {
+      setState(() {
+        _roadRoutePoints = [];
+        _roadDistanceKm = null;
+        _roadDurationMinutes = null;
+      });
+    }
     try {
       final zoom = _mapController.camera.zoom;
       _mapController.move(LatLng(store.latitude, store.longitude), zoom);
@@ -468,6 +611,24 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
                 urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                 userAgentPackageName: 'com.example.stora_customer',
               ),
+              // Road Route Polyline Layer
+              if (_roadRoutePoints.isNotEmpty)
+                PolylineLayer(
+                  polylines: [
+                    // Contrast casing outline
+                    Polyline(
+                      points: _roadRoutePoints,
+                      color: const Color(0xFF0F172A),
+                      strokeWidth: 6.5,
+                    ),
+                    // Vibrant road line
+                    Polyline(
+                      points: _roadRoutePoints,
+                      color: const Color(0xFF38BDF8),
+                      strokeWidth: 4.5,
+                    ),
+                  ],
+                ),
               MarkerLayer(
                 markers: [
                   for (int i = 0; i < filteredStores.length; i++)
@@ -614,6 +775,64 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
             ),
           ),
 
+          // Road Distance & Duration Badge Overlay
+          if (activeStore != null && (_roadDistanceKm != null || _isLoadingRoute))
+            Positioned(
+              left: 16,
+              top: 136,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.85),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: const Color(0xFF38BDF8).withValues(alpha: 0.6),
+                    width: 1.2,
+                  ),
+                  boxShadow: const [
+                    BoxShadow(color: Color(0x50000000), blurRadius: 8, offset: Offset(0, 3)),
+                  ],
+                ),
+                child: _isLoadingRoute
+                    ? const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SizedBox(
+                            width: 12,
+                            height: 12,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF38BDF8)),
+                          ),
+                          SizedBox(width: 8),
+                          Text(
+                            'Calculating road route...',
+                            style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
+                          ),
+                        ],
+                      )
+                    : InkWell(
+                        onTap: () {
+                          if (activeStore.hasValidLocation) {
+                            _fitRouteBounds(
+                              LatLng(_userLat, _userLng),
+                              LatLng(activeStore.latitude, activeStore.longitude),
+                            );
+                          }
+                        },
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.directions_car_rounded, color: Color(0xFF38BDF8), size: 15),
+                            const SizedBox(width: 6),
+                            Text(
+                              '${activeStore.displayName}: $_roadDistanceKm km by road • ~$_roadDurationMinutes min',
+                              style: const TextStyle(color: Colors.white, fontSize: 11.5, fontWeight: FontWeight.w700),
+                            ),
+                          ],
+                        ),
+                      ),
+              ),
+            ),
+
           // 3. Floating Map Controls (Recenter & Zoom)
           Positioned(
             right: 16,
@@ -645,6 +864,22 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
                   onTap: _recenter,
                 ),
                 const SizedBox(height: 8),
+                if (_roadRoutePoints.isNotEmpty) ...[
+                  _buildFloatingButton(
+                    icon: Icons.alt_route_rounded,
+                    tooltip: 'Fit Route',
+                    isDark: isDark,
+                    onTap: () {
+                      if (activeStore != null && activeStore.hasValidLocation) {
+                        _fitRouteBounds(
+                          LatLng(_userLat, _userLng),
+                          LatLng(activeStore.latitude, activeStore.longitude),
+                        );
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                ],
                 _buildFloatingButton(
                   icon: Icons.add_rounded,
                   tooltip: 'Zoom In',
@@ -767,6 +1002,13 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
                     });
                     if (store.hasValidLocation) {
                       _mapController.move(LatLng(store.latitude, store.longitude), _mapController.camera.zoom);
+                      _fetchRoadRoute(LatLng(_userLat, _userLng), LatLng(store.latitude, store.longitude));
+                    } else {
+                      setState(() {
+                        _roadRoutePoints = [];
+                        _roadDistanceKm = null;
+                        _roadDurationMinutes = null;
+                      });
                     }
                   },
                   itemBuilder: (ctx, i) {
@@ -779,7 +1021,10 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
                         store: store,
                         isSelected: isSelected,
                         isDark: isDark,
+                        roadDistanceKm: isSelected ? _roadDistanceKm : null,
+                        roadDurationMinutes: isSelected ? _roadDurationMinutes : null,
                         onViewStore: () => widget.onSelectStoreAndShop(store),
+                        onGetDirections: () => _openGoogleMapsDirections(store),
                       ),
                     );
                   },
@@ -1055,22 +1300,30 @@ class _StoreCarouselCard extends StatelessWidget {
   final StoreModel store;
   final bool isSelected;
   final bool isDark;
+  final double? roadDistanceKm;
+  final int? roadDurationMinutes;
   final VoidCallback onViewStore;
+  final VoidCallback onGetDirections;
 
   const _StoreCarouselCard({
     required this.store,
     required this.isSelected,
     required this.isDark,
+    this.roadDistanceKm,
+    this.roadDurationMinutes,
     required this.onViewStore,
+    required this.onGetDirections,
   });
 
   @override
   Widget build(BuildContext context) {
     final distText = !store.hasValidLocation
         ? 'Location not set'
-        : (store.distanceKm != null
-            ? '${store.distanceKm!.toStringAsFixed(1)} km away'
-            : 'Nearby store');
+        : (isSelected && roadDistanceKm != null && roadDurationMinutes != null
+            ? '$roadDistanceKm km by road • ~$roadDurationMinutes min'
+            : (store.distanceKm != null
+                ? '${store.distanceKm!.toStringAsFixed(1)} km away'
+                : 'Nearby store'));
 
     return Container(
       padding: const EdgeInsets.all(14),
@@ -1141,9 +1394,13 @@ class _StoreCarouselCard extends StatelessWidget {
                   children: [
                     Icon(Icons.near_me_rounded, color: AppColors.accentText, size: 12),
                     const SizedBox(width: 4),
-                    Text(
-                      distText,
-                      style: TextStyle(color: AppColors.accentText, fontSize: 11, fontWeight: FontWeight.w700),
+                    Expanded(
+                      child: Text(
+                        distText,
+                        style: TextStyle(color: AppColors.accentText, fontSize: 11, fontWeight: FontWeight.w700),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                     const SizedBox(width: 6),
                     Container(width: 3, height: 3, decoration: BoxDecoration(color: AppColors.textMuted, shape: BoxShape.circle)),
@@ -1171,23 +1428,54 @@ class _StoreCarouselCard extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 10),
-          ElevatedButton(
-            onPressed: onViewStore,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-              elevation: 0,
-            ),
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text('Shop', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12)),
-                SizedBox(width: 2),
-                Icon(Icons.chevron_right_rounded, size: 16),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              ElevatedButton(
+                onPressed: onViewStore,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  elevation: 0,
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('Shop', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12)),
+                    SizedBox(width: 2),
+                    Icon(Icons.chevron_right_rounded, size: 16),
+                  ],
+                ),
+              ),
+              if (store.hasValidLocation) ...[
+                const SizedBox(height: 6),
+                InkWell(
+                  onTap: onGetDirections,
+                  borderRadius: BorderRadius.circular(8),
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.directions_car_rounded, size: 13, color: Color(0xFF38BDF8)),
+                        SizedBox(width: 4),
+                        Text(
+                          'Route',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF38BDF8),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ],
-            ),
+            ],
           ),
         ],
       ),
