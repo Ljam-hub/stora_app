@@ -6,17 +6,16 @@ class CustomerThemeController extends ChangeNotifier with WidgetsBindingObserver
   CustomerThemeController._();
   static final CustomerThemeController instance = CustomerThemeController._();
 
-  ThemeMode _themeMode = ThemeMode.dark;
+  ThemeMode _themeMode = ThemeMode.system;
   ThemeMode get themeMode => _themeMode;
   bool get isDarkMode {
-    if (_themeMode == ThemeMode.system) {
-      try {
-        return WidgetsBinding.instance.platformDispatcher.platformBrightness == Brightness.dark;
-      } catch (_) {
-        return true;
-      }
+    if (_themeMode == ThemeMode.light) return false;
+    if (_themeMode == ThemeMode.dark) return true;
+    try {
+      return WidgetsBinding.instance.platformDispatcher.platformBrightness == Brightness.dark;
+    } catch (_) {
+      return false;
     }
-    return _themeMode == ThemeMode.dark;
   }
 
   Future<void> init() async {

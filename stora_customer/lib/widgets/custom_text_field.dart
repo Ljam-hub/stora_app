@@ -16,6 +16,7 @@ class CustomTextField extends StatefulWidget {
   final VoidCallback? onPrefixIconPressed;
   final String? prefixIconTooltip;
   final Key? fieldKey;
+  final Iterable<String>? autofillHints;
 
   const CustomTextField({
     super.key,
@@ -33,6 +34,7 @@ class CustomTextField extends StatefulWidget {
     this.onPrefixIconPressed,
     this.prefixIconTooltip,
     this.fieldKey,
+    this.autofillHints,
   });
 
   @override
@@ -65,6 +67,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
           controller: widget.controller,
           obscureText: widget.isPassword ? _obscureText : false,
           keyboardType: widget.keyboardType,
+          autofillHints: widget.autofillHints,
           maxLines: widget.isPassword ? 1 : widget.maxLines,
           readOnly: widget.readOnly,
           validator: widget.validator,

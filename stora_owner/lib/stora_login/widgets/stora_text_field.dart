@@ -13,6 +13,7 @@ class StoraTextField extends StatefulWidget {
   final Widget? prefixIcon;
   final Widget? suffixIcon;
   final int maxLines;
+  final Iterable<String>? autofillHints;
 
   const StoraTextField({
     super.key,
@@ -26,6 +27,7 @@ class StoraTextField extends StatefulWidget {
     this.prefixIcon,
     this.suffixIcon,
     this.maxLines = 1,
+    this.autofillHints,
   });
 
   @override
@@ -123,6 +125,7 @@ class _StoraTextFieldState extends State<StoraTextField> {
           obscureText: _obscured,
           maxLines: _obscured ? 1 : widget.maxLines,
           keyboardType: widget.keyboardType,
+          autofillHints: widget.autofillHints,
           style: TextStyle(color: textColor, fontSize: 14, fontWeight: FontWeight.w500),
           validator: widget.validator,
           decoration: InputDecoration(

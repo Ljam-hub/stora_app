@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/app_theme.dart';
@@ -43,6 +44,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     if (mounted) {
       if (success) {
+        TextInput.finishAutofillContext(shouldSave: true);
         // Route to verification screen so user verifies their email code
         if (auth.currentUser?.isEmailVerified == true) {
           Navigator.of(context).pushReplacementNamed('/home');
@@ -81,116 +83,122 @@ class _RegisterScreenState extends State<RegisterScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
             child: Form(
               key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    'Join Stora',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
+              child: AutofillGroup(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      'Join Stora',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Create your account to order items from nearby stores',
-                    style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
-                  ),
-                  const SizedBox(height: 28),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Create your account to order items from nearby stores',
+                      style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+                    ),
+                    const SizedBox(height: 28),
 
-                  // Name Field
-                  CustomTextField(
-                    controller: _nameController,
-                    label: 'Full Name',
-                    hint: 'Juan Dela Cruz',
-                    prefixIcon: Icons.person_outline,
-                    validator: (val) {
-                      if (val == null || val.trim().isEmpty) {
-                        return 'Please enter your name';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
+                    // Name Field
+                    CustomTextField(
+                      controller: _nameController,
+                      label: 'Full Name',
+                      hint: 'Juan Dela Cruz',
+                      prefixIcon: Icons.person_outline,
+                      autofillHints: const [AutofillHints.name],
+                      validator: (val) {
+                        if (val == null || val.trim().isEmpty) {
+                          return 'Please enter your name';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
 
-                  // Email Field
-                  CustomTextField(
-                    controller: _emailController,
-                    label: 'Email Address',
-                    hint: 'juan@example.com',
-                    prefixIcon: Icons.email_outlined,
-                    keyboardType: TextInputType.emailAddress,
-                    validator: (val) {
-                      if (val == null || val.trim().isEmpty) {
-                        return 'Please enter your email';
-                      }
-                      if (!val.contains('@') || !val.contains('.')) {
-                        return 'Please enter a valid email address';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
+                    // Email Field
+                    CustomTextField(
+                      controller: _emailController,
+                      label: 'Email Address',
+                      hint: 'juan@example.com',
+                      prefixIcon: Icons.email_outlined,
+                      keyboardType: TextInputType.emailAddress,
+                      autofillHints: const [AutofillHints.email],
+                      validator: (val) {
+                        if (val == null || val.trim().isEmpty) {
+                          return 'Please enter your email';
+                        }
+                        if (!val.contains('@') || !val.contains('.')) {
+                          return 'Please enter a valid email address';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
 
-                  // Password Field
-                  CustomTextField(
-                    controller: _passwordController,
-                    label: 'Password',
-                    hint: 'At least 8 characters',
-                    prefixIcon: Icons.lock_outline,
-                    isPassword: true,
-                    validator: (val) {
-                      if (val == null || val.length < 8) {
-                        return 'Password must be at least 8 characters';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
+                    // Password Field
+                    CustomTextField(
+                      controller: _passwordController,
+                      label: 'Password',
+                      hint: 'At least 8 characters',
+                      prefixIcon: Icons.lock_outline,
+                      isPassword: true,
+                      autofillHints: const [AutofillHints.newPassword],
+                      validator: (val) {
+                        if (val == null || val.length < 8) {
+                          return 'Password must be at least 8 characters';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
 
-                  // Confirm Password Field
-                  CustomTextField(
-                    controller: _confirmPasswordController,
-                    label: 'Confirm Password',
-                    hint: 'Repeat your password',
-                    prefixIcon: Icons.lock_reset_outlined,
-                    isPassword: true,
-                    validator: (val) {
-                      if (val != _passwordController.text) {
-                        return 'Passwords do not match';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 28),
+                    // Confirm Password Field
+                    CustomTextField(
+                      controller: _confirmPasswordController,
+                      label: 'Confirm Password',
+                      hint: 'Repeat your password',
+                      prefixIcon: Icons.lock_reset_outlined,
+                      isPassword: true,
+                      autofillHints: const [AutofillHints.newPassword],
+                      validator: (val) {
+                        if (val != _passwordController.text) {
+                          return 'Passwords do not match';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 28),
 
-                  // Register Button
-                  GradientButton(
-                    text: 'Register Account',
-                    isLoading: auth.isLoading,
-                    onPressed: auth.isLoading ? null : _handleRegister,
-                  ),
-                  const SizedBox(height: 20),
+                    // Register Button
+                    GradientButton(
+                      text: 'Register Account',
+                      isLoading: auth.isLoading,
+                      onPressed: auth.isLoading ? null : _handleRegister,
+                    ),
+                    const SizedBox(height: 20),
 
-                  // Back to login
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        'Already have an account?',
-                        style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
-                      ),
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        style: TextButton.styleFrom(
-                          foregroundColor: AppColors.primary,
+                    // Back to login
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          'Already have an account?',
+                          style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
                         ),
-                        child: const Text('Sign In', style: TextStyle(fontWeight: FontWeight.bold)),
-                      ),
-                    ],
-                  ),
-                ],
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: TextButton.styleFrom(
+                            foregroundColor: AppColors.primary,
+                          ),
+                          child: const Text('Sign In', style: TextStyle(fontWeight: FontWeight.bold)),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

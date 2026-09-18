@@ -7,13 +7,17 @@ class ThemeModeController extends ChangeNotifier with WidgetsBindingObserver {
   ThemeModeController._();
   static final ThemeModeController instance = ThemeModeController._();
 
-  ThemeMode _themeMode = ThemeMode.dark;
+  ThemeMode _themeMode = ThemeMode.system;
   ThemeMode get themeMode => _themeMode;
 
   bool get isDarkMode {
     if (_themeMode == ThemeMode.light) return false;
     if (_themeMode == ThemeMode.dark) return true;
-    return WidgetsBinding.instance.platformDispatcher.platformBrightness == Brightness.dark;
+    try {
+      return WidgetsBinding.instance.platformDispatcher.platformBrightness == Brightness.dark;
+    } catch (_) {
+      return false;
+    }
   }
 
   File? _settingsFile;

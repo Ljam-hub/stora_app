@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/app_theme.dart';
@@ -40,6 +41,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (mounted) {
       if (success) {
+        TextInput.finishAutofillContext(shouldSave: true);
         if (auth.currentUser?.isEmailVerified == false) {
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(
@@ -73,89 +75,92 @@ class _LoginScreenState extends State<LoginScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
             child: Form(
               key: _formKey,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // App Branding Icon & Title
+              child: AutofillGroup(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // App Branding Icon & Title
 
 
-                  Center(
-                    child: Container(
-                      width: 84,
-                      height: 84,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(22),
-                        boxShadow: AppColors.glowShadow(AppColors.primary, opacity: 0.4),
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(22),
-                        child: Image.asset(
-                          'assets/icons/stora_logo.png',
-                          fit: BoxFit.cover,
+                    Center(
+                      child: Container(
+                        width: 84,
+                        height: 84,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(22),
+                          boxShadow: AppColors.glowShadow(AppColors.primary, opacity: 0.4),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(22),
+                          child: Image.asset(
+                            'assets/icons/stora_logo.png',
+                            fit: BoxFit.cover,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    'Welcome to Stora',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
-                      letterSpacing: 0.5,
+                    const SizedBox(height: 24),
+                    Text(
+                      'Welcome to Stora',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 26,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                        letterSpacing: 0.5,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Order directly from your favorite local stores',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: AppColors.textSecondary,
+                    const SizedBox(height: 8),
+                    Text(
+                      'Order directly from your favorite local stores',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: AppColors.textSecondary,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 36),
+                    const SizedBox(height: 36),
 
-                  // Email Field
-                  CustomTextField(
-                    key: const Key('login_email_field'),
-                    fieldKey: const Key('login_email_input'),
-                    controller: _emailController,
-                    label: 'Email Address',
-                    hint: 'customer@example.com',
-                    prefixIcon: Icons.email_outlined,
-                    keyboardType: TextInputType.emailAddress,
-                    validator: (val) {
-                      if (val == null || val.trim().isEmpty) {
-                        return 'Please enter your email';
-                      }
-                      if (!val.contains('@') || !val.contains('.')) {
-                        return 'Please enter a valid email address';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 18),
+                    // Email Field
+                    CustomTextField(
+                      key: const Key('login_email_field'),
+                      fieldKey: const Key('login_email_input'),
+                      controller: _emailController,
+                      label: 'Email Address',
+                      hint: 'customer@example.com',
+                      prefixIcon: Icons.email_outlined,
+                      keyboardType: TextInputType.emailAddress,
+                      autofillHints: const [AutofillHints.username, AutofillHints.email],
+                      validator: (val) {
+                        if (val == null || val.trim().isEmpty) {
+                          return 'Please enter your email';
+                        }
+                        if (!val.contains('@') || !val.contains('.')) {
+                          return 'Please enter a valid email address';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 18),
 
-                  // Password Field
-                  CustomTextField(
-                    key: const Key('login_password_field'),
-                    fieldKey: const Key('login_password_input'),
-                    controller: _passwordController,
-                    label: 'Password',
-                    hint: '••••••••',
-                    prefixIcon: Icons.lock_outline,
-                    isPassword: true,
-                    validator: (val) {
-                      if (val == null || val.isEmpty) {
-                        return 'Please enter your password';
-                      }
-                      return null;
-                    },
-                  ),
+                    // Password Field
+                    CustomTextField(
+                      key: const Key('login_password_field'),
+                      fieldKey: const Key('login_password_input'),
+                      controller: _passwordController,
+                      label: 'Password',
+                      hint: '••••••••',
+                      prefixIcon: Icons.lock_outline,
+                      isPassword: true,
+                      autofillHints: const [AutofillHints.password],
+                      validator: (val) {
+                        if (val == null || val.isEmpty) {
+                          return 'Please enter your password';
+                        }
+                        return null;
+                      },
+                    ),
                   const SizedBox(height: 8),
 
                   // Forgot Password
@@ -222,6 +227,7 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
       ),
-    );
+    ),
+  );
   }
 }

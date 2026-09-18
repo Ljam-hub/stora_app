@@ -1,5 +1,6 @@
-import 'package:flutter/gestures.dart';
+﻿import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:stora/auth/auth_store.dart';
 import 'package:stora/data/api/api_client.dart';
 import '../theme/app_colors.dart';
@@ -46,6 +47,7 @@ class _LoginScreenState extends State<LoginScreen> {
         password: _passwordController.text,
       );
       if (!mounted) return;
+      TextInput.finishAutofillContext(shouldSave: true);
       if (!AuthStore.instance.isEmailVerified) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
@@ -78,112 +80,116 @@ class _LoginScreenState extends State<LoginScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
             child: Form(
               key: _formKey,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const StoraHeader(),
+              child: AutofillGroup(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const StoraHeader(),
 
-                  const SizedBox(height: 32),
-                  Container(
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1E1827),
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: const Color(0xFF332A40)),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Color(0x40000000),
-                          blurRadius: 24,
-                          offset: Offset(0, 8),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        const Text(
-                          'Welcome back',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 22,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: -0.3,
+                    const SizedBox(height: 32),
+                    Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1E1827),
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(color: const Color(0xFF332A40)),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Color(0x40000000),
+                            blurRadius: 24,
+                            offset: Offset(0, 8),
                           ),
-                        ),
-                        const SizedBox(height: 6),
-                        const Text(
-                          'Sign in to manage your store inventory',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(color: AppColors.label, fontSize: 13),
-                        ),
-                        const SizedBox(height: 24),
-                        StoraTextField(
-                          fieldKey: const Key('loginEmailField'),
-                          label: 'Email Address',
-                          hint: 'nena@storemail.com',
-                          controller: _emailController,
-                          keyboardType: TextInputType.emailAddress,
-                          prefixIcon: const Icon(Icons.mail_outline_rounded, color: AppColors.label, size: 20),
-                          validator: validateEmail,
-                        ),
-                        const SizedBox(height: 18),
-                        StoraTextField(
-                          fieldKey: const Key('loginPasswordField'),
-                          label: 'Password',
-                          hint: '••••••••••',
-                          controller: _passwordController,
-                          obscureText: true,
-                          prefixIcon: const Icon(Icons.lock_outline_rounded, color: AppColors.label, size: 20),
-                          validator: validatePassword,
-                        ),
-                        const SizedBox(height: 8),
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: TextButton(
-                            onPressed: () {
-                              Navigator.of(context).pushNamed('/forgot-password');
-                            },
-                            child: const Text(
-                              'Forgot password?',
-                              style: TextStyle(color: AppColors.purpleLight, fontSize: 13, fontWeight: FontWeight.w600),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        StoraGradientButton(
-                          buttonKey: const Key('loginSubmitButton'),
-                          label: 'Log in',
-                          isLoading: _busy,
-                          onPressed: _busy ? null : _submit,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  Center(
-                    child: RichText(
-                      text: TextSpan(
-                        style: const TextStyle(color: AppColors.label, fontSize: 14),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          const TextSpan(text: "Don't have an account? "),
-                          TextSpan(
-                            text: 'Create account',
-                            style: const TextStyle(
-                              color: AppColors.purpleLight,
+                          const Text(
+                            'Welcome back',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 22,
                               fontWeight: FontWeight.w800,
+                              letterSpacing: -0.3,
                             ),
-                            recognizer: TapGestureRecognizer()
-                              ..onTap = () {
-                                Navigator.of(context).pushNamed('/register');
+                          ),
+                          const SizedBox(height: 6),
+                          const Text(
+                            'Sign in to manage your store inventory',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: AppColors.label, fontSize: 13),
+                          ),
+                          const SizedBox(height: 24),
+                          StoraTextField(
+                            fieldKey: const Key('loginEmailField'),
+                            label: 'Email Address',
+                            hint: 'nena@storemail.com',
+                            controller: _emailController,
+                            keyboardType: TextInputType.emailAddress,
+                            autofillHints: const [AutofillHints.username, AutofillHints.email],
+                            prefixIcon: const Icon(Icons.mail_outline_rounded, color: AppColors.label, size: 20),
+                            validator: validateEmail,
+                          ),
+                          const SizedBox(height: 18),
+                          StoraTextField(
+                            fieldKey: const Key('loginPasswordField'),
+                            label: 'Password',
+                            hint: '••••••••••',
+                            controller: _passwordController,
+                            obscureText: true,
+                            autofillHints: const [AutofillHints.password],
+                            prefixIcon: const Icon(Icons.lock_outline_rounded, color: AppColors.label, size: 20),
+                            validator: validatePassword,
+                          ),
+                          const SizedBox(height: 8),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: TextButton(
+                              onPressed: () {
+                                Navigator.of(context).pushNamed('/forgot-password');
                               },
+                              child: const Text(
+                                'Forgot password?',
+                                style: TextStyle(color: AppColors.purpleLight, fontSize: 13, fontWeight: FontWeight.w600),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          StoraGradientButton(
+                            buttonKey: const Key('loginSubmitButton'),
+                            label: 'Log in',
+                            isLoading: _busy,
+                            onPressed: _busy ? null : _submit,
                           ),
                         ],
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 24),
+                    Center(
+                      child: RichText(
+                        text: TextSpan(
+                          style: const TextStyle(color: AppColors.label, fontSize: 14),
+                          children: [
+                            const TextSpan(text: "Don't have an account? "),
+                            TextSpan(
+                              text: 'Create account',
+                              style: const TextStyle(
+                                color: AppColors.purpleLight,
+                                fontWeight: FontWeight.w800,
+                              ),
+                              recognizer: TapGestureRecognizer()
+                                ..onTap = () {
+                                  Navigator.of(context).pushNamed('/register');
+                                },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
