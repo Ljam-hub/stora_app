@@ -10,7 +10,7 @@ from rest_framework import serializers
 from accounts.models import PaymentProof, SubscriptionConfig, StoreLocation, AIInsight, PendingRegistration
 from inventory.models import DEFAULT_CATEGORIES, MAX_STOCK, Category, Product
 from orders.models import Order, OrderItem
-from sales.models import Sale, SaleItem
+from sales.models import Sale, SaleItem, CustomerCredit, CreditItem, CreditPayment
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from .models import BlockedCustomer, ChatMessage, UserReport
 
@@ -535,6 +535,106 @@ class SaleSerializer(serializers.ModelSerializer):
             sale.total = total
             sale.save(update_fields=["total"])
         return sale
+
+
+class CreditItemSerializer(serializers.ModelSerializer):
+    subtotal = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+
+    class Meta:
+        model = CreditItem
+        fields = ("id", "product", "product_name", "quantity", "unit_price", "subtotal")
+        read_only_fields = ("id", "subtotal")
+
+
+class CreditPaymentSerializer(serializers.ModelSerializer):
+    paid_at = UTCDateTimeField(required=False)
+
+    class Meta:
+        model = CreditPayment
+        fields = ("id", "amount", "payment_method", "notes", "paid_at")
+        read_only_fields = ("id",)
+
+
+class CustomerCreditSerializer(serializers.ModelSerializer):
+    items = CreditItemSerializer(many=True, required=False)
+    payments = CreditPaymentSerializer(many=True, read_only=True)
+    created_at = UTCDateTimeField(read_only=True)
+    updated_at = UTCDateTimeField(read_only=True)
+    balance = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+    is_fully_paid = serializers.BooleanField(read_only=True)
+    is_overdue = serializers.BooleanField(read_only=True)
+
+    class Meta:
+        model = CustomerCredit
+        fields = (
+            "id",
+            "customer_name",
+            "customer_phone",
+            "total_amount",
+            "amount_paid",
+            "balance",
+            "due_date",
+            "status",
+            "notes",
+            "is_fully_paid",
+            "is_overdue",
+            "items",
+            "payments",
+            "created_at",
+            "updated_at",
+        )
+        read_only_fields = (
+            "id",
+            "amount_paid",
+            "balance",
+            "is_fully_paid",
+            "is_overdue",
+            "created_at",
+            "updated_at",
+        )
+
+    def validate(self, data):
+        total = data.get("total_amount")
+        items = data.get("items")
+        if self.instance is None:
+            if (total is None or total <= Decimal("0.00")) and not items:
+                raise serializers.ValidationError("Total amount or items must be provided.")
+        return data
+
+    def create(self, validated_data):
+        owner = self.context["request"].user
+        items_data = validated_data.pop("items", [])
+        credit = CustomerCredit.objects.create(owner=owner, **validated_data)
+
+        computed_total = Decimal("0.00")
+        for item_data in items_data:
+            c_item = CreditItem.objects.create(credit=credit, **item_data)
+            computed_total += c_item.subtotal
+
+        if credit.total_amount <= Decimal("0.00") and computed_total > Decimal("0.00"):
+            credit.total_amount = computed_total
+            credit.save(update_fields=["total_amount"])
+
+        credit.recalculate_totals()
+        return credit
+
+    def update(self, instance, validated_data):
+        items_data = validated_data.pop("items", None)
+        instance = super().update(instance, validated_data)
+
+        if items_data is not None:
+            instance.items.all().delete()
+            computed_total = Decimal("0.00")
+            for item_data in items_data:
+                c_item = CreditItem.objects.create(credit=instance, **item_data)
+                computed_total += c_item.subtotal
+            if "total_amount" not in validated_data and computed_total > Decimal("0.00"):
+                instance.total_amount = computed_total
+                instance.save(update_fields=["total_amount"])
+
+        instance.recalculate_totals()
+        return instance
+
 
 class PaymentProofSerializer(serializers.ModelSerializer):
     submitted_at = UTCDateTimeField(read_only=True)

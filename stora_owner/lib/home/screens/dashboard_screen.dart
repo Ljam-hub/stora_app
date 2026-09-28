@@ -19,6 +19,8 @@ import 'sales_history_screen.dart';
 import 'set_store_location_screen.dart';
 import '../stores/chat_store.dart';
 import '../stores/store_status_store.dart';
+import '../stores/utang_store.dart';
+import 'utang_ledger_screen.dart';
 import '../widgets/fade_slide_in.dart';
 import '../widgets/notification_badge.dart';
 
@@ -48,6 +50,7 @@ class DashboardScreen extends StatelessWidget {
         ChatStore.instance,
         StoreStatusStore.instance,
         ThemeModeController.instance,
+        UtangStore.instance,
       ]),
       builder: (context, _) {
         final store = InventoryStore.instance;
@@ -67,6 +70,7 @@ class DashboardScreen extends StatelessWidget {
                 ChatStore.instance.fetchConversations(),
                 AccountStatusStore.instance.fetchStatus(),
                 StoreStatusStore.instance.fetchStatus(),
+                UtangStore.instance.load(),
               ]);
             },
             child: SingleChildScrollView(
@@ -167,6 +171,13 @@ class DashboardScreen extends StatelessWidget {
                     isPremium: AccountStatusStore.instance.isPremium,
                     daysLeft: AccountStatusStore.instance.daysLeft,
                     onTap: () => DashboardScreen.safeNavigate(context, const SalesHistoryScreen()),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                FadeSlideIn(
+                  delay: const Duration(milliseconds: 150),
+                  child: _UtangSummaryCard(
+                    onTap: () => DashboardScreen.safeNavigate(context, const UtangLedgerScreen()),
                   ),
                 ),
                 const SizedBox(height: 14),
@@ -680,6 +691,209 @@ class _EarningsCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _UtangSummaryCard extends StatelessWidget {
+  final VoidCallback onTap;
+  const _UtangSummaryCard({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: UtangStore.instance,
+      builder: (context, _) {
+        final store = UtangStore.instance;
+        final total = store.totalOutstanding;
+        final activeCount = store.activeRecords.length;
+        final debtorsCount = store.totalActiveDebtors;
+        final overdueCount = store.overdueRecords.length;
+        final dueSoonCount = store.dueTodayOrSoonRecords.length;
+
+        final hasOverdue = overdueCount > 0;
+        final hasDueSoon = dueSoonCount > 0;
+
+        return InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: HomeColors.cardBackground,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: hasOverdue
+                    ? AppColors.error.withValues(alpha: 0.5)
+                    : hasDueSoon
+                        ? Colors.amber.withValues(alpha: 0.5)
+                        : Colors.amber.withValues(alpha: 0.3),
+                width: hasOverdue || hasDueSoon ? 1.5 : 1,
+              ),
+              boxShadow: HomeColors.cardShadow,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.menu_book_rounded, color: Colors.amber, size: 18),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  'Customer Utang / Credit',
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: HomeColors.textPrimary,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                                decoration: BoxDecoration(
+                                  color: Colors.amber.withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: const Text(
+                                  'LISTAHAN',
+                                  style: TextStyle(
+                                    color: Colors.amber,
+                                    fontSize: 8.5,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: 0.4,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          Text(
+                            activeCount == 0
+                                ? 'All balances settled'
+                                : '$activeCount active loan${activeCount > 1 ? 's' : ''} · $debtorsCount customer${debtorsCount > 1 ? 's' : ''}',
+                            style: TextStyle(color: HomeColors.textSecondary, fontSize: 11),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (hasOverdue)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+                        decoration: BoxDecoration(
+                          color: AppColors.error.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppColors.error.withValues(alpha: 0.6)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.warning_amber_rounded, color: AppColors.error, size: 12),
+                            const SizedBox(width: 3),
+                            Text(
+                              '$overdueCount Overdue',
+                              style: const TextStyle(
+                                color: AppColors.error,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    else if (hasDueSoon)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+                        decoration: BoxDecoration(
+                          color: Colors.amber.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.amber.withValues(alpha: 0.6)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.access_time_rounded, color: Colors.amber, size: 12),
+                            const SizedBox(width: 3),
+                            Text(
+                              '$dueSoonCount Due Soon',
+                              style: const TextStyle(
+                                color: Colors.amber,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Total Collectible',
+                          style: TextStyle(color: HomeColors.textSecondary, fontSize: 11),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '₱${total.toStringAsFixed(2)}',
+                          style: TextStyle(
+                            color: total > 0 ? Colors.amber : HomeColors.textPrimary,
+                            fontSize: 22,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                      decoration: BoxDecoration(
+                        color: HomeColors.cardElevated,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: HomeColors.cardBorder),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'View Listahan',
+                            style: TextStyle(
+                              color: HomeColors.textPrimary,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Icon(Icons.chevron_right_rounded, color: HomeColors.textSecondary, size: 16),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

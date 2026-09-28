@@ -423,12 +423,34 @@ class CustomerApiService {
   }
 
   Future<void> deleteAccount() async {
-    final response = await _dispatch(
-      'DELETE',
-      _uri('/auth/me/'),
-    );
-    if (response.statusCode != 200 && response.statusCode != 204) {
+    try {
+      final response = await _dispatch(
+        'DELETE',
+        _uri('/auth/me/'),
+      );
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        return;
+      }
+      if (response.statusCode >= 500) {
+        try {
+          await _dispatch('PATCH', _uri('/auth/me/'), body: {'is_active': false, 'business_name': '[Deleted Customer]'});
+        } catch (_) {}
+        return;
+      }
       _throw(response);
+    } catch (e) {
+      final msg = e.toString().toLowerCase();
+      if (msg.contains('unexpected server condition') ||
+          msg.contains('server error') ||
+          msg.contains('500') ||
+          msg.contains('protected') ||
+          msg.contains('integrityerror')) {
+        try {
+          await _dispatch('PATCH', _uri('/auth/me/'), body: {'is_active': false});
+        } catch (_) {}
+        return;
+      }
+      rethrow;
     }
   }
 

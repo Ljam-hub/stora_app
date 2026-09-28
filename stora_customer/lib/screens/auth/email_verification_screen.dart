@@ -8,10 +8,12 @@ import '../../widgets/gradient_button.dart';
 
 class EmailVerificationScreen extends StatefulWidget {
   final String email;
+  final bool autoSendOnEntry;
 
   const EmailVerificationScreen({
     super.key,
     required this.email,
+    this.autoSendOnEntry = true,
   });
 
   @override
@@ -30,6 +32,26 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _startCooldownTimer();
+    if (widget.autoSendOnEntry) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _sendInitialCode();
+      });
+    }
+  }
+
+  Future<void> _sendInitialCode() async {
+    try {
+      final auth = context.read<AuthProvider>();
+      await auth.resendVerification(targetEmail: widget.email);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('A verification code has been sent to your email.'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      }
+    } catch (_) {}
   }
 
   @override

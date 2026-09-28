@@ -42,6 +42,7 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
   double? _roadDistanceKm;
   int? _roadDurationMinutes;
   bool _isLoadingRoute = false;
+  bool _showRoute = true;
 
   // Radar beacon pulse animation
   late final AnimationController _pulseAnim;
@@ -580,6 +581,7 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final filteredStores = allStores.where((s) {
+      if (!s.hasValidLocation) return false;
       if (_searchFilter.trim().isEmpty) return true;
       final q = _searchFilter.trim().toLowerCase();
       return s.displayName.toLowerCase().contains(q) ||
@@ -612,7 +614,7 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
                 userAgentPackageName: 'com.example.stora_customer',
               ),
               // Road Route Polyline Layer
-              if (_roadRoutePoints.isNotEmpty)
+              if (_showRoute && _roadRoutePoints.isNotEmpty)
                 PolylineLayer(
                   polylines: [
                     // Contrast casing outline
@@ -776,7 +778,7 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
           ),
 
           // Road Distance & Duration Badge Overlay
-          if (activeStore != null && (_roadDistanceKm != null || _isLoadingRoute))
+          if (_showRoute && activeStore != null && (_roadDistanceKm != null || _isLoadingRoute))
             Positioned(
               left: 16,
               top: 136,
@@ -864,21 +866,60 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
                   onTap: _recenter,
                 ),
                 const SizedBox(height: 8),
-                if (_roadRoutePoints.isNotEmpty) ...[
+                if (activeStore != null && activeStore.hasValidLocation) ...[
                   _buildFloatingButton(
-                    icon: Icons.alt_route_rounded,
-                    tooltip: 'Fit Route',
+                    icon: (_showRoute && _roadRoutePoints.isNotEmpty)
+                        ? Icons.alt_route_rounded
+                        : Icons.route_rounded,
+                    tooltip: (_showRoute && _roadRoutePoints.isNotEmpty)
+                        ? 'Unroute (Hide Route)'
+                        : 'Route to store',
                     isDark: isDark,
+                    iconColor: (_showRoute && _roadRoutePoints.isNotEmpty)
+                        ? const Color(0xFF38BDF8)
+                        : null,
                     onTap: () {
-                      if (activeStore != null && activeStore.hasValidLocation) {
-                        _fitRouteBounds(
+                      if (_showRoute && _roadRoutePoints.isNotEmpty) {
+                        setState(() {
+                          _showRoute = false;
+                        });
+                        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Route unrouted/hidden'),
+                            duration: Duration(seconds: 1),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      } else {
+                        setState(() {
+                          _showRoute = true;
+                        });
+                        _fetchRoadRoute(
                           LatLng(_userLat, _userLng),
                           LatLng(activeStore.latitude, activeStore.longitude),
+                          fitCamera: true,
                         );
                       }
                     },
                   ),
                   const SizedBox(height: 8),
+                  if (_showRoute && _roadRoutePoints.isNotEmpty) ...[
+                    _buildFloatingButton(
+                      icon: Icons.fit_screen_rounded,
+                      tooltip: 'Fit Route',
+                      isDark: isDark,
+                      onTap: () {
+                        if (activeStore.hasValidLocation) {
+                          _fitRouteBounds(
+                            LatLng(_userLat, _userLng),
+                            LatLng(activeStore.latitude, activeStore.longitude),
+                          );
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                  ],
                 ],
                 _buildFloatingButton(
                   icon: Icons.add_rounded,
@@ -1152,6 +1193,7 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
     required String tooltip,
     required bool isDark,
     required VoidCallback onTap,
+    Color? iconColor,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -1167,7 +1209,7 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
         ],
       ),
       child: IconButton(
-        icon: Icon(icon, color: isDark ? Colors.white : Colors.black87, size: 20),
+        icon: Icon(icon, color: iconColor ?? (isDark ? Colors.white : Colors.black87), size: 20),
         tooltip: tooltip,
         onPressed: onTap,
       ),

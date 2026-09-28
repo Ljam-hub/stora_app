@@ -85,20 +85,35 @@ class StoraAdminSite(AdminSite):
                 created_at__gte=timezone.now() - timedelta(hours=1),
             ).count()
             out_of_stock = Product.objects.filter(stock=0).count()
+            from sales.models import CustomerCredit
+            today_date = timezone.localdate()
+            overdue_credits = CustomerCredit.objects.filter(
+                Q(status=CustomerCredit.STATUS_OVERDUE) |
+                (Q(status=CustomerCredit.STATUS_ACTIVE) & Q(due_date__lt=today_date))
+            ).count()
         elif user and user.is_authenticated:
             pending_reports = 0
             pending_payments = 0
             pending_orders = Order.objects.filter(owner=user, status=Order.STATUS_PENDING).count()
             active_resets = 0
             out_of_stock = Product.objects.filter(owner=user, stock=0).count()
+            from sales.models import CustomerCredit
+            today_date = timezone.localdate()
+            overdue_credits = CustomerCredit.objects.filter(
+                owner=user
+            ).filter(
+                Q(status=CustomerCredit.STATUS_OVERDUE) |
+                (Q(status=CustomerCredit.STATUS_ACTIVE) & Q(due_date__lt=today_date))
+            ).count()
         else:
             pending_reports = 0
             pending_payments = 0
             pending_orders = 0
             active_resets = 0
             out_of_stock = 0
+            overdue_credits = 0
 
-        total_action = pending_reports + pending_payments + pending_orders + unread_support
+        total_action = pending_reports + pending_payments + pending_orders + unread_support + overdue_credits
 
         return {
             "pending_reports_count": pending_reports,
@@ -107,12 +122,13 @@ class StoraAdminSite(AdminSite):
             "unread_support_count": unread_support,
             "active_reset_requests": active_resets,
             "out_of_stock_count": out_of_stock,
+            "overdue_credit_count": overdue_credits,
             "total_action_count": total_action,
         }
 
     def index(self, request, extra_context=None):
         from inventory.models import Product
-        from sales.models import Sale
+        from sales.models import Sale, CustomerCredit
 
         today = timezone.localdate()
         user = request.user
@@ -121,9 +137,21 @@ class StoraAdminSite(AdminSite):
         if user.is_superuser or getattr(user, "role", None) == "admin":
             todays_sales = Sale.objects.filter(created_at__date=today)
             products = Product.objects.all()
+            credits_qs = CustomerCredit.objects.exclude(status=CustomerCredit.STATUS_SETTLED)
         else:
             todays_sales = Sale.objects.filter(owner=user, created_at__date=today)
             products = Product.objects.filter(owner=user)
+            credits_qs = CustomerCredit.objects.filter(owner=user).exclude(status=CustomerCredit.STATUS_SETTLED)
+
+        credit_aggregates = credits_qs.aggregate(
+            total_amt=Sum("total_amount"),
+            paid_amt=Sum("amount_paid"),
+        )
+        total_credit_receivables = max(
+            0,
+            (credit_aggregates["total_amt"] or 0) - (credit_aggregates["paid_amt"] or 0)
+        )
+        active_credit_count = credits_qs.count()
 
         extra_context = extra_context or {}
         extra_context["stora_notifications"] = notifs
@@ -140,6 +168,9 @@ class StoraAdminSite(AdminSite):
             "pending_orders_count": notifs["pending_orders_count"],
             "unread_support_count": notifs["unread_support_count"],
             "active_reset_requests": notifs["active_reset_requests"],
+            "overdue_credit_count": notifs["overdue_credit_count"],
+            "total_credit_receivables": total_credit_receivables,
+            "active_credit_count": active_credit_count,
             "total_action_count": notifs["total_action_count"],
         }
         return super().index(request, extra_context)

@@ -134,9 +134,19 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> with Widget
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
+        final rawMsg = e.toString().replaceAll('Exception: ', '').trim();
+        final lower = rawMsg.toLowerCase();
+        final isNotFound = lower.contains('not found') ||
+            lower.contains('no user') ||
+            lower.contains('does not exist') ||
+            lower.contains('not registered') ||
+            lower.contains('404');
+        final displayMsg = isNotFound
+            ? "You don't have an account just yet. Please sign up."
+            : rawMsg;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(e.toString().replaceAll('Exception: ', '')),
+            content: Text(displayMsg),
             backgroundColor: AppColors.danger,
           ),
         );

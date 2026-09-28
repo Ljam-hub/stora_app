@@ -79,6 +79,7 @@ class _CustomerLocationMapSheetState extends State<CustomerLocationMapSheet> {
   List<LatLng> _roadRoutePoints = [];
   double? _drivingDistanceKm;
   int? _drivingDurationMinutes;
+  bool _showRoute = true;
 
   @override
   void initState() {
@@ -457,7 +458,8 @@ class _CustomerLocationMapSheetState extends State<CustomerLocationMapSheet> {
                         userAgentPackageName: 'com.example.stora_owner',
                       ),
                       // Road Route Polyline (or straight dashed line while loading/fallback)
-                      PolylineLayer(
+                      if (_showRoute)
+                        PolylineLayer(
                         polylines: [
                           if (_roadRoutePoints.isNotEmpty) ...[
                             // Contrast outline/casing
@@ -589,6 +591,17 @@ class _CustomerLocationMapSheetState extends State<CustomerLocationMapSheet> {
                   child: Column(
                     children: [
                       _MapIconButton(
+                        icon: _showRoute ? Icons.alt_route_rounded : Icons.route_rounded,
+                        tooltip: _showRoute ? 'Unroute (Hide route)' : 'Route to customer',
+                        color: _showRoute ? const Color(0xFF38BDF8) : Colors.white70,
+                        onTap: () {
+                          setState(() {
+                            _showRoute = !_showRoute;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 8),
+                      _MapIconButton(
                         icon: Icons.fit_screen_rounded,
                         tooltip: 'Fit route in view',
                         onTap: _fitMapBounds,
@@ -618,7 +631,7 @@ class _CustomerLocationMapSheetState extends State<CustomerLocationMapSheet> {
                 ),
 
                 // Distance Badge Overlay
-                if (_drivingDistanceKm != null || _distanceKm != null)
+                if (_showRoute && (_drivingDistanceKm != null || _distanceKm != null))
                   Positioned(
                     top: 12,
                     left: 12,
@@ -808,11 +821,13 @@ class _MapIconButton extends StatelessWidget {
   final IconData icon;
   final String tooltip;
   final VoidCallback onTap;
+  final Color? color;
 
   const _MapIconButton({
     required this.icon,
     required this.tooltip,
     required this.onTap,
+    this.color,
   });
 
   @override
@@ -830,7 +845,7 @@ class _MapIconButton extends StatelessWidget {
           onTap: onTap,
           child: Padding(
             padding: const EdgeInsets.all(8.0),
-            child: Icon(icon, color: Colors.white, size: 18),
+            child: Icon(icon, color: color ?? Colors.white, size: 18),
           ),
         ),
       ),

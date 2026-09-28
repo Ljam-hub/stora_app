@@ -1,3 +1,4 @@
+from decimal import Decimal
 import logging
 from django.db import transaction
 from rest_framework import serializers, status, viewsets
@@ -44,7 +45,7 @@ from accounts.models import (
 )
 from inventory.models import DEFAULT_CATEGORIES, MAX_STOCK, Category, Product
 from orders.models import Order, OrderItem
-from sales.models import Sale
+from sales.models import Sale, CustomerCredit, CreditPayment, CreditItem
 from api.models import ChatMessage, BlockedCustomer, UserReport
 
 import sys
@@ -57,6 +58,9 @@ from .serializers import (
     CategorySerializer,
     ChangePasswordSerializer,
     ChatMessageSerializer,
+    CreditItemSerializer,
+    CreditPaymentSerializer,
+    CustomerCreditSerializer,
     FCMTokenSerializer,
     ForgotPasswordSerializer,
     LoginSerializer,
@@ -906,6 +910,70 @@ class SaleViewSet(OwnerQuerysetMixin, viewsets.ModelViewSet):
             instance.delete()
 
 
+class CustomerCreditViewSet(OwnerQuerysetMixin, viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated, IsNotBlocked]
+    serializer_class = CustomerCreditSerializer
+    pagination_class = None
+    queryset = CustomerCredit.objects.prefetch_related("items", "payments")
+    http_method_names = ["get", "post", "patch", "delete", "head", "options"]
+
+    def initial(self, request, *args, **kwargs):
+        super().initial(request, *args, **kwargs)
+        user = request.user
+        if getattr(user, "role", "owner") == "customer" and not user.is_superuser and not user.is_staff:
+            raise PermissionDenied("Customers cannot access store credit records.")
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        status_param = self.request.query_params.get("status")
+        if status_param:
+            qs = qs.filter(status=status_param)
+        search_param = self.request.query_params.get("search")
+        if search_param:
+            qs = qs.filter(
+                Q(customer_name__icontains=search_param)
+                | Q(customer_phone__icontains=search_param)
+                | Q(notes__icontains=search_param)
+            )
+        return qs
+
+    @action(detail=True, methods=["post"])
+    def add_payment(self, request, pk=None):
+        credit = self.get_object()
+        amount = request.data.get("amount")
+        if not amount:
+            return Response({"error": "Payment amount is required."}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            amount_dec = Decimal(str(amount))
+            if amount_dec <= Decimal("0.00"):
+                return Response({"error": "Payment amount must be greater than zero."}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception:
+            return Response({"error": "Invalid payment amount."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if credit.is_fully_paid:
+            return Response({"error": "This credit loan is already fully settled."}, status=status.HTTP_400_BAD_REQUEST)
+        if amount_dec > credit.balance + Decimal("0.01"):
+            return Response(
+                {"error": f"Payment amount (₱{amount_dec:.2f}) cannot exceed the remaining balance (₱{credit.balance:.2f})."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        payment_method = request.data.get("payment_method", "cash")
+        notes = request.data.get("notes", "")
+
+        payment = CreditPayment.objects.create(
+            credit=credit,
+            amount=amount_dec,
+            payment_method=payment_method,
+            notes=notes,
+        )
+        credit.refresh_from_db()
+        return Response(
+            CustomerCreditSerializer(credit, context={"request": request}).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def update_fcm_token(request):
@@ -973,12 +1041,7 @@ class OrderViewSet(viewsets.ModelViewSet):
         order = self.get_object()
         if request.user != order.owner:
             raise PermissionDenied("Only the store owner can accept this order.")
-        if order.status != Order.STATUS_PENDING:
-            if order.status == Order.STATUS_COUNTER_OFFER:
-                return Response(
-                    {"error": "Cannot accept order with an active counter-offer. Waiting for customer response."},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
+        if order.status not in (Order.STATUS_PENDING, Order.STATUS_COUNTER_OFFER):
             return Response(
                 {"error": f"Cannot accept order in '{order.status}' status."},
                 status=status.HTTP_400_BAD_REQUEST,

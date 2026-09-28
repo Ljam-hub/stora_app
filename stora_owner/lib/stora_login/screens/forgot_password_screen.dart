@@ -40,10 +40,30 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       );
     } on ApiException catch (e) {
       if (!mounted) return;
-      showStoraSnackBar(context, e.message);
+      final lower = e.message.toLowerCase();
+      final isNotFound = e.statusCode == 404 ||
+          lower.contains('not found') ||
+          lower.contains('no user') ||
+          lower.contains('does not exist') ||
+          lower.contains('not registered') ||
+          lower.contains('404');
+      final msg = isNotFound
+          ? "You don't have an account just yet. Please sign up."
+          : e.message;
+      showStoraSnackBar(context, msg, isError: true);
     } catch (e) {
       if (!mounted) return;
-      showStoraSnackBar(context, e.toString());
+      final raw = e.toString().replaceAll('Exception: ', '').trim();
+      final lower = raw.toLowerCase();
+      final isNotFound = lower.contains('not found') ||
+          lower.contains('no user') ||
+          lower.contains('does not exist') ||
+          lower.contains('not registered') ||
+          lower.contains('404');
+      final msg = isNotFound
+          ? "You don't have an account just yet. Please sign up."
+          : raw;
+      showStoraSnackBar(context, msg, isError: true);
     } finally {
       if (mounted) setState(() => _busy = false);
     }

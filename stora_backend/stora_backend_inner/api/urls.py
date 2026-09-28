@@ -10,6 +10,7 @@ router.register("categories", views.CategoryViewSet, basename="category")
 router.register("products", views.ProductViewSet, basename="product")
 router.register("sales", views.SaleViewSet, basename="sale")
 router.register("orders", views.OrderViewSet, basename="order")
+router.register("credits", views.CustomerCreditViewSet, basename="credit")
 
 urlpatterns = [
     # Health Check

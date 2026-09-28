@@ -9,10 +9,12 @@ import '../widgets/stora_gradient_button.dart';
 
 class EmailVerificationScreen extends StatefulWidget {
   final String email;
+  final bool autoSendOnEntry;
 
   const EmailVerificationScreen({
     super.key,
     required this.email,
+    this.autoSendOnEntry = true,
   });
 
   @override
@@ -32,6 +34,24 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _startCooldownTimer();
+    if (widget.autoSendOnEntry) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _sendInitialCode();
+      });
+    }
+  }
+
+  Future<void> _sendInitialCode() async {
+    try {
+      await AuthStore.instance.resendVerification(targetEmail: widget.email);
+      if (mounted) {
+        showStoraSnackBar(
+          context,
+          'A verification code has been sent to your email.',
+          isError: false,
+        );
+      }
+    } catch (_) {}
   }
 
   @override
@@ -163,7 +183,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen>
     try {
       await AuthStore.instance.resendVerification(targetEmail: widget.email);
       if (!mounted) return;
-      showStoraSnackBar(context, 'A new verification code has been sent to your email.');
+      showStoraSnackBar(context, 'A new verification code has been sent to your email.', isError: false);
       _startCooldownTimer();
     } on ApiException catch (e) {
       if (!mounted) return;

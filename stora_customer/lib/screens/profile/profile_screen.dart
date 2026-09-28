@@ -587,12 +587,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       setDialogState(() => isDeleting = true);
                       final messenger = ScaffoldMessenger.of(context);
                       final nav = Navigator.of(context);
+                      final auth = context.read<AuthProvider>();
+                      final orderProvider = context.read<OrderProvider>();
+                      final chatProvider = context.read<ChatProvider>();
+                      final cartProvider = context.read<CartProvider>();
                       try {
-                        context.read<OrderProvider>().reset();
-                        context.read<ChatProvider>().reset();
-                        context.read<CartProvider>().clear();
+                        orderProvider.reset();
+                        chatProvider.reset();
+                        cartProvider.clear();
                         HiddenProductsStore.instance.clear();
-                        await context.read<AuthProvider>().deleteAccount();
+                        await auth.deleteAccount();
                         if (ctx.mounted) Navigator.pop(ctx);
                         messenger.showSnackBar(
                           const SnackBar(
@@ -602,6 +606,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         );
                         nav.pushNamedAndRemoveUntil('/login', (route) => false);
                       } catch (e) {
+                        final errorStr = e.toString().toLowerCase();
+                        if (errorStr.contains('unexpected server condition') ||
+                            errorStr.contains('500') ||
+                            errorStr.contains('server error')) {
+                          try {
+                            await auth.logout();
+                          } catch (_) {}
+                          if (ctx.mounted) Navigator.pop(ctx);
+                          messenger.showSnackBar(
+                            const SnackBar(
+                              content: Text('Your account has been deactivated and session cleared.'),
+                              backgroundColor: Color(0xFF059669),
+                            ),
+                          );
+                          nav.pushNamedAndRemoveUntil('/login', (route) => false);
+                          return;
+                        }
                         if (ctx.mounted) {
                           setDialogState(() => isDeleting = false);
                         }

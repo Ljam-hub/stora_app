@@ -224,4 +224,198 @@ class SaleAndReceiptTests(TestCase):
         self.assertNotIn('<td class="original"><p>', content)
 
 
+class CustomerCreditTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.owner = User.objects.create_user(
+            username="owner_credit@test.com",
+            email="owner_credit@test.com",
+            password="password123",
+            business_name="Credit Store",
+            role="owner",
+        )
+        self.customer = User.objects.create_user(
+            username="customer_credit@test.com",
+            email="customer_credit@test.com",
+            password="password123",
+            role="customer",
+        )
+        self.category = Category.objects.create(name="Groceries", owner=self.owner)
+        self.product = Product.objects.create(
+            owner=self.owner,
+            category=self.category,
+            name="Canned Meat",
+            price=Decimal("45.00"),
+            stock=50,
+        )
+
+    def test_create_customer_credit_api(self):
+        self.client.force_authenticate(user=self.owner)
+        payload = {
+            "customer_name": "Aling Nena",
+            "customer_phone": "09171112233",
+            "total_amount": "90.00",
+            "due_date": "2026-10-15",
+            "notes": "Pang-almusal",
+            "items": [
+                {
+                    "product": self.product.id,
+                    "product_name": self.product.name,
+                    "quantity": 2,
+                    "unit_price": "45.00",
+                }
+            ],
+        }
+        response = self.client.post("/api/credits/", data=payload, format="json")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["customer_name"], "Aling Nena")
+        self.assertEqual(response.data["total_amount"], "90.00")
+        self.assertEqual(response.data["balance"], "90.00")
+        self.assertFalse(response.data["is_fully_paid"])
+
+        # Check list endpoint
+        list_resp = self.client.get("/api/credits/")
+        self.assertEqual(list_resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(list_resp.data), 1)
+
+    def test_add_payment_and_settle(self):
+        self.client.force_authenticate(user=self.owner)
+        payload = {
+            "customer_name": "Juan Listahan",
+            "total_amount": "100.00",
+            "due_date": "2026-10-10",
+        }
+        create_resp = self.client.post("/api/credits/", data=payload, format="json")
+        credit_id = create_resp.data["id"]
+
+        # Partial payment
+        pay_resp = self.client.post(
+            f"/api/credits/{credit_id}/add_payment/",
+            data={"amount": "40.00", "notes": "First partial"},
+            format="json",
+        )
+        self.assertEqual(pay_resp.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(pay_resp.data["amount_paid"], "40.00")
+        self.assertEqual(pay_resp.data["balance"], "60.00")
+        self.assertFalse(pay_resp.data["is_fully_paid"])
+
+        # Remaining payment to settle
+        pay_resp2 = self.client.post(
+            f"/api/credits/{credit_id}/add_payment/",
+            data={"amount": "60.00", "notes": "Fully paid"},
+            format="json",
+        )
+        self.assertEqual(pay_resp2.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(pay_resp2.data["balance"], "0.00")
+        self.assertTrue(pay_resp2.data["is_fully_paid"])
+        self.assertEqual(pay_resp2.data["status"], "settled")
+
+    def test_credit_admin_changelist_and_dashboard(self):
+        admin_user = User.objects.create_superuser(
+            username="admin_credit@test.com",
+            email="admin_credit@test.com",
+            password="adminpassword123",
+            role="admin",
+        )
+        # Create credit records
+        from sales.models import CustomerCredit
+        CustomerCredit.objects.create(
+            owner=self.owner,
+            customer_name="Pedro Overdue",
+            total_amount=Decimal("200.00"),
+            due_date="2026-01-01", # Overdue
+            status=CustomerCredit.STATUS_OVERDUE,
+        )
+
+        self.client.force_login(admin_user)
+        # Admin changelist
+        changelist_resp = self.client.get("/admin/sales/customercredit/")
+        self.assertEqual(changelist_resp.status_code, status.HTTP_200_OK)
+        content = changelist_resp.content.decode("utf-8")
+        self.assertIn("Pedro Overdue", content)
+        self.assertIn("OVERDUE", content)
+
+        # Admin dashboard
+        index_resp = self.client.get("/admin/")
+        self.assertEqual(index_resp.status_code, status.HTTP_200_OK)
+        index_content = index_resp.content.decode("utf-8")
+        self.assertIn("Store Credit / Utang", index_content)
+        self.assertIn("Overdue Customer Loans", index_content)
+
+    def test_credit_patch_and_filtering(self):
+        self.client.force_authenticate(user=self.owner)
+        payload = {
+            "customer_name": "Juan Dela Cruz",
+            "customer_phone": "09123456789",
+            "total_amount": "500.00",
+            "due_date": "2026-10-15",
+            "notes": "Initial note",
+        }
+        res = self.client.post("/api/credits/", data=payload, format="json")
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        credit_id = res.data["id"]
+
+        # PATCH update due_date and notes
+        patch_res = self.client.patch(
+            f"/api/credits/{credit_id}/",
+            data={"due_date": "2026-11-01", "notes": "Extended due date"},
+            format="json",
+        )
+        self.assertEqual(patch_res.status_code, status.HTTP_200_OK)
+        self.assertEqual(patch_res.data["due_date"], "2026-11-01")
+        self.assertEqual(patch_res.data["notes"], "Extended due date")
+
+        # Test search filter
+        search_res = self.client.get("/api/credits/?search=Juan")
+        self.assertEqual(search_res.status_code, status.HTTP_200_OK)
+        self.assertTrue(any(c["id"] == credit_id for c in search_res.data))
+
+        # Test search filter not found
+        search_res2 = self.client.get("/api/credits/?search=NonExistent")
+        self.assertEqual(search_res2.status_code, status.HTTP_200_OK)
+        self.assertFalse(any(c["id"] == credit_id for c in search_res2.data))
+
+    def test_credit_validation_and_overpayment_rejection(self):
+        self.client.force_authenticate(user=self.owner)
+        # Attempt to create with 0 amount and no items
+        bad_res = self.client.post(
+            "/api/credits/",
+            data={"customer_name": "Zero Test", "total_amount": "0.00"},
+            format="json",
+        )
+        self.assertEqual(bad_res.status_code, status.HTTP_400_BAD_REQUEST)
+
+        # Create valid credit
+        res = self.client.post(
+            "/api/credits/",
+            data={"customer_name": "Valid Test", "total_amount": "100.00"},
+            format="json",
+        )
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        credit_id = res.data["id"]
+
+        # Overpayment rejection (paying 150 on 100 balance)
+        overpay_res = self.client.post(
+            f"/api/credits/{credit_id}/add_payment/",
+            data={"amount": "150.00"},
+            format="json",
+        )
+        self.assertEqual(overpay_res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("cannot exceed the remaining balance", overpay_res.data["error"])
+
+    def test_customer_forbidden_from_credits(self):
+        self.client.force_authenticate(user=self.customer)
+        # GET forbidden
+        get_res = self.client.get("/api/credits/")
+        self.assertEqual(get_res.status_code, status.HTTP_403_FORBIDDEN)
+        # POST forbidden
+        post_res = self.client.post(
+            "/api/credits/",
+            data={"customer_name": "Hacker Customer", "total_amount": "50.00"},
+            format="json",
+        )
+        self.assertEqual(post_res.status_code, status.HTTP_403_FORBIDDEN)
+
+
+
 

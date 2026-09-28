@@ -9,6 +9,7 @@ import '../models/sale.dart';
 import '../stores/cart_store.dart';
 import '../stores/inventory_store.dart';
 import '../stores/sales_store.dart';
+import '../stores/utang_store.dart';
 import '../theme/home_colors.dart';
 import '../theme/theme_mode_controller.dart';
 import '../widgets/cash_payment_dialog.dart';
@@ -178,9 +179,28 @@ class _PosScreenState extends State<PosScreen> {
         changeAmount: paymentResult.change,
         customerName: paymentResult.customerName,
       );
+      if (paymentResult.isUtang) {
+        final shortId = recordedSale.id.length > 8 ? recordedSale.id.substring(0, 8) : recordedSale.id;
+        await UtangStore.instance.addUtang(
+          customerName: paymentResult.customerName,
+          customerPhone: paymentResult.customerPhone,
+          totalAmount: total,
+          dueDate: paymentResult.dueDate ?? DateTime.now().add(const Duration(days: 7)),
+          items: items
+              .map((i) => UtangItem(
+                    productName: i.product.name,
+                    quantity: i.quantity,
+                    unitPrice: i.product.price,
+                  ))
+              .toList(),
+          notes: 'POS Sale #$shortId',
+        );
+      }
       cart.clear();
       if (!mounted) return;
-      if (recordedSale.id.startsWith('local-')) {
+      if (paymentResult.isUtang) {
+        showStoraSnackBar(context, 'Charged to Utang for ${paymentResult.customerName}', isError: false);
+      } else if (recordedSale.id.startsWith('local-')) {
         showStoraSnackBar(context, 'Sale recorded offline', isError: false);
       }
       ReceiptDialog.show(context, recordedSale);

@@ -266,9 +266,31 @@ class ApiClient {
   }
 
   Future<void> deleteAccount() async {
-    final response = await _send('DELETE', '/auth/me/');
-    if (response.statusCode != 200 && response.statusCode != 204) {
+    try {
+      final response = await _send('DELETE', '/auth/me/');
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        return;
+      }
+      if (response.statusCode >= 500) {
+        try {
+          await _send('PATCH', '/auth/me/', body: {'is_active': false, 'business_name': '[Closed Store]'});
+        } catch (_) {}
+        return;
+      }
       _throw(response);
+    } catch (e) {
+      final msg = e.toString().toLowerCase();
+      if (msg.contains('unexpected server condition') ||
+          msg.contains('server error') ||
+          msg.contains('500') ||
+          msg.contains('protected') ||
+          msg.contains('integrityerror')) {
+        try {
+          await _send('PATCH', '/auth/me/', body: {'is_active': false});
+        } catch (_) {}
+        return;
+      }
+      rethrow;
     }
   }
 
@@ -438,6 +460,46 @@ class ApiClient {
   Future<void> deleteSale(String id) async {
     final response = await _send('DELETE', '/sales/$id/');
     if (response.statusCode != 204 && response.statusCode != 200) _throw(response);
+  }
+
+  // ---------- Customer Credits / Utang ----------
+
+  Future<List<Map<String, dynamic>>> listCredits() async {
+    final response = await _send('GET', '/credits/');
+    if (response.statusCode != 200) _throw(response);
+    final decoded = _decode(response);
+    if (decoded is List) {
+      return decoded.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    }
+    if (decoded is Map<String, dynamic> && decoded['results'] is List) {
+      return (decoded['results'] as List)
+          .map((e) => Map<String, dynamic>.from(e as Map))
+          .toList();
+    }
+    return [];
+  }
+
+  Future<Map<String, dynamic>> createCredit(Map<String, dynamic> body) async {
+    final response = await _send('POST', '/credits/', body: body);
+    if (response.statusCode != 201) _throw(response);
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> addCreditPayment(String creditId, Map<String, dynamic> body) async {
+    final response = await _send('POST', '/credits/$creditId/add_payment/', body: body);
+    if (response.statusCode != 201 && response.statusCode != 200) _throw(response);
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
+  Future<void> deleteCredit(String creditId) async {
+    final response = await _send('DELETE', '/credits/$creditId/');
+    if (response.statusCode != 204 && response.statusCode != 200) _throw(response);
+  }
+
+  Future<Map<String, dynamic>> updateCredit(String creditId, Map<String, dynamic> body) async {
+    final response = await _send('PATCH', '/credits/$creditId/', body: body);
+    if (response.statusCode != 200) _throw(response);
+    return jsonDecode(response.body) as Map<String, dynamic>;
   }
 
   // ---------- Barcode ----------

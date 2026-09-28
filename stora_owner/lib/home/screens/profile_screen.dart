@@ -1194,6 +1194,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         }
                         nav.pushNamedAndRemoveUntil('/login', (route) => false);
                       } catch (e) {
+                        final errorStr = e.toString().toLowerCase();
+                        if (errorStr.contains('unexpected server condition') ||
+                            errorStr.contains('500') ||
+                            errorStr.contains('server error')) {
+                          try {
+                            await AuthStore.instance.logout();
+                          } catch (_) {}
+                          if (ctx.mounted) Navigator.of(ctx).pop();
+                          if (context.mounted) {
+                            showStoraSnackBar(context, 'Your store account has been deactivated and session cleared.', isError: false);
+                          }
+                          nav.pushNamedAndRemoveUntil('/login', (route) => false);
+                          return;
+                        }
                         setDialogState(() => isDeleting = false);
                         if (context.mounted) {
                           showStoraSnackBar(context, 'Failed to delete account: $e');

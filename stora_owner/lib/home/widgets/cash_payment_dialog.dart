@@ -6,11 +6,17 @@ class CashPaymentResult {
   final double tendered;
   final double change;
   final String customerName;
+  final String customerPhone;
+  final bool isUtang;
+  final DateTime? dueDate;
 
   const CashPaymentResult({
     required this.tendered,
     required this.change,
     this.customerName = 'Walk-in Customer',
+    this.customerPhone = '',
+    this.isUtang = false,
+    this.dueDate,
   });
 }
 
@@ -133,6 +139,161 @@ class _CashPaymentDialogState extends State<CashPaymentDialog> {
         customerName: name.isNotEmpty ? name : 'Walk-in Customer',
       ),
     );
+  }
+
+  void _chargeToUtang() async {
+    final currentName = _customerNameController.text.trim();
+    final nameCtrl = TextEditingController(text: currentName.isEmpty ? '' : currentName);
+    final phoneCtrl = TextEditingController();
+    DateTime dueDate = DateTime.now().add(const Duration(days: 7));
+
+    String? nameError;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          backgroundColor: HomeColors.cardBackground,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(color: HomeColors.cardBorder),
+          ),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.amber.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.menu_book_rounded, color: Colors.amber, size: 20),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                'Charge to Utang',
+                style: TextStyle(color: HomeColors.textPrimary, fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Total Amount: ₱${widget.totalAmount.toStringAsFixed(2)}',
+                style: const TextStyle(color: Colors.amber, fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: nameCtrl,
+                style: TextStyle(color: HomeColors.textPrimary),
+                onChanged: (_) {
+                  if (nameError != null) setDialogState(() => nameError = null);
+                },
+                decoration: InputDecoration(
+                  labelText: 'Customer Name *',
+                  labelStyle: TextStyle(color: HomeColors.textSecondary),
+                  errorText: nameError,
+                  filled: true,
+                  fillColor: HomeColors.cardElevated,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                ),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: phoneCtrl,
+                keyboardType: TextInputType.phone,
+                style: TextStyle(color: HomeColors.textPrimary),
+                decoration: InputDecoration(
+                  labelText: 'Phone Number (Optional)',
+                  labelStyle: TextStyle(color: HomeColors.textSecondary),
+                  filled: true,
+                  fillColor: HomeColors.cardElevated,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text('Payment Due Date', style: TextStyle(color: HomeColors.textSecondary, fontSize: 12)),
+              const SizedBox(height: 6),
+              InkWell(
+                onTap: () async {
+                  final now = DateTime.now();
+                  final today = DateTime(now.year, now.month, now.day);
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: dueDate.isBefore(today) ? today : dueDate,
+                    firstDate: today,
+                    lastDate: DateTime(now.year + 2, now.month, now.day),
+                  );
+                  if (picked != null) {
+                    setDialogState(() => dueDate = picked);
+                  }
+                },
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: HomeColors.cardElevated,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: HomeColors.cardBorder),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.event_rounded, color: Colors.amber, size: 18),
+                      const SizedBox(width: 8),
+                      Text(
+                        '${dueDate.month}/${dueDate.day}/${dueDate.year}',
+                        style: TextStyle(color: HomeColors.textPrimary, fontWeight: FontWeight.bold),
+                      ),
+                      const Spacer(),
+                      const Text('Change', style: TextStyle(color: Colors.amber, fontSize: 12, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text('Cancel', style: TextStyle(color: HomeColors.textSecondary)),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (nameCtrl.text.trim().isEmpty) {
+                  setDialogState(() => nameError = 'Customer name is required');
+                  return;
+                }
+                Navigator.pop(ctx, true);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.amber[700],
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Confirm Utang'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    final name = nameCtrl.text.trim();
+    final phone = phoneCtrl.text.trim();
+    nameCtrl.dispose();
+    phoneCtrl.dispose();
+
+    if (confirmed == true && mounted) {
+      Navigator.of(context).pop(
+        CashPaymentResult(
+          tendered: 0.0,
+          change: 0.0,
+          customerName: name.isNotEmpty ? name : 'Walk-in Customer',
+          customerPhone: phone,
+          isUtang: true,
+          dueDate: dueDate,
+        ),
+      );
+    }
   }
 
   @override
@@ -477,6 +638,26 @@ class _CashPaymentDialogState extends State<CashPaymentDialog> {
                       ),
                     ),
                   ],
+                ),
+              ),
+              const SizedBox(height: 10),
+              OutlinedButton.icon(
+                onPressed: _chargeToUtang,
+                icon: const Icon(Icons.menu_book_rounded, size: 18, color: Colors.amber),
+                label: const Text(
+                  'Charge to Utang / Credit (Listahan)',
+                  style: TextStyle(
+                    color: Colors.amber,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(color: Colors.amber.withValues(alpha: 0.6)),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
                 ),
               ),
             ],
