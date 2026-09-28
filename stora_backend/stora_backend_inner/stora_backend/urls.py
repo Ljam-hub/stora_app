@@ -26,8 +26,8 @@ DEFAULT_CUSTOMER_SIZE = "55.9 MB"
 DEFAULT_OWNER_SIZE = "80.5 MB"
 DEFAULT_CUSTOMER_URL = f"https://github.com/{GITHUB_REPO}/releases/latest/download/Stora-Customer.apk"
 DEFAULT_OWNER_URL = f"https://github.com/{GITHUB_REPO}/releases/latest/download/Stora.apk"
-CACHE_KEY = "stora_github_release_info"
-LAST_KNOWN_KEY = "stora_github_release_last_known"
+CACHE_KEY = "stora_github_release_info_v120"
+LAST_KNOWN_KEY = "stora_github_release_last_known_v120"
 CACHE_TIMEOUT = 300  # 5 minutes
 
 
@@ -42,18 +42,21 @@ def format_bytes_to_mb(size_in_bytes):
 
 def get_github_release_info():
     cached = cache.get(CACHE_KEY)
-    if cached:
+    if cached and cached.get("tag_name") == DEFAULT_RELEASE_TAG:
         return cached
 
-    # Use last known good data as baseline if available, otherwise default
-    last_known = cache.get(LAST_KNOWN_KEY)
-    info = last_known.copy() if last_known else {
+    # Always baseline on the current release defaults
+    info = {
         "tag_name": DEFAULT_RELEASE_TAG,
         "customer_apk_size": DEFAULT_CUSTOMER_SIZE,
         "customer_download_url": DEFAULT_CUSTOMER_URL,
         "owner_apk_size": DEFAULT_OWNER_SIZE,
         "owner_download_url": DEFAULT_OWNER_URL,
     }
+    last_known = cache.get(LAST_KNOWN_KEY)
+    if last_known and isinstance(last_known, dict):
+        if last_known.get("tag_name", "") >= DEFAULT_RELEASE_TAG:
+            info.update(last_known)
 
     try:
         repo_root = Path(settings.BASE_DIR).parent.parent

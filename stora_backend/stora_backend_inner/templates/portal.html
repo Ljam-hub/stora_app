@@ -239,7 +239,7 @@
 
       function applyReleaseData(data) {
         if (!data) return;
-        if (data.tag_name) {
+        if (data.tag_name && data.tag_name >= 'v1.2.0') {
           var tagEl = document.getElementById('release-tag-text');
           if (tagEl) tagEl.textContent = 'Release ' + data.tag_name;
         }
@@ -281,7 +281,7 @@
             var ownerLink = document.getElementById('owner-apk-download');
             if (ownerLink) ownerLink.href = info.owner_download_url;
           }
-          if (info.tag_name) {
+          if (info.tag_name && info.tag_name >= 'v1.2.0') {
             var tagEl = document.getElementById('release-tag-text');
             if (tagEl) tagEl.textContent = 'Release ' + info.tag_name;
           }
