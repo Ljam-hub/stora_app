@@ -454,6 +454,64 @@ class _UtangLedgerScreenState extends State<UtangLedgerScreen> {
     );
   }
 
+  Future<void> _confirmDelete(UtangRecord record) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: HomeColors.cardBackground,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(color: HomeColors.cardBorder),
+        ),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.error.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.delete_outline_rounded, color: AppColors.error, size: 20),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Delete Utang Entry',
+                style: TextStyle(color: HomeColors.textPrimary, fontSize: 17, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          'Are you sure you want to delete the record for "${record.customerName}"? This will permanently remove this entry and its payment history from your listahan.',
+          style: TextStyle(color: HomeColors.textSecondary, fontSize: 13.5, height: 1.4),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text('Cancel', style: TextStyle(color: HomeColors.textSecondary)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            child: const Text('Delete', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await UtangStore.instance.deleteUtang(record.id);
+      if (mounted) {
+        showStoraSnackBar(context, 'Entry deleted from listahan', isError: false);
+      }
+    }
+  }
+
   void _showRecordDetailsSheet(UtangRecord record) {
     showModalBottomSheet(
       context: context,
@@ -501,6 +559,15 @@ class _UtangLedgerScreenState extends State<UtangLedgerScreen> {
                     ),
                   ),
                   _buildStatusChip(record),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline_rounded, color: AppColors.error, size: 22),
+                    tooltip: 'Delete Entry',
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      _confirmDelete(record);
+                    },
+                  ),
                 ],
               ),
               const SizedBox(height: 16),
@@ -714,6 +781,24 @@ class _UtangLedgerScreenState extends State<UtangLedgerScreen> {
                       },
                     ),
                   ],
+                ),
+              ] else ...[
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    icon: const Icon(Icons.delete_outline_rounded, size: 18, color: AppColors.error),
+                    label: const Text('Delete from Listahan',
+                        style: TextStyle(color: AppColors.error, fontWeight: FontWeight.bold)),
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: AppColors.error.withValues(alpha: 0.5)),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      _confirmDelete(record);
+                    },
+                  ),
                 ),
               ],
             ],
@@ -1122,6 +1207,19 @@ class _UtangLedgerScreenState extends State<UtangLedgerScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                       ),
                       onPressed: () => _showRecordPaymentDialog(record),
+                    ),
+                  ] else ...[
+                    OutlinedButton.icon(
+                      icon: const Icon(Icons.delete_outline_rounded, size: 14, color: AppColors.error),
+                      label: const Text('Delete',
+                          style: TextStyle(fontSize: 12, color: AppColors.error, fontWeight: FontWeight.bold)),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.error,
+                        side: BorderSide(color: AppColors.error.withValues(alpha: 0.4)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      ),
+                      onPressed: () => _confirmDelete(record),
                     ),
                   ],
                 ],
