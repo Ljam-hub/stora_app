@@ -70,7 +70,7 @@
         </div>
         <span id="release-badge" style="display: inline-flex; align-items: center; gap: 8px; padding: 6px 16px; background: var(--orange-badge-bg); color: #FF9E58; border-radius: 99px; font-size: 13px; font-weight: 700; border: 1px solid var(--orange-badge-border);">
           <span class="status__dot" style="background: #FF6B00; box-shadow: 0 0 0 4px rgba(255,107,0,0.25);" aria-hidden="true"></span>
-          <span id="release-tag-text">Release {{ release_tag|default:"v1.1.0" }}</span>
+          <span id="release-tag-text">Release {{ release_tag|default:"v1.2.0" }}</span>
         </span>
       </div>
 
@@ -126,6 +126,63 @@
               <span aria-hidden="true">&#8595;</span>
             </a>
             <span id="owner-apk-size" style="color: #9CA3AF; font-size: 12px; font-weight: 600; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 6px;">{{ owner_apk_size|default:"80.5 MB" }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Release Description & Highlights -->
+      <div style="margin-top: 24px; padding: 24px 28px; border-radius: 16px; background: linear-gradient(135deg, rgba(255, 107, 0, 0.08), rgba(139, 92, 246, 0.08)); border: 1px solid rgba(255, 107, 0, 0.35); box-shadow: 0 4px 20px rgba(0,0,0,0.25);">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 14px;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 22px;" aria-hidden="true">🚀</span>
+            <h3 style="margin: 0; color: #FFFFFF; font-size: 19px; font-weight: 700; font-family: var(--font-display);">What's New in Release {{ release_tag|default:"v1.2.0" }}</h3>
+          </div>
+          <span style="font-size: 12px; color: #FF9E58; font-weight: 700; background: rgba(255, 107, 0, 0.15); padding: 4px 12px; border-radius: 99px; border: 1px solid rgba(255, 107, 0, 0.3);">Official Update</span>
+        </div>
+
+        <p style="margin: 0 0 16px; color: #D1D5DB; font-size: 14px; line-height: 1.6;">
+          This release delivers high-speed performance optimizations, tactile haptic feedback, smart battery-saving lifecycle controls, and enhanced store management and administration tools across both applications.
+        </p>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px;">
+          <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 14px 16px;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+              <span style="color: #FF6B00; font-size: 16px;">⚡</span>
+              <strong style="color: #FFFFFF; font-size: 14px;">60–120 FPS Fluidity &amp; Caching</strong>
+            </div>
+            <p style="margin: 0; color: #9CA3AF; font-size: 12.5px; line-height: 1.5;">
+              Eliminated heavy GPU blur passes and enabled in-memory screen caching for instant, zero-delay tab switching with buttery-smooth scrolling.
+            </p>
+          </div>
+
+          <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 14px 16px;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+              <span style="color: #4ADE80; font-size: 16px;">🔋</span>
+              <strong style="color: #FFFFFF; font-size: 14px;">Smart Lifecycle Battery Saver</strong>
+            </div>
+            <p style="margin: 0; color: #9CA3AF; font-size: 12.5px; line-height: 1.5;">
+              Customer and Owner chat polling automatically freezes when the app is minimized or backgrounded, eliminating idle battery and data drain.
+            </p>
+          </div>
+
+          <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 14px 16px;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+              <span style="color: #38BDF8; font-size: 16px;">🛍️</span>
+              <strong style="color: #FFFFFF; font-size: 14px;">Customer Shopping Upgrades</strong>
+            </div>
+            <p style="margin: 0; color: #9CA3AF; font-size: 12.5px; line-height: 1.5;">
+              Added floating 1-tap "Undo" on cart deletions, direct "View Cart" sheet button, and polished nearby store discovery.
+            </p>
+          </div>
+
+          <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 14px 16px;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+              <span style="color: #A78BFA; font-size: 16px;">🏪</span>
+              <strong style="color: #FFFFFF; font-size: 14px;">Owner POS &amp; Inventory Power</strong>
+            </div>
+            <p style="margin: 0; color: #9CA3AF; font-size: 12.5px; line-height: 1.5;">
+              Tactile haptics on keypad &amp; orders, interactive Stock StatCards with 1-tap routing, and stock filter pills (Low Stock, Out of Stock).
+            </p>
           </div>
         </div>
       </div>
