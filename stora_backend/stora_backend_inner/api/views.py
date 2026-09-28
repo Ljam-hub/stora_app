@@ -919,7 +919,28 @@ def update_fcm_token(request):
 class OrderViewSet(viewsets.ModelViewSet):
     serializer_class = OrderSerializer
     permission_classes = [IsAuthenticated]
-    http_method_names = ['get', 'post', 'head', 'options']
+    http_method_names = ['get', 'post', 'delete', 'head', 'options']
+
+    def destroy(self, request, *args, **kwargs):
+        order = self.get_object()
+        user = request.user
+        is_admin = getattr(user, "role", "owner") == "admin" or user.is_superuser
+        is_owner = (order.owner == user)
+        is_customer = (order.customer == user)
+
+        if not (is_admin or is_owner or is_customer):
+            raise PermissionDenied("You do not have permission to delete this order.")
+
+        # Only completed, declined, or auto_declined orders can be deleted
+        terminal_statuses = (Order.STATUS_COMPLETED, Order.STATUS_DECLINED, Order.STATUS_AUTO_DECLINED)
+        if not is_admin and order.status not in terminal_statuses:
+            return Response(
+                {"error": f"Cannot delete order in '{order.status}' status. Only completed or declined orders can be deleted."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        self.perform_destroy(order)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     def get_queryset(self):
         user = self.request.user
@@ -952,7 +973,12 @@ class OrderViewSet(viewsets.ModelViewSet):
         order = self.get_object()
         if request.user != order.owner:
             raise PermissionDenied("Only the store owner can accept this order.")
-        if order.status not in (Order.STATUS_PENDING, Order.STATUS_COUNTER_OFFER):
+        if order.status != Order.STATUS_PENDING:
+            if order.status == Order.STATUS_COUNTER_OFFER:
+                return Response(
+                    {"error": "Cannot accept order with an active counter-offer. Waiting for customer response."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             return Response(
                 {"error": f"Cannot accept order in '{order.status}' status."},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -1093,6 +1119,30 @@ class OrderViewSet(viewsets.ModelViewSet):
                 "status": "declined",
                 "order": OrderSerializer(order, context={"request": request}).data,
             })
+
+    @action(detail=True, methods=["post"])
+    def cancel(self, request, pk=None):
+        order = self.get_object()
+        user = request.user
+        is_admin = getattr(user, "role", "owner") == "admin" or user.is_superuser
+        is_customer = (order.customer == user)
+
+        if not (is_customer or is_admin):
+            raise PermissionDenied("Only the customer who placed this order can cancel it.")
+
+        if order.status not in (Order.STATUS_PENDING, Order.STATUS_COUNTER_OFFER):
+            return Response(
+                {"error": f"Cannot cancel order in '{order.status}' status. Only pending or counter-offered orders can be cancelled."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        reason = request.data.get("reason", "Cancelled by customer")
+        order.decline(reason=reason, auto=False)
+        notify_order_status_change(order, "customer_cancelled")
+        return Response({
+            "status": "declined",
+            "order": OrderSerializer(order, context={"request": request}).data,
+        })
 
 
 def _haversine_km(lat1, lon1, lat2, lon2):
