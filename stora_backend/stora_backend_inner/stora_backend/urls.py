@@ -132,15 +132,19 @@ def download_customer(request):
     if source != "github":
         try:
             repo_root = Path(settings.BASE_DIR).parent.parent
-            local_apk = repo_root / "flutter-apk" / "Stora-Customer.apk"
-            if local_apk.exists():
-                from django.http import FileResponse
-                return FileResponse(
-                    open(local_apk, "rb"),
-                    as_attachment=True,
-                    filename="Stora-Customer.apk",
-                    content_type="application/vnd.android.package-archive",
-                )
+            for candidate in [
+                repo_root / "apk" / "Stora-Customer.apk",
+                repo_root / "flutter-apk" / "Stora-Customer.apk",
+                repo_root / "stora_customer" / "apk" / "Stora-Customer.apk",
+            ]:
+                if candidate.exists():
+                    from django.http import FileResponse
+                    return FileResponse(
+                        open(candidate, "rb"),
+                        as_attachment=True,
+                        filename="Stora-Customer.apk",
+                        content_type="application/vnd.android.package-archive",
+                    )
         except Exception as exc:
             logger.warning("Could not serve local customer APK: %s", exc)
     info = get_github_release_info()
@@ -152,15 +156,21 @@ def download_owner(request):
     if source != "github":
         try:
             repo_root = Path(settings.BASE_DIR).parent.parent
-            local_apk = repo_root / "flutter-apk" / "Stora.apk"
-            if local_apk.exists():
-                from django.http import FileResponse
-                return FileResponse(
-                    open(local_apk, "rb"),
-                    as_attachment=True,
-                    filename="Stora.apk",
-                    content_type="application/vnd.android.package-archive",
-                )
+            for candidate in [
+                repo_root / "apk" / "Stora.apk",
+                repo_root / "apk" / "Stora-Owner.apk",
+                repo_root / "flutter-apk" / "Stora.apk",
+                repo_root / "flutter-apk" / "Stora-Owner.apk",
+                repo_root / "stora_owner" / "apk" / "Stora.apk",
+            ]:
+                if candidate.exists():
+                    from django.http import FileResponse
+                    return FileResponse(
+                        open(candidate, "rb"),
+                        as_attachment=True,
+                        filename="Stora.apk",
+                        content_type="application/vnd.android.package-archive",
+                    )
         except Exception as exc:
             logger.warning("Could not serve local owner APK: %s", exc)
     info = get_github_release_info()
