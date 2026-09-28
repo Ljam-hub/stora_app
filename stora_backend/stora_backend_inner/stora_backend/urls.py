@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 GITHUB_REPO = "Ljam-hub/stora_app"
 DEFAULT_RELEASE_TAG = "v1.1.0"
 DEFAULT_CUSTOMER_SIZE = "55.9 MB"
-DEFAULT_OWNER_SIZE = "79.4 MB"
+DEFAULT_OWNER_SIZE = "80.5 MB"
 DEFAULT_CUSTOMER_URL = f"https://github.com/{GITHUB_REPO}/releases/latest/download/Stora-Customer.apk"
 DEFAULT_OWNER_URL = f"https://github.com/{GITHUB_REPO}/releases/latest/download/Stora.apk"
 CACHE_KEY = "stora_github_release_info"
@@ -57,16 +57,30 @@ def get_github_release_info():
 
     try:
         repo_root = Path(settings.BASE_DIR).parent.parent
-        cust_apk = repo_root / "flutter-apk" / "Stora-Customer.apk"
-        if cust_apk.exists():
-            formatted = format_bytes_to_mb(cust_apk.stat().st_size)
-            if formatted:
-                info["customer_apk_size"] = formatted
-        owner_apk = repo_root / "flutter-apk" / "Stora.apk"
-        if owner_apk.exists():
-            formatted = format_bytes_to_mb(owner_apk.stat().st_size)
-            if formatted:
-                info["owner_apk_size"] = formatted
+        # Check repo-level apk/ folder first, then flutter-apk/ fallbacks
+        for cust_candidate in [
+            repo_root / "apk" / "Stora-Customer.apk",
+            repo_root / "stora_customer" / "apk" / "Stora-Customer.apk",
+            repo_root / "flutter-apk" / "Stora-Customer.apk",
+        ]:
+            if cust_candidate.exists():
+                formatted = format_bytes_to_mb(cust_candidate.stat().st_size)
+                if formatted:
+                    info["customer_apk_size"] = formatted
+                break
+
+        for owner_candidate in [
+            repo_root / "apk" / "Stora-Owner.apk",
+            repo_root / "apk" / "Stora.apk",
+            repo_root / "stora_owner" / "apk" / "Stora-Owner.apk",
+            repo_root / "stora_owner" / "apk" / "Stora.apk",
+            repo_root / "flutter-apk" / "Stora.apk",
+        ]:
+            if owner_candidate.exists():
+                formatted = format_bytes_to_mb(owner_candidate.stat().st_size)
+                if formatted:
+                    info["owner_apk_size"] = formatted
+                break
     except Exception:
         pass
 
