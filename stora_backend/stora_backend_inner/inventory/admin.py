@@ -1,4 +1,7 @@
+import csv
 from django.contrib import admin
+from django.db.models import Count
+from django.http import HttpResponse
 from django.utils.html import format_html
 
 from stora_backend.admin_site import stora_admin_site
@@ -48,6 +51,9 @@ class CategoryAdmin(OwnerAdminMixin, admin.ModelAdmin):
     list_filter = ("is_hidden", "is_archived")
     search_fields = ("name", "owner__email")
 
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related("owner").annotate(products_count=Count("products"))
+
     def get_fields(self, request, obj=None):
         """Show the owner field only to superusers (for reassignment);
         regular store owners have it auto-assigned."""
@@ -56,9 +62,9 @@ class CategoryAdmin(OwnerAdminMixin, admin.ModelAdmin):
             base.insert(0, "owner")
         return base
 
-    @admin.display(description="Products")
+    @admin.display(description="Products", ordering="products_count")
     def product_count(self, obj):
-        return obj.products.count()
+        return getattr(obj, "products_count", obj.products.count())
 
 
 @admin.register(Product, site=stora_admin_site)
@@ -67,7 +73,7 @@ class ProductAdmin(OwnerAdminMixin, admin.ModelAdmin):
     list_filter = ("category", StockLevelFilter)
     search_fields = ("name", "barcode", "owner__email")
     autocomplete_fields = ("category",)
-    list_select_related = ("category",)
+    list_select_related = ("category", "owner")
 
     def get_fields(self, request, obj=None):
         """Show the owner field only to superusers."""
@@ -83,9 +89,42 @@ class ProductAdmin(OwnerAdminMixin, admin.ModelAdmin):
             kwargs["queryset"] = Category.objects.filter(owner=request.user)
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
+    actions = ["export_products_csv"]
+
     @admin.display(description="Stock", ordering="stock")
     def stock_display(self, obj):
         color = "#FF6B6B" if obj.is_low_stock else "#8E8798"
         return format_html(
             '<span style="color:{}; font-weight:700;">{}</span>', color, obj.stock
         )
+
+    @admin.action(description="📥 Export selected products to CSV")
+    def export_products_csv(self, request, queryset):
+        response = HttpResponse(content_type="text/csv; charset=utf-8")
+        response["Content-Disposition"] = 'attachment; filename="stora_products_export.csv"'
+        response.write("\ufeff")
+        writer = csv.writer(response)
+        writer.writerow([
+            "Product ID",
+            "Product Name",
+            "Store / Owner",
+            "Category",
+            "Price (PHP)",
+            "Stock",
+            "Barcode",
+            "Low Stock?",
+        ])
+        for p in queryset.select_related("owner", "category"):
+            store = p.owner.business_name or p.owner.email if p.owner else "—"
+            cat = p.category.name if p.category else "Uncategorized"
+            writer.writerow([
+                f"#{p.id}",
+                p.name,
+                store,
+                cat,
+                f"{p.price:.2f}",
+                p.stock,
+                p.barcode or "",
+                "Yes" if p.is_low_stock else "No",
+            ])
+        return response

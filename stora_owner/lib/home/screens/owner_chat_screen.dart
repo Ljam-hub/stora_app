@@ -20,7 +20,7 @@ class OwnerChatScreen extends StatefulWidget {
   State<OwnerChatScreen> createState() => _OwnerChatScreenState();
 }
 
-class _OwnerChatScreenState extends State<OwnerChatScreen> {
+class _OwnerChatScreenState extends State<OwnerChatScreen> with WidgetsBindingObserver {
   List<Map<String, dynamic>> _conversations = [];
   bool _loading = true;
   String? _error;
@@ -32,19 +32,43 @@ class _OwnerChatScreenState extends State<OwnerChatScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     ThemeModeController.instance.addListener(_onThemeChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _loadConversations();
     });
+    _startPolling();
+  }
+
+  void _startPolling() {
+    _pollTimer?.cancel();
     _pollTimer = Timer.periodic(const Duration(seconds: 6), (_) {
       if (mounted) _loadConversations(silent: true);
     });
   }
 
+  void _stopPolling() {
+    _pollTimer?.cancel();
+    _pollTimer = null;
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+      _stopPolling();
+    } else if (state == AppLifecycleState.resumed) {
+      if (mounted) {
+        _loadConversations(silent: true);
+        _startPolling();
+      }
+    }
+  }
+
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     ThemeModeController.instance.removeListener(_onThemeChanged);
-    _pollTimer?.cancel();
+    _stopPolling();
     _searchController.dispose();
     super.dispose();
   }
@@ -820,7 +844,7 @@ class OwnerChatThreadScreen extends StatefulWidget {
   State<OwnerChatThreadScreen> createState() => _OwnerChatThreadScreenState();
 }
 
-class _OwnerChatThreadScreenState extends State<OwnerChatThreadScreen> {
+class _OwnerChatThreadScreenState extends State<OwnerChatThreadScreen> with WidgetsBindingObserver {
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final ImagePicker _picker = ImagePicker();
@@ -860,6 +884,7 @@ class _OwnerChatThreadScreenState extends State<OwnerChatThreadScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     ThemeModeController.instance.addListener(_onThemeChanged);
     final cached = ChatStore.instance.getCachedMessages(widget.customerId);
     if (cached != null && cached.isNotEmpty) {
@@ -868,15 +893,38 @@ class _OwnerChatThreadScreenState extends State<OwnerChatThreadScreen> {
     }
     _fetchBlockStatus();
     _fetchMessages(silent: _messages.isNotEmpty);
+    _startPolling();
+  }
+
+  void _startPolling() {
+    _pollTimer?.cancel();
     _pollTimer = Timer.periodic(const Duration(seconds: 4), (_) {
       if (mounted) _fetchMessages(silent: true);
     });
   }
 
+  void _stopPolling() {
+    _pollTimer?.cancel();
+    _pollTimer = null;
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+      _stopPolling();
+    } else if (state == AppLifecycleState.resumed) {
+      if (mounted) {
+        _fetchMessages(silent: true);
+        _startPolling();
+      }
+    }
+  }
+
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     ThemeModeController.instance.removeListener(_onThemeChanged);
-    _pollTimer?.cancel();
+    _stopPolling();
     _textController.dispose();
     _scrollController.dispose();
     ChatStore.instance.fetchConversations(isSilent: true);

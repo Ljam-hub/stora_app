@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'dart:ui';
 import '../../data/services/notification_service.dart';
 import '../../data/stores/account_status_store.dart';
 import '../../stora_login/stora_login.dart';
@@ -63,16 +62,25 @@ class _StoraShellState extends State<StoraShell> with WidgetsBindingObserver {
     ];
     WidgetsBinding.instance.addObserver(this);
     AccountStatusStore.instance.addListener(_checkPriceChange);
-    AccountStatusStore.instance.fetchStatus();
-    InventoryStore.instance.loadProducts();
-    CategoryStore.instance.loadCategories();
-    SalesStore.instance.loadSales();
-    OrdersStore.instance.fetchOrders();
-    OrdersStore.instance.startPolling();
-    ChatStore.instance.fetchConversations();
-    ChatStore.instance.startPolling();
-    StoreStatusStore.instance.fetchStatus();
-    OwnerNotificationService.instance.init();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      OwnerNotificationService.instance.init();
+      // Load primary dashboard data in parallel
+      await Future.wait([
+        AccountStatusStore.instance.fetchStatus(),
+        StoreStatusStore.instance.fetchStatus(),
+        InventoryStore.instance.loadProducts(),
+        SalesStore.instance.loadSales(),
+        OrdersStore.instance.fetchOrders(),
+      ]);
+      if (!mounted) return;
+      // Stagger secondary data & background polling so the main thread stays completely responsive
+      CategoryStore.instance.loadCategories();
+      ChatStore.instance.fetchConversations();
+      OrdersStore.instance.startPolling();
+      ChatStore.instance.startPolling();
+    });
 
     OrdersStore.instance.onNewOrderReceived = (order) {
       if (!mounted) return;
@@ -334,50 +342,46 @@ class _StoraNavBar extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
       child: SafeArea(
         top: false,
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(24),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 6),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? HomeColors.navBackground.withValues(alpha: 0.72)
-                    : Colors.white.withValues(alpha: 0.95),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(
-                  color: isDark
-                      ? HomeColors.cardBorderLight.withValues(alpha: 0.5)
-                      : const Color(0xFFE2E8F0),
-                  width: 1,
-                ),
-                boxShadow: isDark
-                    ? [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.45),
-                          blurRadius: 20,
-                          offset: const Offset(0, 8),
-                        ),
-                        BoxShadow(
-                          color: AppColors.purple.withValues(alpha: 0.08),
-                          blurRadius: 14,
-                          offset: const Offset(0, 2),
-                        ),
-                      ]
-                    : [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.08),
-                          blurRadius: 20,
-                          offset: const Offset(0, 4),
-                        ),
-                        BoxShadow(
-                          color: AppColors.purple.withValues(alpha: 0.04),
-                          blurRadius: 10,
-                          offset: const Offset(0, 1),
-                        ),
-                      ],
-              ),
-              child: Row(
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 6),
+          decoration: BoxDecoration(
+            color: isDark
+                ? HomeColors.navBackground
+                : Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: isDark
+                  ? HomeColors.cardBorderLight.withValues(alpha: 0.5)
+                  : const Color(0xFFE2E8F0),
+              width: 1,
+            ),
+            boxShadow: isDark
+                ? [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.45),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
+                    ),
+                    BoxShadow(
+                      color: AppColors.purple.withValues(alpha: 0.08),
+                      blurRadius: 14,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.08),
+                      blurRadius: 20,
+                      offset: const Offset(0, 4),
+                    ),
+                    BoxShadow(
+                      color: AppColors.purple.withValues(alpha: 0.04),
+                      blurRadius: 10,
+                      offset: const Offset(0, 1),
+                    ),
+                  ],
+          ),
+          child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: List.generate(_items.length, (i) {
               final selected = i == currentIndex;
@@ -443,8 +447,6 @@ class _StoraNavBar extends StatelessWidget {
             }),
           ),
         ),
-      ),
-    ),
       ),
     );
   }

@@ -1,4 +1,6 @@
+import csv
 from django.contrib import admin
+from django.http import HttpResponse
 from django.utils import timezone
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
@@ -43,9 +45,10 @@ class SaleAdmin(admin.ModelAdmin):
         "items__product_name",
     )
     list_filter = ("channel", "created_at", "owner")
+    date_hierarchy = "created_at"
     readonly_fields = ("total_display", "receipt_number", "order_link", "created_at")
     inlines = [SaleItemInline]
-    actions = ["recalculate_selected_sales"]
+    actions = ["recalculate_selected_sales", "export_sales_csv"]
 
     def get_queryset(self, request):
         qs = (
@@ -198,6 +201,49 @@ class SaleAdmin(admin.ModelAdmin):
             updated_count += 1
         self.message_user(request, f"Recalculated totals for {updated_count} sale(s).")
 
+    @admin.action(description="📥 Export selected sales to CSV")
+    def export_sales_csv(self, request, queryset):
+        response = HttpResponse(content_type="text/csv; charset=utf-8")
+        response["Content-Disposition"] = 'attachment; filename="stora_sales_export.csv"'
+        response.write("\ufeff")
+        writer = csv.writer(response)
+        writer.writerow([
+            "Sale ID",
+            "Receipt Number",
+            "Channel",
+            "Date",
+            "Store / Owner",
+            "Customer / Buyer",
+            "Products Sold",
+            "Total Quantity",
+            "Total Amount (PHP)",
+        ])
+        for sale in queryset.select_related("owner", "order", "order__customer").prefetch_related("items"):
+            items = list(sale.items.all())
+            summary = "; ".join(f"{it.product_name} (x{it.quantity} @ ₱{it.unit_price})" for it in items)
+            total_qty = sum(it.quantity for it in items)
+            store = (sale.owner.business_name or sale.owner.email) if sale.owner else "—"
+            c_name = (sale.customer_name or "").strip()
+            if not c_name and sale.order:
+                c_name = (sale.order.customer_name or "").strip()
+                if not c_name and sale.order.customer:
+                    c_name = sale.order.customer.email
+            if not c_name:
+                c_name = "Walk-in Customer" if sale.channel == "pos" else "Online Buyer"
+            receipt = sale.receipt_number or f"POS-{sale.pk}"
+            writer.writerow([
+                f"#{sale.id}",
+                receipt,
+                sale.get_channel_display() if hasattr(sale, "get_channel_display") else sale.channel,
+                sale.created_at.strftime("%Y-%m-%d %H:%M"),
+                store,
+                c_name,
+                summary,
+                total_qty,
+                f"{(sale.total or 0):.2f}",
+            ])
+        return response
+
     def save_related(self, request, form, formsets, change):
         # Recompute the snapshot total from the (possibly just-edited)
         # line items, same as the app does right after checkout.
@@ -248,9 +294,10 @@ class CustomerCreditAdmin(admin.ModelAdmin):
         "items__product_name",
     )
     list_filter = ("status", "due_date", "created_at", "owner")
+    date_hierarchy = "created_at"
     readonly_fields = ("balance_display", "created_at", "updated_at")
     inlines = [CreditItemInline, CreditPaymentInline]
-    actions = ["mark_selected_as_settled", "recalculate_selected_credits"]
+    actions = ["mark_selected_as_settled", "recalculate_selected_credits", "export_credits_csv"]
 
     def get_queryset(self, request):
         qs = (
@@ -432,4 +479,41 @@ class CustomerCreditAdmin(admin.ModelAdmin):
         for credit in queryset:
             credit.recalculate_totals()
         self.message_user(request, f"Recalculated {queryset.count()} loan record(s).")
+
+    @admin.action(description="📥 Export selected loans to CSV")
+    def export_credits_csv(self, request, queryset):
+        response = HttpResponse(content_type="text/csv; charset=utf-8")
+        response["Content-Disposition"] = 'attachment; filename="stora_utang_credits_export.csv"'
+        response.write("\ufeff")
+        writer = csv.writer(response)
+        writer.writerow([
+            "Credit ID",
+            "Created Date",
+            "Due Date",
+            "Store / Owner",
+            "Customer Name",
+            "Contact Phone",
+            "Total Utang (PHP)",
+            "Amount Paid (PHP)",
+            "Remaining Balance (PHP)",
+            "Status",
+            "Notes",
+        ])
+        for credit in queryset.select_related("owner"):
+            store = (credit.owner.business_name or credit.owner.email) if credit.owner else "—"
+            due = credit.due_date.strftime("%Y-%m-%d") if credit.due_date else "No deadline"
+            writer.writerow([
+                f"#{credit.id}",
+                credit.created_at.strftime("%Y-%m-%d %H:%M"),
+                due,
+                store,
+                credit.customer_name,
+                credit.customer_phone or "",
+                f"{(credit.total_amount or 0):.2f}",
+                f"{(credit.amount_paid or 0):.2f}",
+                f"{(credit.balance or 0):.2f}",
+                credit.get_status_display(),
+                credit.notes or "",
+            ])
+        return response
 

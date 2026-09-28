@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../stora_login/stora_login.dart';
 import '../../data/api/api_client.dart';
 import '../../data/stores/account_status_store.dart';
@@ -50,6 +51,7 @@ void confirmClearCart(BuildContext context) {
         ),
         TextButton(
           onPressed: () {
+            HapticFeedback.mediumImpact();
             CartStore.instance.clear();
             Navigator.of(ctx).pop();
           },
@@ -130,6 +132,7 @@ class _PosScreenState extends State<PosScreen> {
         );
         return;
       }
+      HapticFeedback.lightImpact();
       CartStore.instance.add(product);
       _searchController.clear();
       if (mounted) {
@@ -363,6 +366,7 @@ class _PosScreenState extends State<PosScreen> {
                             );
                             return;
                           }
+                          HapticFeedback.selectionClick();
                           cart.add(p);
                           _searchController.clear();
                           setState(() => _query = '');
@@ -477,7 +481,12 @@ class _PosScreenState extends State<PosScreen> {
                     buttonKey: const Key('pos_checkout_button'),
                     label: 'CHECKOUT',
                     isLoading: _isCheckingOut,
-                    onPressed: (_isCheckingOut || cart.items.isEmpty) ? null : _checkout,
+                    onPressed: (_isCheckingOut || cart.items.isEmpty)
+                        ? null
+                        : () {
+                            HapticFeedback.mediumImpact();
+                            _checkout();
+                          },
                   ),
                 ],
               ),
@@ -639,7 +648,10 @@ class _CartRow extends StatelessWidget {
           ),
           StockStepButton(
             icon: Icons.remove,
-            onTap: () => CartStore.instance.decrementQty(item.product.id),
+            onTap: () {
+              HapticFeedback.selectionClick();
+              CartStore.instance.decrementQty(item.product.id);
+            },
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -649,27 +661,36 @@ class _CartRow extends StatelessWidget {
             icon: Icons.add,
             onTap: () {
               if (item.quantity >= item.product.stock) {
+                HapticFeedback.heavyImpact();
                 showStoraSnackBar(
                   context,
                   'Maximum available stock for "${item.product.name}" (${item.product.stock}) reached',
                 );
                 return;
               }
+              HapticFeedback.selectionClick();
               CartStore.instance.incrementQty(item.product.id);
             },
           ),
           Padding(
             padding: const EdgeInsets.only(left: 8),
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: () => CartStore.instance.remove(item.product.id),
-              child: Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: HomeColors.dangerBg,
-                  borderRadius: BorderRadius.circular(8),
+            child: Tooltip(
+              message: 'Remove item',
+              child: InkWell(
+                borderRadius: BorderRadius.circular(8),
+                onTap: () {
+                  HapticFeedback.mediumImpact();
+                  CartStore.instance.remove(item.product.id);
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: HomeColors.dangerBg,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppColors.error.withValues(alpha: 0.25)),
+                  ),
+                  child: const Icon(Icons.delete_outline_rounded, size: 16, color: AppColors.error),
                 ),
-                child: const Icon(Icons.delete_outline_rounded, size: 16, color: AppColors.error),
               ),
             ),
           ),

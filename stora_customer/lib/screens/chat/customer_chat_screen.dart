@@ -32,7 +32,7 @@ class CustomerChatScreen extends StatefulWidget {
   State<CustomerChatScreen> createState() => _CustomerChatScreenState();
 }
 
-class _CustomerChatScreenState extends State<CustomerChatScreen> {
+class _CustomerChatScreenState extends State<CustomerChatScreen> with WidgetsBindingObserver {
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final ImagePicker _picker = ImagePicker();
@@ -72,6 +72,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     try {
       final cached = context.read<ChatProvider>().getCachedMessages(widget.storeOwnerId);
       if (cached != null && cached.isNotEmpty) {
@@ -81,9 +82,31 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
     } catch (_) {}
     _fetchBlockStatus();
     _fetchMessages(silent: _messages.isNotEmpty);
+    _startPolling();
+  }
+
+  void _startPolling() {
+    _pollTimer?.cancel();
     _pollTimer = Timer.periodic(const Duration(seconds: 4), (_) {
       if (mounted) _fetchMessages(silent: true);
     });
+  }
+
+  void _stopPolling() {
+    _pollTimer?.cancel();
+    _pollTimer = null;
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+      _stopPolling();
+    } else if (state == AppLifecycleState.resumed) {
+      if (mounted) {
+        _fetchMessages(silent: true);
+        _startPolling();
+      }
+    }
   }
 
   ChatProvider? _chatProvider;
@@ -98,7 +121,8 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
 
   @override
   void dispose() {
-    _pollTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    _stopPolling();
     _textController.dispose();
     _scrollController.dispose();
     try {

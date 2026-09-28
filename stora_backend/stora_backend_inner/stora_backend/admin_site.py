@@ -127,21 +127,44 @@ class StoraAdminSite(AdminSite):
         }
 
     def index(self, request, extra_context=None):
+        from accounts.models import PaymentProof
         from inventory.models import Product
         from sales.models import Sale, CustomerCredit
 
         today = timezone.localdate()
         user = request.user
         notifs = self.get_admin_notifications_summary(request)
+        is_admin_user = bool(user.is_superuser or getattr(user, "role", None) == "admin")
 
-        if user.is_superuser or getattr(user, "role", None) == "admin":
+        if is_admin_user:
             todays_sales = Sale.objects.filter(created_at__date=today)
             products = Product.objects.all()
             credits_qs = CustomerCredit.objects.exclude(status=CustomerCredit.STATUS_SETTLED)
+            total_sub_revenue = (
+                PaymentProof.objects.filter(status=PaymentProof.STATUS_APPROVED).aggregate(total=Sum("amount"))["total"]
+                or 0
+            )
+            month_sub_revenue = (
+                PaymentProof.objects.filter(
+                    status=PaymentProof.STATUS_APPROVED,
+                    reviewed_at__year=today.year,
+                    reviewed_at__month=today.month,
+                ).aggregate(total=Sum("amount"))["total"]
+                or 0
+            )
+            total_platform_gmv = Sale.objects.aggregate(total=Sum("total"))["total"] or 0
         else:
             todays_sales = Sale.objects.filter(owner=user, created_at__date=today)
             products = Product.objects.filter(owner=user)
             credits_qs = CustomerCredit.objects.filter(owner=user).exclude(status=CustomerCredit.STATUS_SETTLED)
+            total_sub_revenue = (
+                PaymentProof.objects.filter(user=user, status=PaymentProof.STATUS_APPROVED).aggregate(
+                    total=Sum("amount")
+                )["total"]
+                or 0
+            )
+            month_sub_revenue = 0
+            total_platform_gmv = Sale.objects.filter(owner=user).aggregate(total=Sum("total"))["total"] or 0
 
         credit_aggregates = credits_qs.aggregate(
             total_amt=Sum("total_amount"),
@@ -172,6 +195,10 @@ class StoraAdminSite(AdminSite):
             "total_credit_receivables": total_credit_receivables,
             "active_credit_count": active_credit_count,
             "total_action_count": notifs["total_action_count"],
+            "total_sub_revenue": total_sub_revenue,
+            "month_sub_revenue": month_sub_revenue,
+            "total_platform_gmv": total_platform_gmv,
+            "is_platform_admin": is_admin_user,
         }
         return super().index(request, extra_context)
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../data/api/api_config.dart';
 import '../../data/services/notification_service.dart';
 import '../../stora_login/theme/app_colors.dart';
@@ -197,7 +198,10 @@ class _FilterChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: () {
+        HapticFeedback.selectionClick();
+        onTap();
+      },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
@@ -412,6 +416,7 @@ class _OrderCardState extends State<_OrderCard> {
 
   Future<void> _handleAccept() async {
     if (_isProcessing) return;
+    HapticFeedback.mediumImpact();
     setState(() => _isProcessing = true);
     try {
       await OrdersStore.instance.acceptOrder(orderId);
@@ -433,6 +438,7 @@ class _OrderCardState extends State<_OrderCard> {
 
   Future<void> _handleMarkReady() async {
     if (_isProcessing) return;
+    HapticFeedback.mediumImpact();
     setState(() => _isProcessing = true);
     try {
       await OrdersStore.instance.markOrderReady(orderId);
@@ -454,6 +460,7 @@ class _OrderCardState extends State<_OrderCard> {
 
   Future<void> _handleComplete() async {
     if (_isProcessing) return;
+    HapticFeedback.mediumImpact();
     setState(() => _isProcessing = true);
     try {
       await OrdersStore.instance.completeOrder(orderId);
@@ -536,6 +543,7 @@ class _OrderCardState extends State<_OrderCard> {
               ),
               onPressed: () async {
                 if (isSubmitting) return;
+                HapticFeedback.mediumImpact();
                 isSubmitting = true;
                 final reason = selectedReason == 'Custom reason' ? controller.text.trim() : selectedReason;
                 Navigator.of(ctx).pop();
@@ -651,6 +659,7 @@ class _OrderCardState extends State<_OrderCard> {
                 );
                 return;
               }
+              HapticFeedback.mediumImpact();
               isSubmitting = true;
               Navigator.of(ctx).pop();
               setState(() => _isProcessing = true);

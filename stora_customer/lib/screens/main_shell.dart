@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -32,6 +31,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
   late int _currentIndex;
   OrderProvider? _orderProvider;
   ChatProvider? _chatProvider;
+  late final List<Widget> _screens;
 
   @override
   void didChangeDependencies() {
@@ -72,6 +72,34 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     _currentIndex = widget.initialTab;
+    _screens = [
+      ShopScreen(
+        onGoToCart: () => setState(() => _currentIndex = 2),
+      ),
+      StoreMapScreen(
+        onSelectStoreAndShop: (store) {
+          if (mounted) {
+            context.read<CatalogProvider>().selectStore(store);
+            setState(() => _currentIndex = 0);
+          }
+        },
+      ),
+      CartScreen(
+        onStartShopping: () => setState(() => _currentIndex = 0),
+        onOrderPlaced: () {
+          setState(() => _currentIndex = 4);
+          context.read<OrderProvider>().markOrdersTabSeen();
+          NotificationService.instance.cancelAll();
+        },
+      ),
+      CustomerConversationsScreen(
+        onBrowseStores: () => setState(() => _currentIndex = 0),
+      ),
+      OrdersScreen(
+        onStartShopping: () => setState(() => _currentIndex = 0),
+      ),
+      const ProfileScreen(),
+    ];
     WidgetsBinding.instance.addObserver(this);
     NotificationService.instance.init();
 
@@ -236,110 +264,77 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
     final chat = context.watch<ChatProvider>();
     final orderProvider = context.watch<OrderProvider>();
 
-    final screens = [
-      ShopScreen(
-        onGoToCart: () => setState(() => _currentIndex = 2),
-      ),
-      StoreMapScreen(
-        onSelectStoreAndShop: (store) {
-          context.read<CatalogProvider>().selectStore(store);
-          setState(() => _currentIndex = 0); // Switch to Shop tab
-        },
-      ),
-      CartScreen(
-        onStartShopping: () => setState(() => _currentIndex = 0),
-        onOrderPlaced: () {
-          setState(() => _currentIndex = 4);
-          context.read<OrderProvider>().markOrdersTabSeen();
-          NotificationService.instance.cancelAll();
-        },
-      ),
-      CustomerConversationsScreen(
-        onBrowseStores: () => setState(() => _currentIndex = 0),
-      ),
-      OrdersScreen(
-        onStartShopping: () => setState(() => _currentIndex = 0),
-      ),
-      const ProfileScreen(),
-    ];
-
     return Scaffold(
       backgroundColor: AppColors.background,
       body: OfflineBannerWrapper(
         child: IndexedStack(
           index: _currentIndex,
-          children: screens,
+          children: _screens,
         ),
       ),
       bottomNavigationBar: SafeArea(
         top: false,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(28),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-              child: Container(
-                height: 64,
-                decoration: BoxDecoration(
-                  color: AppColors.navBackground.withValues(alpha: 0.72),
-                  borderRadius: BorderRadius.circular(28),
-                  border: Border.all(
-                    color: AppColors.cardBorder,
-                    width: 1,
-                  ),
-                  boxShadow: AppColors.cardShadow,
+          child: Container(
+            height: 64,
+            decoration: BoxDecoration(
+              color: AppColors.navBackground,
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(
+                color: AppColors.cardBorder,
+                width: 1,
+              ),
+              boxShadow: AppColors.cardShadow,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildNavItem(
+                  index: 0,
+                  icon: Icons.storefront_outlined,
+                  activeIcon: Icons.storefront_rounded,
+                  label: 'Shop',
                 ),
-                child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildNavItem(
-                index: 0,
-                icon: Icons.storefront_outlined,
-                activeIcon: Icons.storefront_rounded,
-                label: 'Shop',
-              ),
-              _buildNavItem(
-                index: 1,
-                icon: Icons.map_outlined,
-                activeIcon: Icons.map_rounded,
-                label: 'Map',
-              ),
-              _buildNavItem(
-                index: 2,
-                icon: Icons.shopping_cart_outlined,
-                activeIcon: Icons.shopping_cart_rounded,
-                label: 'Cart',
-                badgeCount: cart.totalItemCount,
-              ),
-              _buildNavItem(
-                index: 3,
-                icon: Icons.chat_bubble_outline_rounded,
-                activeIcon: Icons.chat_bubble_rounded,
-                label: 'Chat',
-                badgeCount: chat.unreadCount,
-              ),
-              _buildNavItem(
-                index: 4,
-                icon: Icons.receipt_long_outlined,
-                activeIcon: Icons.receipt_long_rounded,
-                label: 'Orders',
-                badgeCount: _currentIndex == 4 ? 0 : orderProvider.unreadActiveOrdersCount,
-              ),
-              _buildNavItem(
-                index: 5,
-                icon: Icons.person_outline,
-                activeIcon: Icons.person_rounded,
-                label: 'Profile',
-              ),
-            ],
+                _buildNavItem(
+                  index: 1,
+                  icon: Icons.map_outlined,
+                  activeIcon: Icons.map_rounded,
+                  label: 'Map',
+                ),
+                _buildNavItem(
+                  index: 2,
+                  icon: Icons.shopping_cart_outlined,
+                  activeIcon: Icons.shopping_cart_rounded,
+                  label: 'Cart',
+                  badgeCount: cart.totalItemCount,
+                ),
+                _buildNavItem(
+                  index: 3,
+                  icon: Icons.chat_bubble_outline_rounded,
+                  activeIcon: Icons.chat_bubble_rounded,
+                  label: 'Chat',
+                  badgeCount: chat.unreadCount,
+                ),
+                _buildNavItem(
+                  index: 4,
+                  icon: Icons.receipt_long_outlined,
+                  activeIcon: Icons.receipt_long_rounded,
+                  label: 'Orders',
+                  badgeCount: _currentIndex == 4 ? 0 : orderProvider.unreadActiveOrdersCount,
+                ),
+                _buildNavItem(
+                  index: 5,
+                  icon: Icons.person_outline,
+                  activeIcon: Icons.person_rounded,
+                  label: 'Profile',
+                ),
+              ],
+            ),
           ),
         ),
       ),
-    ),
-  ),
-),
-);
+    );
 
   }
 

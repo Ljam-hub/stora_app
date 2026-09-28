@@ -1,4 +1,6 @@
+import csv
 from django.contrib import admin
+from django.http import HttpResponse
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 from stora_backend.admin_site import stora_admin_site
@@ -31,6 +33,7 @@ class OrderAdmin(admin.ModelAdmin):
     )
     list_display_links = ("id", "products_summary")
     list_filter = ("status", "created_at", "owner")
+    date_hierarchy = "created_at"
     search_fields = (
         "id",
         "customer_name",
@@ -45,24 +48,8 @@ class OrderAdmin(admin.ModelAdmin):
         "created_at",
         "expires_at",
     )
-    fields = (
-        "owner",
-        "customer",
-        "customer_name",
-        "customer_phone",
-        "customer_address",
-        "notes",
-        "status",
-        "status_badge",
-        "decline_reason",
-        "counter_notes",
-        "counter_price",
-        "total_amount_display",
-        "created_at",
-        "expires_at",
-    )
     inlines = [OrderItemInline]
-    actions = ["accept_orders", "mark_ready_orders", "decline_orders"]
+    actions = ["accept_orders", "mark_ready_orders", "decline_orders", "export_orders_csv"]
 
     @admin.display(description="Store / Owner")
     def owner_display(self, obj):
@@ -127,6 +114,8 @@ class OrderAdmin(admin.ModelAdmin):
 
     @admin.display(description="Total Amount")
     def total_amount_display(self, obj):
+        if not obj.pk:
+            return "—"
         if (
             obj.status in (Order.STATUS_ACCEPTED, Order.STATUS_READY, Order.STATUS_COUNTER_OFFER)
             and obj.counter_price is not None
@@ -145,10 +134,31 @@ class OrderAdmin(admin.ModelAdmin):
         )
 
     def get_queryset(self, request):
-        qs = super().get_queryset(request).prefetch_related("items")
+        qs = super().get_queryset(request).select_related("owner", "customer").prefetch_related("items")
         if request.user.is_superuser:
             return qs
         return qs.filter(owner=request.user)
+
+    def get_fields(self, request, obj=None):
+        """Show the owner field only to superusers."""
+        base = [
+            "customer",
+            "customer_name",
+            "customer_phone",
+            "customer_address",
+            "notes",
+            "status",
+            "status_badge",
+            "decline_reason",
+            "counter_notes",
+            "counter_price",
+            "total_amount_display",
+            "created_at",
+            "expires_at",
+        ]
+        if request.user.is_superuser:
+            base.insert(0, "owner")
+        return base
 
     @admin.action(description="✓ Accept selected orders (deduct stock & create sales)")
     def accept_orders(self, request, queryset):
@@ -192,3 +202,48 @@ class OrderAdmin(admin.ModelAdmin):
         self.message_user(
             request, f"Successfully declined {declined_count} order(s)."
         )
+
+    @admin.action(description="📥 Export selected orders to CSV")
+    def export_orders_csv(self, request, queryset):
+        response = HttpResponse(content_type="text/csv; charset=utf-8")
+        response["Content-Disposition"] = 'attachment; filename="stora_orders_export.csv"'
+        response.write("\ufeff")
+        writer = csv.writer(response)
+        writer.writerow([
+            "Order ID",
+            "Created Date",
+            "Store / Owner",
+            "Customer Name",
+            "Customer Phone",
+            "Delivery Address",
+            "Items Summary",
+            "Total Quantity",
+            "Total Amount (PHP)",
+            "Status",
+            "Notes",
+        ])
+        for order in queryset.select_related("owner", "customer").prefetch_related("items"):
+            items = list(order.items.all())
+            summary = "; ".join(f"{it.product_name} (x{it.quantity} @ ₱{it.unit_price})" for it in items)
+            total_qty = sum(it.quantity for it in items)
+            amt = (
+                order.counter_price
+                if (order.counter_price is not None and order.status in (Order.STATUS_ACCEPTED, Order.STATUS_READY, Order.STATUS_COUNTER_OFFER))
+                else order.total_amount()
+            )
+            store = (order.owner.business_name or order.owner.email) if order.owner else "—"
+            c_name = order.customer_name or (order.customer.get_full_name() if order.customer else "Guest")
+            writer.writerow([
+                f"#{order.id}",
+                order.created_at.strftime("%Y-%m-%d %H:%M"),
+                store,
+                c_name,
+                order.customer_phone or "",
+                order.customer_address or "",
+                summary,
+                total_qty,
+                f"{amt:.2f}",
+                order.get_status_display(),
+                order.notes or "",
+            ])
+        return response

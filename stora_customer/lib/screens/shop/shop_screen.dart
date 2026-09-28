@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/product_model.dart';
@@ -26,6 +27,7 @@ class ShopScreen extends StatefulWidget {
 
 class _ShopScreenState extends State<ShopScreen> {
   final _searchController = TextEditingController();
+  Timer? _searchDebounce;
 
   @override
   void initState() {
@@ -36,8 +38,26 @@ class _ShopScreenState extends State<ShopScreen> {
     });
   }
 
+  void _onSearchChanged(String val) {
+    if (mounted) setState(() {});
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 250), () {
+      if (mounted) {
+        context.read<CatalogProvider>().setSearchQuery(val);
+      }
+    });
+  }
+
+  void _clearSearch() {
+    _searchDebounce?.cancel();
+    _searchController.clear();
+    if (mounted) setState(() {});
+    context.read<CatalogProvider>().setSearchQuery('');
+  }
+
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _searchController.dispose();
     super.dispose();
   }
@@ -155,7 +175,7 @@ class _ShopScreenState extends State<ShopScreen> {
                 ),
                 child: TextField(
                   controller: _searchController,
-                  onChanged: (val) => catalog.setSearchQuery(val),
+                  onChanged: _onSearchChanged,
                   style: TextStyle(color: AppColors.textPrimary, fontSize: 14),
                   decoration: InputDecoration(
                     hintText: 'Search products by name or barcode...',
@@ -164,10 +184,7 @@ class _ShopScreenState extends State<ShopScreen> {
                     suffixIcon: _searchController.text.isNotEmpty
                         ? IconButton(
                             icon: Icon(Icons.clear_rounded, color: AppColors.textMuted, size: 18),
-                            onPressed: () {
-                              _searchController.clear();
-                              catalog.setSearchQuery('');
-                            },
+                            onPressed: _clearSearch,
                           )
                         : null,
                     filled: true,
@@ -189,69 +206,6 @@ class _ShopScreenState extends State<ShopScreen> {
                 ),
               ),
             ),
-
-            // Store Filter Row (if multiple stores exist)
-            if (catalog.stores.isNotEmpty) ...[
-              SizedBox(
-                height: 44,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: catalog.stores.length + 1,
-                  itemBuilder: (context, index) {
-                    if (index == 0) {
-                      final isSelected = catalog.selectedStore == null;
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: ChoiceChip(
-                          label: const Text('All Stores'),
-                          selected: isSelected,
-                          onSelected: (_) => catalog.selectStore(null),
-                          selectedColor: AppColors.primary,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                          labelStyle: TextStyle(
-                            color: isSelected ? Colors.white : AppColors.textSecondary,
-                            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                            fontSize: 12,
-                          ),
-                          backgroundColor: AppColors.cardBackground,
-                          side: BorderSide(
-                            color: isSelected ? AppColors.primary : AppColors.cardBorder,
-                          ),
-                        ),
-                      );
-                    }
-                    final store = catalog.stores[index - 1];
-                    final isSelected = catalog.selectedStore?.id == store.id;
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: ChoiceChip(
-                        avatar: Icon(
-                          Icons.storefront_rounded,
-                          size: 14,
-                          color: isSelected ? Colors.white : AppColors.accentText,
-                        ),
-                        label: Text(store.displayName),
-                        selected: isSelected,
-                        onSelected: (_) => catalog.selectStore(store),
-                        selectedColor: AppColors.primary,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                        labelStyle: TextStyle(
-                          color: isSelected ? Colors.white : AppColors.textSecondary,
-                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                          fontSize: 12,
-                        ),
-                        backgroundColor: AppColors.cardBackground,
-                        side: BorderSide(
-                          color: isSelected ? AppColors.primary : AppColors.cardBorder,
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(height: 8),
-            ],
 
             // Category Filter Chips
             if (catalog.categories.isNotEmpty) ...[
@@ -313,7 +267,148 @@ class _ShopScreenState extends State<ShopScreen> {
               const SizedBox(height: 8),
             ],
 
-            // Store Info & Chat Card in Shop Inventory Column
+            // List Shops section when no store selected
+            if (catalog.selectedStore == null && catalog.stores.isNotEmpty) ...[
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 2),
+                child: Row(
+                  children: [
+                    Icon(Icons.store_rounded, color: AppColors.primary, size: 18),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Available Stores',
+                      style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const Spacer(),
+                    Text(
+                      '${catalog.stores.length} ${catalog.stores.length == 1 ? 'store' : 'stores'}',
+                      style: TextStyle(color: AppColors.textMuted, fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 6),
+              SizedBox(
+                height: 88,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: catalog.stores.length,
+                  itemBuilder: (context, index) {
+                    final store = catalog.stores[index];
+                    final hasAvatar = store.avatarUrl != null && store.avatarUrl!.isNotEmpty;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 10),
+                      child: GestureDetector(
+                        onTap: () => catalog.selectStore(store),
+                        child: Container(
+                          width: 200,
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: AppColors.cardBackground,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: AppColors.cardBorder),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.06),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 44,
+                                height: 44,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: AppColors.cardElevated,
+                                  border: Border.all(
+                                    color: store.isOpen
+                                        ? AppColors.primary.withValues(alpha: 0.5)
+                                        : AppColors.textMuted.withValues(alpha: 0.3),
+                                    width: 1.5,
+                                  ),
+                                ),
+                                child: ClipOval(
+                                  child: hasAvatar
+                                      ? Image.network(
+                                          store.avatarUrl!,
+                                          width: 44,
+                                          height: 44,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (context, error, stackTrace) => const Icon(Icons.storefront_rounded, color: AppColors.primary, size: 22),
+                                        )
+                                      : const Icon(Icons.storefront_rounded, color: AppColors.primary, size: 22),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      store.displayName,
+                                      style: TextStyle(
+                                        color: AppColors.textPrimary,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 3),
+                                    Row(
+                                      children: [
+                                        Container(
+                                          width: 6,
+                                          height: 6,
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            color: store.isOpen ? AppColors.success : AppColors.danger,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          store.isOpen ? 'Open' : 'Closed',
+                                          style: TextStyle(
+                                            color: store.isOpen ? AppColors.success : AppColors.danger,
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'Tap to browse →',
+                                      style: TextStyle(
+                                        color: AppColors.primary,
+                                        fontSize: 10.5,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
+
+            // Store Info & Chat Card when a store IS selected
             if (catalog.selectedStore != null) ...[
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -396,6 +491,18 @@ class _ShopScreenState extends State<ShopScreen> {
                           ],
                         ),
                       ),
+                      IconButton(
+                        tooltip: 'View all stores',
+                        style: IconButton.styleFrom(
+                          backgroundColor: AppColors.cardElevated,
+                          padding: const EdgeInsets.all(6),
+                          minimumSize: const Size(32, 32),
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        icon: Icon(Icons.close_rounded, size: 16, color: AppColors.textMuted),
+                        onPressed: () => catalog.selectStore(null),
+                      ),
+                      const SizedBox(width: 8),
                       ElevatedButton.icon(
                         onPressed: () {
                           final store = catalog.selectedStore;
@@ -481,51 +588,109 @@ class _ShopScreenState extends State<ShopScreen> {
                   }
 
                   if (visibleProducts.isEmpty) {
+                    final hasStoreFilter = catalog.selectedStore != null;
+                    final hasSearch = catalog.searchQuery.isNotEmpty;
+                    final hasCategory = catalog.selectedCategory != null;
+
+                    String emptyTitle = 'No Products Found';
+                    String emptyMessage = 'There are no products listed here yet. Swipe down to refresh.';
+                    String? btnText;
+                    VoidCallback? btnAction;
+
+                    if (hasSearch) {
+                      emptyMessage = 'No items matched "${catalog.searchQuery}". Try a different keyword.';
+                      btnText = 'Clear Search';
+                      btnAction = _clearSearch;
+                    } else if (hasCategory) {
+                      emptyTitle = 'No Items in ${catalog.selectedCategory!.name}';
+                      emptyMessage = 'This category doesn\'t have any products available right now.';
+                      btnText = 'View All Categories';
+                      btnAction = () => catalog.selectCategory(null);
+                    } else if (hasStoreFilter) {
+                      emptyTitle = '${catalog.selectedStore!.displayName} is Empty';
+                      emptyMessage = 'This store hasn\'t listed any products yet.';
+                      btnText = 'Browse Other Stores';
+                      btnAction = () => catalog.selectStore(null);
+                    }
+
                     return LayoutBuilder(
                       builder: (context, constraints) => SingleChildScrollView(
                         physics: const AlwaysScrollableScrollPhysics(),
                         child: ConstrainedBox(
                           constraints: BoxConstraints(minHeight: constraints.maxHeight),
                           child: EmptyState(
-                            icon: Icons.search_off_rounded,
-                            title: 'No Products Found',
-                            message: catalog.searchQuery.isNotEmpty
-                                ? 'No items matched "${catalog.searchQuery}". Try a different keyword.'
-                                : 'There are no products listed here yet. Swipe down to refresh.',
-                            buttonText: catalog.searchQuery.isNotEmpty ? 'Clear Search' : null,
-                            onButtonPressed: catalog.searchQuery.isNotEmpty
-                                ? () {
-                                    _searchController.clear();
-                                    catalog.setSearchQuery('');
-                                  }
-                                : null,
+                            icon: hasSearch ? Icons.search_off_rounded : Icons.inventory_2_outlined,
+                            title: emptyTitle,
+                            message: emptyMessage,
+                            buttonText: btnText,
+                            onButtonPressed: btnAction,
                           ),
                         ),
                       ),
                     );
                   }
 
-                  return GridView.builder(
-                    physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
-                    cacheExtent: 600,
-                    padding: const EdgeInsets.all(16),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      childAspectRatio: 0.72,
-                      crossAxisSpacing: 14,
-                      mainAxisSpacing: 14,
-                    ),
-                    itemCount: visibleProducts.length,
-                    itemBuilder: (context, index) {
-                      final product = visibleProducts[index];
-                      return RepaintBoundary(
-                        child: ProductCard(
-                          key: ValueKey('product-${product.id}'),
-                          product: product,
-                          onTap: () => _openProductDetail(product),
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 4, 16, 2),
+                        child: Row(
+                          children: [
+                            Text(
+                              catalog.selectedCategory != null
+                                  ? '${visibleProducts.length} ${visibleProducts.length == 1 ? 'item' : 'items'} in ${catalog.selectedCategory!.name}'
+                                  : (catalog.selectedStore != null
+                                      ? '${visibleProducts.length} ${visibleProducts.length == 1 ? 'item' : 'items'} available'
+                                      : '${visibleProducts.length} ${visibleProducts.length == 1 ? 'product' : 'products'} available'),
+                              style: TextStyle(
+                                color: AppColors.textMuted,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            if (catalog.selectedCategory != null) ...[
+                              const Spacer(),
+                              GestureDetector(
+                                onTap: () => catalog.selectCategory(null),
+                                child: Text(
+                                  'Clear filter',
+                                  style: TextStyle(
+                                    color: AppColors.primary,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
-                      );
-                    },
+                      ),
+                      Expanded(
+                        child: GridView.builder(
+                          physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+                          cacheExtent: 600,
+                          padding: const EdgeInsets.fromLTRB(16, 6, 16, 16),
+                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            childAspectRatio: 0.72,
+                            crossAxisSpacing: 14,
+                            mainAxisSpacing: 14,
+                          ),
+                          itemCount: visibleProducts.length,
+                          itemBuilder: (context, index) {
+                            final product = visibleProducts[index];
+                            return RepaintBoundary(
+                              child: ProductCard(
+                                key: ValueKey('product-${product.id}'),
+                                product: product,
+                                onTap: () => _openProductDetail(product),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
                   );
                 },
               ),

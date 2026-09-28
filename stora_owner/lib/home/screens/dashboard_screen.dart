@@ -10,7 +10,9 @@ import '../theme/theme_mode_controller.dart';
 import '../utils/date_utils.dart';
 import '../../subscription/subscription_screen.dart';
 import 'add_edit_product_screen.dart';
+import 'alerts_screen.dart';
 import 'business_insights_screen.dart';
+import 'inventory_list_screen.dart';
 import 'pending_orders_screen.dart';
 import 'pos_screen.dart';
 import 'profile_screen.dart';
@@ -47,10 +49,8 @@ class DashboardScreen extends StatelessWidget {
         SalesStore.instance,
         AccountStatusStore.instance,
         OrdersStore.instance,
-        ChatStore.instance,
         StoreStatusStore.instance,
         ThemeModeController.instance,
-        UtangStore.instance,
       ]),
       builder: (context, _) {
         final store = InventoryStore.instance;
@@ -403,6 +403,7 @@ class DashboardScreen extends StatelessWidget {
                           badgeColor: HomeColors.successText,
                           badgeBg: HomeColors.successBg,
                           value: '${store.totalStock}',
+                          onTap: () => DashboardScreen.safeNavigate(context, const InventoryListScreen()),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -415,6 +416,7 @@ class DashboardScreen extends StatelessWidget {
                           badgeBg: HomeColors.dangerBg,
                           value: '$lowStockCount',
                           valueColor: lowStockCount > 0 ? AppColors.error : HomeColors.textPrimary,
+                          onTap: () => DashboardScreen.safeNavigate(context, const AlertsScreen()),
                         ),
                       ),
                     ],
@@ -753,13 +755,16 @@ class _UtangSummaryCard extends StatelessWidget {
                           Row(
                             children: [
                               Flexible(
-                                child: Text(
-                                  'Customer Utang / Credit',
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    color: HomeColors.textPrimary,
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w700,
+                                child: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  alignment: Alignment.centerLeft,
+                                  child: Text(
+                                    'Customer Utang / Credit',
+                                    style: TextStyle(
+                                      color: HomeColors.textPrimary,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w700,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -906,6 +911,7 @@ class _StatCard extends StatelessWidget {
   final Color badgeBg;
   final String value;
   final Color? valueColor;
+  final VoidCallback? onTap;
   const _StatCard({
     required this.title,
     required this.icon,
@@ -914,62 +920,78 @@ class _StatCard extends StatelessWidget {
     required this.badgeBg,
     required this.value,
     this.valueColor,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: HomeColors.cardBackground,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: HomeColors.cardBorder.withValues(alpha: 0.8)),
-        boxShadow: HomeColors.cardShadow,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        child: Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: HomeColors.cardBackground,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: HomeColors.cardBorder.withValues(alpha: 0.8)),
+            boxShadow: HomeColors.cardShadow,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                padding: const EdgeInsets.all(7),
-                decoration: BoxDecoration(
-                  color: badgeBg,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(icon, size: 16, color: badgeColor),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(7),
+                    decoration: BoxDecoration(
+                      color: badgeBg,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(icon, size: 16, color: badgeColor),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: badgeBg,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      badge,
+                      style: TextStyle(color: badgeColor, fontSize: 11, fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                ],
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                decoration: BoxDecoration(
-                  color: badgeBg,
-                  borderRadius: BorderRadius.circular(20),
-                ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: HomeColors.textSecondary, fontSize: 13, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                  if (onTap != null)
+                    Icon(Icons.chevron_right_rounded, color: HomeColors.textSecondary.withValues(alpha: 0.5), size: 16),
+                ],
+              ),
+              const SizedBox(height: 6),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
                 child: Text(
-                  badge,
-                  style: TextStyle(color: badgeColor, fontSize: 11, fontWeight: FontWeight.w700),
+                  value,
+                  style: TextStyle(color: valueColor ?? HomeColors.textPrimary, fontSize: 26, fontWeight: FontWeight.w900, letterSpacing: -0.5),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          Text(
-            title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(color: HomeColors.textSecondary, fontSize: 13, fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 6),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: Text(
-              value,
-              style: TextStyle(color: valueColor ?? HomeColors.textPrimary, fontSize: 26, fontWeight: FontWeight.w900, letterSpacing: -0.5),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

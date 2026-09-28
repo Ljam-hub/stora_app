@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
@@ -33,6 +34,7 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
 
   StoreModel? _selectedStore;
   String _searchFilter = '';
+  bool _onlyOpenStores = false;
 
   bool _isRecentering = false;
   bool _isShowingStoresSheet = false;
@@ -582,6 +584,7 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
 
     final filteredStores = allStores.where((s) {
       if (!s.hasValidLocation) return false;
+      if (_onlyOpenStores && !s.isOpen) return false;
       if (_searchFilter.trim().isEmpty) return true;
       final q = _searchFilter.trim().toLowerCase();
       return s.displayName.toLowerCase().contains(q) ||
@@ -747,27 +750,24 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
                         ),
                         const SizedBox(width: 8),
                         GestureDetector(
-                          onTap: () => _showAllStoresSheet(context, filteredStores),
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            setState(() => _onlyOpenStores = !_onlyOpenStores);
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              if (_pageController.hasClients && mounted) {
+                                _pageController.jumpToPage(0);
+                              }
+                            });
+                          },
                           child: _FilterBadge(
-                            icon: Icons.list_rounded,
-                            label: 'List View',
-                            color: const Color(0xFF38BDF8),
+                            icon: _onlyOpenStores
+                                ? Icons.check_circle_rounded
+                                : Icons.schedule_rounded,
+                            label: _onlyOpenStores ? 'Open Only' : 'Open Now',
+                            color: const Color(0xFF10B981),
                             isDark: isDark,
+                            isActive: _onlyOpenStores,
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        _FilterBadge(
-                          icon: Icons.storefront_rounded,
-                          label: 'Sari-Sari & Retail',
-                          color: const Color(0xFF4ADE80),
-                          isDark: isDark,
-                        ),
-                        const SizedBox(width: 8),
-                        _FilterBadge(
-                          icon: Icons.verified_rounded,
-                          label: 'Verified Stora Owners',
-                          color: const Color(0xFFFBBF24),
-                          isDark: isDark,
                         ),
                       ],
                     ),
@@ -1299,12 +1299,14 @@ class _FilterBadge extends StatelessWidget {
   final String label;
   final Color color;
   final bool isDark;
+  final bool isActive;
 
   const _FilterBadge({
     required this.icon,
     required this.label,
     required this.color,
     required this.isDark,
+    this.isActive = false,
   });
 
   @override
@@ -1312,11 +1314,16 @@ class _FilterBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: isDark
-            ? AppColors.cardBackground.withValues(alpha: 0.92)
-            : Colors.white.withValues(alpha: 0.95),
+        color: isActive
+            ? color.withValues(alpha: isDark ? 0.28 : 0.16)
+            : (isDark
+                ? AppColors.cardBackground.withValues(alpha: 0.92)
+                : Colors.white.withValues(alpha: 0.95)),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withValues(alpha: 0.35)),
+        border: Border.all(
+          color: isActive ? color : color.withValues(alpha: 0.35),
+          width: isActive ? 1.5 : 1.0,
+        ),
         boxShadow: const [BoxShadow(color: Color(0x20000000), blurRadius: 8)],
       ),
       child: Row(
@@ -1327,7 +1334,9 @@ class _FilterBadge extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              color: isDark ? Colors.white : Colors.black87,
+              color: isActive
+                  ? color
+                  : (isDark ? Colors.white : Colors.black87),
               fontSize: 11,
               fontWeight: FontWeight.w700,
             ),

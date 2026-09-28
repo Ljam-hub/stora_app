@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import '../cart/cart_screen.dart';
 import '../../models/product_model.dart';
 import '../../providers/cart_provider.dart';
 import '../../storage/hidden_products_store.dart';
@@ -251,7 +253,10 @@ class _ProductDetailSheetState extends State<ProductDetailSheet> {
                                 IconButton(
                                   icon: Icon(Icons.remove, color: _quantity > 1 ? AppColors.textPrimary : AppColors.textMuted, size: 18),
                                   onPressed: _quantity > 1
-                                      ? () => setState(() => _quantity--)
+                                      ? () {
+                                          HapticFeedback.selectionClick();
+                                          setState(() => _quantity--);
+                                        }
                                       : null,
                                 ),
                                 Padding(
@@ -268,7 +273,10 @@ class _ProductDetailSheetState extends State<ProductDetailSheet> {
                                 IconButton(
                                   icon: Icon(Icons.add, color: _quantity < maxAvailable ? AppColors.textPrimary : AppColors.textMuted, size: 18),
                                   onPressed: _quantity < maxAvailable
-                                      ? () => setState(() => _quantity++)
+                                      ? () {
+                                          HapticFeedback.selectionClick();
+                                          setState(() => _quantity++);
+                                        }
                                       : null,
                                 ),
                               ],
@@ -288,10 +296,12 @@ class _ProductDetailSheetState extends State<ProductDetailSheet> {
                             ? null
                             : () {
                                 if (_isActionInProgress) return;
+                                HapticFeedback.mediumImpact();
                                 setState(() => _isActionInProgress = true);
                                 final added = cart.addItem(product, _quantity);
                                 if (added) {
                                   Navigator.pop(context);
+                                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
                                       content: Row(
@@ -316,7 +326,16 @@ class _ProductDetailSheetState extends State<ProductDetailSheet> {
                                         borderRadius: BorderRadius.circular(12),
                                         side: BorderSide(color: AppColors.secondary.withValues(alpha: 0.4)),
                                       ),
-                                      duration: const Duration(seconds: 2),
+                                      action: SnackBarAction(
+                                        label: 'View Cart',
+                                        textColor: AppColors.primary,
+                                        onPressed: () {
+                                          Navigator.of(context).push(
+                                            MaterialPageRoute(builder: (_) => const CartScreen()),
+                                          );
+                                        },
+                                      ),
+                                      duration: const Duration(seconds: 3),
                                     ),
                                   );
                                 } else if (cart.isNotEmpty && cart.storeId != product.ownerId) {

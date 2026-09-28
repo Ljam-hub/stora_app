@@ -256,12 +256,16 @@ class _CustomerConversationsScreenState extends State<CustomerConversationsScree
       appBar: AppBar(
         backgroundColor: AppColors.background,
         elevation: 0,
-        title: Text(
-          'Store Messages',
-          style: TextStyle(
-            color: AppColors.textPrimary,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
+        title: FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Text(
+            'Messages',
+            style: TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
         actions: [

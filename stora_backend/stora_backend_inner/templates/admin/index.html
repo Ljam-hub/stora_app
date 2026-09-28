@@ -99,6 +99,25 @@
     </p>
   </article>
 
+  {% if stora_stats.is_platform_admin %}
+  <article class="stora-card" style="border: 1px solid rgba(74, 222, 128, 0.35);">
+    <div class="stora-card__top">
+      <span class="stora-card__label">Subscription Revenue</span>
+      <span class="stora-card__icon" style="background: rgba(74, 222, 128, 0.15); color: #4ade80;" aria-hidden="true">&#128179;</span>
+    </div>
+    <p class="stora-card__value" style="color: #4ade80;">&#8369;{{ stora_stats.total_sub_revenue|floatformat:2 }}</p>
+    <p class="stora-card__sub"><a href="/admin/accounts/paymentproof/?status__exact=approved">&#8369;{{ stora_stats.month_sub_revenue|floatformat:2 }} this month &rarr;</a></p>
+  </article>
+
+  <article class="stora-card" style="border: 1px solid rgba(56, 189, 248, 0.35);">
+    <div class="stora-card__top">
+      <span class="stora-card__label">Platform GMV (Sales)</span>
+      <span class="stora-card__icon" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8;" aria-hidden="true">&#128200;</span>
+    </div>
+    <p class="stora-card__value" style="color: #38bdf8;">&#8369;{{ stora_stats.total_platform_gmv|floatformat:2 }}</p>
+    <p class="stora-card__sub"><a href="/admin/sales/sale/">All processed sales &rarr;</a></p>
+  </article>
+
   <article class="stora-card" style="border: 1px solid {% if stora_stats.pending_reports_count > 0 %}rgba(239, 68, 68, 0.5){% else %}rgba(255, 255, 255, 0.08){% endif %};">
     <div class="stora-card__top">
       <span class="stora-card__label">User Reports</span>
@@ -116,6 +135,7 @@
     <p class="stora-card__value" style="color: {% if stora_stats.pending_requests > 0 %}#8bd3ca{% else %}#ffffff{% endif %};">{{ stora_stats.pending_requests }}</p>
     <p class="stora-card__sub"><a href="/admin/accounts/paymentproof/?status__exact=pending">Review approvals <span aria-hidden="true">&rarr;</span></a></p>
   </article>
+  {% endif %}
 
   <article class="stora-card">
     <div class="stora-card__top"><span class="stora-card__label">Pending orders</span><span class="stora-card__icon" aria-hidden="true">&#8599;</span></div>

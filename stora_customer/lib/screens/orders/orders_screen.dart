@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../providers/order_provider.dart';
 import '../../services/notification_service.dart';
@@ -102,6 +103,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                     ),
                     selected: isSelected,
                     onSelected: (_) {
+                      HapticFeedback.lightImpact();
                       orderProvider.setFilter(f['id']!);
                     },
                     selectedColor: AppColors.cardElevated,
@@ -159,21 +161,28 @@ class _OrdersScreenState extends State<OrdersScreen> {
                         )
                       : orderProvider.orders.isEmpty
                           ? LayoutBuilder(
-                              builder: (context, constraints) => SingleChildScrollView(
-                                physics: const AlwaysScrollableScrollPhysics(),
-                                child: ConstrainedBox(
-                                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                                  child: EmptyState(
-                                    icon: Icons.receipt_long_outlined,
-                                    title: 'No Orders Found',
-                                    message: orderProvider.selectedStatusFilter != 'all'
-                                        ? 'You have no orders in the "${orderProvider.selectedStatusFilter}" status.'
-                                        : 'You haven\'t placed any orders yet. Start exploring products to make your first purchase!',
-                                    buttonText: 'Start Shopping',
-                                    onButtonPressed: widget.onStartShopping,
+                              builder: (context, constraints) {
+                                final activeFilter = filters.firstWhere(
+                                  (item) => item['id'] == orderProvider.selectedStatusFilter,
+                                  orElse: () => {'label': orderProvider.selectedStatusFilter},
+                                );
+                                final filterLabel = activeFilter['label'] ?? orderProvider.selectedStatusFilter;
+                                return SingleChildScrollView(
+                                  physics: const AlwaysScrollableScrollPhysics(),
+                                  child: ConstrainedBox(
+                                    constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                                    child: EmptyState(
+                                      icon: Icons.receipt_long_outlined,
+                                      title: 'No Orders Found',
+                                      message: orderProvider.selectedStatusFilter != 'all'
+                                          ? 'You have no orders in $filterLabel.'
+                                          : 'You haven\'t placed any orders yet. Start exploring products to make your first purchase!',
+                                      buttonText: 'Start Shopping',
+                                      onButtonPressed: widget.onStartShopping,
+                                    ),
                                   ),
-                                ),
-                              ),
+                                );
+                              },
                             )
                       : ListView.builder(
                           physics: const AlwaysScrollableScrollPhysics(),

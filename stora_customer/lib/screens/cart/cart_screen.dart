@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/cart_provider.dart';
@@ -125,6 +126,7 @@ class _CartScreenState extends State<CartScreen> {
                       ),
                       TextButton(
                         onPressed: () {
+                          HapticFeedback.mediumImpact();
                           cart.clear();
                           Navigator.pop(ctx);
                         },
@@ -263,9 +265,36 @@ class _CartScreenState extends State<CartScreen> {
                       final item = cart.items[index];
                       return CartItemTile(
                         item: item,
-                        onIncrement: () => cart.increment(item.product.id),
-                        onDecrement: () => cart.decrement(item.product.id),
-                        onRemove: () => cart.removeItem(item.product.id),
+                        onIncrement: () {
+                          HapticFeedback.selectionClick();
+                          cart.increment(item.product.id);
+                        },
+                        onDecrement: () {
+                          HapticFeedback.selectionClick();
+                          cart.decrement(item.product.id);
+                        },
+                        onRemove: () {
+                          HapticFeedback.mediumImpact();
+                          final removedProduct = item.product;
+                          final removedQty = item.quantity;
+                          cart.removeItem(removedProduct.id);
+                          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Removed ${removedProduct.name} from cart'),
+                              action: SnackBarAction(
+                                label: 'Undo',
+                                textColor: AppColors.primary,
+                                onPressed: () {
+                                  HapticFeedback.lightImpact();
+                                  cart.addItem(removedProduct, removedQty);
+                                },
+                              ),
+                              duration: const Duration(seconds: 4),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        },
                       );
                     },
                   ),

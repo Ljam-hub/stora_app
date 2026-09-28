@@ -1,6 +1,8 @@
+import csv
 from datetime import timedelta
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
+from django.http import HttpResponse
 from django.utils import timezone
 from django.utils.html import format_html
 
@@ -56,8 +58,10 @@ class UserAdmin(DjangoUserAdmin):
     @admin.action(description="Block selected users (disable app access)")
     def block_selected_users(self, request, queryset):
         count = 0
+        admin_name = request.user.email or request.user.username or "Administrator"
+        timestamp = timezone.now().strftime("%Y-%m-%d %H:%M")
         for u in queryset:
-            u.block_user(reason="Blocked by administrator via Accounts > Users")
+            u.block_user(reason=f"Blocked by {admin_name} on {timestamp}")
             count += 1
         self.message_user(request, f"{count} user(s) have been blocked from accessing the app.")
 
@@ -158,21 +162,21 @@ class UserAdmin(DjangoUserAdmin):
         return ("username", "email")
 
     def save_model(self, request, obj, form, change):
-        super().save_model(request, obj, form, change)
-        if getattr(obj, "is_blocked", False) or not obj.is_active:
-            if not obj.is_blocked:
-                obj.is_blocked = True
-                obj.save(update_fields=["is_blocked"])
+        # Synchronize is_active and is_blocked bidirectionally so they
+        # never drift out of sync regardless of which field the admin edits.
+        if getattr(obj, "is_blocked", False):
+            obj.is_active = False
         else:
-            if obj.block_reason:
-                obj.block_reason = ""
-                obj.save(update_fields=["block_reason"])
+            obj.is_active = True
+            obj.block_reason = ""
+        super().save_model(request, obj, form, change)
 
 
 @admin.register(PasswordResetToken, site=stora_admin_site)
 class PasswordResetTokenAdmin(admin.ModelAdmin):
     list_display = ("user", "owner_customer_name", "token", "token_status", "created_at", "used")
     list_filter = ("used", "created_at")
+    list_select_related = ("user",)
     search_fields = ("user__email", "user__username", "user__business_name", "token")
     readonly_fields = ("token", "created_at")
 
@@ -199,10 +203,53 @@ class PasswordResetTokenAdmin(admin.ModelAdmin):
 
 @admin.register(PaymentProof, site=stora_admin_site)
 class PaymentProofAdmin(admin.ModelAdmin):
-    list_display = ("user", "owner_customer_name", "reference_number", "amount", "status", "submitted_at", "reviewed_at")
+    list_display = (
+        "receipt_preview",
+        "user",
+        "owner_customer_name",
+        "reference_number",
+        "amount",
+        "status_badge",
+        "submitted_at",
+        "reviewed_at",
+    )
+    list_display_links = ("receipt_preview", "user")
     list_filter = ("status", "submitted_at")
+    date_hierarchy = "submitted_at"
+    list_select_related = ("user",)
     search_fields = ("reference_number", "user__email", "user__business_name", "user__username")
-    actions = ["approve_selected", "reject_selected"]
+    actions = ["approve_selected", "reject_selected", "export_proofs_csv"]
+
+    @admin.display(description="Receipt")
+    def receipt_preview(self, obj):
+        if obj.screenshot:
+            try:
+                url = obj.screenshot.url
+                return format_html(
+                    '<a href="{0}" target="_blank" title="Click to view full receipt">'
+                    '<img src="{0}" style="height: 44px; width: 44px; object-fit: cover; border-radius: 6px; border: 1px solid #FF6B00; background: #1f1b2e; vertical-align: middle; box-shadow: 0 2px 6px rgba(0,0,0,0.3);" />'
+                    '</a>',
+                    url,
+                )
+            except Exception:
+                pass
+        return format_html('<span style="color: #888888; font-style: italic; font-size: 11px;">No image</span>')
+
+    @admin.display(description="Status", ordering="status")
+    def status_badge(self, obj):
+        colors = {
+            PaymentProof.STATUS_PENDING: ("#8bd3ca", "#1a3435", "Pending"),
+            PaymentProof.STATUS_APPROVED: ("#4ade80", "#132d1b", "Approved"),
+            PaymentProof.STATUS_REJECTED: ("#f87171", "#3a1620", "Rejected"),
+        }
+        text_color, bg_color, label = colors.get(obj.status, ("#f5f8f8", "#262d30", obj.status))
+        return format_html(
+            '<span style="background-color: {}; color: {}; padding: 3px 9px; '
+            'border-radius: 6px; font-weight: 700; font-size: 11px;">{}</span>',
+            bg_color,
+            text_color,
+            label,
+        )
 
     @admin.display(description="Owner/Customer Name")
     def owner_customer_name(self, obj):
@@ -238,10 +285,43 @@ class PaymentProofAdmin(admin.ModelAdmin):
             count += 1
         self.message_user(request, f"Rejected {count} payment proof(s).")
 
+    @admin.action(description="📥 Export selected payment proofs to CSV")
+    def export_proofs_csv(self, request, queryset):
+        response = HttpResponse(content_type="text/csv; charset=utf-8")
+        response["Content-Disposition"] = 'attachment; filename="stora_payment_proofs_export.csv"'
+        response.write("\ufeff")
+        writer = csv.writer(response)
+        writer.writerow([
+            "Proof ID",
+            "Submitted Date",
+            "Store Owner / Email",
+            "Business Name",
+            "GCash Reference #",
+            "Amount (PHP)",
+            "Status",
+            "Reviewed Date",
+        ])
+        for p in queryset.select_related("user"):
+            u = p.user
+            writer.writerow([
+                f"#{p.id}",
+                p.submitted_at.strftime("%Y-%m-%d %H:%M") if p.submitted_at else "",
+                u.email if u else "—",
+                (u.business_name or "") if u else "",
+                p.reference_number,
+                f"{p.amount:.2f}",
+                p.get_status_display(),
+                p.reviewed_at.strftime("%Y-%m-%d %H:%M") if p.reviewed_at else "",
+            ])
+        return response
+
     def save_model(self, request, obj, form, change):
         from api.fcm import notify_subscription_proof_status
         if obj.status == PaymentProof.STATUS_APPROVED:
             if not change or form.initial.get("status") != PaymentProof.STATUS_APPROVED:
+                # Reset status so approve()'s early-return guard doesn't skip
+                # the transactional logic that grants premium to the user.
+                obj.status = PaymentProof.STATUS_PENDING
                 obj.approve()
                 notify_subscription_proof_status(obj, "approved")
                 return
@@ -277,6 +357,7 @@ class SubscriptionConfigAdmin(admin.ModelAdmin):
 class StoreLocationAdmin(admin.ModelAdmin):
     list_display = ("owner", "business_name_col", "latitude", "longitude", "address", "is_visible", "updated_at")
     search_fields = ("owner__email", "owner__business_name", "address")
+    list_select_related = ("owner",)
     list_filter = ("is_visible",)
 
     @admin.display(description="Business Name")

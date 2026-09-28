@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../stora_login/stora_login.dart';
 import '../../data/api/api_client.dart';
 import '../../data/stores/account_status_store.dart';
@@ -16,7 +17,8 @@ import '../widgets/shimmer_product_card.dart';
 import 'add_edit_product_screen.dart';
 
 class InventoryListScreen extends StatefulWidget {
-  const InventoryListScreen({super.key});
+  final String? initialStockFilter;
+  const InventoryListScreen({super.key, this.initialStockFilter});
 
   @override
   State<InventoryListScreen> createState() => _InventoryListScreenState();
@@ -26,6 +28,13 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
   final _searchController = TextEditingController();
   String _query = '';
   String _selectedCategory = 'All';
+  late String _stockFilter;
+
+  @override
+  void initState() {
+    super.initState();
+    _stockFilter = widget.initialStockFilter ?? 'all';
+  }
 
   @override
   void dispose() {
@@ -75,7 +84,15 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
             : InventoryStore.instance.products
                 .where((p) => p.category.toLowerCase() == _selectedCategory.toLowerCase())
                 .toList();
-        final products = categoryFiltered
+        final stockFiltered = categoryFiltered.where((p) {
+          if (_stockFilter == 'low') {
+            return p.stock > 0 && p.stock < 5;
+          } else if (_stockFilter == 'out') {
+            return p.stock <= 0;
+          }
+          return true;
+        }).toList();
+        final products = stockFiltered
             .where((p) {
               if (queryLower.isEmpty) return true;
               final nameMatch = p.name.toLowerCase().contains(queryLower);
@@ -162,6 +179,49 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
                 CategoryFilterRow(
                   selected: _selectedCategory,
                   onSelect: (cat) => setState(() => _selectedCategory = cat),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 6, 20, 4),
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        _StockFilterChip(
+                          label: 'All Items',
+                          count: categoryFiltered.length,
+                          isSelected: _stockFilter == 'all',
+                          onTap: () {
+                            HapticFeedback.selectionClick();
+                            setState(() => _stockFilter = 'all');
+                          },
+                        ),
+                        const SizedBox(width: 8),
+                        _StockFilterChip(
+                          label: 'Low Stock (<5)',
+                          count: categoryFiltered.where((p) => p.stock > 0 && p.stock < 5).length,
+                          isSelected: _stockFilter == 'low',
+                          activeColor: const Color(0xFFFFA726),
+                          activeBg: const Color(0xFF2B1F10),
+                          onTap: () {
+                            HapticFeedback.selectionClick();
+                            setState(() => _stockFilter = 'low');
+                          },
+                        ),
+                        const SizedBox(width: 8),
+                        _StockFilterChip(
+                          label: 'Out of Stock',
+                          count: categoryFiltered.where((p) => p.stock <= 0).length,
+                          isSelected: _stockFilter == 'out',
+                          activeColor: AppColors.error,
+                          activeBg: HomeColors.dangerBg,
+                          onTap: () {
+                            HapticFeedback.selectionClick();
+                            setState(() => _stockFilter = 'out');
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
                 if (InventoryStore.instance.error != null)
                   Padding(
@@ -549,6 +609,73 @@ class ProductCard extends StatelessWidget {
             ),
           ),
       ],
+    );
+  }
+}
+
+class _StockFilterChip extends StatelessWidget {
+  final String label;
+  final int count;
+  final bool isSelected;
+  final VoidCallback onTap;
+  final Color? activeColor;
+  final Color? activeBg;
+
+  const _StockFilterChip({
+    required this.label,
+    required this.count,
+    required this.isSelected,
+    required this.onTap,
+    this.activeColor,
+    this.activeBg,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final effectiveColor = isSelected ? (activeColor ?? AppColors.purpleLight) : HomeColors.textSecondary;
+    final effectiveBg = isSelected ? (activeBg ?? AppColors.purpleLight.withValues(alpha: 0.15)) : HomeColors.cardElevated;
+    final effectiveBorder = isSelected ? (activeColor ?? AppColors.purpleLight).withValues(alpha: 0.5) : HomeColors.cardBorder;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: effectiveBg,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: effectiveBorder, width: isSelected ? 1.2 : 1),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? (activeColor ?? HomeColors.textPrimary) : HomeColors.textSecondary,
+                fontSize: 12,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+              decoration: BoxDecoration(
+                color: isSelected ? (activeColor ?? AppColors.purpleLight).withValues(alpha: 0.25) : HomeColors.cardBackground,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                '$count',
+                style: TextStyle(
+                  color: effectiveColor,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
