@@ -499,10 +499,10 @@ class ProductCard extends StatelessWidget {
                             ),
                             StockStepButton(
                               icon: Icons.add,
-                              onTap: (isLocked || product.stock >= kMaxStock)
+                              onTap: (isLocked || product.stock >= (AccountStatusStore.instance.isPremium ? kMaxStockPremium : kMaxStock))
                                   ? () {}
                                   : () => InventoryStore.instance.adjustStock(product.id, 1),
-                              disabled: isLocked || product.stock >= kMaxStock,
+                              disabled: isLocked || product.stock >= (AccountStatusStore.instance.isPremium ? kMaxStockPremium : kMaxStock),
                             ),
                           ],
                         ),

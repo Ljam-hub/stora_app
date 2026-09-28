@@ -269,6 +269,116 @@ class _OrderCardState extends State<OrderCard> with NavigationGuard<OrderCard> {
     );
   }
 
+  Future<void> _handleDeleteOrder(BuildContext context, CustomerOrder order) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.cardBackground,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          'Delete Order',
+          style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold, fontSize: 16),
+        ),
+        content: Text(
+          'Are you sure you want to delete Order #${order.id}? This cannot be undone.',
+          style: TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.4),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('Cancel', style: TextStyle(color: AppColors.textMuted)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.danger,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            child: const Text('Delete', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true || !context.mounted) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    final orderProvider = context.read<OrderProvider>();
+
+    try {
+      await orderProvider.deleteOrder(order.id);
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('Order #${order.id} deleted.'),
+          backgroundColor: AppColors.success,
+        ),
+      );
+    } catch (e) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('Failed to delete: ${e.toString().replaceAll('Exception: ', '')}'),
+          backgroundColor: AppColors.danger,
+        ),
+      );
+    }
+  }
+
+  Future<void> _handleCancelOrder(BuildContext context, CustomerOrder order) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.cardBackground,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          'Cancel Order',
+          style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold, fontSize: 16),
+        ),
+        content: Text(
+          'Are you sure you want to cancel Order #${order.id}? The store will be notified.',
+          style: TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.4),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('Keep Order', style: TextStyle(color: AppColors.textMuted)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.danger,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            child: const Text('Cancel Order', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true || !context.mounted) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    final orderProvider = context.read<OrderProvider>();
+
+    try {
+      await orderProvider.cancelOrder(order.id);
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Order cancelled successfully.'),
+          backgroundColor: AppColors.success,
+        ),
+      );
+    } catch (e) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('Failed to cancel: ${e.toString().replaceAll('Exception: ', '')}'),
+          backgroundColor: AppColors.danger,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final order = widget.order;
@@ -726,6 +836,40 @@ class _OrderCardState extends State<OrderCard> with NavigationGuard<OrderCard> {
                   ),
                 ],
                 const SizedBox(width: 8),
+                if (order.status == 'pending' || order.status == 'counter_offer')
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: IconButton(
+                      tooltip: 'Cancel Order',
+                      onPressed: () => _handleCancelOrder(context, order),
+                      icon: const Icon(Icons.cancel_outlined, color: AppColors.danger, size: 20),
+                      style: IconButton.styleFrom(
+                        backgroundColor: AppColors.danger.withValues(alpha: 0.1),
+                        padding: const EdgeInsets.all(10),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          side: BorderSide(color: AppColors.danger.withValues(alpha: 0.3)),
+                        ),
+                      ),
+                    ),
+                  ),
+                if (order.status == 'completed' || order.status == 'declined' || order.status == 'auto_declined')
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: IconButton(
+                      tooltip: 'Delete Order',
+                      onPressed: () => _handleDeleteOrder(context, order),
+                      icon: const Icon(Icons.delete_outline_rounded, color: AppColors.danger, size: 20),
+                      style: IconButton.styleFrom(
+                        backgroundColor: AppColors.danger.withValues(alpha: 0.1),
+                        padding: const EdgeInsets.all(10),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          side: BorderSide(color: AppColors.danger.withValues(alpha: 0.3)),
+                        ),
+                      ),
+                    ),
+                  ),
                 IconButton(
                   tooltip: 'Report Store',
                   onPressed: () => _showReportDialog(context),

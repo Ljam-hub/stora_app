@@ -45,7 +45,7 @@ class InventoryStore extends ChangeNotifier {
     final idx = _products.indexWhere((p) => p.id == productId);
     if (idx != -1) {
       final p = _products[idx];
-      final newStock = (p.stock - quantity).clamp(0, kMaxStock);
+      final newStock = (p.stock - quantity).clamp(0, AccountStatusStore.instance.isPremium ? kMaxStockPremium : kMaxStock);
       final updated = Product(
         id: p.id,
         name: p.name,
@@ -100,7 +100,7 @@ class InventoryStore extends ChangeNotifier {
     if (_savingProduct) return false;
     _savingProduct = true;
     try {
-      p.stock = p.stock.clamp(0, kMaxStock);
+      p.stock = p.stock.clamp(0, AccountStatusStore.instance.isPremium ? kMaxStockPremium : kMaxStock);
 
     // Enforce cached plan limits before saving locally or online
     final accountStatus = AccountStatusStore.instance.status;
@@ -167,7 +167,7 @@ class InventoryStore extends ChangeNotifier {
   }
 
   Future<bool> updateProduct(Product p) async {
-    p.stock = p.stock.clamp(0, kMaxStock);
+    p.stock = p.stock.clamp(0, AccountStatusStore.instance.isPremium ? kMaxStockPremium : kMaxStock);
     final isLocal = p.id.startsWith('local-');
 
     if (!isLocal) {
@@ -273,7 +273,7 @@ class InventoryStore extends ChangeNotifier {
   Future<void> adjustStock(String id, int delta) async {
     final idx = _products.indexWhere((p) => p.id == id);
     if (idx != -1) {
-      _products[idx].stock = (_products[idx].stock + delta).clamp(0, kMaxStock);
+      _products[idx].stock = (_products[idx].stock + delta).clamp(0, AccountStatusStore.instance.isPremium ? kMaxStockPremium : kMaxStock);
       await _db.productDao.upsertProduct(_products[idx]);
       notifyListeners();
     }
@@ -305,7 +305,7 @@ class InventoryStore extends ChangeNotifier {
   Future<void> applyLocalStockDelta(String id, int delta) async {
     final idx = _products.indexWhere((p) => p.id == id);
     if (idx == -1) return;
-    _products[idx].stock = (_products[idx].stock + delta).clamp(0, kMaxStock);
+    _products[idx].stock = (_products[idx].stock + delta).clamp(0, AccountStatusStore.instance.isPremium ? kMaxStockPremium : kMaxStock);
     await _db.productDao.upsertProduct(_products[idx]);
     notifyListeners();
   }

@@ -1,6 +1,7 @@
 /// Shared inventory stock ceiling — used by both the stepper buttons and
 /// the Add/Edit product form validator so the two can never disagree.
 const int kMaxStock = 99;
+const int kMaxStockPremium = 99999;
 
 /// Free plan's total product count ceiling — checked wherever a new
 /// product can be added (Dashboard's "Add Product" button, Inventory's

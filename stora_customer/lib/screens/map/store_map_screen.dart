@@ -390,6 +390,10 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
         LatLng(store.latitude, store.longitude),
         fitCamera: fitCamera,
       );
+      try {
+        final zoom = _mapController.camera.zoom;
+        _mapController.move(LatLng(store.latitude, store.longitude), zoom);
+      } catch (_) {}
     } else {
       setState(() {
         _roadRoutePoints = [];
@@ -397,10 +401,6 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
         _roadDurationMinutes = null;
       });
     }
-    try {
-      final zoom = _mapController.camera.zoom;
-      _mapController.move(LatLng(store.latitude, store.longitude), zoom);
-    } catch (_) {}
     if (animatePage && _pageController.hasClients) {
       _pageController.animateToPage(
         index,
@@ -848,8 +848,8 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
                     context.read<CatalogProvider>().fetchStores(lat: _userLat, lng: _userLng);
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: const Text('Refreshing nearby stores...'),
-                        backgroundColor: AppColors.cardElevated,
+                        content: const Text('Refreshing nearby stores...', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                        backgroundColor: AppColors.primary,
                         duration: const Duration(seconds: 1),
                         behavior: SnackBarBehavior.floating,
                       ),
@@ -1071,7 +1071,7 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
                   ),
                 ],
               ),
-              constraints: const BoxConstraints(maxWidth: 120),
+              constraints: const BoxConstraints(maxWidth: 200),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -1083,7 +1083,7 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
                         fontSize: 10,
                         fontWeight: FontWeight.w800,
                       ),
-                      maxLines: 1,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),

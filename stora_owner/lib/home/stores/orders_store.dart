@@ -220,6 +220,20 @@ class OrdersStore extends ChangeNotifier {
     }
   }
 
+  Future<void> deleteOrder(int orderId) async {
+    if (_processingOrderIds.contains(orderId)) return;
+    _processingOrderIds.add(orderId);
+    notifyListeners();
+    try {
+      await ApiClient.instance.deleteOrder(orderId);
+      _orders.removeWhere((o) => _parseOrderId(o['id']) == orderId);
+      _knownOrderIds.remove(orderId);
+    } finally {
+      _processingOrderIds.remove(orderId);
+      notifyListeners();
+    }
+  }
+
   void clear() {
     stopPolling();
     _orders.clear();

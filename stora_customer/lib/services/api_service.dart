@@ -582,6 +582,26 @@ class CustomerApiService {
     _throw(response);
   }
 
+  Future<void> deleteOrder(int orderId) async {
+    final response = await _dispatch(
+      'DELETE',
+      _uri('/orders/$orderId/'),
+    );
+    if (response.statusCode != 200 && response.statusCode != 204) {
+      _throw(response);
+    }
+  }
+
+  Future<void> cancelOrder(int orderId) async {
+    final response = await _dispatch(
+      'POST',
+      _uri('/orders/$orderId/cancel/'),
+    );
+    if (response.statusCode != 200) {
+      _throw(response);
+    }
+  }
+
   Future<void> updateFcmToken(String fcmToken) async {
     try {
       await _dispatch(

@@ -653,12 +653,26 @@ class _EarningsCard extends StatelessWidget {
                 if (onTap != null) ...[
                   const SizedBox(width: 8),
                   Container(
-                    padding: const EdgeInsets.all(4),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.15),
-                      shape: BoxShape.circle,
+                      borderRadius: BorderRadius.circular(20),
                     ),
-                    child: const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 12),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Sales History',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        SizedBox(width: 4),
+                        Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 10),
+                      ],
+                    ),
                   ),
                 ],
               ],

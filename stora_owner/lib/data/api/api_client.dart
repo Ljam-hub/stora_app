@@ -613,6 +613,13 @@ class ApiClient {
     return _decode(response) as Map<String, dynamic>;
   }
 
+  Future<void> deleteOrder(int orderId) async {
+    final response = await _send('DELETE', '/orders/$orderId/');
+    if (response.statusCode != 200 && response.statusCode != 204) {
+      _throw(response);
+    }
+  }
+
   // ---------- Store Location ----------
 
   Future<Map<String, dynamic>> getStoreLocation() async {

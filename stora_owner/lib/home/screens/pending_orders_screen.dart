@@ -687,7 +687,7 @@ class _OrderCardState extends State<_OrderCard> {
 
   @override
   Widget build(BuildContext context) {
-    final isPending = status == 'pending' || status == 'counter_offer';
+    final isPending = status == 'pending';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -1243,6 +1243,104 @@ class _OrderCardState extends State<_OrderCard> {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                   ),
                   onPressed: () => ReceiptDialog.show(context, _createSaleFromOrder()),
+                ),
+              ),
+            ),
+
+          // Counter-offer waiting notice
+          if (status == 'counter_offer')
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFA726).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: const Color(0xFFFFA726).withValues(alpha: 0.4)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.hourglass_top_rounded, color: Color(0xFFFFA726), size: 20),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Waiting for Customer Response',
+                            style: TextStyle(color: HomeColors.textPrimary, fontSize: 13, fontWeight: FontWeight.w700),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Your counter-offer has been sent. The customer will accept or decline.',
+                            style: TextStyle(color: HomeColors.textSecondary, fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+          // Delete button for completed and declined orders
+          if (status == 'completed' || status == 'declined' || status == 'auto_declined')
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  icon: const Icon(Icons.delete_outline_rounded, size: 16),
+                  label: const Text(
+                    'Delete Order',
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: HomeColors.dangerText,
+                    side: BorderSide(color: HomeColors.dangerText.withValues(alpha: 0.5)),
+                    padding: const EdgeInsets.symmetric(vertical: 13),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                  onPressed: _isProcessing ? null : () async {
+                    final confirm = await showDialog<bool>(
+                      context: context,
+                      builder: (ctx) => AlertDialog(
+                        backgroundColor: HomeColors.cardBackground,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        title: Text('Delete Order #$orderId?', style: TextStyle(color: HomeColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w700)),
+                        content: Text('This will permanently remove this order from your records.', style: TextStyle(color: HomeColors.textSecondary, fontSize: 13)),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.of(ctx).pop(false),
+                            child: const Text('Cancel', style: TextStyle(color: AppColors.label)),
+                          ),
+                          ElevatedButton(
+                            onPressed: () => Navigator.of(ctx).pop(true),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: HomeColors.dangerText,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            ),
+                            child: const Text('Delete'),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (confirm != true || !mounted) return;
+                    setState(() => _isProcessing = true);
+                    try {
+                      await OrdersStore.instance.deleteOrder(orderId);
+                      if (mounted) {
+                        _showFeedback('Order #$orderId deleted.', isSuccess: true, icon: Icons.delete_rounded);
+                      }
+                    } catch (e) {
+                      if (mounted) {
+                        _showFeedback('Failed to delete order: $e', isSuccess: false);
+                      }
+                    } finally {
+                      if (mounted) setState(() => _isProcessing = false);
+                    }
+                  },
                 ),
               ),
             ),

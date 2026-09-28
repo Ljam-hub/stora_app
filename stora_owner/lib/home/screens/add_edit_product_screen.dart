@@ -92,7 +92,8 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
     final n = int.tryParse(v.trim());
     if (n == null) return 'Enter a whole number';
     if (n < 0) return 'Stock can\'t be negative';
-    if (n > kMaxStock) return 'Stock can\'t exceed $kMaxStock';
+    final maxStock = AccountStatusStore.instance.isPremium ? kMaxStockPremium : kMaxStock;
+    if (n > maxStock) return 'Stock can\'t exceed $maxStock';
     return null;
   }
 
@@ -124,7 +125,8 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
     final name = _nameController.text.trim();
     final category = _category!;
     final price = double.parse(_priceController.text.trim());
-    final stock = int.parse(_stockController.text.trim()).clamp(0, kMaxStock);
+    final maxStock = AccountStatusStore.instance.isPremium ? kMaxStockPremium : kMaxStock;
+    final stock = int.parse(_stockController.text.trim()).clamp(0, maxStock);
     final barcode = _barcodeController.text.trim().isEmpty ? null : _barcodeController.text.trim();
     final bio = _bioController.text.trim();
 
@@ -283,7 +285,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                 ),
                 const SizedBox(height: 18),
                 StoraTextField(
-                  label: 'Stock (max $kMaxStock)',
+                  label: AccountStatusStore.instance.isPremium ? 'Stock' : 'Stock (max $kMaxStock)',
                   hint: '0',
                   controller: _stockController,
                   keyboardType: TextInputType.number,

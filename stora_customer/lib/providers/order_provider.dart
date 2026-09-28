@@ -469,6 +469,32 @@ class OrderProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> deleteOrder(int orderId) async {
+    try {
+      await CustomerApiService.instance.deleteOrder(orderId);
+      _orders.removeWhere((o) => o.id == orderId);
+      _knownStatuses.remove(orderId);
+      _persistedSeenStatuses.remove(orderId);
+      notifyListeners();
+    } catch (e) {
+      _errorMessage = e.toString().replaceAll('Exception: ', '');
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  Future<void> cancelOrder(int orderId) async {
+    try {
+      await CustomerApiService.instance.cancelOrder(orderId);
+      // Refresh to get the updated status from server
+      await fetchOrders();
+    } catch (e) {
+      _errorMessage = e.toString().replaceAll('Exception: ', '');
+      notifyListeners();
+      rethrow;
+    }
+  }
+
   void reset() {
     stopPolling();
     _orders = [];
