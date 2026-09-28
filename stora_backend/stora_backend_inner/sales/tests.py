@@ -417,5 +417,156 @@ class CustomerCreditTests(TestCase):
         self.assertEqual(post_res.status_code, status.HTTP_403_FORBIDDEN)
 
 
+class CreditReminderCommandAndNotificationTests(TestCase):
+    def setUp(self):
+        self.owner = User.objects.create_user(
+            username="reminder_owner@test.com",
+            email="reminder_owner@test.com",
+            password="password123",
+            business_name="Reminder Store",
+            role="owner",
+            fcm_token="fake_fcm_token_owner_12345",
+        )
+
+    def test_notify_credit_reminder_advance_notice(self):
+        from datetime import date
+        from api.fcm import notify_credit_reminder
+        from sales.models import CustomerCredit
+        from unittest.mock import patch
+
+        # Due on Friday
+        friday_date = date(2026, 9, 25)
+        credit = CustomerCredit.objects.create(
+            owner=self.owner,
+            customer_name="Maria Santos",
+            total_amount=Decimal("350.00"),
+            due_date=friday_date,
+        )
+
+        with patch("api.fcm.send_push_notification") as mock_send:
+            mock_send.return_value = True
+            success = notify_credit_reminder(credit, "due_soon", days_offset=3)
+            self.assertTrue(success)
+            mock_send.assert_called_once()
+            args, _ = mock_send.call_args
+            token, title, body, payload = args
+            self.assertEqual(token, self.owner.fcm_token)
+            self.assertEqual(title, "Upcoming Utang")
+            self.assertEqual(body, "Maria Santos has a balance of ₱350 due in 3 days (Friday).")
+            self.assertEqual(payload["channel_id"], "stora_owner_utang")
+            self.assertEqual(payload["reminder_type"], "due_soon")
+
+    def test_notify_credit_reminder_due_today(self):
+        from datetime import date
+        from api.fcm import notify_credit_reminder
+        from sales.models import CustomerCredit
+        from unittest.mock import patch
+
+        today_date = date(2026, 9, 28)
+        credit = CustomerCredit.objects.create(
+            owner=self.owner,
+            customer_name="Juan Dela Cruz",
+            total_amount=Decimal("500.00"),
+            due_date=today_date,
+        )
+
+        with patch("api.fcm.send_push_notification") as mock_send:
+            mock_send.return_value = True
+            success = notify_credit_reminder(credit, "due_today", days_offset=0)
+            self.assertTrue(success)
+            mock_send.assert_called_once()
+            args, _ = mock_send.call_args
+            token, title, body, payload = args
+            self.assertEqual(token, self.owner.fcm_token)
+            self.assertEqual(title, "Due Today")
+            self.assertEqual(body, "Juan Dela Cruz owes ₱500 due today!")
+            self.assertEqual(payload["channel_id"], "stora_owner_utang")
+            self.assertEqual(payload["reminder_type"], "due_today")
+
+    def test_notify_credit_reminder_overdue_alert(self):
+        from datetime import date
+        from api.fcm import notify_credit_reminder
+        from sales.models import CustomerCredit
+        from unittest.mock import patch
+
+        due_date = date(2026, 9, 26)
+        credit = CustomerCredit.objects.create(
+            owner=self.owner,
+            customer_name="Pedro",
+            total_amount=Decimal("1200.00"),
+            due_date=due_date,
+        )
+
+        with patch("api.fcm.send_push_notification") as mock_send:
+            mock_send.return_value = True
+            success = notify_credit_reminder(credit, "overdue", days_offset=2)
+            self.assertTrue(success)
+            mock_send.assert_called_once()
+            args, _ = mock_send.call_args
+            token, title, body, payload = args
+            self.assertEqual(token, self.owner.fcm_token)
+            self.assertEqual(title, "🚨 Overdue Loan")
+            self.assertEqual(body, "Pedro's utang of ₱1,200 is now 2 days overdue.")
+            self.assertEqual(payload["channel_id"], "stora_owner_utang")
+            self.assertEqual(payload["reminder_type"], "overdue")
+
+    def test_send_credit_reminders_management_command(self):
+        from datetime import date
+        from io import StringIO
+        from django.core.management import call_command
+        from sales.models import CustomerCredit
+        from unittest.mock import patch
+
+        ref_date = "2026-09-28"  # Monday
+
+        # 1. Due in 3 days (Thursday 2026-10-01)
+        c_due_soon = CustomerCredit.objects.create(
+            owner=self.owner,
+            customer_name="Maria Santos",
+            total_amount=Decimal("350.00"),
+            due_date=date(2026, 10, 1),
+        )
+
+        # 2. Due today (2026-09-28)
+        c_due_today = CustomerCredit.objects.create(
+            owner=self.owner,
+            customer_name="Juan Dela Cruz",
+            total_amount=Decimal("500.00"),
+            due_date=date(2026, 9, 28),
+        )
+
+        # 3. Overdue by 2 days (2026-09-26)
+        c_overdue = CustomerCredit.objects.create(
+            owner=self.owner,
+            customer_name="Pedro",
+            total_amount=Decimal("1200.00"),
+            due_date=date(2026, 9, 26),
+        )
+
+        # 4. Fully paid (should be ignored)
+        c_paid = CustomerCredit.objects.create(
+            owner=self.owner,
+            customer_name="Paid Customer",
+            total_amount=Decimal("100.00"),
+            amount_paid=Decimal("100.00"),
+            status=CustomerCredit.STATUS_SETTLED,
+            due_date=date(2026, 9, 28),
+        )
+
+        out = StringIO()
+        with patch("sales.management.commands.send_credit_reminders.notify_credit_reminder") as mock_notify:
+            mock_notify.return_value = True
+            call_command("send_credit_reminders", date=ref_date, stdout=out)
+
+            self.assertEqual(mock_notify.call_count, 3)
+            output = out.getvalue()
+            self.assertIn("3 qualifying utang records found", output)
+            self.assertIn("1 due in 3 days", output)
+            self.assertIn("1 due today", output)
+            self.assertIn("1 overdue", output)
+            self.assertIn("Pushes dispatched: 3", output)
+
+
+
 
 

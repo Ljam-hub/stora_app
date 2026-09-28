@@ -432,3 +432,55 @@ def notify_subscription_proof_status(proof, action: str) -> bool:
         logger.warning("Failed to notify owner of subscription status: %s", e)
         return False
 
+
+def notify_credit_reminder(credit, reminder_type: str, days_offset: int = 0) -> bool:
+    """
+    Sends an automated push notification to the store owner for customer credit/utang:
+    - 3 Days Before Due Date (Advance Notice):
+      "Upcoming Utang: [Customer] has a balance of ₱[Amount] due in 3 days ([Weekday])."
+    - On Due Date (Today Alert):
+      "Due Today: [Customer] owes ₱[Amount] due today!"
+    - When Past Due Date (Overdue Alert):
+      "🚨 Overdue Loan: [Customer]'s utang of ₱[Amount] is now [X] days overdue."
+    """
+    try:
+        owner = credit.owner
+        if not owner or not getattr(owner, "fcm_token", None):
+            return False
+
+        balance = credit.balance
+        if balance % 1 == 0:
+            formatted_balance = f"{int(balance):,}"
+        else:
+            formatted_balance = f"{balance:,.2f}"
+
+        weekday = credit.due_date.strftime("%A") if credit.due_date else ""
+
+        if reminder_type in ("due_soon", "advance"):
+            title = "Upcoming Utang"
+            body = f"{credit.customer_name} has a balance of ₱{formatted_balance} due in 3 days ({weekday})."
+        elif reminder_type == "due_today":
+            title = "Due Today"
+            body = f"{credit.customer_name} owes ₱{formatted_balance} due today!"
+        elif reminder_type == "overdue":
+            title = "🚨 Overdue Loan"
+            days_overdue = abs(days_offset)
+            day_word = "day" if days_overdue == 1 else "days"
+            body = f"{credit.customer_name}'s utang of ₱{formatted_balance} is now {days_overdue} {day_word} overdue."
+        else:
+            return False
+
+        data_payload = {
+            "type": "credit_reminder",
+            "credit_id": str(credit.id),
+            "reminder_type": reminder_type,
+            "channel_id": "stora_owner_utang",
+            "title": title,
+            "body": body,
+        }
+
+        return send_push_notification(owner.fcm_token, title, body, data_payload)
+    except Exception as exc:
+        logger.warning("Failed to dispatch credit reminder notification: %s", exc)
+        return False
+

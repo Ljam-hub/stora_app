@@ -1,10 +1,15 @@
+import 'dart:convert';
+import 'dart:io';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:path_provider/path_provider.dart';
 import '../api/api_client.dart';
 import '../stores/account_status_store.dart';
 import '../../home/stores/orders_store.dart';
+import '../../home/stores/utang_store.dart';
+import 'utang_reminder_helper.dart';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -34,6 +39,18 @@ class OwnerNotificationService {
     showBadge: true,
   );
 
+  /// Android notification channel for loan and utang reminders.
+  static const AndroidNotificationChannel _utangChannel =
+      AndroidNotificationChannel(
+    'stora_owner_utang',
+    'Loan & Utang Reminders',
+    description: 'Alerts for upcoming, due, and overdue utang payments',
+    importance: Importance.high,
+    playSound: true,
+    enableVibration: true,
+    showBadge: true,
+  );
+
   Future<void> init() async {
     if (_initialized) return;
 
@@ -51,12 +68,13 @@ class OwnerNotificationService {
       const initSettings = InitializationSettings(android: androidSettings);
       await _localNotifications.initialize(initSettings);
 
-      // Create the high-importance notification channel on Android
+      // Create the high-importance notification channels on Android
       final androidPlugin =
           _localNotifications.resolvePlatformSpecificImplementation<
               AndroidFlutterLocalNotificationsPlugin>();
       if (androidPlugin != null) {
         await androidPlugin.createNotificationChannel(_orderChannel);
+        await androidPlugin.createNotificationChannel(_utangChannel);
         // Explicitly request notification permission for Android 13+ (API 33+)
         await androidPlugin.requestNotificationsPermission();
       }
@@ -97,6 +115,9 @@ class OwnerNotificationService {
             // Automatically refresh owner orders list when a new order arrives
             OrdersStore.instance.fetchOrders();
           }
+          if (type == 'credit_reminder') {
+            UtangStore.instance.syncWithBackend();
+          }
           if (type == 'subscription_approved' ||
               type == 'subscription_rejected' ||
               action == 'subscription_approved' ||
@@ -124,6 +145,9 @@ class OwnerNotificationService {
           if (action == 'created') {
             OrdersStore.instance.fetchOrders();
           }
+          if (type == 'credit_reminder') {
+            UtangStore.instance.syncWithBackend();
+          }
           if (type == 'subscription_approved' ||
               type == 'subscription_rejected' ||
               action == 'subscription_approved' ||
@@ -142,6 +166,9 @@ class OwnerNotificationService {
             final status = message.data['status'];
             if (action == 'created') {
               OrdersStore.instance.fetchOrders();
+            }
+            if (type == 'credit_reminder') {
+              UtangStore.instance.syncWithBackend();
             }
             if (type == 'subscription_approved' ||
                 type == 'subscription_rejected' ||
@@ -218,23 +245,31 @@ class OwnerNotificationService {
 
   /// Displays a local heads-up notification banner with sound and vibration from RemoteMessage.
   void _showLocalNotification(RemoteMessage message) {
-    final title = message.notification?.title ?? message.data['title'] ?? 'Store Order Update';
-    final body = message.notification?.body ?? message.data['body'] ?? 'New order update received';
+    final isUtang = message.data['type'] == 'credit_reminder' ||
+        message.data['channel_id'] == 'stora_owner_utang';
+
+    final channel = isUtang ? _utangChannel : _orderChannel;
+    final title = message.notification?.title ??
+        message.data['title'] ??
+        (isUtang ? 'Utang Reminder' : 'Store Order Update');
+    final body = message.notification?.body ??
+        message.data['body'] ??
+        (isUtang ? 'Customer utang reminder' : 'New order update received');
 
     final androidDetails = AndroidNotificationDetails(
-      _orderChannel.id,
-      _orderChannel.name,
-      channelDescription: _orderChannel.description,
-      importance: Importance.max,
-      priority: Priority.max,
+      channel.id,
+      channel.name,
+      channelDescription: channel.description,
+      importance: channel.importance,
+      priority: Priority.high,
       playSound: true,
       enableVibration: true,
       icon: '@drawable/ic_notification',
-      color: const Color(0xFFFF6B00),
+      color: isUtang ? const Color(0xFFFF9800) : const Color(0xFFFF6B00),
       styleInformation: BigTextStyleInformation(
         body,
         contentTitle: title,
-        summaryText: 'Stora Orders',
+        summaryText: isUtang ? 'Utang Reminder' : 'Stora Orders',
       ),
     );
 
@@ -244,5 +279,129 @@ class OwnerNotificationService {
       body,
       NotificationDetails(android: androidDetails),
     );
+  }
+
+  /// Explicitly displays a local heads-up notification banner for utang reminders.
+  Future<void> showUtangNotification({
+    required int id,
+    required String title,
+    required String body,
+    String? payload,
+  }) async {
+    try {
+      final androidDetails = AndroidNotificationDetails(
+        _utangChannel.id,
+        _utangChannel.name,
+        channelDescription: _utangChannel.description,
+        importance: Importance.high,
+        priority: Priority.high,
+        playSound: true,
+        enableVibration: true,
+        icon: '@drawable/ic_notification',
+        color: const Color(0xFFFF9800),
+        styleInformation: BigTextStyleInformation(
+          body,
+          contentTitle: title,
+          summaryText: 'Utang Reminder',
+        ),
+      );
+
+      await _localNotifications.show(
+        id,
+        title,
+        body,
+        NotificationDetails(android: androidDetails),
+        payload: payload,
+      );
+    } catch (e) {
+      debugPrint('Error showing owner utang notification: $e');
+    }
+  }
+
+  Future<File> _getUtangAlertHistoryFile() async {
+    final dir = await getApplicationDocumentsDirectory();
+    return File('${dir.path}/stora_utang_alert_history.json');
+  }
+
+  Future<Map<String, dynamic>> _loadUtangAlertHistory() async {
+    try {
+      final file = await _getUtangAlertHistoryFile();
+      if (await file.exists()) {
+        final text = await file.readAsString();
+        if (text.isNotEmpty) {
+          return Map<String, dynamic>.from(jsonDecode(text) as Map);
+        }
+      }
+    } catch (_) {}
+    return {};
+  }
+
+  Future<void> _saveUtangAlertHistory(Map<String, dynamic> history) async {
+    try {
+      final file = await _getUtangAlertHistoryFile();
+      // Keep only last 100 entries to prevent unbounded growth
+      if (history.length > 100) {
+        final keys = history.keys.toList();
+        final excess = keys.take(keys.length - 100);
+        for (final k in excess) {
+          history.remove(k);
+        }
+      }
+      await file.writeAsString(jsonEncode(history));
+    } catch (_) {}
+  }
+
+  /// Scans active utang records and delivers automated notifications:
+  /// - 3 Days Before Due Date (Advance Notice):
+  ///   "Upcoming Utang: [Customer] has a balance of ₱[Amount] due in 3 days ([Weekday])."
+  /// - On the Due Date (Today Alert):
+  ///   "Due Today: [Customer] owes ₱[Amount] due today!"
+  /// - When Past Due Date (Overdue Alert):
+  ///   "🚨 Overdue Loan: [Customer]'s utang of ₱[Amount] is now [X] days overdue."
+  ///
+  /// Automatically deduplicates daily to prevent repeated alerts on the same day.
+  Future<int> checkAndNotifyUtang(List<UtangRecord> records, [DateTime? currentDate]) async {
+    try {
+      final now = currentDate ?? DateTime.now();
+      final todayStr = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+      final history = await _loadUtangAlertHistory();
+      int sentCount = 0;
+
+      for (final r in records) {
+        final alert = UtangReminderHelper.generateAlert(r, now);
+        if (alert != null) {
+          final alertKey = '${r.id}_${todayStr}_${alert.alertType}';
+          if (!history.containsKey(alertKey)) {
+            final notifId = (r.id.hashCode ^ alert.alertType.hashCode) & 0x7FFFFFFF;
+            await showUtangNotification(
+              id: notifId,
+              title: alert.title,
+              body: alert.body,
+              payload: 'utang:${r.id}',
+            );
+            history[alertKey] = now.toIso8601String();
+            sentCount++;
+          }
+        }
+      }
+
+      if (sentCount > 0) {
+        await _saveUtangAlertHistory(history);
+      }
+      return sentCount;
+    } catch (e) {
+      debugPrint('checkAndNotifyUtang error: $e');
+      return 0;
+    }
+  }
+
+  @visibleForTesting
+  Future<void> clearAlertHistoryForTesting() async {
+    try {
+      final file = await _getUtangAlertHistoryFile();
+      if (await file.exists()) {
+        await file.delete();
+      }
+    } catch (_) {}
   }
 }

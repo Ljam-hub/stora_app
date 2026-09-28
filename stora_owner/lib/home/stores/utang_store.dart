@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../../data/api/api_client.dart';
+import '../../data/services/notification_service.dart';
 
 class UtangItem {
   final String productName;
@@ -222,6 +223,7 @@ class UtangStore extends ChangeNotifier {
     } finally {
       _initialized = true;
       notifyListeners();
+      OwnerNotificationService.instance.checkAndNotifyUtang(_records);
       syncWithBackend();
     }
   }
@@ -295,6 +297,7 @@ class UtangStore extends ChangeNotifier {
     } finally {
       _isSyncing = false;
       notifyListeners();
+      OwnerNotificationService.instance.checkAndNotifyUtang(_records);
     }
   }
 
@@ -331,6 +334,7 @@ class UtangStore extends ChangeNotifier {
     _records.insert(0, record);
     notifyListeners();
     await _save();
+    OwnerNotificationService.instance.checkAndNotifyUtang(_records);
 
     // Background sync to backend
     try {
@@ -424,6 +428,10 @@ class UtangStore extends ChangeNotifier {
         debugPrint('UtangStore cloud delete error: $e');
       }
     }
+  }
+
+  Future<int> checkReminders([DateTime? currentDate]) async {
+    return OwnerNotificationService.instance.checkAndNotifyUtang(_records, currentDate);
   }
 
   void reset() {

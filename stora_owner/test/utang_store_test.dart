@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:stora/data/services/utang_reminder_helper.dart';
 import 'package:stora/home/stores/utang_store.dart';
 
 void main() {
@@ -157,6 +158,109 @@ void main() {
       expect(fromJson.amountPaid, equals(100.0));
       expect(fromJson.balance, equals(250.0));
       expect(fromJson.notes, equals('Suki discount applied'));
+    });
+  });
+
+  group('UtangReminderHelper Notification Generator Tests', () {
+    test('generates advance notice 3 days before due date', () {
+      // Reference date: Tuesday, 2026-09-22
+      final currentDate = DateTime(2026, 9, 22);
+      // Due date: Friday, 2026-09-25 (exactly 3 days ahead)
+      final dueDate = DateTime(2026, 9, 25);
+
+      final record = UtangRecord(
+        id: 'rec-maria',
+        customerName: 'Maria Santos',
+        customerPhone: '09123456789',
+        totalAmount: 350.0,
+        createdAt: DateTime(2026, 9, 18),
+        dueDate: dueDate,
+      );
+
+      final alert = UtangReminderHelper.generateAlert(record, currentDate);
+      expect(alert, isNotNull);
+      expect(alert!.title, equals('Upcoming Utang'));
+      expect(alert.body, equals('Maria Santos has a balance of ₱350 due in 3 days (Friday).'));
+      expect(alert.alertType, equals('due_in_3_days'));
+    });
+
+    test('generates today alert on the due date', () {
+      final currentDate = DateTime(2026, 9, 28);
+      final dueDate = DateTime(2026, 9, 28);
+
+      final record = UtangRecord(
+        id: 'rec-juan',
+        customerName: 'Juan Dela Cruz',
+        customerPhone: '09987654321',
+        totalAmount: 500.0,
+        createdAt: DateTime(2026, 9, 20),
+        dueDate: dueDate,
+      );
+
+      final alert = UtangReminderHelper.generateAlert(record, currentDate);
+      expect(alert, isNotNull);
+      expect(alert!.title, equals('Due Today'));
+      expect(alert.body, equals('Juan Dela Cruz owes ₱500 due today!'));
+      expect(alert.alertType, equals('due_today'));
+    });
+
+    test('generates overdue alert when past due date by 2 days', () {
+      final currentDate = DateTime(2026, 9, 30);
+      // Due date: 2026-09-28 (2 days overdue)
+      final dueDate = DateTime(2026, 9, 28);
+
+      final record = UtangRecord(
+        id: 'rec-pedro',
+        customerName: 'Pedro',
+        customerPhone: '09112223333',
+        totalAmount: 1200.0,
+        createdAt: DateTime(2026, 9, 15),
+        dueDate: dueDate,
+      );
+
+      final alert = UtangReminderHelper.generateAlert(record, currentDate);
+      expect(alert, isNotNull);
+      expect(alert!.title, equals('🚨 Overdue Loan'));
+      expect(alert.body, equals("Pedro's utang of ₱1,200 is now 2 days overdue."));
+      expect(alert.alertType, equals('overdue_2'));
+    });
+
+    test('generates overdue alert with singular day when 1 day overdue', () {
+      final currentDate = DateTime(2026, 9, 29);
+      final dueDate = DateTime(2026, 9, 28);
+
+      final record = UtangRecord(
+        id: 'rec-pedro-1',
+        customerName: 'Pedro',
+        customerPhone: '09112223333',
+        totalAmount: 1200.0,
+        createdAt: DateTime(2026, 9, 15),
+        dueDate: dueDate,
+      );
+
+      final alert = UtangReminderHelper.generateAlert(record, currentDate);
+      expect(alert, isNotNull);
+      expect(alert!.title, equals('🚨 Overdue Loan'));
+      expect(alert.body, equals("Pedro's utang of ₱1,200 is now 1 day overdue."));
+      expect(alert.alertType, equals('overdue_1'));
+    });
+
+    test('returns null when record is fully paid', () {
+      final currentDate = DateTime(2026, 9, 28);
+      final record = UtangRecord(
+        id: 'rec-paid',
+        customerName: 'Maria Santos',
+        customerPhone: '09123456789',
+        totalAmount: 350.0,
+        createdAt: DateTime(2026, 9, 18),
+        dueDate: currentDate,
+        payments: [
+          UtangPayment(id: 'p1', amount: 350.0, paidAt: currentDate),
+        ],
+      );
+
+      final alert = UtangReminderHelper.generateAlert(record, currentDate);
+      expect(alert, isNull);
     });
   });
 }
