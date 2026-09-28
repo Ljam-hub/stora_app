@@ -6,6 +6,15 @@ import 'package:path_provider/path_provider.dart';
 import '../../data/api/api_client.dart';
 import '../../data/services/notification_service.dart';
 
+/// Safely parses a JSON value that may be a [num] or a [String] (e.g. DRF
+/// DecimalField serializes decimals as strings like "350.00").
+double _parseDouble(dynamic value) {
+  if (value == null) return 0.0;
+  if (value is num) return value.toDouble();
+  if (value is String) return double.tryParse(value) ?? 0.0;
+  return 0.0;
+}
+
 class UtangItem {
   final String productName;
   final int quantity;
@@ -28,8 +37,7 @@ class UtangItem {
   factory UtangItem.fromJson(Map<String, dynamic> json) => UtangItem(
         productName: json['product_name'] as String? ?? 'Item',
         quantity: (json['quantity'] as num?)?.toInt() ?? 1,
-        unitPrice: (json['unit_price'] as num?)?.toDouble() ??
-            (double.tryParse(json['unit_price']?.toString() ?? '') ?? 0.0),
+        unitPrice: _parseDouble(json['unit_price']),
       );
 }
 
@@ -55,8 +63,7 @@ class UtangPayment {
 
   factory UtangPayment.fromJson(Map<String, dynamic> json) => UtangPayment(
         id: json['id']?.toString() ?? '',
-        amount: (json['amount'] as num?)?.toDouble() ??
-            (double.tryParse(json['amount']?.toString() ?? '') ?? 0.0),
+        amount: _parseDouble(json['amount']),
         paidAt: DateTime.tryParse(json['paid_at'] as String? ?? '') ?? DateTime.now(),
         note: json['notes'] as String? ?? json['note'] as String?,
       );
@@ -128,8 +135,7 @@ class UtangRecord {
         id: json['id']?.toString() ?? '',
         customerName: json['customer_name'] as String? ?? 'Walk-in Customer',
         customerPhone: json['customer_phone'] as String? ?? '',
-        totalAmount: (json['total_amount'] as num?)?.toDouble() ??
-            (double.tryParse(json['total_amount']?.toString() ?? '') ?? 0.0),
+        totalAmount: _parseDouble(json['total_amount']),
         payments: (json['payments'] as List<dynamic>?)
                 ?.map((p) => UtangPayment.fromJson(Map<String, dynamic>.from(p as Map)))
                 .toList() ??
