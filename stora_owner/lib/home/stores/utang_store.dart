@@ -77,6 +77,11 @@ class UtangRecord {
   final List<UtangPayment> payments;
   final DateTime createdAt;
   final DateTime dueDate;
+  final double penaltyRate;
+  /// Frequency of the penalty: 'none', 'daily', 'weekly', 'monthly'.
+  final String penaltyFrequency;
+  final int gracePeriodDays;
+  final bool isPenaltyWaived;
   final List<UtangItem> items;
   final String notes;
 
@@ -88,9 +93,23 @@ class UtangRecord {
     this.payments = const [],
     required this.createdAt,
     required this.dueDate,
+    double penaltyRate = 0.0,
+    String penaltyFrequency = 'none',
+    double? dailyPenalty,
+    this.gracePeriodDays = 0,
+    this.isPenaltyWaived = false,
     this.items = const [],
     this.notes = '',
-  });
+  })  : penaltyRate = (dailyPenalty != null && dailyPenalty > 0 && penaltyRate == 0.0)
+            ? dailyPenalty
+            : penaltyRate,
+        penaltyFrequency = (dailyPenalty != null && dailyPenalty > 0 && penaltyFrequency == 'none')
+            ? 'daily'
+            : penaltyFrequency;
+
+  /// Backwards-compatibility getter for daily late fee
+  double get dailyPenalty => penaltyFrequency == 'daily' ? penaltyRate : 0.0;
+  bool get hasPenalty => penaltyFrequency != 'none' && penaltyRate > 0;
 
   double get amountPaid => payments.fold(0.0, (sum, p) => sum + p.amount);
   double get balance => (totalAmount - amountPaid).clamp(0.0, double.infinity);
@@ -103,6 +122,118 @@ class UtangRecord {
     final due = DateTime(dueDate.year, dueDate.month, dueDate.day);
     return today.isAfter(due);
   }
+
+  int get overdueDays {
+    if (isFullyPaid) return 0;
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final due = DateTime(dueDate.year, dueDate.month, dueDate.day);
+    if (!today.isAfter(due)) return 0;
+    return today.difference(due).inDays;
+  }
+
+  int get billableOverdueDays {
+    final days = overdueDays;
+    if (days <= gracePeriodDays) return 0;
+    return days - gracePeriodDays;
+  }
+
+  /// Calculates how many penalty billing units have elapsed (e.g. days, weeks, months)
+  int get overdueUnits {
+    if (isPenaltyWaived || penaltyRate <= 0 || !isOverdue || penaltyFrequency == 'none') return 0;
+    final billable = billableOverdueDays;
+    if (billable <= 0) return 0;
+    switch (penaltyFrequency) {
+      case 'daily':
+        return billable;
+      case 'weekly':
+        return ((billable - 1) ~/ 7) + 1;
+      case 'monthly':
+        return ((billable - 1) ~/ 30) + 1;
+      default:
+        return 0;
+    }
+  }
+
+  String get penaltyFrequencyLabel {
+    switch (penaltyFrequency) {
+      case 'daily':
+        return 'Per Day';
+      case 'weekly':
+        return 'Per Week';
+      case 'monthly':
+        return 'Per Month';
+      default:
+        return 'None';
+    }
+  }
+
+  String get penaltyFrequencyShortUnit {
+    switch (penaltyFrequency) {
+      case 'daily':
+        return 'day';
+      case 'weekly':
+        return 'wk';
+      case 'monthly':
+        return 'mo';
+      default:
+        return '';
+    }
+  }
+
+  String get penaltyFrequencyTagalog {
+    switch (penaltyFrequency) {
+      case 'daily':
+        return 'araw';
+      case 'weekly':
+        return 'linggo';
+      case 'monthly':
+        return 'buwan';
+      default:
+        return '';
+    }
+  }
+
+  String get overdueUnitsLabel {
+    final units = overdueUnits;
+    if (units <= 0) return '';
+    switch (penaltyFrequency) {
+      case 'daily':
+        return '$units ${units == 1 ? 'day' : 'days'}';
+      case 'weekly':
+        return '$units ${units == 1 ? 'week' : 'weeks'}';
+      case 'monthly':
+        return '$units ${units == 1 ? 'month' : 'months'}';
+      default:
+        return '';
+    }
+  }
+
+  String get overdueUnitsTagalog {
+    final units = overdueUnits;
+    if (units <= 0) return '';
+    switch (penaltyFrequency) {
+      case 'daily':
+        return '$units araw';
+      case 'weekly':
+        return '$units linggo';
+      case 'monthly':
+        return '$units buwan';
+      default:
+        return '';
+    }
+  }
+
+  double get penaltyAmount {
+    if (isPenaltyWaived || penaltyRate <= 0 || !isOverdue || penaltyFrequency == 'none') return 0.0;
+    final units = overdueUnits;
+    if (units <= 0) return 0.0;
+    final raw = units * penaltyRate;
+    // Cap safeguard: penalty cannot exceed remaining balance
+    return raw > balance ? balance : raw;
+  }
+
+  double get totalDueWithPenalty => balance + penaltyAmount;
 
   bool get isDueToday {
     if (isFullyPaid) return false;
@@ -127,28 +258,47 @@ class UtangRecord {
         'payments': payments.map((p) => p.toJson()).toList(),
         'created_at': createdAt.toIso8601String(),
         'due_date': dueDate.toIso8601String(),
+        'penalty_rate': penaltyRate,
+        'penalty_frequency': penaltyFrequency,
+        'daily_penalty': dailyPenalty,
+        'grace_period_days': gracePeriodDays,
+        'is_penalty_waived': isPenaltyWaived,
         'items': items.map((i) => i.toJson()).toList(),
         'notes': notes,
       };
 
-  factory UtangRecord.fromJson(Map<String, dynamic> json) => UtangRecord(
-        id: json['id']?.toString() ?? '',
-        customerName: json['customer_name'] as String? ?? 'Walk-in Customer',
-        customerPhone: json['customer_phone'] as String? ?? '',
-        totalAmount: _parseDouble(json['total_amount']),
-        payments: (json['payments'] as List<dynamic>?)
-                ?.map((p) => UtangPayment.fromJson(Map<String, dynamic>.from(p as Map)))
-                .toList() ??
-            [],
-        createdAt: DateTime.tryParse(json['created_at'] as String? ?? '') ?? DateTime.now(),
-        dueDate: DateTime.tryParse(json['due_date'] as String? ?? '') ??
-            DateTime.now().add(const Duration(days: 7)),
-        items: (json['items'] as List<dynamic>?)
-                ?.map((i) => UtangItem.fromJson(Map<String, dynamic>.from(i as Map)))
-                .toList() ??
-            [],
-        notes: json['notes'] as String? ?? '',
-      );
+  factory UtangRecord.fromJson(Map<String, dynamic> json) {
+    final legacyDaily = _parseDouble(json['daily_penalty']);
+    final savedRate = _parseDouble(json['penalty_rate']);
+    final rate = savedRate > 0 ? savedRate : legacyDaily;
+    String freq = (json['penalty_frequency'] as String? ?? '').trim().toLowerCase();
+    if (freq.isEmpty) {
+      freq = rate > 0 ? 'daily' : 'none';
+    }
+
+    return UtangRecord(
+      id: json['id']?.toString() ?? '',
+      customerName: json['customer_name'] as String? ?? 'Walk-in Customer',
+      customerPhone: json['customer_phone'] as String? ?? '',
+      totalAmount: _parseDouble(json['total_amount']),
+      payments: (json['payments'] as List<dynamic>?)
+              ?.map((p) => UtangPayment.fromJson(Map<String, dynamic>.from(p as Map)))
+              .toList() ??
+          [],
+      createdAt: DateTime.tryParse(json['created_at'] as String? ?? '') ?? DateTime.now(),
+      dueDate: DateTime.tryParse(json['due_date'] as String? ?? '') ??
+          DateTime.now().add(const Duration(days: 7)),
+      penaltyRate: rate,
+      penaltyFrequency: freq,
+      gracePeriodDays: (json['grace_period_days'] as num?)?.toInt() ?? 0,
+      isPenaltyWaived: json['is_penalty_waived'] as bool? ?? false,
+      items: (json['items'] as List<dynamic>?)
+              ?.map((i) => UtangItem.fromJson(Map<String, dynamic>.from(i as Map)))
+              .toList() ??
+          [],
+      notes: json['notes'] as String? ?? '',
+    );
+  }
 
   UtangRecord copyWith({
     String? id,
@@ -157,9 +307,20 @@ class UtangRecord {
     double? totalAmount,
     List<UtangPayment>? payments,
     DateTime? dueDate,
+    double? penaltyRate,
+    String? penaltyFrequency,
+    double? dailyPenalty,
+    int? gracePeriodDays,
+    bool? isPenaltyWaived,
     List<UtangItem>? items,
     String? notes,
   }) {
+    final resolvedRate = penaltyRate ?? dailyPenalty ?? this.penaltyRate;
+    final resolvedFreq = penaltyFrequency ??
+        (dailyPenalty != null && dailyPenalty > 0 && penaltyRate == null
+            ? 'daily'
+            : this.penaltyFrequency);
+
     return UtangRecord(
       id: id ?? this.id,
       customerName: customerName ?? this.customerName,
@@ -168,6 +329,10 @@ class UtangRecord {
       payments: payments ?? this.payments,
       createdAt: createdAt,
       dueDate: dueDate ?? this.dueDate,
+      penaltyRate: resolvedRate,
+      penaltyFrequency: resolvedFreq,
+      gracePeriodDays: gracePeriodDays ?? this.gracePeriodDays,
+      isPenaltyWaived: isPenaltyWaived ?? this.isPenaltyWaived,
       items: items ?? this.items,
       notes: notes ?? this.notes,
     );
@@ -198,7 +363,11 @@ class UtangStore extends ChangeNotifier {
 
   List<UtangRecord> get paidRecords => _records.where((r) => r.isFullyPaid).toList();
 
-  double get totalOutstanding => activeRecords.fold(0.0, (sum, r) => sum + r.balance);
+  double get totalOutstanding => activeRecords.fold(0.0, (sum, r) => sum + r.totalDueWithPenalty);
+
+  double get totalPrincipalOutstanding => activeRecords.fold(0.0, (sum, r) => sum + r.balance);
+
+  double get totalAccruedPenalties => activeRecords.fold(0.0, (sum, r) => sum + r.penaltyAmount);
 
   int get totalActiveDebtors =>
       activeRecords.map((r) => r.customerName.toLowerCase().trim()).toSet().length;
@@ -284,13 +453,25 @@ class UtangStore extends ChangeNotifier {
         }
       }
 
-      // 3. Fetch canonical state from cloud backend
+      // 3. Fetch canonical state from cloud backend, preserving local penalty configs
       final remoteList = await ApiClient.instance.listCredits();
+      final existingMap = {for (final r in _records) r.id: r};
       final remoteRecords = remoteList.map((json) {
-        return UtangRecord.fromJson({
+        final id = json['id']?.toString() ?? '';
+        final local = existingMap[id];
+        final rec = UtangRecord.fromJson({
           ...json,
-          'id': json['id']?.toString() ?? '',
+          'id': id,
         });
+        if (local != null) {
+          return rec.copyWith(
+            penaltyRate: local.penaltyRate,
+            penaltyFrequency: local.penaltyFrequency,
+            gracePeriodDays: local.gracePeriodDays,
+            isPenaltyWaived: local.isPenaltyWaived,
+          );
+        }
+        return rec;
       }).toList();
 
       // Keep any still-pending offline records
@@ -322,10 +503,21 @@ class UtangStore extends ChangeNotifier {
     required String customerPhone,
     required double totalAmount,
     required DateTime dueDate,
+    double penaltyRate = 0.0,
+    String penaltyFrequency = 'none',
+    double? dailyPenalty,
+    int gracePeriodDays = 0,
     List<UtangItem> items = const [],
     String notes = '',
   }) async {
     final tempId = 'utang-${DateTime.now().millisecondsSinceEpoch}';
+    final resolvedRate = (dailyPenalty != null && dailyPenalty > 0 && penaltyRate == 0.0)
+        ? dailyPenalty
+        : penaltyRate;
+    final resolvedFreq = (dailyPenalty != null && dailyPenalty > 0 && penaltyFrequency == 'none')
+        ? 'daily'
+        : penaltyFrequency;
+
     var record = UtangRecord(
       id: tempId,
       customerName: customerName.trim().isEmpty ? 'Walk-in Customer' : customerName.trim(),
@@ -333,6 +525,10 @@ class UtangStore extends ChangeNotifier {
       totalAmount: totalAmount,
       createdAt: DateTime.now(),
       dueDate: dueDate,
+      penaltyRate: resolvedRate,
+      penaltyFrequency: resolvedFreq,
+      gracePeriodDays: gracePeriodDays,
+      isPenaltyWaived: false,
       items: items,
       notes: notes.trim(),
     );
@@ -386,8 +582,27 @@ class UtangStore extends ChangeNotifier {
       note: note,
     );
 
+    double updatedTotalAmount = existing.totalAmount;
+    List<UtangItem> updatedItems = existing.items;
+    if (amount > existing.balance && existing.penaltyAmount > 0) {
+      final penaltyPaid = (amount - existing.balance).clamp(0.0, existing.penaltyAmount);
+      updatedTotalAmount += penaltyPaid;
+      updatedItems = [
+        ...existing.items,
+        UtangItem(
+          productName: 'Late Payment Penalty Fee',
+          quantity: 1,
+          unitPrice: penaltyPaid,
+        ),
+      ];
+    }
+
     final updatedPayments = List<UtangPayment>.from(existing.payments)..add(payment);
-    _records[index] = existing.copyWith(payments: updatedPayments);
+    _records[index] = existing.copyWith(
+      totalAmount: updatedTotalAmount,
+      items: updatedItems,
+      payments: updatedPayments,
+    );
     notifyListeners();
     await _save();
 
@@ -401,6 +616,41 @@ class UtangStore extends ChangeNotifier {
         debugPrint('UtangStore cloud payment error: $e');
       }
     }
+  }
+
+  Future<void> waivePenalty(String recordId, {bool waived = true}) async {
+    final index = _records.indexWhere((r) => r.id == recordId);
+    if (index == -1) return;
+
+    _records[index] = _records[index].copyWith(isPenaltyWaived: waived);
+    notifyListeners();
+    await _save();
+  }
+
+  Future<void> updatePenaltySettings(
+    String recordId, {
+    double penaltyRate = 0.0,
+    String penaltyFrequency = 'none',
+    required int gracePeriodDays,
+    double? dailyPenalty,
+  }) async {
+    final index = _records.indexWhere((r) => r.id == recordId);
+    if (index == -1) return;
+
+    final resolvedRate = (dailyPenalty != null && dailyPenalty > 0 && penaltyRate == 0.0)
+        ? dailyPenalty
+        : penaltyRate;
+    final resolvedFreq = (dailyPenalty != null && dailyPenalty > 0 && penaltyFrequency == 'none')
+        ? 'daily'
+        : penaltyFrequency;
+
+    _records[index] = _records[index].copyWith(
+      penaltyRate: resolvedRate,
+      penaltyFrequency: resolvedFreq,
+      gracePeriodDays: gracePeriodDays,
+    );
+    notifyListeners();
+    await _save();
   }
 
   Future<void> updateDueDate(String recordId, DateTime newDueDate) async {

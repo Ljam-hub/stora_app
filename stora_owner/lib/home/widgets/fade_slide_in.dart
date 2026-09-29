@@ -51,13 +51,18 @@ class _FadeSlideInState extends State<FadeSlideIn>
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: _controller,
-      builder: (context, child) => Opacity(
-        opacity: _opacity.value,
-        child: Transform.translate(
-          offset: _slide.value,
-          child: child,
-        ),
-      ),
+      builder: (context, child) {
+        if (_controller.isCompleted) {
+          return child!;
+        }
+        return Opacity(
+          opacity: _opacity.value.clamp(0.0, 1.0),
+          child: Transform.translate(
+            offset: _slide.value,
+            child: child,
+          ),
+        );
+      },
       child: widget.child,
     );
   }

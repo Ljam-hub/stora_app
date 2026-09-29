@@ -269,40 +269,40 @@ class _StoraShellState extends State<StoraShell> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: Listenable.merge([
-        ChatStore.instance,
-        InventoryStore.instance,
-        StoreStatusStore.instance,
-        ThemeModeController.instance,
-      ]),
-      builder: (context, _) {
-        final locationMissing = !StoreStatusStore.instance.hasValidLocation;
-        final alertsBadgeCount = InventoryStore.instance.lowStock.length + (locationMissing ? 1 : 0);
-        return PopScope(
-          canPop: _index == 0,
-          onPopInvokedWithResult: (didPop, _) {
-            if (!didPop) {
-              setState(() => _index = 0);
-            }
-          },
-          child: Scaffold(
-            backgroundColor: HomeColors.background,
-            body: OfflineBannerWrapper(
-              child: IndexedStack(
-                index: _index,
-                children: _screens,
-              ),
-            ),
-            bottomNavigationBar: _StoraNavBar(
+    return PopScope(
+      canPop: _index == 0,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) {
+          setState(() => _index = 0);
+        }
+      },
+      child: Scaffold(
+        backgroundColor: HomeColors.background,
+        body: OfflineBannerWrapper(
+          child: IndexedStack(
+            index: _index,
+            children: _screens,
+          ),
+        ),
+        bottomNavigationBar: AnimatedBuilder(
+          animation: Listenable.merge([
+            ChatStore.instance,
+            InventoryStore.instance,
+            StoreStatusStore.instance,
+            ThemeModeController.instance,
+          ]),
+          builder: (context, _) {
+            final locationMissing = !StoreStatusStore.instance.hasValidLocation;
+            final alertsBadgeCount = InventoryStore.instance.lowStock.length + (locationMissing ? 1 : 0);
+            return _StoraNavBar(
               currentIndex: _index,
               onTap: (i) => setState(() => _index = i),
               chatUnreadCount: ChatStore.instance.totalUnreadCount,
               alertsCount: alertsBadgeCount,
-            ),
-          ),
-        );
-      },
+            );
+          },
+        ),
+      ),
     );
   }
 }

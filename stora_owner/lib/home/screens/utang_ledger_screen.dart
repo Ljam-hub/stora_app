@@ -51,11 +51,82 @@ class _UtangLedgerScreenState extends State<UtangLedgerScreen> {
     return filtered;
   }
 
+  Widget _buildPresetPenaltyChip(String label, double amount, TextEditingController ctrl, StateSetter setDialogState) {
+    final currentVal = double.tryParse(ctrl.text.replaceAll(',', '').trim()) ?? 0.0;
+    final isSelected = currentVal == amount && ctrl.text.trim().isNotEmpty;
+    return InkWell(
+      onTap: () {
+        setDialogState(() {
+          ctrl.text = amount.toStringAsFixed(0);
+        });
+      },
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.amber.withValues(alpha: 0.25) : HomeColors.cardBackground,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isSelected ? Colors.amber : HomeColors.cardBorder,
+            width: isSelected ? 1.5 : 1,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? Colors.amber : HomeColors.textSecondary,
+            fontSize: 11,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFrequencyChip({
+    required String label,
+    required String value,
+    required String selectedValue,
+    required ValueChanged<String> onSelected,
+  }) {
+    final isSelected = selectedValue == value;
+    return Expanded(
+      child: InkWell(
+        onTap: () => onSelected(value),
+        borderRadius: BorderRadius.circular(10),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: isSelected ? Colors.amber.withValues(alpha: 0.22) : HomeColors.cardBackground,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: isSelected ? Colors.amber : HomeColors.cardBorder,
+              width: isSelected ? 1.5 : 1,
+            ),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              color: isSelected ? Colors.amber : HomeColors.textSecondary,
+              fontSize: 11.5,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   void _showNewUtangDialog() async {
     final nameCtrl = TextEditingController();
     final phoneCtrl = TextEditingController();
     final amountCtrl = TextEditingController();
     final notesCtrl = TextEditingController();
+    final penaltyCtrl = TextEditingController();
+    String selectedFrequency = 'none'; // 'none', 'daily', 'weekly', 'monthly'
+    int selectedGraceDays = 0;
     DateTime selectedDueDate = DateTime.now().add(const Duration(days: 7));
 
     await showDialog(
@@ -173,6 +244,189 @@ class _UtangLedgerScreenState extends State<UtangLedgerScreen> {
                     ),
                   ),
                 ),
+                const SizedBox(height: 14),
+                // Late Penalty Configuration Section
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: HomeColors.cardElevated,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: HomeColors.cardBorder),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.alarm_add_rounded, color: Colors.amber, size: 18),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Late Penalty / Patong (Optional)',
+                            style: TextStyle(color: HomeColors.textPrimary, fontSize: 13, fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Pumili kung may dagdag na penalty (None, Per Day, Per Week, o Per Month).',
+                        style: TextStyle(color: HomeColors.textSecondary, fontSize: 11),
+                      ),
+                      const SizedBox(height: 10),
+                      // Frequency selector row
+                      Row(
+                        children: [
+                          _buildFrequencyChip(
+                            label: 'None',
+                            value: 'none',
+                            selectedValue: selectedFrequency,
+                            onSelected: (val) {
+                              setDialogState(() {
+                                selectedFrequency = val;
+                                penaltyCtrl.clear();
+                              });
+                            },
+                          ),
+                          const SizedBox(width: 6),
+                          _buildFrequencyChip(
+                            label: 'Per Day',
+                            value: 'daily',
+                            selectedValue: selectedFrequency,
+                            onSelected: (val) {
+                              setDialogState(() {
+                                selectedFrequency = val;
+                                if (penaltyCtrl.text.isEmpty) penaltyCtrl.text = '10';
+                              });
+                            },
+                          ),
+                          const SizedBox(width: 6),
+                          _buildFrequencyChip(
+                            label: 'Per Week',
+                            value: 'weekly',
+                            selectedValue: selectedFrequency,
+                            onSelected: (val) {
+                              setDialogState(() {
+                                selectedFrequency = val;
+                                if (penaltyCtrl.text.isEmpty) penaltyCtrl.text = '50';
+                              });
+                            },
+                          ),
+                          const SizedBox(width: 6),
+                          _buildFrequencyChip(
+                            label: 'Per Month',
+                            value: 'monthly',
+                            selectedValue: selectedFrequency,
+                            onSelected: (val) {
+                              setDialogState(() {
+                                selectedFrequency = val;
+                                if (penaltyCtrl.text.isEmpty) penaltyCtrl.text = '100';
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      if (selectedFrequency == 'none') ...[
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: HomeColors.cardBackground,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: HomeColors.cardBorder),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.check_circle_outline_rounded, color: Color(0xFF10B981), size: 16),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Walang penalty (₱0) kahit lumampas sa takdang petsa.',
+                                  style: TextStyle(color: HomeColors.textSecondary, fontSize: 11.5),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ] else ...[
+                        Row(
+                          children: [
+                            Expanded(
+                              flex: 3,
+                              child: TextField(
+                                controller: penaltyCtrl,
+                                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                style: TextStyle(color: HomeColors.textPrimary, fontSize: 13),
+                                decoration: InputDecoration(
+                                  labelText: selectedFrequency == 'daily'
+                                      ? '₱ / Day'
+                                      : selectedFrequency == 'weekly'
+                                          ? '₱ / Week'
+                                          : '₱ / Month',
+                                  hintText: '0',
+                                  labelStyle: TextStyle(color: HomeColors.textSecondary, fontSize: 11),
+                                  filled: true,
+                                  fillColor: HomeColors.cardBackground,
+                                  isDense: true,
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              flex: 4,
+                              child: DropdownButtonFormField<int>(
+                                initialValue: selectedGraceDays,
+                                dropdownColor: HomeColors.cardElevated,
+                                style: TextStyle(color: HomeColors.textPrimary, fontSize: 12),
+                                decoration: InputDecoration(
+                                  labelText: 'Grace Period',
+                                  labelStyle: TextStyle(color: HomeColors.textSecondary, fontSize: 11),
+                                  filled: true,
+                                  fillColor: HomeColors.cardBackground,
+                                  isDense: true,
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                                ),
+                                items: const [
+                                  DropdownMenuItem(value: 0, child: Text('No Grace')),
+                                  DropdownMenuItem(value: 1, child: Text('1 Day Grace')),
+                                  DropdownMenuItem(value: 2, child: Text('2 Days Grace')),
+                                  DropdownMenuItem(value: 3, child: Text('3 Days Grace')),
+                                  DropdownMenuItem(value: 7, child: Text('7 Days Grace')),
+                                ],
+                                onChanged: (val) {
+                                  if (val != null) {
+                                    setDialogState(() => selectedGraceDays = val);
+                                  }
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: selectedFrequency == 'daily'
+                              ? [
+                                  _buildPresetPenaltyChip('₱5/d', 5, penaltyCtrl, setDialogState),
+                                  _buildPresetPenaltyChip('₱10/d', 10, penaltyCtrl, setDialogState),
+                                  _buildPresetPenaltyChip('₱20/d', 20, penaltyCtrl, setDialogState),
+                                ]
+                              : selectedFrequency == 'weekly'
+                                  ? [
+                                      _buildPresetPenaltyChip('₱20/wk', 20, penaltyCtrl, setDialogState),
+                                      _buildPresetPenaltyChip('₱50/wk', 50, penaltyCtrl, setDialogState),
+                                      _buildPresetPenaltyChip('₱100/wk', 100, penaltyCtrl, setDialogState),
+                                    ]
+                                  : [
+                                      _buildPresetPenaltyChip('₱50/mo', 50, penaltyCtrl, setDialogState),
+                                      _buildPresetPenaltyChip('₱100/mo', 100, penaltyCtrl, setDialogState),
+                                      _buildPresetPenaltyChip('₱200/mo', 200, penaltyCtrl, setDialogState),
+                                    ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: notesCtrl,
@@ -199,6 +453,9 @@ class _UtangLedgerScreenState extends State<UtangLedgerScreen> {
                 final name = nameCtrl.text.trim();
                 final phone = phoneCtrl.text.trim();
                 final rawAmt = double.tryParse(amountCtrl.text.replaceAll(',', '').trim()) ?? 0.0;
+                final rate = selectedFrequency == 'none'
+                    ? 0.0
+                    : (double.tryParse(penaltyCtrl.text.replaceAll(',', '').trim()) ?? 0.0);
 
                 if (name.isEmpty) {
                   showStoraSnackBar(context, 'Please enter customer name');
@@ -214,6 +471,9 @@ class _UtangLedgerScreenState extends State<UtangLedgerScreen> {
                   customerPhone: phone,
                   totalAmount: rawAmt,
                   dueDate: selectedDueDate,
+                  penaltyFrequency: selectedFrequency,
+                  penaltyRate: rate < 0 ? 0.0 : rate,
+                  gracePeriodDays: selectedGraceDays,
                   notes: notesCtrl.text.trim(),
                   items: [
                     UtangItem(
@@ -245,10 +505,12 @@ class _UtangLedgerScreenState extends State<UtangLedgerScreen> {
     phoneCtrl.dispose();
     amountCtrl.dispose();
     notesCtrl.dispose();
+    penaltyCtrl.dispose();
   }
 
   void _showRecordPaymentDialog(UtangRecord record) async {
-    final paymentCtrl = TextEditingController(text: record.balance.toStringAsFixed(2));
+    final effectiveDue = record.penaltyAmount > 0 ? record.totalDueWithPenalty : record.balance;
+    final paymentCtrl = TextEditingController(text: effectiveDue.toStringAsFixed(2));
     final noteCtrl = TextEditingController();
 
     await showDialog(
@@ -286,11 +548,27 @@ class _UtangLedgerScreenState extends State<UtangLedgerScreen> {
               'Customer: ${record.customerName}',
               style: TextStyle(color: HomeColors.textPrimary, fontWeight: FontWeight.w700, fontSize: 14),
             ),
-            const SizedBox(height: 4),
-            Text(
-              'Current Balance: ₱${record.balance.toStringAsFixed(2)}',
-              style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 13),
-            ),
+            const SizedBox(height: 6),
+            if (record.penaltyAmount > 0) ...[
+              Text(
+                'Principal Balance: ₱${record.balance.toStringAsFixed(2)}',
+                style: TextStyle(color: HomeColors.textSecondary, fontSize: 12),
+              ),
+              Text(
+                'Late Penalty: +₱${record.penaltyAmount.toStringAsFixed(2)} (${record.overdueUnitsLabel} late @ ₱${record.penaltyRate.toStringAsFixed(0)}/${record.penaltyFrequencyShortUnit})',
+                style: const TextStyle(color: AppColors.error, fontSize: 12, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                'Total Collectible: ₱${record.totalDueWithPenalty.toStringAsFixed(2)}',
+                style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 14),
+              ),
+            ] else ...[
+              Text(
+                'Current Balance: ₱${record.balance.toStringAsFixed(2)}',
+                style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 13),
+              ),
+            ],
             const SizedBox(height: 14),
             TextField(
               controller: paymentCtrl,
@@ -306,14 +584,31 @@ class _UtangLedgerScreenState extends State<UtangLedgerScreen> {
               ),
             ),
             const SizedBox(height: 8),
-            Row(
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
               children: [
-                ActionChip(
-                  label: const Text('Exact Full Payment', style: TextStyle(fontSize: 11)),
-                  onPressed: () => paymentCtrl.text = record.balance.toStringAsFixed(2),
-                  backgroundColor: HomeColors.cardElevated,
-                  labelStyle: TextStyle(color: HomeColors.textPrimary),
-                ),
+                if (record.penaltyAmount > 0) ...[
+                  ActionChip(
+                    label: Text('Pay Total (₱${record.totalDueWithPenalty.toStringAsFixed(2)})', style: const TextStyle(fontSize: 11)),
+                    onPressed: () => paymentCtrl.text = record.totalDueWithPenalty.toStringAsFixed(2),
+                    backgroundColor: HomeColors.cardElevated,
+                    labelStyle: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold),
+                  ),
+                  ActionChip(
+                    label: Text('Principal Only (₱${record.balance.toStringAsFixed(2)})', style: const TextStyle(fontSize: 11)),
+                    onPressed: () => paymentCtrl.text = record.balance.toStringAsFixed(2),
+                    backgroundColor: HomeColors.cardElevated,
+                    labelStyle: TextStyle(color: HomeColors.textPrimary),
+                  ),
+                ] else ...[
+                  ActionChip(
+                    label: const Text('Exact Full Payment', style: TextStyle(fontSize: 11)),
+                    onPressed: () => paymentCtrl.text = record.balance.toStringAsFixed(2),
+                    backgroundColor: HomeColors.cardElevated,
+                    labelStyle: TextStyle(color: HomeColors.textPrimary),
+                  ),
+                ],
               ],
             ),
             const SizedBox(height: 10),
@@ -338,12 +633,13 @@ class _UtangLedgerScreenState extends State<UtangLedgerScreen> {
           ElevatedButton(
             onPressed: () async {
               final paid = double.tryParse(paymentCtrl.text.replaceAll(',', '').trim()) ?? 0.0;
+              final maxAllowed = record.penaltyAmount > 0 ? record.totalDueWithPenalty : record.balance;
               if (paid <= 0) {
                 showStoraSnackBar(context, 'Please enter a valid payment amount');
                 return;
               }
-              if (paid > record.balance + 0.01) {
-                showStoraSnackBar(context, 'Payment cannot exceed remaining balance of ₱${record.balance.toStringAsFixed(2)}');
+              if (paid > maxAllowed + 0.01) {
+                showStoraSnackBar(context, 'Payment cannot exceed total due of ₱${maxAllowed.toStringAsFixed(2)}');
                 return;
               }
               await UtangStore.instance.recordPayment(
@@ -374,8 +670,22 @@ class _UtangLedgerScreenState extends State<UtangLedgerScreen> {
   void _sendReminder(UtangRecord record) {
     final storeName = AuthStore.instance.businessName ?? 'Our Store';
     final dueFormatted = DateFormat('MMM dd, yyyy').format(record.dueDate);
-    final msg =
-        'Magandang araw po ${record.customerName}! Paalala lang po mula sa $storeName tungkol sa inyong balance na ₱${record.balance.toStringAsFixed(2)} na nakatakda sa $dueFormatted. Maraming salamat po!';
+    final totalDue = record.penaltyAmount > 0 ? record.totalDueWithPenalty : record.balance;
+
+    String msg;
+    if (record.isOverdue && record.penaltyAmount > 0) {
+      msg =
+          'Magandang araw po ${record.customerName}! Paalala lang po mula sa $storeName: Ang inyong utang na ₱${record.balance.toStringAsFixed(2)} ay lumampas sa takdang petsa noong $dueFormatted.\n\n'
+          'May dagdag na late penalty na ₱${record.penaltyAmount.toStringAsFixed(2)} (${record.overdueUnitsTagalog} x ₱${record.penaltyRate.toStringAsFixed(0)}/${record.penaltyFrequencyTagalog}).\n'
+          'Kabuuang dapat bayaran: ₱${totalDue.toStringAsFixed(2)}.\n\n'
+          'Paki-settle po sa lalong madaling panahon. Maraming salamat po!';
+    } else if (record.isOverdue) {
+      msg =
+          'Magandang araw po ${record.customerName}! Paalala lang po mula sa $storeName: Ang inyong balance na ₱${record.balance.toStringAsFixed(2)} ay lumampas sa takdang petsa noong $dueFormatted. Paki-settle po sa lalong madaling panahon. Maraming salamat po!';
+    } else {
+      msg =
+          'Magandang araw po ${record.customerName}! Paalala lang po mula sa $storeName tungkol sa inyong balance na ₱${record.balance.toStringAsFixed(2)} na nakatakda sa $dueFormatted. Maraming salamat po!';
+    }
 
     showModalBottomSheet(
       context: context,
@@ -512,6 +822,230 @@ class _UtangLedgerScreenState extends State<UtangLedgerScreen> {
     }
   }
 
+  void _showEditPenaltyDialog(UtangRecord record) async {
+    String selectedFrequency = record.hasPenalty ? record.penaltyFrequency : 'none';
+    final penaltyCtrl = TextEditingController(
+      text: record.penaltyRate > 0 ? record.penaltyRate.toStringAsFixed(0) : '',
+    );
+    int graceDays = record.gracePeriodDays;
+
+    await showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: HomeColors.cardBackground,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(color: HomeColors.cardBorder),
+          ),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.amber.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.alarm_rounded, color: Colors.amber, size: 20),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                'Set Late Penalty',
+                style: TextStyle(color: HomeColors.textPrimary, fontSize: 17, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Customer: ${record.customerName}',
+                  style: TextStyle(color: HomeColors.textPrimary, fontWeight: FontWeight.bold, fontSize: 13),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Frequency:',
+                  style: TextStyle(color: HomeColors.textSecondary, fontSize: 12, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    _buildFrequencyChip(
+                      label: 'None',
+                      value: 'none',
+                      selectedValue: selectedFrequency,
+                      onSelected: (val) {
+                        setDialogState(() {
+                          selectedFrequency = val;
+                          penaltyCtrl.clear();
+                        });
+                      },
+                    ),
+                    const SizedBox(width: 6),
+                    _buildFrequencyChip(
+                      label: 'Per Day',
+                      value: 'daily',
+                      selectedValue: selectedFrequency,
+                      onSelected: (val) {
+                        setDialogState(() {
+                          selectedFrequency = val;
+                          if (penaltyCtrl.text.isEmpty) penaltyCtrl.text = '10';
+                        });
+                      },
+                    ),
+                    const SizedBox(width: 6),
+                    _buildFrequencyChip(
+                      label: 'Per Week',
+                      value: 'weekly',
+                      selectedValue: selectedFrequency,
+                      onSelected: (val) {
+                        setDialogState(() {
+                          selectedFrequency = val;
+                          if (penaltyCtrl.text.isEmpty) penaltyCtrl.text = '50';
+                        });
+                      },
+                    ),
+                    const SizedBox(width: 6),
+                    _buildFrequencyChip(
+                      label: 'Per Month',
+                      value: 'monthly',
+                      selectedValue: selectedFrequency,
+                      onSelected: (val) {
+                        setDialogState(() {
+                          selectedFrequency = val;
+                          if (penaltyCtrl.text.isEmpty) penaltyCtrl.text = '100';
+                        });
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                if (selectedFrequency == 'none') ...[
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: HomeColors.cardElevated,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: HomeColors.cardBorder),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.check_circle_outline_rounded, color: Color(0xFF10B981), size: 16),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Walang late penalty na sisingilin para sa utang na ito.',
+                            style: TextStyle(color: HomeColors.textSecondary, fontSize: 11.5),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ] else ...[
+                  TextField(
+                    controller: penaltyCtrl,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    style: TextStyle(color: HomeColors.textPrimary),
+                    decoration: InputDecoration(
+                      labelText: selectedFrequency == 'daily'
+                          ? 'Penalty Rate (₱ / day)'
+                          : selectedFrequency == 'weekly'
+                              ? 'Penalty Rate (₱ / week)'
+                              : 'Penalty Rate (₱ / month)',
+                      hintText: 'Enter amount',
+                      labelStyle: TextStyle(color: HomeColors.textSecondary),
+                      filled: true,
+                      fillColor: HomeColors.cardElevated,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: selectedFrequency == 'daily'
+                        ? [
+                            _buildPresetPenaltyChip('₱5/d', 5, penaltyCtrl, setDialogState),
+                            _buildPresetPenaltyChip('₱10/d', 10, penaltyCtrl, setDialogState),
+                            _buildPresetPenaltyChip('₱20/d', 20, penaltyCtrl, setDialogState),
+                          ]
+                        : selectedFrequency == 'weekly'
+                            ? [
+                                _buildPresetPenaltyChip('₱20/wk', 20, penaltyCtrl, setDialogState),
+                                _buildPresetPenaltyChip('₱50/wk', 50, penaltyCtrl, setDialogState),
+                                _buildPresetPenaltyChip('₱100/wk', 100, penaltyCtrl, setDialogState),
+                              ]
+                            : [
+                                _buildPresetPenaltyChip('₱50/mo', 50, penaltyCtrl, setDialogState),
+                                _buildPresetPenaltyChip('₱100/mo', 100, penaltyCtrl, setDialogState),
+                                _buildPresetPenaltyChip('₱200/mo', 200, penaltyCtrl, setDialogState),
+                              ],
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<int>(
+                    initialValue: graceDays,
+                    dropdownColor: HomeColors.cardElevated,
+                    style: TextStyle(color: HomeColors.textPrimary, fontSize: 13),
+                    decoration: InputDecoration(
+                      labelText: 'Grace Period',
+                      labelStyle: TextStyle(color: HomeColors.textSecondary),
+                      filled: true,
+                      fillColor: HomeColors.cardElevated,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: 0, child: Text('No Grace (Immediate after due)')),
+                      DropdownMenuItem(value: 1, child: Text('1 Day Grace')),
+                      DropdownMenuItem(value: 2, child: Text('2 Days Grace')),
+                      DropdownMenuItem(value: 3, child: Text('3 Days Grace')),
+                      DropdownMenuItem(value: 7, child: Text('7 Days Grace')),
+                    ],
+                    onChanged: (val) {
+                      if (val != null) {
+                        setDialogState(() => graceDays = val);
+                      }
+                    },
+                  ),
+                ],
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: Text('Cancel', style: TextStyle(color: HomeColors.textSecondary)),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final rate = selectedFrequency == 'none'
+                    ? 0.0
+                    : (double.tryParse(penaltyCtrl.text.replaceAll(',', '').trim()) ?? 0.0);
+                await UtangStore.instance.updatePenaltySettings(
+                  record.id,
+                  penaltyFrequency: selectedFrequency,
+                  penaltyRate: rate < 0 ? 0.0 : rate,
+                  gracePeriodDays: graceDays,
+                );
+                if (ctx.mounted) Navigator.of(ctx).pop();
+                if (!mounted) return;
+                showStoraSnackBar(this.context, 'Penalty settings updated for ${record.customerName}', isError: false);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.amber[700],
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              child: const Text('Save', style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+      ),
+    );
+    penaltyCtrl.dispose();
+  }
+
   void _showRecordDetailsSheet(UtangRecord record) {
     showModalBottomSheet(
       context: context,
@@ -590,12 +1124,22 @@ class _UtangLedgerScreenState extends State<UtangLedgerScreen> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Remaining Balance', style: TextStyle(color: HomeColors.textSecondary, fontSize: 12)),
+                        Text(
+                          record.penaltyAmount > 0 ? 'Total Collectible' : 'Remaining Balance',
+                          style: TextStyle(color: HomeColors.textSecondary, fontSize: 12),
+                        ),
                         const SizedBox(height: 4),
                         Text(
-                          '₱${record.balance.toStringAsFixed(2)}',
+                          '₱${record.totalDueWithPenalty.toStringAsFixed(2)}',
                           style: const TextStyle(color: Colors.amber, fontSize: 24, fontWeight: FontWeight.w900),
                         ),
+                        if (record.penaltyAmount > 0) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            'Loan: ₱${record.balance.toStringAsFixed(2)} + Fee: ₱${record.penaltyAmount.toStringAsFixed(2)}',
+                            style: TextStyle(color: HomeColors.textSecondary, fontSize: 11),
+                          ),
+                        ],
                       ],
                     ),
                     Column(
@@ -613,7 +1157,161 @@ class _UtangLedgerScreenState extends State<UtangLedgerScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
+              // Late Penalty Status Card
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: HomeColors.cardElevated,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: record.penaltyAmount > 0
+                        ? AppColors.error.withValues(alpha: 0.4)
+                        : HomeColors.cardBorder,
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.alarm_rounded,
+                              color: record.penaltyAmount > 0 ? AppColors.error : Colors.amber,
+                              size: 18,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Late Payment Penalty',
+                              style: TextStyle(color: HomeColors.textPrimary, fontSize: 13, fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
+                        if (record.hasPenalty)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: Colors.amber.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              '₱${record.penaltyRate.toStringAsFixed(0)} / ${record.penaltyFrequencyShortUnit}',
+                              style: const TextStyle(color: Colors.amber, fontSize: 11, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    if (!record.hasPenalty) ...[
+                      Text(
+                        'Walang late penalty na nakatakda para sa listahang ito.',
+                        style: TextStyle(color: HomeColors.textSecondary, fontSize: 12),
+                      ),
+                    ] else if (record.isPenaltyWaived) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF10B981).withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Row(
+                          children: [
+                            Icon(Icons.check_circle_rounded, color: Color(0xFF10B981), size: 14),
+                            SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                'Late penalty has been waived for this customer by the store.',
+                                style: TextStyle(color: Color(0xFF10B981), fontSize: 11, fontWeight: FontWeight.w600),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ] else if (record.isOverdue) ...[
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${record.overdueDays} days past due date',
+                                style: const TextStyle(color: AppColors.error, fontSize: 12, fontWeight: FontWeight.bold),
+                              ),
+                              Text(
+                                '${record.overdueUnitsLabel} penalized (${record.gracePeriodDays}d grace period)',
+                                style: TextStyle(color: HomeColors.textSecondary, fontSize: 11),
+                              ),
+                            ],
+                          ),
+                          Text(
+                            '+₱${record.penaltyAmount.toStringAsFixed(2)}',
+                            style: const TextStyle(color: AppColors.error, fontSize: 17, fontWeight: FontWeight.w900),
+                          ),
+                        ],
+                      ),
+                    ] else ...[
+                      Text(
+                        'Penalty starts after grace period (${DateFormat('MMM dd').format(record.dueDate.add(Duration(days: record.gracePeriodDays)))}).',
+                        style: TextStyle(color: HomeColors.textSecondary, fontSize: 12),
+                      ),
+                    ],
+                    if (!record.isFullyPaid) ...[
+                      const SizedBox(height: 10),
+                      Divider(color: HomeColors.cardBorder, height: 1),
+                      const SizedBox(height: 6),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          if (record.hasPenalty)
+                            TextButton.icon(
+                              icon: Icon(
+                                record.isPenaltyWaived ? Icons.undo_rounded : Icons.money_off_rounded,
+                                size: 16,
+                                color: record.isPenaltyWaived ? Colors.amber : const Color(0xFF10B981),
+                              ),
+                              label: Text(
+                                record.isPenaltyWaived ? 'Restore Penalty' : 'Waive Penalty',
+                                style: TextStyle(
+                                  color: record.isPenaltyWaived ? Colors.amber : const Color(0xFF10B981),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              onPressed: () async {
+                                await UtangStore.instance.waivePenalty(record.id, waived: !record.isPenaltyWaived);
+                                if (ctx.mounted) Navigator.pop(ctx);
+                                if (!mounted) return;
+                                showStoraSnackBar(
+                                  this.context,
+                                  record.isPenaltyWaived
+                                      ? 'Penalty restored for ${record.customerName}'
+                                      : 'Penalty waived for ${record.customerName}!',
+                                  isError: false,
+                                );
+                              },
+                            ),
+                          TextButton.icon(
+                            icon: const Icon(Icons.edit_note_rounded, size: 16),
+                            label: Text(
+                              record.hasPenalty ? 'Edit Rate' : 'Set Penalty Rate',
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                            onPressed: () {
+                              Navigator.pop(ctx);
+                              _showEditPenaltyDialog(record);
+                            },
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
               // Due date row
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -947,7 +1645,9 @@ class _UtangLedgerScreenState extends State<UtangLedgerScreen> {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            '${store.activeRecords.length} active credit loans · ${store.totalActiveDebtors} customers',
+                            store.totalAccruedPenalties > 0
+                                ? '${store.activeRecords.length} active loans (incl. ₱${store.totalAccruedPenalties.toStringAsFixed(2)} late fees)'
+                                : '${store.activeRecords.length} active credit loans · ${store.totalActiveDebtors} customers',
                             style: const TextStyle(color: Colors.white70, fontSize: 11),
                           ),
                         ],
@@ -1134,7 +1834,9 @@ class _UtangLedgerScreenState extends State<UtangLedgerScreen> {
                             Icon(Icons.calendar_today_rounded, size: 12, color: HomeColors.textSecondary),
                             const SizedBox(width: 4),
                             Text(
-                              'Due: ${DateFormat('MMM dd, yyyy').format(record.dueDate)}',
+                              record.isOverdue
+                                  ? 'Due: ${DateFormat('MMM dd').format(record.dueDate)} (${record.overdueDays}d late)'
+                                  : 'Due: ${DateFormat('MMM dd, yyyy').format(record.dueDate)}',
                               style: TextStyle(
                                 color: record.isOverdue
                                     ? AppColors.error
@@ -1154,13 +1856,25 @@ class _UtangLedgerScreenState extends State<UtangLedgerScreen> {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
-                        '₱${record.balance.toStringAsFixed(2)}',
+                        '₱${(record.penaltyAmount > 0 ? record.totalDueWithPenalty : record.balance).toStringAsFixed(2)}',
                         style: TextStyle(
                           color: record.isFullyPaid ? const Color(0xFF10B981) : Colors.amber,
                           fontSize: 17,
                           fontWeight: FontWeight.w900,
                         ),
                       ),
+                      if (record.penaltyAmount > 0)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 1),
+                          child: Text(
+                            '+₱${record.penaltyAmount.toStringAsFixed(0)} fee',
+                            style: const TextStyle(
+                              color: AppColors.error,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
                       const SizedBox(height: 4),
                       _buildStatusChip(record),
                     ],
@@ -1178,6 +1892,45 @@ class _UtangLedgerScreenState extends State<UtangLedgerScreen> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(color: HomeColors.textSecondary, fontSize: 12),
+                ),
+              ],
+              if (record.hasPenalty && (record.isOverdue || record.isPenaltyWaived)) ...[
+                const SizedBox(height: 10),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: record.isPenaltyWaived
+                        ? const Color(0xFF10B981).withValues(alpha: 0.1)
+                        : AppColors.error.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: record.isPenaltyWaived
+                          ? const Color(0xFF10B981).withValues(alpha: 0.3)
+                          : AppColors.error.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        record.isPenaltyWaived ? Icons.check_circle_rounded : Icons.info_outline_rounded,
+                        size: 14,
+                        color: record.isPenaltyWaived ? const Color(0xFF10B981) : AppColors.error,
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          record.isPenaltyWaived
+                              ? 'Late penalty waived by store'
+                              : '${record.overdueUnitsLabel} late @ ₱${record.penaltyRate.toStringAsFixed(0)}/${record.penaltyFrequencyShortUnit} = +₱${record.penaltyAmount.toStringAsFixed(2)} fee',
+                          style: TextStyle(
+                            color: record.isPenaltyWaived ? const Color(0xFF10B981) : AppColors.error,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
               const SizedBox(height: 12),

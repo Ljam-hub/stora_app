@@ -444,30 +444,23 @@ class _OrderCardState extends State<OrderCard> with NavigationGuard<OrderCard> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     if (order.status == 'accepted' || order.status == 'ready' || order.status == 'completed') ...[
-                      InkWell(
-                        onTap: () => _showReceiptOptions(context, order),
-                        borderRadius: BorderRadius.circular(10),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-                          decoration: BoxDecoration(
-                            color: AppColors.successBg,
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
-                          ),
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.receipt_long_rounded, color: AppColors.success, size: 14),
-                              SizedBox(width: 4),
-                              Text(
-                                'Receipt',
-                                style: TextStyle(
-                                  color: AppColors.success,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
+                      Tooltip(
+                        message: 'View Receipt',
+                        child: InkWell(
+                          onTap: () => _showReceiptOptions(context, order),
+                          borderRadius: BorderRadius.circular(10),
+                          child: Container(
+                            padding: const EdgeInsets.all(7),
+                            decoration: BoxDecoration(
+                              color: AppColors.successBg,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: AppColors.success.withValues(alpha: 0.35)),
+                            ),
+                            child: Icon(
+                              Icons.receipt_long_rounded,
+                              color: AppColors.successText,
+                              size: 16,
+                            ),
                           ),
                         ),
                       ),
@@ -831,31 +824,47 @@ class _OrderCardState extends State<OrderCard> with NavigationGuard<OrderCard> {
                     ),
                     label: Text(
                       order.unreadMessageCount > 0
-                          ? 'Chat (${order.unreadMessageCount})'
-                          : 'Message',
+                          ? 'Chat with ${order.storeName.isNotEmpty ? order.storeName : "Store"} (${order.unreadMessageCount})'
+                          : 'Chat with ${order.storeName.isNotEmpty ? order.storeName : "Store"}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(color: AppColors.accentText, fontSize: 13, fontWeight: FontWeight.w600),
+                      style: TextStyle(color: AppColors.accentText, fontSize: 12.5, fontWeight: FontWeight.w600),
                     ),
                     style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: AppColors.primary),
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      side: BorderSide(color: AppColors.primary.withValues(alpha: 0.6), width: 1.2),
+                      backgroundColor: AppColors.primary.withValues(alpha: 0.08),
+                      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                   ),
                 ),
                 if (order.status == 'completed') ...[
                   const SizedBox(width: 8),
-                  ElevatedButton.icon(
-                    onPressed: () => _handleReorder(context, order),
-                    icon: const Icon(Icons.replay_rounded, size: 16),
-                    label: const Text('Reorder', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      elevation: 0,
+                  Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.primary.withValues(alpha: 0.3),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: ElevatedButton.icon(
+                      onPressed: () => _handleReorder(context, order),
+                      icon: const Icon(Icons.repeat_rounded, size: 16),
+                      label: const Text(
+                        'Reorder',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5, letterSpacing: 0.2),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        elevation: 0,
+                      ),
                     ),
                   ),
                 ],

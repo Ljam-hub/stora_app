@@ -5,7 +5,6 @@ import '../../models/product_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/cart_provider.dart';
 import '../../providers/catalog_provider.dart';
-import '../../providers/chat_provider.dart';
 import '../../storage/hidden_products_store.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/navigation_guard.dart';
@@ -63,7 +62,6 @@ class _ShopScreenState extends State<ShopScreen> {
   }
 
   bool _isOpeningDetail = false;
-  bool _isNavigatingToChat = false;
 
   void _openProductDetail(ProductModel product) async {
     if (_isOpeningDetail) return;
@@ -82,72 +80,48 @@ class _ShopScreenState extends State<ShopScreen> {
 
   @override
   Widget build(BuildContext context) {
-    context.watch<CustomerThemeController>();
     final catalog = context.watch<CatalogProvider>();
-    final cart = context.watch<CartProvider>();
-    final chat = context.watch<ChatProvider>();
-    final auth = context.watch<AuthProvider>();
+    final greetingName = context.select<AuthProvider, String>((a) => a.greetingName);
 
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: AppColors.background,
         elevation: 0,
+        leading: catalog.selectedStore != null
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back_rounded),
+                color: AppColors.textPrimary,
+                tooltip: 'All Stores',
+                onPressed: () => catalog.selectStore(null),
+              )
+            : null,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Hi, ${auth.greetingName}',
+              'Hi, $greetingName',
               style: TextStyle(fontSize: 14, color: AppColors.textSecondary, fontWeight: FontWeight.normal),
             ),
             Text(
-              'Browse Stores',
+              catalog.selectedStore != null ? catalog.selectedStore!.displayName : 'Browse Stores',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
             ),
           ],
         ),
         actions: [
-          if (catalog.selectedStore != null)
-            AppNotificationBadge(
-              count: chat.unreadCount,
+          // Cart action with badge
+          Selector<CartProvider, int>(
+            selector: (_, cart) => cart.totalItemCount,
+            builder: (context, totalCount, _) => AppNotificationBadge(
+              count: totalCount,
               top: 6,
               right: 6,
               borderColor: AppColors.cardBackground,
               child: IconButton(
-                icon: Icon(Icons.chat_bubble_outline_rounded, color: AppColors.textPrimary),
-                tooltip: 'Message Store',
-                onPressed: () async {
-                  final store = catalog.selectedStore;
-                  if (store == null || _isNavigatingToChat) return;
-                  setState(() => _isNavigatingToChat = true);
-                  try {
-                    await NavigationGuard.pushSafely(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => CustomerChatScreen(
-                          storeOwnerId: store.id,
-                          storeName: store.displayName,
-                          storeAvatarUrl: store.avatarUrl,
-                        ),
-                      ),
-                    );
-                  } finally {
-                    if (mounted) {
-                      setState(() => _isNavigatingToChat = false);
-                    }
-                  }
-                },
+                icon: Icon(Icons.shopping_cart_outlined, color: AppColors.textPrimary),
+                onPressed: widget.onGoToCart,
               ),
-            ),
-          // Cart action with badge
-          AppNotificationBadge(
-            count: cart.totalItemCount,
-            top: 6,
-            right: 6,
-            borderColor: AppColors.cardBackground,
-            child: IconButton(
-              icon: Icon(Icons.shopping_cart_outlined, color: AppColors.textPrimary),
-              onPressed: widget.onGoToCart,
             ),
           ),
           const SizedBox(width: 8),
@@ -267,177 +241,186 @@ class _ShopScreenState extends State<ShopScreen> {
               const SizedBox(height: 8),
             ],
 
-            // List Shops section when no store selected
-            if (catalog.selectedStore == null && catalog.stores.isNotEmpty) ...[
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.storefront_rounded, size: 16, color: AppColors.primary),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Showing all items across stores. Tap any store below to shop from that store specifically.',
-                          style: TextStyle(
-                            color: AppColors.textSecondary,
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w500,
-                          ),
+            // List Shops section when no store selected - only shown if there are MULTIPLE OPEN stores
+            Builder(
+              builder: (context) {
+                final openStores = catalog.stores.where((s) => s.isOpen).toList();
+                if (catalog.selectedStore != null || openStores.length <= 1) {
+                  return const SizedBox.shrink();
+                }
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.storefront_rounded, size: 16, color: AppColors.primary),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Showing all items across stores. Tap any store below to shop from that store specifically.',
+                                style: TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 2, 16, 2),
-                child: Row(
-                  children: [
-                    Icon(Icons.store_rounded, color: AppColors.primary, size: 18),
-                    const SizedBox(width: 6),
-                    Text(
-                      'Available Stores',
-                      style: TextStyle(
-                        color: AppColors.textPrimary,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
+                    ),
+                    const SizedBox(height: 8),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 2, 16, 2),
+                      child: Row(
+                        children: [
+                          Icon(Icons.store_rounded, color: AppColors.primary, size: 18),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Available Stores',
+                            style: TextStyle(
+                              color: AppColors.textPrimary,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const Spacer(),
+                          Text(
+                            '${openStores.length} stores',
+                            style: TextStyle(color: AppColors.textMuted, fontSize: 12),
+                          ),
+                        ],
                       ),
                     ),
-                    const Spacer(),
-                    Text(
-                      '${catalog.stores.length} ${catalog.stores.length == 1 ? 'store' : 'stores'}',
-                      style: TextStyle(color: AppColors.textMuted, fontSize: 12),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 6),
-              SizedBox(
-                height: 88,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: catalog.stores.length,
-                  itemBuilder: (context, index) {
-                    final store = catalog.stores[index];
-                    final hasAvatar = store.avatarUrl != null && store.avatarUrl!.isNotEmpty;
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 10),
-                      child: GestureDetector(
-                        onTap: () => catalog.selectStore(store),
-                        child: Container(
-                          width: 200,
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                          decoration: BoxDecoration(
-                            color: AppColors.cardBackground,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: AppColors.cardBorder),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.06),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 44,
-                                height: 44,
+                    const SizedBox(height: 6),
+                    SizedBox(
+                      height: 88,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        itemCount: openStores.length,
+                        itemBuilder: (context, index) {
+                          final store = openStores[index];
+                          final hasAvatar = store.avatarUrl != null && store.avatarUrl!.isNotEmpty;
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 10),
+                            child: GestureDetector(
+                              onTap: () => catalog.selectStore(store),
+                              child: Container(
+                                width: 200,
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                                 decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: AppColors.cardElevated,
-                                  border: Border.all(
-                                    color: store.isOpen
-                                        ? AppColors.primary.withValues(alpha: 0.5)
-                                        : AppColors.textMuted.withValues(alpha: 0.3),
-                                    width: 1.5,
-                                  ),
+                                  color: AppColors.cardBackground,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(color: AppColors.cardBorder),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(alpha: 0.06),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
                                 ),
-                                child: ClipOval(
-                                  child: hasAvatar
-                                      ? Image.network(
-                                          store.avatarUrl!,
-                                          width: 44,
-                                          height: 44,
-                                          fit: BoxFit.cover,
-                                          errorBuilder: (context, error, stackTrace) => const Icon(Icons.storefront_rounded, color: AppColors.primary, size: 22),
-                                        )
-                                      : const Icon(Icons.storefront_rounded, color: AppColors.primary, size: 22),
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisAlignment: MainAxisAlignment.center,
+                                child: Row(
                                   children: [
-                                    Text(
-                                      store.displayName,
-                                      style: TextStyle(
-                                        color: AppColors.textPrimary,
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w700,
+                                    Container(
+                                      width: 44,
+                                      height: 44,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: AppColors.cardElevated,
+                                        border: Border.all(
+                                          color: AppColors.primary.withValues(alpha: 0.5),
+                                          width: 1.5,
+                                        ),
                                       ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
+                                      child: ClipOval(
+                                        child: hasAvatar
+                                            ? Image.network(
+                                                store.avatarUrl!,
+                                                width: 44,
+                                                height: 44,
+                                                fit: BoxFit.cover,
+                                                errorBuilder: (context, error, stackTrace) => const Icon(Icons.storefront_rounded, color: AppColors.primary, size: 22),
+                                              )
+                                            : const Icon(Icons.storefront_rounded, color: AppColors.primary, size: 22),
+                                      ),
                                     ),
-                                    const SizedBox(height: 3),
-                                    Row(
-                                      children: [
-                                        Container(
-                                          width: 6,
-                                          height: 6,
-                                          decoration: BoxDecoration(
-                                            shape: BoxShape.circle,
-                                            color: store.isOpen ? AppColors.success : AppColors.danger,
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Text(
+                                            store.displayName,
+                                            style: TextStyle(
+                                              color: AppColors.textPrimary,
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
                                           ),
-                                        ),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          store.isOpen ? 'Open' : 'Closed',
-                                          style: TextStyle(
-                                            color: store.isOpen ? AppColors.success : AppColors.danger,
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.w600,
+                                          const SizedBox(height: 3),
+                                          Row(
+                                            children: [
+                                              Container(
+                                                width: 6,
+                                                height: 6,
+                                                decoration: const BoxDecoration(
+                                                  shape: BoxShape.circle,
+                                                  color: AppColors.success,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 4),
+                                              const Text(
+                                                'Open',
+                                                style: TextStyle(
+                                                  color: AppColors.success,
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                            ],
                                           ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      'Tap to browse →',
-                                      style: TextStyle(
-                                        color: AppColors.primary,
-                                        fontSize: 10.5,
-                                        fontWeight: FontWeight.w600,
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            'Tap to browse →',
+                                            style: TextStyle(
+                                              color: AppColors.primary,
+                                              fontSize: 10.5,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
-                            ],
-                          ),
-                        ),
+                            ),
+                          );
+                        },
                       ),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(height: 8),
-            ],
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+                );
+              },
+            ),
 
-            // Store Info & Chat Card when a store IS selected
-            if (catalog.selectedStore != null) ...[
+            // Store Info & Chat Card when a store IS selected (only when multiple stores exist)
+            if (catalog.selectedStore != null && catalog.stores.length > 1) ...[
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                 child: Container(

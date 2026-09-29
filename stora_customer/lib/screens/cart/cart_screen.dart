@@ -301,86 +301,87 @@ class _CartScreenState extends State<CartScreen> {
                     },
                   ),
                 ),
-
-                // Cart Summary & Checkout Button
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: AppColors.cardBackground,
-                    border: Border(top: BorderSide(color: AppColors.cardBorder)),
-                  ),
-                  child: SafeArea(
-                    top: false,
-                    child: Column(
+              ],
+            ),
+      bottomNavigationBar: cart.isEmpty
+          ? null
+          : Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: AppColors.cardBackground,
+                border: Border(top: BorderSide(color: AppColors.cardBorder)),
+              ),
+              child: SafeArea(
+                top: false,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        Text(
+                          'Subtotal (${cart.totalItemCount} items)',
+                          style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+                        ),
+                        Text(
+                          cart.formattedTotal,
+                          style: TextStyle(
+                            color: AppColors.textPrimary,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    if (isStoreClosed)
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: AppColors.danger.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppColors.danger.withValues(alpha: 0.35)),
+                        ),
+                        child: Row(
                           children: [
-                            Text(
-                              'Subtotal (${cart.totalItemCount} items)',
-                              style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
-                            ),
-                            Text(
-                              cart.formattedTotal,
-                              style: TextStyle(
-                                color: AppColors.textPrimary,
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
+                            const Icon(Icons.store_mall_directory_outlined, color: AppColors.danger, size: 18),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'This store is currently closed. Checkout is paused until the store reopens.',
+                                style: TextStyle(color: AppColors.danger, fontSize: 12, fontWeight: FontWeight.w600),
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 16),
-                        if (isStoreClosed)
-                          Container(
-                            margin: const EdgeInsets.only(bottom: 12),
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                            decoration: BoxDecoration(
-                              color: AppColors.danger.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: AppColors.danger.withValues(alpha: 0.35)),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.store_mall_directory_outlined, color: AppColors.danger, size: 18),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    'This store is currently closed. Checkout is paused until the store reopens.',
-                                    style: TextStyle(color: AppColors.danger, fontSize: 12, fontWeight: FontWeight.w600),
+                      ),
+                    GradientButton(
+                      key: const Key('cart_checkout_button'),
+                      text: isStoreClosed ? 'Store is Currently Closed' : 'Proceed to Checkout',
+                      icon: isStoreClosed ? Icons.lock_outline_rounded : Icons.arrow_forward_rounded,
+                      isLoading: _isNavigatingToCheckout,
+                      onPressed: (isStoreClosed || _isNavigatingToCheckout)
+                          ? null
+                          : () async {
+                              if (_isNavigatingToCheckout) return;
+                              setState(() => _isNavigatingToCheckout = true);
+                              await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => CheckoutScreen(
+                                    onOrderPlaced: widget.onOrderPlaced,
                                   ),
                                 ),
-                              ],
-                            ),
-                          ),
-                        GradientButton(
-                          key: const Key('cart_checkout_button'),
-                          text: isStoreClosed ? 'Store is Currently Closed' : 'Proceed to Checkout',
-                          icon: isStoreClosed ? Icons.lock_outline_rounded : Icons.arrow_forward_rounded,
-                          isLoading: _isNavigatingToCheckout,
-                          onPressed: (isStoreClosed || _isNavigatingToCheckout)
-                              ? null
-                              : () async {
-                                  if (_isNavigatingToCheckout) return;
-                                  setState(() => _isNavigatingToCheckout = true);
-                                  await Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => CheckoutScreen(
-                                        onOrderPlaced: widget.onOrderPlaced,
-                                      ),
-                                    ),
-                                  );
-                                  if (mounted) {
-                                    setState(() => _isNavigatingToCheckout = false);
-                                  }
-                                },
-                        ),
-                      ],
+                              );
+                              if (mounted) {
+                                setState(() => _isNavigatingToCheckout = false);
+                              }
+                            },
                     ),
-                  ),
+                  ],
                 ),
-              ],
+              ),
             ),
     );
   }

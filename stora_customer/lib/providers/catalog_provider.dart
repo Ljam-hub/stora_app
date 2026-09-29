@@ -56,6 +56,9 @@ class CatalogProvider extends ChangeNotifier {
       if (_selectedStore != null && p.ownerId != _selectedStore!.id) {
         return false;
       }
+      if (_selectedStore == null && _stores.isNotEmpty && !_stores.any((s) => s.id == p.ownerId)) {
+        return false;
+      }
       if (_selectedCategory != null) {
         if (_selectedStore == null) {
           // Cross-store match by normalized category name

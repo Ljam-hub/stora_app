@@ -34,7 +34,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
 
   @override
   Widget build(BuildContext context) {
-    context.watch<CustomerThemeController>();
     final orderProvider = context.watch<OrderProvider>();
 
     final filters = [
@@ -186,14 +185,17 @@ class _OrdersScreenState extends State<OrdersScreen> {
                             )
                       : ListView.builder(
                           physics: const AlwaysScrollableScrollPhysics(),
+                          cacheExtent: 500,
                           padding: const EdgeInsets.all(16),
                           itemCount: orderProvider.orders.length,
                           itemBuilder: (context, index) {
                             final order = orderProvider.orders[index];
-                            return FadeSlideIn(
-                              key: ValueKey('order-${order.id}'),
-                              delay: Duration(milliseconds: 60 * (index % 8)),
-                              child: OrderCard(order: order),
+                            return RepaintBoundary(
+                              child: FadeSlideIn(
+                                key: ValueKey('order-${order.id}'),
+                                delay: Duration(milliseconds: 60 * (index % 8)),
+                                child: OrderCard(order: order),
+                              ),
                             );
                           },
                         ),

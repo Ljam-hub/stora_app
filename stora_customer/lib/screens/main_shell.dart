@@ -250,6 +250,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
 
   void _onTabTapped(int index) {
     HapticFeedback.lightImpact();
+    ScaffoldMessenger.of(context).clearSnackBars();
     setState(() => _currentIndex = index);
     if (index == 4) {
       context.read<OrderProvider>().markOrdersTabSeen();
@@ -259,19 +260,30 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    context.watch<CustomerThemeController>();
-    final cart = context.watch<CartProvider>();
-    final chat = context.watch<ChatProvider>();
-    final orderProvider = context.watch<OrderProvider>();
+    final hasSelectedStore = context.select<CatalogProvider, bool>((c) => c.selectedStore != null);
+    final canPopRoot = _currentIndex == 0 && !hasSelectedStore;
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: OfflineBannerWrapper(
-        child: IndexedStack(
-          index: _currentIndex,
-          children: _screens,
+    return PopScope(
+      canPop: canPopRoot,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        if (_currentIndex != 0) {
+          _onTabTapped(0);
+        } else {
+          final catalog = context.read<CatalogProvider>();
+          if (catalog.selectedStore != null) {
+            catalog.selectStore(null);
+          }
+        }
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        body: OfflineBannerWrapper(
+          child: IndexedStack(
+            index: _currentIndex,
+            children: _screens,
+          ),
         ),
-      ),
       bottomNavigationBar: SafeArea(
         top: false,
         child: Padding(
@@ -302,26 +314,35 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
                   activeIcon: Icons.map_rounded,
                   label: 'Map',
                 ),
-                _buildNavItem(
-                  index: 2,
-                  icon: Icons.shopping_cart_outlined,
-                  activeIcon: Icons.shopping_cart_rounded,
-                  label: 'Cart',
-                  badgeCount: cart.totalItemCount,
+                Selector<CartProvider, int>(
+                  selector: (_, c) => c.totalItemCount,
+                  builder: (context, count, _) => _buildNavItem(
+                    index: 2,
+                    icon: Icons.shopping_cart_outlined,
+                    activeIcon: Icons.shopping_cart_rounded,
+                    label: 'Cart',
+                    badgeCount: count,
+                  ),
                 ),
-                _buildNavItem(
-                  index: 3,
-                  icon: Icons.chat_bubble_outline_rounded,
-                  activeIcon: Icons.chat_bubble_rounded,
-                  label: 'Chat',
-                  badgeCount: chat.unreadCount,
+                Selector<ChatProvider, int>(
+                  selector: (_, c) => c.unreadCount,
+                  builder: (context, count, _) => _buildNavItem(
+                    index: 3,
+                    icon: Icons.chat_bubble_outline_rounded,
+                    activeIcon: Icons.chat_bubble_rounded,
+                    label: 'Chat',
+                    badgeCount: count,
+                  ),
                 ),
-                _buildNavItem(
-                  index: 4,
-                  icon: Icons.receipt_long_outlined,
-                  activeIcon: Icons.receipt_long_rounded,
-                  label: 'Orders',
-                  badgeCount: _currentIndex == 4 ? 0 : orderProvider.unreadActiveOrdersCount,
+                Selector<OrderProvider, int>(
+                  selector: (_, o) => o.unreadActiveOrdersCount,
+                  builder: (context, count, _) => _buildNavItem(
+                    index: 4,
+                    icon: Icons.receipt_long_outlined,
+                    activeIcon: Icons.receipt_long_rounded,
+                    label: 'Orders',
+                    badgeCount: _currentIndex == 4 ? 0 : count,
+                  ),
                 ),
                 _buildNavItem(
                   index: 5,
@@ -334,9 +355,9 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
           ),
         ),
       ),
-    );
-
-  }
+    ),
+  );
+}
 
   Widget _buildNavItem({
     required int index,

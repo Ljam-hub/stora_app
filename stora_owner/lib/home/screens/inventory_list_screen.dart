@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../stora_login/stora_login.dart';
@@ -26,6 +27,7 @@ class InventoryListScreen extends StatefulWidget {
 
 class _InventoryListScreenState extends State<InventoryListScreen> {
   final _searchController = TextEditingController();
+  Timer? _searchDebounce;
   String _query = '';
   String _selectedCategory = 'All';
   late String _stockFilter;
@@ -38,6 +40,7 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _searchController.dispose();
     super.dispose();
   }
@@ -138,29 +141,40 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
                   padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
                   child: TextField(
                     controller: _searchController,
-                    onChanged: (v) => setState(() => _query = v),
+                    onChanged: (v) {
+                      _searchDebounce?.cancel();
+                      _searchDebounce = Timer(const Duration(milliseconds: 200), () {
+                        if (mounted) setState(() => _query = v);
+                      });
+                    },
                     style: TextStyle(color: HomeColors.textPrimary, fontSize: 14),
                     decoration: InputDecoration(
                       hintText: 'Search products by name or barcode...',
                       hintStyle: const TextStyle(color: AppColors.hint, fontSize: 14),
                       prefixIcon: const Icon(Icons.search_rounded, color: AppColors.label, size: 20),
-                      suffixIcon: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (_query.isNotEmpty)
-                            IconButton(
-                              icon: const Icon(Icons.clear_rounded, color: AppColors.hint, size: 18),
-                              onPressed: () {
-                                _searchController.clear();
-                                setState(() => _query = '');
-                              },
-                            ),
-                          IconButton(
-                            icon: const Icon(Icons.qr_code_scanner_rounded, color: AppColors.purpleLight),
-                            onPressed: _onScan,
-                          ),
-                          const SizedBox(width: 4),
-                        ],
+                      suffixIcon: ValueListenableBuilder<TextEditingValue>(
+                        valueListenable: _searchController,
+                        builder: (context, value, _) {
+                          return Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (value.text.isNotEmpty)
+                                IconButton(
+                                  icon: const Icon(Icons.clear_rounded, color: AppColors.hint, size: 18),
+                                  onPressed: () {
+                                    _searchDebounce?.cancel();
+                                    _searchController.clear();
+                                    setState(() => _query = '');
+                                  },
+                                ),
+                              IconButton(
+                                icon: const Icon(Icons.qr_code_scanner_rounded, color: AppColors.purpleLight),
+                                onPressed: _onScan,
+                              ),
+                              const SizedBox(width: 4),
+                            ],
+                          );
+                        },
                       ),
                       filled: true,
                       fillColor: HomeColors.cardBackground,
@@ -320,29 +334,34 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
                               ),
                             ),
                           )
-                        : GridView.builder(
-                            physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
-                            cacheExtent: 600,
-                            padding: const EdgeInsets.fromLTRB(20, 0, 20, 90),
-                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              mainAxisSpacing: 14,
-                              crossAxisSpacing: 14,
-                              childAspectRatio: 0.74,
-                            ),
-                            itemCount: products.length,
-                            itemBuilder: (context, i) {
-                              // On free plan, items beyond the plan limit are locked
+                        : Builder(
+                            builder: (context) {
                               final freeLimit = AccountStatusStore.instance.productLimit > 0
                                   ? AccountStatusStore.instance.productLimit
                                   : 20;
-                              final allIdx = InventoryStore.instance.products.indexOf(products[i]);
-                              final isLocked = !isPremium && (allIdx >= freeLimit || (allIdx == -1 && i >= freeLimit));
-                              return RepaintBoundary(
-                                child: ProductCard(
-                                  product: products[i],
-                                  isLocked: isLocked,
+                              final lockedProductIds = !isPremium
+                                  ? InventoryStore.instance.products.skip(freeLimit).map((p) => p.id).toSet()
+                                  : const <String>{};
+                              return GridView.builder(
+                                physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+                                cacheExtent: 600,
+                                padding: const EdgeInsets.fromLTRB(20, 0, 20, 90),
+                                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 2,
+                                  mainAxisSpacing: 14,
+                                  crossAxisSpacing: 14,
+                                  childAspectRatio: 0.74,
                                 ),
+                                itemCount: products.length,
+                                itemBuilder: (context, i) {
+                                  final isLocked = lockedProductIds.contains(products[i].id);
+                                  return RepaintBoundary(
+                                    child: ProductCard(
+                                      product: products[i],
+                                      isLocked: isLocked,
+                                    ),
+                                  );
+                                },
                               );
                             },
                           ),

@@ -84,7 +84,7 @@ void main() {
         catalogProvider.setCatalogDataForTesting(
           stores: [testStore],
           products: [testProduct],
-          selectedStore: testStore,
+          selectedStore: null,
           lock: true,
         );
 
@@ -170,7 +170,7 @@ void main() {
         final addButton = find.byKey(const ValueKey('product_add_button_1'));
         expect(addButton, findsOneWidget);
         await tester.tap(addButton);
-        await pumpSteps(tester, steps: 5);
+        await pumpSteps(tester, steps: 16);
 
         expect(cartProvider.totalItemCount, 1);
         expect(cartProvider.totalAmount, 95.0);
@@ -184,6 +184,7 @@ void main() {
         expect(find.text('My Shopping Cart'), findsOneWidget);
         expect(find.text('Subtotal (1 items)'), findsOneWidget);
         expect(find.byKey(const Key('cart_checkout_button')), findsOneWidget);
+        await pumpSteps(tester, steps: 4);
 
         // 6. Proceed to Checkout
         await tester.tap(find.byKey(const Key('cart_checkout_button')));

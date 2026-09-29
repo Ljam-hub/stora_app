@@ -68,9 +68,12 @@ class UtangReminderHelper {
       // "🚨 Overdue Loan: Pedro's utang of ₱1,200 is now 2 days overdue."
       final daysOverdue = diffDays.abs();
       final dayWord = daysOverdue == 1 ? 'day' : 'days';
+      final penaltyNote = record.penaltyAmount > 0
+          ? ' (+₱${formatBalance(record.penaltyAmount)} late fee)'
+          : '';
       return UtangReminderAlert(
         title: '🚨 Overdue Loan',
-        body: "${record.customerName}'s utang of ₱$formattedBalance is now $daysOverdue $dayWord overdue.",
+        body: "${record.customerName}'s utang of ₱$formattedBalance is now $daysOverdue $dayWord overdue$penaltyNote.",
         alertType: 'overdue_$daysOverdue',
       );
     }

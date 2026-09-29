@@ -145,8 +145,7 @@ class ProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cart = context.watch<CartProvider>();
-    final inCartQty = cart.getQuantity(product.id);
+    final inCartQty = context.select<CartProvider, int>((c) => c.getQuantity(product.id));
 
     return Container(
       decoration: BoxDecoration(
@@ -309,7 +308,7 @@ class ProductCard extends StatelessWidget {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 InkWell(
-                                  onTap: () => cart.decrement(product.id),
+                                  onTap: () => context.read<CartProvider>().decrement(product.id),
                                   borderRadius: const BorderRadius.horizontal(left: Radius.circular(15)),
                                   child: Padding(
                                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
@@ -328,7 +327,7 @@ class ProductCard extends StatelessWidget {
                                   ),
                                 ),
                                 InkWell(
-                                  onTap: () => cart.increment(product.id),
+                                  onTap: () => context.read<CartProvider>().increment(product.id),
                                   borderRadius: const BorderRadius.horizontal(right: Radius.circular(15)),
                                   child: Padding(
                                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
@@ -346,6 +345,7 @@ class ProductCard extends StatelessWidget {
                               key: ValueKey('product_add_button_${product.id}'),
                               onTap: () async {
                                 HapticFeedback.lightImpact();
+                                final cart = context.read<CartProvider>();
                                 final added = cart.addItem(product, 1);
                                 if (!added && cart.isNotEmpty && cart.storeId != product.ownerId) {
                                   await showCrossStoreCartDialog(

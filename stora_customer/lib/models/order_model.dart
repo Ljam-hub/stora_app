@@ -135,7 +135,7 @@ class CustomerOrder {
     switch (status.toLowerCase()) {
       case 'completed':
       case 'ready':
-        return AppColors.success;
+        return AppColors.successText;
       case 'accepted':
         return AppColors.primary;
       case 'declined':
@@ -153,7 +153,7 @@ class CustomerOrder {
     switch (status.toLowerCase()) {
       case 'completed':
       case 'ready':
-        return AppColors.successBg;
+        return AppColors.successText.withValues(alpha: 0.15);
       case 'accepted':
         return AppColors.primary.withValues(alpha: 0.15);
       case 'declined':
