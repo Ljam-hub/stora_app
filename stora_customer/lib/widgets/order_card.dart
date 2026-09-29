@@ -87,6 +87,7 @@ class _OrderCardState extends State<OrderCard> with NavigationGuard<OrderCard> {
                   SnackBar(
                     content: Text('$added items added to cart from ${order.storeName}!'),
                     backgroundColor: AppColors.success,
+                    duration: const Duration(milliseconds: 1500),
                   ),
                 );
               },
@@ -101,6 +102,7 @@ class _OrderCardState extends State<OrderCard> with NavigationGuard<OrderCard> {
         SnackBar(
           content: Text('$result items added to cart!'),
           backgroundColor: AppColors.success,
+          duration: const Duration(milliseconds: 1500),
         ),
       );
     }
@@ -154,6 +156,7 @@ class _OrderCardState extends State<OrderCard> with NavigationGuard<OrderCard> {
         SnackBar(
           content: Text(accept ? 'Counter-offer accepted! Store notified.' : 'Counter-offer declined.'),
           backgroundColor: accept ? AppColors.success : AppColors.cardElevated,
+          duration: const Duration(milliseconds: 1500),
         ),
       );
     } catch (e) {
@@ -312,6 +315,7 @@ class _OrderCardState extends State<OrderCard> with NavigationGuard<OrderCard> {
         SnackBar(
           content: Text('Order #${order.id} deleted.'),
           backgroundColor: AppColors.success,
+          duration: const Duration(milliseconds: 1500),
         ),
       );
     } catch (e) {
@@ -319,6 +323,7 @@ class _OrderCardState extends State<OrderCard> with NavigationGuard<OrderCard> {
         SnackBar(
           content: Text('Failed to delete: ${e.toString().replaceAll('Exception: ', '')}'),
           backgroundColor: AppColors.danger,
+          duration: const Duration(milliseconds: 2000),
         ),
       );
     }
@@ -367,6 +372,7 @@ class _OrderCardState extends State<OrderCard> with NavigationGuard<OrderCard> {
         const SnackBar(
           content: Text('Order cancelled successfully.'),
           backgroundColor: AppColors.success,
+          duration: Duration(milliseconds: 1500),
         ),
       );
     } catch (e) {
@@ -374,6 +380,7 @@ class _OrderCardState extends State<OrderCard> with NavigationGuard<OrderCard> {
         SnackBar(
           content: Text('Failed to cancel: ${e.toString().replaceAll('Exception: ', '')}'),
           backgroundColor: AppColors.danger,
+          duration: const Duration(milliseconds: 2000),
         ),
       );
     }
@@ -433,28 +440,63 @@ class _OrderCardState extends State<OrderCard> with NavigationGuard<OrderCard> {
                       ),
                   ],
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: order.statusBgColor,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: order.statusColor, width: 0.8),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(order.statusIcon, size: 14, color: order.statusColor),
-                      const SizedBox(width: 4),
-                      Text(
-                        order.statusDisplay,
-                        style: TextStyle(
-                          color: order.statusColor,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (order.status == 'accepted' || order.status == 'ready' || order.status == 'completed') ...[
+                      InkWell(
+                        onTap: () => _showReceiptOptions(context, order),
+                        borderRadius: BorderRadius.circular(10),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: AppColors.successBg,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.receipt_long_rounded, color: AppColors.success, size: 14),
+                              SizedBox(width: 4),
+                              Text(
+                                'Receipt',
+                                style: TextStyle(
+                                  color: AppColors.success,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
+                      const SizedBox(width: 8),
                     ],
-                  ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: order.statusBgColor,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: order.statusColor, width: 0.8),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(order.statusIcon, size: 14, color: order.statusColor),
+                          const SizedBox(width: 4),
+                          Text(
+                            order.statusDisplay,
+                            style: TextStyle(
+                              color: order.statusColor,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -814,24 +856,6 @@ class _OrderCardState extends State<OrderCard> with NavigationGuard<OrderCard> {
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       elevation: 0,
-                    ),
-                  ),
-                ],
-                if (order.status == 'accepted' || order.status == 'ready' || order.status == 'completed') ...[
-                  const SizedBox(width: 8),
-                  IconButton(
-                    tooltip: 'View Receipt',
-                    onPressed: () {
-                      _showReceiptOptions(context, order);
-                    },
-                    icon: const Icon(Icons.receipt_long_rounded, color: AppColors.success, size: 20),
-                    style: IconButton.styleFrom(
-                      backgroundColor: AppColors.successBg,
-                      padding: const EdgeInsets.all(10),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        side: BorderSide(color: AppColors.success.withValues(alpha: 0.3)),
-                      ),
                     ),
                   ),
                 ],

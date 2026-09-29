@@ -6,6 +6,7 @@ import '../models/product_model.dart';
 import '../providers/cart_provider.dart';
 import '../storage/hidden_products_store.dart';
 import '../theme/app_theme.dart';
+import 'cross_store_cart_dialog.dart';
 import 'product_report_dialog.dart';
 
 class ProductCard extends StatelessWidget {
@@ -343,28 +344,52 @@ class ProductCard extends StatelessWidget {
                             borderRadius: BorderRadius.circular(12),
                             child: InkWell(
                               key: ValueKey('product_add_button_${product.id}'),
-                              onTap: () {
+                              onTap: () async {
                                 HapticFeedback.lightImpact();
                                 final added = cart.addItem(product, 1);
                                 if (!added && cart.isNotEmpty && cart.storeId != product.ownerId) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: const Text(
-                                        'Your cart contains items from another store. Clear cart first?',
-                                      ),
-                                      action: SnackBarAction(
-                                        label: 'Clear & Add',
-                                        onPressed: () {
-                                          cart.clear();
-                                          cart.addItem(product, 1);
-                                        },
-                                      ),
-                                    ),
+                                  await showCrossStoreCartDialog(
+                                    context: context,
+                                    cart: cart,
+                                    product: product,
+                                    quantity: 1,
                                   );
                                 } else if (!added) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
                                       content: Text('Maximum available stock reached.'),
+                                      duration: Duration(milliseconds: 1500),
+                                    ),
+                                  );
+                                } else {
+                                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Row(
+                                        children: [
+                                          const Icon(Icons.check_circle_rounded, color: AppColors.secondaryLight, size: 18),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Text(
+                                              'Added "${product.name}" to cart',
+                                              style: TextStyle(
+                                                color: CustomerThemeController.instance.isDarkMode ? Colors.white : const Color(0xFF065F46),
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: 12.5,
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      backgroundColor: AppColors.successBg,
+                                      behavior: SnackBarBehavior.floating,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                        side: BorderSide(color: AppColors.secondary.withValues(alpha: 0.4)),
+                                      ),
+                                      duration: const Duration(milliseconds: 1500),
                                     ),
                                   );
                                 }

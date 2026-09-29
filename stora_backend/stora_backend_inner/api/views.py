@@ -780,10 +780,10 @@ class OwnerQuerysetMixin:
                 owner__role=User.ROLE_OWNER,
                 owner__is_active=True,
                 owner__is_blocked=False,
-            ).exclude(owner__is_superuser=True).exclude(owner__is_staff=True)
+            ).exclude(owner__is_superuser=True).exclude(owner__is_staff=True).exclude(owner__location__is_open=False)
             if owner_id:
                 return qs.filter(owner_id=owner_id)
-            # When customer selects 'All Stores' (no store param), return products from all active store owners
+            # When customer selects 'All Stores' (no store param), return products from all active open store owners
             return qs
         return super().get_queryset().filter(owner=user)
 
@@ -805,11 +805,25 @@ class CategoryViewSet(OwnerQuerysetMixin, viewsets.ModelViewSet):
                 owner__role=User.ROLE_OWNER,
                 owner__is_active=True,
                 owner__is_blocked=False,
-            ).exclude(owner__is_superuser=True).exclude(owner__is_staff=True)
+            ).exclude(owner__is_superuser=True).exclude(owner__is_staff=True).exclude(owner__location__is_open=False)
             if owner_id:
                 qs = qs.filter(owner_id=owner_id)
             return qs
         return super().get_queryset().filter(is_archived=False)
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        if getattr(request.user, "role", "owner") == "customer" and not (request.query_params.get("owner") or request.query_params.get("store")):
+            seen = set()
+            unique_objs = []
+            for obj in queryset:
+                norm_name = obj.name.strip().lower()
+                if norm_name and norm_name not in seen:
+                    seen.add(norm_name)
+                    unique_objs.append(obj)
+            serializer = self.get_serializer(unique_objs, many=True)
+            return Response(serializer.data)
+        return super().list(request, *args, **kwargs)
 
     def perform_create(self, serializer):
         user = self.request.user
@@ -1244,6 +1258,7 @@ def list_stores(request):
     except (ValueError, TypeError):
         user_lat, user_lng = None, None
 
+    open_only = request.query_params.get("open_only", "").lower() in ("true", "1")
     stores_data = []
     for owner in owners:
         loc = getattr(owner, "location", None)
@@ -1254,6 +1269,8 @@ def list_stores(request):
         is_open = loc.is_open if loc else True
 
         if not is_visible:
+            continue
+        if open_only and not is_open:
             continue
 
         distance_km = None

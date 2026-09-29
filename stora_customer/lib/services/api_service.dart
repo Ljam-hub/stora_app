@@ -486,7 +486,7 @@ class CustomerApiService {
 
   Future<List<StoreModel>> fetchStores({double? lat, double? lng}) async {
     try {
-      final params = <String, String>{};
+      final params = <String, String>{'open_only': 'true'};
       if (lat != null && lng != null) {
         params['lat'] = lat.toString();
         params['lng'] = lng.toString();

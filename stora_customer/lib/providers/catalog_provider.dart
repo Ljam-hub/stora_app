@@ -9,6 +9,10 @@ class CatalogProvider extends ChangeNotifier {
   List<CategoryModel> _categories = [];
   List<StoreModel> _stores = [];
 
+  // Cached all-stores data for zero-delay switching
+  List<ProductModel> _allStoresProducts = [];
+  List<CategoryModel> _allStoresCategories = [];
+
   StoreModel? _selectedStore;
   CategoryModel? _selectedCategory;
   String _searchQuery = '';
@@ -52,8 +56,15 @@ class CatalogProvider extends ChangeNotifier {
       if (_selectedStore != null && p.ownerId != _selectedStore!.id) {
         return false;
       }
-      if (_selectedCategory != null && p.categoryId != _selectedCategory!.id) {
-        return false;
+      if (_selectedCategory != null) {
+        if (_selectedStore == null) {
+          // Cross-store match by normalized category name
+          if (p.categoryName.trim().toLowerCase() != _selectedCategory!.name.trim().toLowerCase()) {
+            return false;
+          }
+        } else if (p.categoryId != _selectedCategory!.id) {
+          return false;
+        }
       }
       if (_searchQuery.trim().isNotEmpty) {
         final q = _searchQuery.trim().toLowerCase();
@@ -86,8 +97,24 @@ class CatalogProvider extends ChangeNotifier {
     _selectedStore = store;
     _selectedCategory = null;
     _cachedFilteredProducts = null;
-    if (_products.isEmpty) {
-      _isLoading = true;
+
+    if (store == null) {
+      // Returning to All Stores: restore instantly from cache with 0ms delay!
+      if (_allStoresProducts.isNotEmpty) {
+        _products = List.from(_allStoresProducts);
+        _categories = List.from(_allStoresCategories);
+      }
+      _isLoading = false;
+      notifyListeners();
+    } else {
+      // Selecting specific store: immediately filter from cached products if available for instant feel!
+      if (_allStoresProducts.isNotEmpty) {
+        final storeProds = _allStoresProducts.where((p) => p.ownerId == store.id).toList();
+        if (storeProds.isNotEmpty) {
+          _products = storeProds;
+        }
+      }
+      _isLoading = false;
       notifyListeners();
     }
 
@@ -100,6 +127,7 @@ class CatalogProvider extends ChangeNotifier {
 
     if (_selectedStore?.id == targetStoreId) {
       _isLoading = false;
+      _cachedFilteredProducts = null;
       notifyListeners();
     }
   }
@@ -134,6 +162,11 @@ class CatalogProvider extends ChangeNotifier {
       fetchProducts(),
     ]);
 
+    if (_selectedStore == null) {
+      _allStoresProducts = List.from(_products);
+      _allStoresCategories = List.from(_categories);
+    }
+
     _isLoading = false;
     _cachedFilteredProducts = null;
     notifyListeners();
@@ -147,6 +180,10 @@ class CatalogProvider extends ChangeNotifier {
       fetchCategories(),
       fetchProducts(),
     ]);
+    if (_selectedStore == null) {
+      _allStoresProducts = List.from(_products);
+      _allStoresCategories = List.from(_categories);
+    }
     _cachedFilteredProducts = null;
     notifyListeners();
   }
@@ -155,8 +192,8 @@ class CatalogProvider extends ChangeNotifier {
     if (lockCatalogForTesting) return;
     try {
       final list = await CustomerApiService.instance.fetchStores(lat: lat, lng: lng);
-      // Filter out any admin/support accounts to ensure only actual stores are listed
-      _stores = list.where((s) => s.role.toLowerCase() != 'admin' && !s.email.toLowerCase().startsWith('admin@')).toList();
+      // Filter out admin accounts and closed stores so closed stores cannot be seen
+      _stores = list.where((s) => s.isOpen && s.role.toLowerCase() != 'admin' && !s.email.toLowerCase().startsWith('admin@')).toList();
       if (_selectedStore != null && !_stores.any((s) => s.id == _selectedStore!.id)) {
         _selectedStore = null;
         fetchCategories();
@@ -168,7 +205,6 @@ class CatalogProvider extends ChangeNotifier {
     }
   }
 
-
   Future<void> fetchCategories() async {
     if (lockCatalogForTesting) return;
     final storeId = _selectedStore?.id;
@@ -177,7 +213,21 @@ class CatalogProvider extends ChangeNotifier {
         storeId: storeId,
       );
       if (_selectedStore?.id == storeId) {
-        _categories = res;
+        if (storeId == null) {
+          // Deduplicate categories by normalized name when viewing All Stores
+          final seen = <String>{};
+          final uniqueCategories = <CategoryModel>[];
+          for (final cat in res) {
+            final key = cat.name.trim().toLowerCase();
+            if (key.isNotEmpty && seen.add(key)) {
+              uniqueCategories.add(cat);
+            }
+          }
+          _categories = uniqueCategories;
+          _allStoresCategories = List.from(uniqueCategories);
+        } else {
+          _categories = res;
+        }
       }
     } catch (e) {
       debugPrint('Error fetching categories: $e');
@@ -194,6 +244,9 @@ class CatalogProvider extends ChangeNotifier {
       );
       if (_selectedStore?.id == storeId) {
         _products = res;
+        if (storeId == null) {
+          _allStoresProducts = List.from(res);
+        }
         _cachedFilteredProducts = null;
       }
     } catch (e) {

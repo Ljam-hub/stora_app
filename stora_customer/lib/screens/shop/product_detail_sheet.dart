@@ -7,6 +7,7 @@ import '../../providers/cart_provider.dart';
 import '../../storage/hidden_products_store.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/navigation_guard.dart';
+import '../../widgets/cross_store_cart_dialog.dart';
 import '../../widgets/gradient_button.dart';
 import '../../widgets/product_image.dart';
 import '../../widgets/product_report_dialog.dart';
@@ -294,7 +295,7 @@ class _ProductDetailSheetState extends State<ProductDetailSheet> {
                         icon: Icons.add_shopping_cart,
                         onPressed: _isActionInProgress
                             ? null
-                            : () {
+                            : () async {
                                 if (_isActionInProgress) return;
                                 HapticFeedback.mediumImpact();
                                 setState(() => _isActionInProgress = true);
@@ -335,34 +336,28 @@ class _ProductDetailSheetState extends State<ProductDetailSheet> {
                                           );
                                         },
                                       ),
-                                      duration: const Duration(seconds: 3),
+                                      duration: const Duration(milliseconds: 1500),
                                     ),
                                   );
                                 } else if (cart.isNotEmpty && cart.storeId != product.ownerId) {
                                   setState(() => _isActionInProgress = false);
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        'Your cart contains items from another store. Clear cart first?',
-                                        style: TextStyle(color: AppColors.textPrimary),
-                                      ),
-                                      backgroundColor: AppColors.cardElevated,
-                                      action: SnackBarAction(
-                                        label: 'Clear & Add',
-                                        textColor: AppColors.accentText,
-                                        onPressed: () {
-                                          cart.clear();
-                                          cart.addItem(product, _quantity);
-                                        },
-                                      ),
-                                    ),
+                                  final navigator = Navigator.of(context);
+                                  final replaced = await showCrossStoreCartDialog(
+                                    context: context,
+                                    cart: cart,
+                                    product: product,
+                                    quantity: _quantity,
                                   );
+                                  if (replaced && mounted) {
+                                    navigator.pop();
+                                  }
                                 } else {
                                   setState(() => _isActionInProgress = false);
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
                                       content: Text('Failed to add item to cart.'),
                                       backgroundColor: AppColors.danger,
+                                      duration: Duration(milliseconds: 1500),
                                     ),
                                   );
                                 }

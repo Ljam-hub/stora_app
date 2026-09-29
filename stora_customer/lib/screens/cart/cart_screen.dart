@@ -62,6 +62,7 @@ class _CartScreenState extends State<CartScreen> {
           content: Text('Delivery address set: ${result.address!}'),
           backgroundColor: AppColors.success,
           behavior: SnackBarBehavior.floating,
+          duration: const Duration(milliseconds: 1500),
         ),
       );
     } else {
@@ -70,6 +71,7 @@ class _CartScreenState extends State<CartScreen> {
           content: Text(result.errorMessage ?? 'Unable to detect location. Please check GPS permissions.'),
           backgroundColor: AppColors.danger,
           behavior: SnackBarBehavior.floating,
+          duration: const Duration(milliseconds: 2000),
         ),
       );
     }
@@ -290,7 +292,7 @@ class _CartScreenState extends State<CartScreen> {
                                   cart.addItem(removedProduct, removedQty);
                                 },
                               ),
-                              duration: const Duration(seconds: 4),
+                              duration: const Duration(milliseconds: 2000),
                               behavior: SnackBarBehavior.floating,
                             ),
                           );
