@@ -32,6 +32,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
   OrderProvider? _orderProvider;
   ChatProvider? _chatProvider;
   late final List<Widget> _screens;
+  DateTime? _lastBackPressTime;
 
   @override
   void didChangeDependencies() {
@@ -260,11 +261,8 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    final hasSelectedStore = context.select<CatalogProvider, bool>((c) => c.selectedStore != null);
-    final canPopRoot = _currentIndex == 0 && !hasSelectedStore;
-
     return PopScope(
-      canPop: canPopRoot,
+      canPop: false,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) return;
         if (_currentIndex != 0) {
@@ -273,6 +271,20 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
           final catalog = context.read<CatalogProvider>();
           if (catalog.selectedStore != null) {
             catalog.selectStore(null);
+          } else {
+            final now = DateTime.now();
+            if (_lastBackPressTime == null || now.difference(_lastBackPressTime!) > const Duration(seconds: 2)) {
+              _lastBackPressTime = now;
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Press back again to exit'),
+                  duration: Duration(seconds: 2),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            } else {
+              SystemNavigator.pop();
+            }
           }
         }
       },

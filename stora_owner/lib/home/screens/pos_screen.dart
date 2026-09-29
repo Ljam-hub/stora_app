@@ -193,6 +193,9 @@ class _PosScreenState extends State<PosScreen> {
           customerPhone: paymentResult.customerPhone,
           totalAmount: total,
           dueDate: paymentResult.dueDate ?? DateTime.now().add(const Duration(days: 7)),
+          penaltyFrequency: paymentResult.penaltyFrequency,
+          penaltyRate: paymentResult.penaltyRate,
+          gracePeriodDays: paymentResult.gracePeriodDays,
           items: items
               .map((i) => UtangItem(
                     productName: i.product.name,
@@ -561,9 +564,14 @@ class _PosScreenState extends State<PosScreen> {
                     buttonKey: const Key('pos_checkout_button'),
                     label: 'CHECKOUT',
                     isLoading: _isCheckingOut,
-                    onPressed: (_isCheckingOut || cart.items.isEmpty)
+                    onPressed: _isCheckingOut
                         ? null
                         : () {
+                            if (cart.items.isEmpty) {
+                              HapticFeedback.lightImpact();
+                              showStoraSnackBar(context, 'Your cart is empty. Add products before checking out.');
+                              return;
+                            }
                             HapticFeedback.mediumImpact();
                             _checkout();
                           },

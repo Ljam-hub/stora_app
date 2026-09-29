@@ -32,6 +32,7 @@ class StoraShell extends StatefulWidget {
 
 class _StoraShellState extends State<StoraShell> with WidgetsBindingObserver {
   int _index = 0;
+  DateTime? _lastBackPressTime;
 
   late final List<Widget> _screens;
 
@@ -270,10 +271,25 @@ class _StoraShellState extends State<StoraShell> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: _index == 0,
+      canPop: false,
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) {
+        if (didPop) return;
+        if (_index != 0) {
           setState(() => _index = 0);
+        } else {
+          final now = DateTime.now();
+          if (_lastBackPressTime == null || now.difference(_lastBackPressTime!) > const Duration(seconds: 2)) {
+            _lastBackPressTime = now;
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Press back again to exit'),
+                duration: Duration(seconds: 2),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          } else {
+            SystemNavigator.pop();
+          }
         }
       },
       child: Scaffold(

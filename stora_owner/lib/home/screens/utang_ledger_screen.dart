@@ -96,7 +96,7 @@ class _UtangLedgerScreenState extends State<UtangLedgerScreen> {
         borderRadius: BorderRadius.circular(10),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
-          padding: const EdgeInsets.symmetric(vertical: 8),
+          padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 2),
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: isSelected ? Colors.amber.withValues(alpha: 0.22) : HomeColors.cardBackground,
@@ -106,12 +106,21 @@ class _UtangLedgerScreenState extends State<UtangLedgerScreen> {
               width: isSelected ? 1.5 : 1,
             ),
           ),
-          child: Text(
-            label,
-            style: TextStyle(
-              color: isSelected ? Colors.amber : HomeColors.textSecondary,
-              fontSize: 11.5,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 2),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                label,
+                maxLines: 1,
+                softWrap: false,
+                style: TextStyle(
+                  color: isSelected ? Colors.amber : HomeColors.textSecondary,
+                  fontSize: 10.0,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                  letterSpacing: -0.2,
+                ),
+              ),
             ),
           ),
         ),
@@ -286,7 +295,7 @@ class _UtangLedgerScreenState extends State<UtangLedgerScreen> {
                               });
                             },
                           ),
-                          const SizedBox(width: 6),
+                          const SizedBox(width: 4),
                           _buildFrequencyChip(
                             label: 'Per Day',
                             value: 'daily',
@@ -298,7 +307,7 @@ class _UtangLedgerScreenState extends State<UtangLedgerScreen> {
                               });
                             },
                           ),
-                          const SizedBox(width: 6),
+                          const SizedBox(width: 4),
                           _buildFrequencyChip(
                             label: 'Per Week',
                             value: 'weekly',
@@ -310,7 +319,7 @@ class _UtangLedgerScreenState extends State<UtangLedgerScreen> {
                               });
                             },
                           ),
-                          const SizedBox(width: 6),
+                          const SizedBox(width: 4),
                           _buildFrequencyChip(
                             label: 'Per Month',
                             value: 'monthly',
@@ -883,7 +892,7 @@ class _UtangLedgerScreenState extends State<UtangLedgerScreen> {
                         });
                       },
                     ),
-                    const SizedBox(width: 6),
+                    const SizedBox(width: 4),
                     _buildFrequencyChip(
                       label: 'Per Day',
                       value: 'daily',
@@ -895,7 +904,7 @@ class _UtangLedgerScreenState extends State<UtangLedgerScreen> {
                         });
                       },
                     ),
-                    const SizedBox(width: 6),
+                    const SizedBox(width: 4),
                     _buildFrequencyChip(
                       label: 'Per Week',
                       value: 'weekly',
@@ -907,7 +916,7 @@ class _UtangLedgerScreenState extends State<UtangLedgerScreen> {
                         });
                       },
                     ),
-                    const SizedBox(width: 6),
+                    const SizedBox(width: 4),
                     _buildFrequencyChip(
                       label: 'Per Month',
                       value: 'monthly',

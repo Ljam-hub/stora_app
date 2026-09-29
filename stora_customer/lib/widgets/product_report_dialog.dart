@@ -40,13 +40,48 @@ Future<void> showProductReportDialog({
   String? evidenceFilename;
 
   final reasons = [
-    {'value': 'counterfeit', 'backendReason': 'fraud', 'label': 'Counterfeit / Fake Item'},
-    {'value': 'misleading', 'backendReason': 'fake_order', 'label': 'Misleading Price or Description'},
-    {'value': 'expired', 'backendReason': 'other', 'label': 'Expired, Spoiled, or Unsafe'},
-    {'value': 'prohibited', 'backendReason': 'inappropriate_content', 'label': 'Prohibited or Illegal Item'},
-    {'value': 'damaged', 'backendReason': 'other', 'label': 'Defective or Damaged Product'},
-    {'value': 'inappropriate', 'backendReason': 'inappropriate_content', 'label': 'Inappropriate or Offensive Content'},
-    {'value': 'other', 'backendReason': 'other', 'label': 'Other Concern'},
+    {
+      'value': 'counterfeit',
+      'backendReason': 'fraud',
+      'label': 'Counterfeit / Fake Item',
+      'icon': Icons.gpp_bad_outlined,
+    },
+    {
+      'value': 'misleading',
+      'backendReason': 'fake_order',
+      'label': 'Misleading Price or Description',
+      'icon': Icons.price_change_outlined,
+    },
+    {
+      'value': 'expired',
+      'backendReason': 'other',
+      'label': 'Expired, Spoiled, or Unsafe',
+      'icon': Icons.event_busy_outlined,
+    },
+    {
+      'value': 'prohibited',
+      'backendReason': 'inappropriate_content',
+      'label': 'Prohibited or Illegal Item',
+      'icon': Icons.gavel_outlined,
+    },
+    {
+      'value': 'damaged',
+      'backendReason': 'other',
+      'label': 'Defective or Damaged Product',
+      'icon': Icons.broken_image_outlined,
+    },
+    {
+      'value': 'inappropriate',
+      'backendReason': 'inappropriate_content',
+      'label': 'Inappropriate or Offensive Content',
+      'icon': Icons.warning_amber_rounded,
+    },
+    {
+      'value': 'other',
+      'backendReason': 'other',
+      'label': 'Other Concern',
+      'icon': Icons.help_outline_rounded,
+    },
   ];
 
   final picker = ImagePicker();
@@ -116,7 +151,7 @@ Future<void> showProductReportDialog({
                   children: [
                     Center(
                       child: Container(
-                        width: 40,
+                        width: 38,
                         height: 4,
                         decoration: BoxDecoration(
                           color: AppColors.textMuted.withValues(alpha: 0.3),
@@ -124,14 +159,15 @@ Future<void> showProductReportDialog({
                         ),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 14),
 
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: AppColors.danger.withValues(alpha: 0.15),
+                            color: AppColors.danger.withValues(alpha: 0.12),
                             shape: BoxShape.circle,
                           ),
                           child: const Icon(Icons.flag_rounded, color: AppColors.danger, size: 22),
@@ -146,7 +182,7 @@ Future<void> showProductReportDialog({
                                 style: TextStyle(
                                   color: AppColors.textPrimary,
                                   fontSize: 18,
-                                  fontWeight: FontWeight.bold,
+                                  fontWeight: FontWeight.w800,
                                 ),
                               ),
                               const SizedBox(height: 2),
@@ -157,81 +193,103 @@ Future<void> showProductReportDialog({
                                 style: TextStyle(
                                   color: AppColors.textSecondary,
                                   fontSize: 13,
+                                  fontWeight: FontWeight.w500,
                                 ),
                               ),
                             ],
                           ),
                         ),
+                        IconButton(
+                          icon: const Icon(Icons.close_rounded, size: 20),
+                          color: AppColors.textMuted,
+                          onPressed: isSubmitting ? null : () => Navigator.pop(ctx),
+                        ),
                       ],
                     ),
 
-                    const SizedBox(height: 16),
-                    Divider(color: AppColors.cardBorder, height: 1),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 14),
+                    Divider(color: AppColors.cardBorder.withValues(alpha: 0.6), height: 1),
+                    const SizedBox(height: 14),
 
                     Text(
                       'Reason for report',
                       style: TextStyle(
                         color: AppColors.textPrimary,
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                     const SizedBox(height: 10),
 
-                    Container(
-                      decoration: BoxDecoration(
-                        color: isDark ? AppColors.cardElevated : const Color(0xFFF8FAFC),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: AppColors.cardBorder),
-                      ),
-                      child: Column(
-                        children: reasons.map((r) {
-                          final isSelected = selectedReason == r['value'];
-                          return InkWell(
-                            onTap: isSubmitting
-                                ? null
-                                : () {
-                                    HapticFeedback.selectionClick();
-                                    setSheetState(() => selectedReason = r['value']!);
-                                  },
-                            borderRadius: BorderRadius.circular(14),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
-                                    color: isSelected ? AppColors.primary : AppColors.textMuted,
-                                    size: 18,
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      r['label']!,
-                                      style: TextStyle(
-                                        color: isSelected ? AppColors.textPrimary : AppColors.textSecondary,
-                                        fontSize: 13,
-                                        fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                    Column(
+                      children: reasons.map((r) {
+                        final isSelected = selectedReason == r['value'];
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 6),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? AppColors.danger.withValues(alpha: 0.08)
+                                : (isDark ? AppColors.cardElevated : const Color(0xFFF8FAFC)),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: isSelected
+                                  ? AppColors.danger.withValues(alpha: 0.5)
+                                  : AppColors.cardBorder.withValues(alpha: 0.6),
+                              width: isSelected ? 1.2 : 1,
+                            ),
+                          ),
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: isSubmitting
+                                  ? null
+                                  : () {
+                                      HapticFeedback.selectionClick();
+                                      setSheetState(() => selectedReason = r['value'] as String);
+                                    },
+                              borderRadius: BorderRadius.circular(12),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      r['icon'] as IconData,
+                                      size: 18,
+                                      color: isSelected ? AppColors.danger : AppColors.textMuted,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text(
+                                        r['label'] as String,
+                                        style: TextStyle(
+                                          color: isSelected ? AppColors.textPrimary : AppColors.textSecondary,
+                                          fontSize: 13,
+                                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                ],
+                                    Icon(
+                                      isSelected ? Icons.check_circle_rounded : Icons.radio_button_unchecked,
+                                      size: 18,
+                                      color: isSelected ? AppColors.danger : AppColors.textMuted.withValues(alpha: 0.6),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
-                          );
-                        }).toList(),
-                      ),
+                          ),
+                        );
+                      }).toList(),
                     ),
 
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 14),
 
                     Text(
-                      'Details / Description',
+                      'Details / Description (Optional)',
                       style: TextStyle(
                         color: AppColors.textPrimary,
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -244,7 +302,7 @@ Future<void> showProductReportDialog({
                       style: TextStyle(color: AppColors.textPrimary, fontSize: 13),
                       decoration: InputDecoration(
                         hintText: 'Please describe the issue with this product in detail...',
-                        hintStyle: TextStyle(color: AppColors.textMuted, fontSize: 12),
+                        hintStyle: TextStyle(color: AppColors.textMuted, fontSize: 12.5),
                         filled: true,
                         fillColor: isDark ? AppColors.cardElevated : const Color(0xFFF8FAFC),
                         contentPadding: const EdgeInsets.all(12),
@@ -254,11 +312,11 @@ Future<void> showProductReportDialog({
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(14),
-                          borderSide: BorderSide(color: AppColors.cardBorder),
+                          borderSide: BorderSide(color: AppColors.cardBorder.withValues(alpha: 0.7)),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(14),
-                          borderSide: const BorderSide(color: AppColors.primary),
+                          borderSide: const BorderSide(color: AppColors.danger, width: 1.5),
                         ),
                       ),
                     ),
@@ -273,7 +331,7 @@ Future<void> showProductReportDialog({
                           style: TextStyle(
                             color: AppColors.textPrimary,
                             fontSize: 13,
-                            fontWeight: FontWeight.bold,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                         const Spacer(),
@@ -304,7 +362,7 @@ Future<void> showProductReportDialog({
                     if (evidenceBytes != null) ...[
                       const SizedBox(height: 6),
                       Container(
-                        height: 70,
+                        height: 80,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(color: AppColors.cardBorder),
@@ -323,19 +381,13 @@ Future<void> showProductReportDialog({
                       decoration: BoxDecoration(
                         color: isDark ? AppColors.cardElevated : const Color(0xFFF8FAFC),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppColors.cardBorder),
+                        border: Border.all(color: AppColors.cardBorder.withValues(alpha: 0.7)),
                       ),
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       child: Row(
                         children: [
-                          Checkbox(
-                            value: hideProductAfterReport,
-                            activeColor: AppColors.primary,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-                            onChanged: isSubmitting
-                                ? null
-                                : (val) => setSheetState(() => hideProductAfterReport = val ?? true),
-                          ),
+                          Icon(Icons.visibility_off_outlined, size: 20, color: AppColors.textSecondary),
+                          const SizedBox(width: 8),
                           Expanded(
                             child: GestureDetector(
                               onTap: isSubmitting
@@ -348,8 +400,8 @@ Future<void> showProductReportDialog({
                                     'Hide this product from my feed',
                                     style: TextStyle(
                                       color: AppColors.textPrimary,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12.5,
+                                      fontWeight: FontWeight.w700,
                                     ),
                                   ),
                                   Text(
@@ -362,6 +414,14 @@ Future<void> showProductReportDialog({
                                 ],
                               ),
                             ),
+                          ),
+                          Checkbox(
+                            value: hideProductAfterReport,
+                            activeColor: AppColors.danger,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                            onChanged: isSubmitting
+                                ? null
+                                : (val) => setSheetState(() => hideProductAfterReport = val ?? true),
                           ),
                         ],
                       ),
@@ -399,19 +459,19 @@ Future<void> showProductReportDialog({
                                         (r) => r['value'] == selectedReason,
                                         orElse: () => reasons.last,
                                       );
-                                      final backendReason = reasonMeta['backendReason'] ?? 'other';
-                                       final userText = descriptionController.text.trim();
-                                       final enrichedDescription =
-                                           '[REPORTED PRODUCT #${product.id} - ${product.name} | Price: ${product.formattedPrice} | Store: ${product.storeName ?? "Store #${product.ownerId}"}] '
-                                           'Reason: ${reasonMeta['label']}${userText.isNotEmpty ? ' - $userText' : ''}';
+                                      final backendReason = reasonMeta['backendReason'] as String? ?? 'other';
+                                      final userText = descriptionController.text.trim();
+                                      final enrichedDescription =
+                                          '[REPORTED PRODUCT #${product.id} - ${product.name} | Price: ${product.formattedPrice} | Store: ${product.storeName ?? "Store #${product.ownerId}"}] '
+                                          'Reason: ${reasonMeta['label']}${userText.isNotEmpty ? ' - $userText' : ''}';
 
-                                       await CustomerApiService.instance.submitReport(
-                                         reportedUserId: product.ownerId!,
-                                         reason: backendReason,
-                                         description: enrichedDescription,
-                                         attachmentBytes: evidenceBytes,
-                                         filename: evidenceFilename ?? 'evidence.jpg',
-                                       );
+                                      await CustomerApiService.instance.submitReport(
+                                        reportedUserId: product.ownerId!,
+                                        reason: backendReason,
+                                        description: enrichedDescription,
+                                        attachmentBytes: evidenceBytes,
+                                        filename: evidenceFilename ?? 'evidence.jpg',
+                                      );
 
                                       // Mark product as reported (cooldown)
                                       await HiddenProductsStore.instance.markReported(product.id);
@@ -474,7 +534,7 @@ Future<void> showProductReportDialog({
                                       if (context.mounted) {
                                         ScaffoldMessenger.of(context).showSnackBar(
                                           SnackBar(
-                                            content: Text('Failed to submit report: '),
+                                            content: Text('Failed to submit report: $e'),
                                             backgroundColor: AppColors.danger,
                                           ),
                                         );
@@ -494,9 +554,16 @@ Future<void> showProductReportDialog({
                                     height: 20,
                                     child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                                   )
-                                : const Text(
-                                    'Submit Report',
-                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                                : const Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(Icons.flag_rounded, size: 16),
+                                      SizedBox(width: 6),
+                                      Text(
+                                        'Submit Report',
+                                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                                      ),
+                                    ],
                                   ),
                           ),
                         ),

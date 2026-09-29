@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
@@ -36,7 +35,6 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
   StoreModel? _selectedStore;
   String _searchFilter = '';
   Timer? _searchDebounce;
-  bool _onlyOpenStores = true;
 
   bool _isRecentering = false;
   bool _isShowingStoresSheet = false;
@@ -520,15 +518,13 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                   decoration: BoxDecoration(
-                                    color: s.isOpen
-                                        ? AppColors.success.withValues(alpha: 0.15)
-                                        : AppColors.danger.withValues(alpha: 0.15),
+                                    color: AppColors.success.withValues(alpha: 0.15),
                                     borderRadius: BorderRadius.circular(6),
                                   ),
-                                  child: Text(
-                                    s.isOpen ? 'Open' : 'Closed',
+                                  child: const Text(
+                                    'Open',
                                     style: TextStyle(
-                                      color: s.isOpen ? AppColors.success : AppColors.danger,
+                                      color: AppColors.success,
                                       fontSize: 10,
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -587,7 +583,7 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
 
     final filteredStores = allStores.where((s) {
       if (!s.hasValidLocation) return false;
-      if (_onlyOpenStores && !s.isOpen) return false;
+      if (!s.isOpen) return false;
       if (_searchFilter.trim().isEmpty) return true;
       final q = _searchFilter.trim().toLowerCase();
       return s.displayName.toLowerCase().contains(q) ||
@@ -750,31 +746,18 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
                           onTap: () => _showAllStoresSheet(context, filteredStores),
                           child: _FilterBadge(
                             icon: Icons.near_me_rounded,
-                            label: '${filteredStores.length} stores nearby',
+                            label: '${filteredStores.length} open stores nearby',
                             color: AppColors.primary,
                             isDark: isDark,
                           ),
                         ),
                         const SizedBox(width: 8),
-                        GestureDetector(
-                          onTap: () {
-                            HapticFeedback.lightImpact();
-                            setState(() => _onlyOpenStores = !_onlyOpenStores);
-                            WidgetsBinding.instance.addPostFrameCallback((_) {
-                              if (_pageController.hasClients && mounted) {
-                                _pageController.jumpToPage(0);
-                              }
-                            });
-                          },
-                          child: _FilterBadge(
-                            icon: _onlyOpenStores
-                                ? Icons.check_circle_rounded
-                                : Icons.storefront_outlined,
-                            label: _onlyOpenStores ? 'Open Only' : 'Show All',
-                            color: const Color(0xFF10B981),
-                            isDark: isDark,
-                            isActive: _onlyOpenStores,
-                          ),
+                        _FilterBadge(
+                          icon: Icons.check_circle_rounded,
+                          label: 'Open Now',
+                          color: const Color(0xFF10B981),
+                          isDark: isDark,
+                          isActive: true,
                         ),
                       ],
                     ),
@@ -1105,10 +1088,14 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: isSelected ? AppColors.primary : const Color(0xFF1E182A),
+                color: isSelected
+                    ? AppColors.primary
+                    : const Color(0xFF1E182A),
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
-                  color: isSelected ? Colors.white : Colors.white24,
+                  color: isSelected
+                      ? Colors.white
+                      : Colors.white24,
                   width: 1.2,
                 ),
                 boxShadow: [
@@ -1125,7 +1112,7 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
                 children: [
                   Flexible(
                     child: Text(
-                      store.isOpen ? store.displayName : '${store.displayName} (Closed)',
+                      store.displayName,
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 10,
@@ -1464,9 +1451,9 @@ class _StoreCarouselCard extends StatelessWidget {
                     Container(width: 3, height: 3, decoration: BoxDecoration(color: AppColors.textMuted, shape: BoxShape.circle)),
                     const SizedBox(width: 6),
                     Text(
-                      store.isOpen ? 'Open' : 'Closed',
+                      'Open',
                       style: TextStyle(
-                        color: store.isOpen ? AppColors.successText : AppColors.danger,
+                        color: AppColors.successText,
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
                       ),

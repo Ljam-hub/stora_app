@@ -96,6 +96,7 @@ class CatalogProvider extends ChangeNotifier {
   }
 
   Future<void> selectStore(StoreModel? store) async {
+    if (store != null && !store.isOpen) return;
     if (_selectedStore?.id == store?.id) return;
     _selectedStore = store;
     _selectedCategory = null;
@@ -195,9 +196,9 @@ class CatalogProvider extends ChangeNotifier {
     if (lockCatalogForTesting) return;
     try {
       final list = await CustomerApiService.instance.fetchStores(lat: lat, lng: lng);
-      // Filter out admin accounts and closed stores so closed stores cannot be seen
+      // Filter out admin accounts and closed stores so only open stores are visible to customers
       _stores = list.where((s) => s.isOpen && s.role.toLowerCase() != 'admin' && !s.email.toLowerCase().startsWith('admin@')).toList();
-      if (_selectedStore != null && !_stores.any((s) => s.id == _selectedStore!.id)) {
+      if (_selectedStore != null && (!_selectedStore!.isOpen || !_stores.any((s) => s.id == _selectedStore!.id))) {
         _selectedStore = null;
         fetchCategories();
         fetchProducts();

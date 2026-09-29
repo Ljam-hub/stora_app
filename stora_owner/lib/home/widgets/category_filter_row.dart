@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../stora_login/stora_login.dart';
 import '../stores/category_store.dart';
 import '../theme/home_colors.dart';
@@ -11,27 +12,35 @@ class CategoryChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
-        decoration: BoxDecoration(
-          gradient: selected ? HomeColors.purpleGradient : null,
-          color: selected ? null : HomeColors.cardBackground,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: selected ? Colors.transparent : HomeColors.cardBorder,
-            width: 1,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: () {
+          HapticFeedback.selectionClick();
+          onTap();
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOutCubic,
+          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
+          decoration: BoxDecoration(
+            gradient: selected ? HomeColors.purpleGradient : null,
+            color: selected ? null : HomeColors.cardBackground,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: selected ? Colors.transparent : HomeColors.cardBorder,
+              width: 1,
+            ),
+            boxShadow: selected ? HomeColors.glowShadow(AppColors.purple, opacity: 0.35) : null,
           ),
-          boxShadow: selected ? HomeColors.glowShadow(AppColors.purple, opacity: 0.35) : null,
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: selected ? Colors.white : HomeColors.textSecondary,
-            fontSize: 12,
-            fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+          child: Text(
+            label,
+            style: TextStyle(
+              color: selected ? Colors.white : HomeColors.textSecondary,
+              fontSize: 12,
+              fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+            ),
           ),
         ),
       ),
@@ -77,6 +86,7 @@ class CategoryFilterRow extends StatelessWidget {
           ...chips.map((cat) => Padding(
                 padding: const EdgeInsets.only(right: 8),
                 child: CategoryChip(
+                  key: ValueKey('cat_chip_$cat'),
                   label: cat,
                   selected: cat == selected,
                   onTap: () => onSelect(cat),
@@ -104,6 +114,7 @@ class CategoryFilterRow extends StatelessWidget {
           height: 42,
           child: ListView(
             scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
             padding: const EdgeInsets.symmetric(horizontal: 20),
             children: items,
           ),

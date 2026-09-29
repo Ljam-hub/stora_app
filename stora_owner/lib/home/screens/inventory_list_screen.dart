@@ -27,6 +27,7 @@ class InventoryListScreen extends StatefulWidget {
 
 class _InventoryListScreenState extends State<InventoryListScreen> {
   final _searchController = TextEditingController();
+  final _scrollController = ScrollController();
   Timer? _searchDebounce;
   String _query = '';
   String _selectedCategory = 'All';
@@ -42,6 +43,7 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
   void dispose() {
     _searchDebounce?.cancel();
     _searchController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -192,7 +194,13 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
                 ),
                 CategoryFilterRow(
                   selected: _selectedCategory,
-                  onSelect: (cat) => setState(() => _selectedCategory = cat),
+                  onSelect: (cat) {
+                    if (_selectedCategory == cat) return;
+                    if (_scrollController.hasClients && _scrollController.offset > 0) {
+                      _scrollController.jumpTo(0);
+                    }
+                    setState(() => _selectedCategory = cat);
+                  },
                 ),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 6, 20, 4),
@@ -205,7 +213,11 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
                           count: categoryFiltered.length,
                           isSelected: _stockFilter == 'all',
                           onTap: () {
+                            if (_stockFilter == 'all') return;
                             HapticFeedback.selectionClick();
+                            if (_scrollController.hasClients && _scrollController.offset > 0) {
+                              _scrollController.jumpTo(0);
+                            }
                             setState(() => _stockFilter = 'all');
                           },
                         ),
@@ -217,7 +229,11 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
                           activeColor: const Color(0xFFFFA726),
                           activeBg: const Color(0xFF2B1F10),
                           onTap: () {
+                            if (_stockFilter == 'low') return;
                             HapticFeedback.selectionClick();
+                            if (_scrollController.hasClients && _scrollController.offset > 0) {
+                              _scrollController.jumpTo(0);
+                            }
                             setState(() => _stockFilter = 'low');
                           },
                         ),
@@ -229,7 +245,11 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
                           activeColor: AppColors.error,
                           activeBg: HomeColors.dangerBg,
                           onTap: () {
+                            if (_stockFilter == 'out') return;
                             HapticFeedback.selectionClick();
+                            if (_scrollController.hasClients && _scrollController.offset > 0) {
+                              _scrollController.jumpTo(0);
+                            }
                             setState(() => _stockFilter = 'out');
                           },
                         ),
@@ -251,120 +271,132 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
                     color: AppColors.purpleLight,
                     backgroundColor: HomeColors.cardBackground,
                     onRefresh: () => InventoryStore.instance.loadProducts(),
-                    child: InventoryStore.instance.loading
-                        ? GridView.builder(
-                            physics: const NeverScrollableScrollPhysics(),
-                            padding: const EdgeInsets.all(16),
-                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              childAspectRatio: 0.75,
-                              crossAxisSpacing: 14,
-                              mainAxisSpacing: 14,
-                            ),
-                            itemCount: 6,
-                            itemBuilder: (_, index) => const ShimmerProductCard(),
-                          )
-                        : products.isEmpty
-                            ? LayoutBuilder(
-                            builder: (context, constraints) => SingleChildScrollView(
-                              physics: const AlwaysScrollableScrollPhysics(),
-                              child: ConstrainedBox(
-                                constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                                child: Center(
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 32),
-                                    child: Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Container(
-                                          padding: const EdgeInsets.all(20),
-                                          decoration: BoxDecoration(
-                                            color: HomeColors.cardElevated,
-                                            shape: BoxShape.circle,
-                                            border: Border.all(color: HomeColors.cardBorder),
-                                          ),
-                                          child: const Icon(Icons.inventory_2_outlined, size: 48, color: AppColors.purpleLight),
-                                        ),
-                                        const SizedBox(height: 18),
-                                        Text(
-                                          _query.isNotEmpty ? 'No products match "$_query"' : 'No products in inventory yet',
-                                          textAlign: TextAlign.center,
-                                          style: TextStyle(color: HomeColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w700),
-                                        ),
-                                        const SizedBox(height: 8),
-                                        Text(
-                                          _query.isNotEmpty
-                                              ? 'Try searching with a different keyword or barcode'
-                                              : 'Tap the button below to add your first product.',
-                                          textAlign: TextAlign.center,
-                                          style: TextStyle(color: HomeColors.textSecondary, fontSize: 13),
-                                        ),
-                                        if (_query.isEmpty) ...[
-                                          const SizedBox(height: 20),
-                                          ElevatedButton.icon(
-                                            onPressed: () {
-                                              if (!AccountStatusStore.instance.canAddProduct) {
-                                                Navigator.of(context).push(
-                                                  MaterialPageRoute(
-                                                    builder: (_) => SubscriptionScreen(
-                                                      productsUsed: AccountStatusStore.instance.productCount,
-                                                      productsLimit: AccountStatusStore.instance.productLimit,
-                                                    ),
-                                                  ),
-                                                );
-                                              } else {
-                                                Navigator.of(context).push(
-                                                  MaterialPageRoute(builder: (_) => const AddEditProductScreen()),
-                                                );
-                                              }
-                                            },
-                                            icon: const Icon(Icons.add, size: 18, color: Colors.black),
-                                            label: const Text('Add Product', style: TextStyle(color: Colors.black, fontWeight: FontWeight.w800)),
-                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor: AppColors.purpleLight,
-                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 180),
+                      switchInCurve: Curves.easeOut,
+                      switchOutCurve: Curves.easeIn,
+                      child: KeyedSubtree(
+                        key: ValueKey('inventory_view_${_selectedCategory}_$_stockFilter'),
+                        child: InventoryStore.instance.loading
+                            ? GridView.builder(
+                                physics: const NeverScrollableScrollPhysics(),
+                                padding: const EdgeInsets.all(16),
+                                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 2,
+                                  childAspectRatio: 0.75,
+                                  crossAxisSpacing: 14,
+                                  mainAxisSpacing: 14,
+                                ),
+                                itemCount: 6,
+                                itemBuilder: (_, index) => const ShimmerProductCard(),
+                              )
+                            : products.isEmpty
+                                ? LayoutBuilder(
+                                builder: (context, constraints) => SingleChildScrollView(
+                                  physics: const AlwaysScrollableScrollPhysics(),
+                                  child: ConstrainedBox(
+                                    constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                                    child: Center(
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(horizontal: 32),
+                                        child: Column(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Container(
+                                              padding: const EdgeInsets.all(20),
+                                              decoration: BoxDecoration(
+                                                color: HomeColors.cardElevated,
+                                                shape: BoxShape.circle,
+                                                border: Border.all(color: HomeColors.cardBorder),
+                                              ),
+                                              child: const Icon(Icons.inventory_2_outlined, size: 48, color: AppColors.purpleLight),
                                             ),
-                                          ),
-                                        ],
-                                      ],
+                                            const SizedBox(height: 18),
+                                            Text(
+                                              _query.isNotEmpty ? 'No products match "$_query"' : 'No products in inventory yet',
+                                              textAlign: TextAlign.center,
+                                              style: TextStyle(color: HomeColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w700),
+                                            ),
+                                            const SizedBox(height: 8),
+                                            Text(
+                                              _query.isNotEmpty
+                                                  ? 'Try searching with a different keyword or barcode'
+                                                  : 'Tap the button below to add your first product.',
+                                              textAlign: TextAlign.center,
+                                              style: TextStyle(color: HomeColors.textSecondary, fontSize: 13),
+                                            ),
+                                            if (_query.isEmpty) ...[
+                                              const SizedBox(height: 20),
+                                              ElevatedButton.icon(
+                                                onPressed: () {
+                                                  if (!AccountStatusStore.instance.canAddProduct) {
+                                                    Navigator.of(context).push(
+                                                      MaterialPageRoute(
+                                                        builder: (_) => SubscriptionScreen(
+                                                          productsUsed: AccountStatusStore.instance.productCount,
+                                                          productsLimit: AccountStatusStore.instance.productLimit,
+                                                        ),
+                                                      ),
+                                                    );
+                                                  } else {
+                                                    Navigator.of(context).push(
+                                                      MaterialPageRoute(builder: (_) => const AddEditProductScreen()),
+                                                    );
+                                                  }
+                                                },
+                                                icon: const Icon(Icons.add, size: 18, color: Colors.black),
+                                                label: const Text('Add Product', style: TextStyle(color: Colors.black, fontWeight: FontWeight.w800)),
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor: AppColors.purpleLight,
+                                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                                                ),
+                                              ),
+                                            ],
+                                          ],
+                                        ),
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ),
-                            ),
-                          )
-                        : Builder(
-                            builder: (context) {
-                              final freeLimit = AccountStatusStore.instance.productLimit > 0
-                                  ? AccountStatusStore.instance.productLimit
-                                  : 20;
-                              final lockedProductIds = !isPremium
-                                  ? InventoryStore.instance.products.skip(freeLimit).map((p) => p.id).toSet()
-                                  : const <String>{};
-                              return GridView.builder(
-                                physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
-                                cacheExtent: 600,
-                                padding: const EdgeInsets.fromLTRB(20, 0, 20, 90),
-                                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: 2,
-                                  mainAxisSpacing: 14,
-                                  crossAxisSpacing: 14,
-                                  childAspectRatio: 0.74,
-                                ),
-                                itemCount: products.length,
-                                itemBuilder: (context, i) {
-                                  final isLocked = lockedProductIds.contains(products[i].id);
-                                  return RepaintBoundary(
-                                    child: ProductCard(
-                                      product: products[i],
-                                      isLocked: isLocked,
+                              )
+                            : Builder(
+                                builder: (context) {
+                                  final freeLimit = AccountStatusStore.instance.productLimit > 0
+                                      ? AccountStatusStore.instance.productLimit
+                                      : 20;
+                                  final lockedProductIds = !isPremium
+                                      ? InventoryStore.instance.products.skip(freeLimit).map((p) => p.id).toSet()
+                                      : const <String>{};
+                                  return GridView.builder(
+                                    controller: _scrollController,
+                                    key: PageStorageKey<String>('inventory_grid_$_selectedCategory'),
+                                    physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+                                    cacheExtent: 800,
+                                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 90),
+                                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                      crossAxisCount: 2,
+                                      mainAxisSpacing: 14,
+                                      crossAxisSpacing: 14,
+                                      childAspectRatio: 0.74,
                                     ),
+                                    itemCount: products.length,
+                                    itemBuilder: (context, i) {
+                                      final isLocked = lockedProductIds.contains(products[i].id);
+                                      return RepaintBoundary(
+                                        key: ValueKey('inventory_rep_${products[i].id}'),
+                                        child: ProductCard(
+                                          key: ValueKey('inventory_product_${products[i].id}'),
+                                          product: products[i],
+                                          isLocked: isLocked,
+                                        ),
+                                      );
+                                    },
                                   );
                                 },
-                              );
-                            },
-                          ),
+                              ),
+                      ),
+                    ),
                   ),
                 ),
               ],

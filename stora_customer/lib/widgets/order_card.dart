@@ -824,8 +824,8 @@ class _OrderCardState extends State<OrderCard> with NavigationGuard<OrderCard> {
                     ),
                     label: Text(
                       order.unreadMessageCount > 0
-                          ? 'Chat with ${order.storeName.isNotEmpty ? order.storeName : "Store"} (${order.unreadMessageCount})'
-                          : 'Chat with ${order.storeName.isNotEmpty ? order.storeName : "Store"}',
+                          ? 'Chat (${order.unreadMessageCount})'
+                          : 'Chat',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(color: AppColors.accentText, fontSize: 12.5, fontWeight: FontWeight.w600),

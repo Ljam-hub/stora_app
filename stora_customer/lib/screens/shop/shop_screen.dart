@@ -104,7 +104,7 @@ class _ShopScreenState extends State<ShopScreen> {
               style: TextStyle(fontSize: 14, color: AppColors.textSecondary, fontWeight: FontWeight.normal),
             ),
             Text(
-              catalog.selectedStore != null ? catalog.selectedStore!.displayName : 'Browse Stores',
+              'Browse Stores',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
             ),
           ],
@@ -241,11 +241,11 @@ class _ShopScreenState extends State<ShopScreen> {
               const SizedBox(height: 8),
             ],
 
-            // List Shops section when no store selected - only shown if there are MULTIPLE OPEN stores
+            // Available Stores carousel when no store is selected
             Builder(
               builder: (context) {
-                final openStores = catalog.stores.where((s) => s.isOpen).toList();
-                if (catalog.selectedStore != null || openStores.length <= 1) {
+                final allStores = catalog.stores.where((s) => s.isOpen).toList();
+                if (catalog.selectedStore != null || allStores.isEmpty) {
                   return const SizedBox.shrink();
                 }
                 return Column(
@@ -266,7 +266,7 @@ class _ShopScreenState extends State<ShopScreen> {
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                'Showing all items across stores. Tap any store below to shop from that store specifically.',
+                                'Showing items across stores. Tap any store below to browse its catalog.',
                                 style: TextStyle(
                                   color: AppColors.textSecondary,
                                   fontSize: 11.5,
@@ -295,7 +295,9 @@ class _ShopScreenState extends State<ShopScreen> {
                           ),
                           const Spacer(),
                           Text(
-                            '${openStores.length} stores',
+                            allStores.length == 1
+                                ? '1 open store'
+                                : '${allStores.length} open stores',
                             style: TextStyle(color: AppColors.textMuted, fontSize: 12),
                           ),
                         ],
@@ -303,25 +305,27 @@ class _ShopScreenState extends State<ShopScreen> {
                     ),
                     const SizedBox(height: 6),
                     SizedBox(
-                      height: 88,
+                      height: 94,
                       child: ListView.builder(
                         scrollDirection: Axis.horizontal,
                         padding: const EdgeInsets.symmetric(horizontal: 16),
-                        itemCount: openStores.length,
+                        itemCount: allStores.length,
                         itemBuilder: (context, index) {
-                          final store = openStores[index];
+                          final store = allStores[index];
                           final hasAvatar = store.avatarUrl != null && store.avatarUrl!.isNotEmpty;
                           return Padding(
                             padding: const EdgeInsets.only(right: 10),
                             child: GestureDetector(
                               onTap: () => catalog.selectStore(store),
                               child: Container(
-                                width: 200,
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                width: 210,
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                                 decoration: BoxDecoration(
                                   color: AppColors.cardBackground,
                                   borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(color: AppColors.cardBorder),
+                                  border: Border.all(
+                                    color: AppColors.cardBorder,
+                                  ),
                                   boxShadow: [
                                     BoxShadow(
                                       color: Colors.black.withValues(alpha: 0.06),
@@ -350,9 +354,17 @@ class _ShopScreenState extends State<ShopScreen> {
                                                 width: 44,
                                                 height: 44,
                                                 fit: BoxFit.cover,
-                                                errorBuilder: (context, error, stackTrace) => const Icon(Icons.storefront_rounded, color: AppColors.primary, size: 22),
+                                                errorBuilder: (context, error, stackTrace) => Icon(
+                                                  Icons.storefront_rounded,
+                                                  color: AppColors.primary,
+                                                  size: 22,
+                                                ),
                                               )
-                                            : const Icon(Icons.storefront_rounded, color: AppColors.primary, size: 22),
+                                            : Icon(
+                                                Icons.storefront_rounded,
+                                                color: AppColors.primary,
+                                                size: 22,
+                                              ),
                                       ),
                                     ),
                                     const SizedBox(width: 10),

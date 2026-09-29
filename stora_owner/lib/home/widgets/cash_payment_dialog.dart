@@ -9,6 +9,9 @@ class CashPaymentResult {
   final String customerPhone;
   final bool isUtang;
   final DateTime? dueDate;
+  final String penaltyFrequency;
+  final double penaltyRate;
+  final int gracePeriodDays;
 
   const CashPaymentResult({
     required this.tendered,
@@ -17,6 +20,9 @@ class CashPaymentResult {
     this.customerPhone = '',
     this.isUtang = false,
     this.dueDate,
+    this.penaltyFrequency = 'none',
+    this.penaltyRate = 0.0,
+    this.gracePeriodDays = 0,
   });
 }
 
@@ -141,11 +147,96 @@ class _CashPaymentDialogState extends State<CashPaymentDialog> {
     );
   }
 
+  Widget _buildUtangFrequencyChip({
+    required String label,
+    required String value,
+    required String selectedValue,
+    required ValueChanged<String> onSelected,
+  }) {
+    final isSelected = selectedValue == value;
+    return Expanded(
+      child: InkWell(
+        onTap: () => onSelected(value),
+        borderRadius: BorderRadius.circular(10),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 2),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: isSelected ? Colors.amber.withValues(alpha: 0.22) : HomeColors.cardBackground,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: isSelected ? Colors.amber : HomeColors.cardBorder,
+              width: isSelected ? 1.5 : 1,
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 2),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                label,
+                maxLines: 1,
+                softWrap: false,
+                style: TextStyle(
+                  color: isSelected ? Colors.amber : HomeColors.textSecondary,
+                  fontSize: 10.0,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                  letterSpacing: -0.2,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUtangPresetPenaltyChip(
+    String label,
+    double amount,
+    TextEditingController ctrl,
+    StateSetter setDialogState,
+  ) {
+    final currentVal = double.tryParse(ctrl.text.replaceAll(',', '').trim()) ?? 0.0;
+    final isSelected = currentVal == amount && ctrl.text.trim().isNotEmpty;
+    return InkWell(
+      onTap: () {
+        setDialogState(() {
+          ctrl.text = amount.toStringAsFixed(0);
+        });
+      },
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.amber.withValues(alpha: 0.25) : HomeColors.cardBackground,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isSelected ? Colors.amber : HomeColors.cardBorder,
+            width: isSelected ? 1.5 : 1,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? Colors.amber : HomeColors.textSecondary,
+            fontSize: 11,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+      ),
+    );
+  }
+
   void _chargeToUtang() async {
     final currentName = _customerNameController.text.trim();
     final nameCtrl = TextEditingController(text: currentName.isEmpty ? '' : currentName);
     final phoneCtrl = TextEditingController();
+    final penaltyCtrl = TextEditingController();
     DateTime dueDate = DateTime.now().add(const Duration(days: 7));
+    String selectedFrequency = 'none';
+    int selectedGraceDays = 0;
 
     String? nameError;
 
@@ -175,83 +266,279 @@ class _CashPaymentDialogState extends State<CashPaymentDialog> {
               ),
             ],
           ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Total Amount: ₱${widget.totalAmount.toStringAsFixed(2)}',
-                style: const TextStyle(color: Colors.amber, fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: nameCtrl,
-                style: TextStyle(color: HomeColors.textPrimary),
-                onChanged: (_) {
-                  if (nameError != null) setDialogState(() => nameError = null);
-                },
-                decoration: InputDecoration(
-                  labelText: 'Customer Name *',
-                  labelStyle: TextStyle(color: HomeColors.textSecondary),
-                  errorText: nameError,
-                  filled: true,
-                  fillColor: HomeColors.cardElevated,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Total Amount: ₱${widget.totalAmount.toStringAsFixed(2)}',
+                  style: const TextStyle(color: Colors.amber, fontSize: 16, fontWeight: FontWeight.bold),
                 ),
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: phoneCtrl,
-                keyboardType: TextInputType.phone,
-                style: TextStyle(color: HomeColors.textPrimary),
-                decoration: InputDecoration(
-                  labelText: 'Phone Number (Optional)',
-                  labelStyle: TextStyle(color: HomeColors.textSecondary),
-                  filled: true,
-                  fillColor: HomeColors.cardElevated,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: nameCtrl,
+                  style: TextStyle(color: HomeColors.textPrimary),
+                  onChanged: (_) {
+                    if (nameError != null) setDialogState(() => nameError = null);
+                  },
+                  decoration: InputDecoration(
+                    labelText: 'Customer Name *',
+                    labelStyle: TextStyle(color: HomeColors.textSecondary),
+                    errorText: nameError,
+                    filled: true,
+                    fillColor: HomeColors.cardElevated,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              Text('Payment Due Date', style: TextStyle(color: HomeColors.textSecondary, fontSize: 12)),
-              const SizedBox(height: 6),
-              InkWell(
-                onTap: () async {
-                  final now = DateTime.now();
-                  final today = DateTime(now.year, now.month, now.day);
-                  final picked = await showDatePicker(
-                    context: context,
-                    initialDate: dueDate.isBefore(today) ? today : dueDate,
-                    firstDate: today,
-                    lastDate: DateTime(now.year + 2, now.month, now.day),
-                  );
-                  if (picked != null) {
-                    setDialogState(() => dueDate = picked);
-                  }
-                },
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: phoneCtrl,
+                  keyboardType: TextInputType.phone,
+                  style: TextStyle(color: HomeColors.textPrimary),
+                  decoration: InputDecoration(
+                    labelText: 'Phone Number (Optional)',
+                    labelStyle: TextStyle(color: HomeColors.textSecondary),
+                    filled: true,
+                    fillColor: HomeColors.cardElevated,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text('Payment Due Date', style: TextStyle(color: HomeColors.textSecondary, fontSize: 12)),
+                const SizedBox(height: 6),
+                InkWell(
+                  onTap: () async {
+                    final now = DateTime.now();
+                    final today = DateTime(now.year, now.month, now.day);
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate: dueDate.isBefore(today) ? today : dueDate,
+                      firstDate: today,
+                      lastDate: DateTime(now.year + 2, now.month, now.day),
+                    );
+                    if (picked != null) {
+                      setDialogState(() => dueDate = picked);
+                    }
+                  },
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: HomeColors.cardElevated,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: HomeColors.cardBorder),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.event_rounded, color: Colors.amber, size: 18),
+                        const SizedBox(width: 8),
+                        Text(
+                          '${dueDate.month}/${dueDate.day}/${dueDate.year}',
+                          style: TextStyle(color: HomeColors.textPrimary, fontWeight: FontWeight.bold),
+                        ),
+                        const Spacer(),
+                        const Text('Change', style: TextStyle(color: Colors.amber, fontSize: 12, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                // Penalty Selection
+                Container(
+                  padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: HomeColors.cardElevated,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: HomeColors.cardBorder),
                   ),
-                  child: Row(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.event_rounded, color: Colors.amber, size: 18),
-                      const SizedBox(width: 8),
-                      Text(
-                        '${dueDate.month}/${dueDate.day}/${dueDate.year}',
-                        style: TextStyle(color: HomeColors.textPrimary, fontWeight: FontWeight.bold),
+                      Row(
+                        children: [
+                          const Icon(Icons.alarm_add_rounded, color: Colors.amber, size: 16),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Late Penalty / Patong (Optional)',
+                            style: TextStyle(color: HomeColors.textPrimary, fontSize: 13, fontWeight: FontWeight.bold),
+                          ),
+                        ],
                       ),
-                      const Spacer(),
-                      const Text('Change', style: TextStyle(color: Colors.amber, fontSize: 12, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Pumili kung may dagdag na penalty (None, Per Day, Per Week, o Per Month).',
+                        style: TextStyle(color: HomeColors.textSecondary, fontSize: 11),
+                      ),
+                      const SizedBox(height: 10),
+                      // Frequency selector row with compact FittedBox chip sizing
+                      Row(
+                        children: [
+                          _buildUtangFrequencyChip(
+                            label: 'None',
+                            value: 'none',
+                            selectedValue: selectedFrequency,
+                            onSelected: (val) {
+                              setDialogState(() {
+                                selectedFrequency = val;
+                                penaltyCtrl.clear();
+                              });
+                            },
+                          ),
+                          const SizedBox(width: 4),
+                          _buildUtangFrequencyChip(
+                            label: 'Per Day',
+                            value: 'daily',
+                            selectedValue: selectedFrequency,
+                            onSelected: (val) {
+                              setDialogState(() {
+                                selectedFrequency = val;
+                                if (penaltyCtrl.text.isEmpty || penaltyCtrl.text == '50' || penaltyCtrl.text == '100' || penaltyCtrl.text == '10.00' || penaltyCtrl.text == '50.00' || penaltyCtrl.text == '100.00') {
+                                  penaltyCtrl.text = '10';
+                                }
+                              });
+                            },
+                          ),
+                          const SizedBox(width: 4),
+                          _buildUtangFrequencyChip(
+                            label: 'Per Week',
+                            value: 'weekly',
+                            selectedValue: selectedFrequency,
+                            onSelected: (val) {
+                              setDialogState(() {
+                                selectedFrequency = val;
+                                if (penaltyCtrl.text.isEmpty || penaltyCtrl.text == '10' || penaltyCtrl.text == '100' || penaltyCtrl.text == '10.00' || penaltyCtrl.text == '50.00' || penaltyCtrl.text == '100.00') {
+                                  penaltyCtrl.text = '50';
+                                }
+                              });
+                            },
+                          ),
+                          const SizedBox(width: 4),
+                          _buildUtangFrequencyChip(
+                            label: 'Per Month',
+                            value: 'monthly',
+                            selectedValue: selectedFrequency,
+                            onSelected: (val) {
+                              setDialogState(() {
+                                selectedFrequency = val;
+                                if (penaltyCtrl.text.isEmpty || penaltyCtrl.text == '10' || penaltyCtrl.text == '50' || penaltyCtrl.text == '10.00' || penaltyCtrl.text == '50.00' || penaltyCtrl.text == '100.00') {
+                                  penaltyCtrl.text = '100';
+                                }
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      if (selectedFrequency == 'none') ...[
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: HomeColors.cardBackground,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: HomeColors.cardBorder),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.check_circle_outline_rounded, color: Color(0xFF10B981), size: 16),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Walang penalty (₱0) kahit lumampas sa takdang petsa.',
+                                  style: TextStyle(color: HomeColors.textSecondary, fontSize: 11.5),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ] else ...[
+                        Row(
+                          children: [
+                            Expanded(
+                              flex: 3,
+                              child: TextField(
+                                controller: penaltyCtrl,
+                                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                style: TextStyle(color: HomeColors.textPrimary, fontSize: 13),
+                                decoration: InputDecoration(
+                                  labelText: selectedFrequency == 'daily'
+                                      ? '₱ / Day'
+                                      : selectedFrequency == 'weekly'
+                                          ? '₱ / Week'
+                                          : '₱ / Month',
+                                  hintText: '0',
+                                  labelStyle: TextStyle(color: HomeColors.textSecondary, fontSize: 11),
+                                  filled: true,
+                                  fillColor: HomeColors.cardBackground,
+                                  isDense: true,
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              flex: 4,
+                              child: DropdownButtonFormField<int>(
+                                initialValue: selectedGraceDays,
+                                dropdownColor: HomeColors.cardElevated,
+                                style: TextStyle(color: HomeColors.textPrimary, fontSize: 12),
+                                decoration: InputDecoration(
+                                  labelText: 'Grace Period',
+                                  labelStyle: TextStyle(color: HomeColors.textSecondary, fontSize: 11),
+                                  filled: true,
+                                  fillColor: HomeColors.cardBackground,
+                                  isDense: true,
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                                ),
+                                items: const [
+                                  DropdownMenuItem(value: 0, child: Text('No Grace')),
+                                  DropdownMenuItem(value: 1, child: Text('1 Day Grace')),
+                                  DropdownMenuItem(value: 2, child: Text('2 Days Grace')),
+                                  DropdownMenuItem(value: 3, child: Text('3 Days Grace')),
+                                  DropdownMenuItem(value: 7, child: Text('7 Days Grace')),
+                                ],
+                                onChanged: (val) {
+                                  if (val != null) {
+                                    setDialogState(() => selectedGraceDays = val);
+                                  }
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: selectedFrequency == 'daily'
+                              ? [
+                                  _buildUtangPresetPenaltyChip('₱5/d', 5, penaltyCtrl, setDialogState),
+                                  _buildUtangPresetPenaltyChip('₱10/d', 10, penaltyCtrl, setDialogState),
+                                  _buildUtangPresetPenaltyChip('₱20/d', 20, penaltyCtrl, setDialogState),
+                                  _buildUtangPresetPenaltyChip('₱50/d', 50, penaltyCtrl, setDialogState),
+                                ]
+                              : selectedFrequency == 'weekly'
+                                  ? [
+                                      _buildUtangPresetPenaltyChip('₱20/wk', 20, penaltyCtrl, setDialogState),
+                                      _buildUtangPresetPenaltyChip('₱50/wk', 50, penaltyCtrl, setDialogState),
+                                      _buildUtangPresetPenaltyChip('₱100/wk', 100, penaltyCtrl, setDialogState),
+                                      _buildUtangPresetPenaltyChip('₱200/wk', 200, penaltyCtrl, setDialogState),
+                                    ]
+                                  : [
+                                      _buildUtangPresetPenaltyChip('₱50/mo', 50, penaltyCtrl, setDialogState),
+                                      _buildUtangPresetPenaltyChip('₱100/mo', 100, penaltyCtrl, setDialogState),
+                                      _buildUtangPresetPenaltyChip('₱200/mo', 200, penaltyCtrl, setDialogState),
+                                      _buildUtangPresetPenaltyChip('₱500/mo', 500, penaltyCtrl, setDialogState),
+                                    ],
+                        ),
+                      ],
                     ],
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
           actions: [
             TextButton(
@@ -277,10 +564,14 @@ class _CashPaymentDialogState extends State<CashPaymentDialog> {
       ),
     );
 
+    final rate = selectedFrequency == 'none'
+        ? 0.0
+        : (double.tryParse(penaltyCtrl.text.replaceAll(',', '').trim()) ?? 0.0);
     final name = nameCtrl.text.trim();
     final phone = phoneCtrl.text.trim();
     nameCtrl.dispose();
     phoneCtrl.dispose();
+    penaltyCtrl.dispose();
 
     if (confirmed == true && mounted) {
       Navigator.of(context).pop(
@@ -291,6 +582,9 @@ class _CashPaymentDialogState extends State<CashPaymentDialog> {
           customerPhone: phone,
           isUtang: true,
           dueDate: dueDate,
+          penaltyFrequency: selectedFrequency,
+          penaltyRate: rate < 0 ? 0.0 : rate,
+          gracePeriodDays: selectedGraceDays,
         ),
       );
     }
