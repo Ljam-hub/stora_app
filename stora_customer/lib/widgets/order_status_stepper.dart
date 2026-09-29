@@ -143,21 +143,30 @@ class OrderStatusStepper extends StatelessWidget {
           if (isCompleted) ...[
             const SizedBox(height: 16),
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
                 color: const Color(0xFF00E676).withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(color: const Color(0xFF00E676).withValues(alpha: 0.4)),
               ),
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.verified_rounded, color: Color(0xFF00E676), size: 20),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      'Order completed! Thank you for purchasing from ${order.storeName.isNotEmpty ? order.storeName : "the store"}. 🎉',
-                      style: TextStyle(color: AppColors.textPrimary, fontSize: 12, fontWeight: FontWeight.w700),
-                    ),
+                  Row(
+                    children: [
+                      const Icon(Icons.verified_rounded, color: Color(0xFF00E676), size: 22),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Order Completed! 🎉',
+                        style: TextStyle(color: const Color(0xFF00E676), fontSize: 14, fontWeight: FontWeight.w800),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Thank you for purchasing from ${order.storeName.isNotEmpty ? order.storeName : "the store"}. Your order has been fulfilled successfully!',
+                    softWrap: true,
+                    style: TextStyle(color: AppColors.textPrimary, fontSize: 13, fontWeight: FontWeight.w600, height: 1.4),
                   ),
                 ],
               ),

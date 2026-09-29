@@ -15,7 +15,8 @@ class CatalogProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _errorMessage;
 
-  List<ProductModel> get products => _filteredProducts();
+  List<ProductModel>? _cachedFilteredProducts;
+  List<ProductModel> get products => _cachedFilteredProducts ??= _filteredProducts();
   List<CategoryModel> get categories => _categories;
   List<StoreModel> get stores => _stores;
   StoreModel? get selectedStore => _selectedStore;
@@ -42,11 +43,12 @@ class CatalogProvider extends ChangeNotifier {
     if (selectedStore != null) _selectedStore = selectedStore;
     if (selectedCategory != null) _selectedCategory = selectedCategory;
     lockCatalogForTesting = lock;
+    _cachedFilteredProducts = null;
     notifyListeners();
   }
 
   List<ProductModel> _filteredProducts() {
-    return _products.where((p) {
+    final filtered = _products.where((p) {
       if (_selectedStore != null && p.ownerId != _selectedStore!.id) {
         return false;
       }
@@ -62,12 +64,28 @@ class CatalogProvider extends ChangeNotifier {
       }
       return true;
     }).toList();
+
+    if (_selectedStore == null) {
+      final Map<String, ProductModel> bestDeals = {};
+      for (final p in filtered) {
+        final key = p.name.toLowerCase().trim();
+        if (!bestDeals.containsKey(key)) {
+          bestDeals[key] = p;
+        } else if (p.price < bestDeals[key]!.price) {
+          bestDeals[key] = p;
+        }
+      }
+      return bestDeals.values.toList();
+    }
+
+    return filtered;
   }
 
   Future<void> selectStore(StoreModel? store) async {
     if (_selectedStore?.id == store?.id) return;
     _selectedStore = store;
     _selectedCategory = null;
+    _cachedFilteredProducts = null;
     if (_products.isEmpty) {
       _isLoading = true;
       notifyListeners();
@@ -92,11 +110,13 @@ class CatalogProvider extends ChangeNotifier {
     } else {
       _selectedCategory = category;
     }
+    _cachedFilteredProducts = null;
     notifyListeners();
   }
 
   void setSearchQuery(String query) {
     _searchQuery = query;
+    _cachedFilteredProducts = null;
     notifyListeners();
   }
 
@@ -115,6 +135,7 @@ class CatalogProvider extends ChangeNotifier {
     ]);
 
     _isLoading = false;
+    _cachedFilteredProducts = null;
     notifyListeners();
   }
 
@@ -126,6 +147,7 @@ class CatalogProvider extends ChangeNotifier {
       fetchCategories(),
       fetchProducts(),
     ]);
+    _cachedFilteredProducts = null;
     notifyListeners();
   }
 
@@ -172,6 +194,7 @@ class CatalogProvider extends ChangeNotifier {
       );
       if (_selectedStore?.id == storeId) {
         _products = res;
+        _cachedFilteredProducts = null;
       }
     } catch (e) {
       if (_selectedStore?.id == storeId) {

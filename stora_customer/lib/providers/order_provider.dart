@@ -357,6 +357,19 @@ class OrderProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  bool _areOrdersEqual(List<CustomerOrder> a, List<CustomerOrder> b) {
+    if (identical(a, b)) return true;
+    if (a.length != b.length) return false;
+    for (int i = 0; i < a.length; i++) {
+      if (a[i].id != b[i].id ||
+          a[i].status != b[i].status ||
+          a[i].unreadMessageCount != b[i].unreadMessageCount) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   bool _isRefreshing = false;
 
   Future<void> refresh({bool isSilent = false}) async {
@@ -365,8 +378,11 @@ class OrderProvider extends ChangeNotifier {
     try {
       final fetched = await CustomerApiService.instance.fetchMyOrders();
       _checkStatusTransitions(fetched);
+      final hasChanged = !_areOrdersEqual(_orders, fetched);
       _orders = fetched;
-      notifyListeners();
+      if (!isSilent || hasChanged) {
+        notifyListeners();
+      }
     } catch (e) {
       if (!isSilent) debugPrint('Error refreshing orders: $e');
     } finally {

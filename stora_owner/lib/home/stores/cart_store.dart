@@ -8,8 +8,13 @@ class CartStore extends ChangeNotifier {
   static final CartStore instance = CartStore._internal();
 
   final Map<String, CartItem> _items = {};
-  List<CartItem> get items => _items.values.toList();
+  List<CartItem>? _cachedItems;
+  
+  List<CartItem> get items => _cachedItems ??= _items.values.toList();
   double get total => _items.values.fold(0.0, (sum, i) => sum + i.subtotal);
+
+  int getQuantity(String productId) => _items[productId]?.quantity ?? 0;
+  CartItem? getItem(String productId) => _items[productId];
 
   void add(Product product) {
     final currentStock = InventoryStore.instance.products
@@ -19,15 +24,18 @@ class CartStore extends ChangeNotifier {
     if (_items.containsKey(product.id)) {
       if (_items[product.id]!.quantity < currentStock) {
         _items[product.id]!.quantity++;
+        _cachedItems = null;
       }
     } else {
       _items[product.id] = CartItem(product: product);
+      _cachedItems = null;
     }
     notifyListeners();
   }
 
   void remove(String productId) {
     _items.remove(productId);
+    _cachedItems = null;
     notifyListeners();
   }
 
@@ -39,6 +47,7 @@ class CartStore extends ChangeNotifier {
         .stock;
     if (item.quantity < currentStock) {
       item.quantity++;
+      _cachedItems = null;
       notifyListeners();
     }
   }
@@ -49,14 +58,17 @@ class CartStore extends ChangeNotifier {
     if (item == null) return;
     if (item.quantity <= 1) {
       _items.remove(productId);
+      _cachedItems = null;
     } else {
       item.quantity--;
+      _cachedItems = null;
     }
     notifyListeners();
   }
 
   void clear() {
     _items.clear();
+    _cachedItems = null;
     notifyListeners();
   }
 }

@@ -111,31 +111,33 @@ class _PendingOrdersScreenState extends State<PendingOrdersScreen> {
             color: AppColors.purpleLight,
             backgroundColor: HomeColors.cardBackground,
             onRefresh: () => store.fetchOrders(),
-            child: ListView(
+            child: ListView.builder(
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-              children: [
-                // Filter chips
-                Row(
-                  children: [
-                    _FilterChip(
-                      label: 'Active / Pending',
-                      badgeCount: store.activeCount,
-                      isSelected: _filter == 'pending',
-                      onTap: () => setState(() => _filter = 'pending'),
-                    ),
-                    const SizedBox(width: 8),
-                    _FilterChip(
-                      label: 'All Orders (${allOrders.length})',
-                      isSelected: _filter == 'all',
-                      onTap: () => setState(() => _filter = 'all'),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-
-                if (displayedOrders.isEmpty)
-                  Padding(
+              itemCount: 2 + (displayedOrders.isEmpty ? 1 : displayedOrders.length),
+              itemBuilder: (context, index) {
+                if (index == 0) {
+                  return Row(
+                    children: [
+                      _FilterChip(
+                        label: 'Active / Pending',
+                        badgeCount: store.activeCount,
+                        isSelected: _filter == 'pending',
+                        onTap: () => setState(() => _filter = 'pending'),
+                      ),
+                      const SizedBox(width: 8),
+                      _FilterChip(
+                        label: 'All Orders (${allOrders.length})',
+                        isSelected: _filter == 'all',
+                        onTap: () => setState(() => _filter = 'all'),
+                      ),
+                    ],
+                  );
+                }
+                if (index == 1) return const SizedBox(height: 16);
+                
+                if (displayedOrders.isEmpty) {
+                  return Padding(
                     padding: const EdgeInsets.only(top: 80),
                     child: Center(
                       child: Column(
@@ -170,10 +172,11 @@ class _PendingOrdersScreenState extends State<PendingOrdersScreen> {
                         ],
                       ),
                     ),
-                  )
-                else
-                  ...displayedOrders.map((order) => _OrderCard(order: order)),
-              ],
+                  );
+                }
+                
+                return _OrderCard(order: displayedOrders[index - 2]);
+              },
             ),
           );
         },

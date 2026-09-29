@@ -238,61 +238,62 @@ class _SalesHistoryScreenState extends State<SalesHistoryScreen> {
                     color: AppColors.purpleLight,
                     backgroundColor: HomeColors.cardBackground,
                     onRefresh: () => SalesStore.instance.loadSales(),
-                    child: ListView(
+                    child: ListView.builder(
                       physics: const AlwaysScrollableScrollPhysics(),
                       padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
-                      children: [
-                        // Summary & Month Filter Card
-                        _HistorySummaryCard(
-                          filteredSales: filteredSales,
-                          allSales: allSales,
-                          revenueTitle: _getRevenueTitle(),
-                          currentFilterLabel: _getFilterLabel(availableMonths),
-                          selectedFilterKey: _selectedFilterKey,
-                          currentMonthKey: currentMonthKey,
-                          availableMonths: availableMonths,
-                          onFilterSelected: (newKey) => setState(() => _selectedFilterKey = newKey),
-                        ),
-                        const SizedBox(height: 16),
-
-                        // Filter Chips Row
-                        SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: Row(
-                            children: [
-                              _FilterChip(
-                                label: 'All Time (${allSales.length})',
-                                isSelected: _selectedFilterKey == 'all',
-                                onTap: () => setState(() => _selectedFilterKey = 'all'),
-                              ),
-                              const SizedBox(width: 8),
-                              _FilterChip(
-                                label: 'Today',
-                                isSelected: _selectedFilterKey == 'today',
-                                onTap: () => setState(() => _selectedFilterKey = 'today'),
-                              ),
-                              const SizedBox(width: 8),
-                              _FilterChip(
-                                label: 'This Month',
-                                isSelected: _selectedFilterKey == currentMonthKey,
-                                onTap: () => setState(() => _selectedFilterKey = currentMonthKey),
-                              ),
-                              if (availableMonths.length > 1) ...[
-                                const SizedBox(width: 8),
-                                _MonthDropdownChip(
-                                  selectedFilterKey: _selectedFilterKey,
-                                  availableMonths: availableMonths,
-                                  onSelected: (key) => setState(() => _selectedFilterKey = key),
+                      itemCount: 4 + (filteredSales.isEmpty ? 1 : filteredSales.length),
+                      itemBuilder: (context, index) {
+                        if (index == 0) {
+                          return _HistorySummaryCard(
+                            filteredSales: filteredSales,
+                            allSales: allSales,
+                            revenueTitle: _getRevenueTitle(),
+                            currentFilterLabel: _getFilterLabel(availableMonths),
+                            selectedFilterKey: _selectedFilterKey,
+                            currentMonthKey: currentMonthKey,
+                            availableMonths: availableMonths,
+                            onFilterSelected: (newKey) => setState(() => _selectedFilterKey = newKey),
+                          );
+                        }
+                        if (index == 1) return const SizedBox(height: 16);
+                        if (index == 2) {
+                          return SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
+                              children: [
+                                _FilterChip(
+                                  label: 'All Time (${allSales.length})',
+                                  isSelected: _selectedFilterKey == 'all',
+                                  onTap: () => setState(() => _selectedFilterKey = 'all'),
                                 ),
+                                const SizedBox(width: 8),
+                                _FilterChip(
+                                  label: 'Today',
+                                  isSelected: _selectedFilterKey == 'today',
+                                  onTap: () => setState(() => _selectedFilterKey = 'today'),
+                                ),
+                                const SizedBox(width: 8),
+                                _FilterChip(
+                                  label: 'This Month',
+                                  isSelected: _selectedFilterKey == currentMonthKey,
+                                  onTap: () => setState(() => _selectedFilterKey = currentMonthKey),
+                                ),
+                                if (availableMonths.length > 1) ...[
+                                  const SizedBox(width: 8),
+                                  _MonthDropdownChip(
+                                    selectedFilterKey: _selectedFilterKey,
+                                    availableMonths: availableMonths,
+                                    onSelected: (key) => setState(() => _selectedFilterKey = key),
+                                  ),
+                                ],
                               ],
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 16),
+                            ),
+                          );
+                        }
+                        if (index == 3) return const SizedBox(height: 16);
 
-                        // Sales Items List or Empty State
-                        if (filteredSales.isEmpty)
-                          Container(
+                        if (filteredSales.isEmpty) {
+                          return Container(
                             padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 20),
                             decoration: BoxDecoration(
                               color: HomeColors.cardBackground,
@@ -351,13 +352,15 @@ class _SalesHistoryScreenState extends State<SalesHistoryScreen> {
                                 ],
                               ),
                             ),
-                          )
-                        else
-                          ...filteredSales.map((s) => Padding(
-                                padding: const EdgeInsets.only(bottom: 12),
-                                child: _SaleCard(sale: s),
-                              )),
-                      ],
+                          );
+                        }
+                        
+                        final s = filteredSales[index - 4];
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: _SaleCard(sale: s),
+                        );
+                      },
                     ),
                   ),
                 ),

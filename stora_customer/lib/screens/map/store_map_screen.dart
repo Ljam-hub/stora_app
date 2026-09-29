@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
@@ -34,7 +35,8 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
 
   StoreModel? _selectedStore;
   String _searchFilter = '';
-  bool _onlyOpenStores = false;
+  Timer? _searchDebounce;
+  bool _onlyOpenStores = true;
 
   bool _isRecentering = false;
   bool _isShowingStoresSheet = false;
@@ -176,6 +178,7 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _searchController.dispose();
     _pageController.dispose();
     _pulseAnim.dispose();
@@ -691,15 +694,18 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
                     child: TextField(
                       controller: _searchController,
                       onChanged: (val) {
-                        setState(() => _searchFilter = val);
-                        // Reset PageController if current page would be out of bounds
-                        WidgetsBinding.instance.addPostFrameCallback((_) {
-                          if (_pageController.hasClients && mounted) {
-                            final currentPage = _pageController.page?.round() ?? 0;
-                            if (currentPage > 0) {
-                              _pageController.jumpToPage(0);
+                        _searchDebounce?.cancel();
+                        _searchDebounce = Timer(const Duration(milliseconds: 300), () {
+                          setState(() => _searchFilter = val);
+                          // Reset PageController if current page would be out of bounds
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            if (_pageController.hasClients && mounted) {
+                              final currentPage = _pageController.page?.round() ?? 0;
+                              if (currentPage > 0) {
+                                _pageController.jumpToPage(0);
+                              }
                             }
-                          }
+                          });
                         });
                       },
                       style: TextStyle(
@@ -718,6 +724,7 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
                                 icon: const Icon(Icons.clear_rounded, size: 18),
                                 color: isDark ? AppColors.textMuted : Colors.grey,
                                 onPressed: () {
+                                  _searchDebounce?.cancel();
                                   _searchController.clear();
                                   setState(() => _searchFilter = '');
                                 },
@@ -762,8 +769,8 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
                           child: _FilterBadge(
                             icon: _onlyOpenStores
                                 ? Icons.check_circle_rounded
-                                : Icons.schedule_rounded,
-                            label: _onlyOpenStores ? 'Open Only' : 'Open Now',
+                                : Icons.storefront_outlined,
+                            label: _onlyOpenStores ? 'Open Only' : 'Show All',
                             color: const Color(0xFF10B981),
                             isDark: isDark,
                             isActive: _onlyOpenStores,

@@ -405,6 +405,34 @@ class _ShopScreenState extends State<ShopScreen> {
                   },
                 ),
               ),
+              const SizedBox(height: 6),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.storefront_rounded, size: 16, color: AppColors.primary),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Showing all items across stores. Tap any store above to shop from that store specifically.',
+                          style: TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
               const SizedBox(height: 8),
             ],
 
@@ -634,23 +662,93 @@ class _ShopScreenState extends State<ShopScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 4, 16, 2),
+                        padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
                         child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            Text(
-                              catalog.selectedCategory != null
-                                  ? '${visibleProducts.length} ${visibleProducts.length == 1 ? 'item' : 'items'} in ${catalog.selectedCategory!.name}'
-                                  : (catalog.selectedStore != null
-                                      ? '${visibleProducts.length} ${visibleProducts.length == 1 ? 'item' : 'items'} available'
-                                      : '${visibleProducts.length} ${visibleProducts.length == 1 ? 'product' : 'products'} available'),
-                              style: TextStyle(
-                                color: AppColors.textMuted,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Flexible(
+                                        child: Text(
+                                          catalog.selectedStore != null
+                                              ? catalog.selectedStore!.displayName
+                                              : (catalog.selectedCategory != null
+                                                  ? catalog.selectedCategory!.name
+                                                  : 'All Items'),
+                                          style: TextStyle(
+                                            color: AppColors.textPrimary,
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: catalog.selectedStore != null
+                                              ? AppColors.success.withValues(alpha: 0.15)
+                                              : AppColors.primary.withValues(alpha: 0.15),
+                                          borderRadius: BorderRadius.circular(6),
+                                          border: Border.all(
+                                            color: catalog.selectedStore != null
+                                                ? AppColors.success.withValues(alpha: 0.3)
+                                                : AppColors.primary.withValues(alpha: 0.3),
+                                          ),
+                                        ),
+                                        child: Text(
+                                          catalog.selectedStore != null
+                                              ? 'Single Store'
+                                              : 'All Stores',
+                                          style: TextStyle(
+                                            color: catalog.selectedStore != null
+                                                ? AppColors.success
+                                                : AppColors.primary,
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    catalog.selectedStore != null
+                                        ? '${visibleProducts.length} items from this store'
+                                        : '${visibleProducts.length} total items across stores',
+                                    style: TextStyle(
+                                      color: AppColors.textMuted,
+                                      fontSize: 11.5,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                            if (catalog.selectedCategory != null) ...[
-                              const Spacer(),
+                            if (catalog.selectedStore != null)
+                              TextButton(
+                                onPressed: () => catalog.selectStore(null),
+                                style: TextButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  minimumSize: Size.zero,
+                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                ),
+                                child: Text(
+                                  'View All',
+                                  style: TextStyle(
+                                    color: AppColors.primary,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              )
+                            else if (catalog.selectedCategory != null)
                               GestureDetector(
                                 onTap: () => catalog.selectCategory(null),
                                 child: Text(
@@ -662,7 +760,6 @@ class _ShopScreenState extends State<ShopScreen> {
                                   ),
                                 ),
                               ),
-                            ],
                           ],
                         ),
                       ),
@@ -680,12 +777,49 @@ class _ShopScreenState extends State<ShopScreen> {
                           itemCount: visibleProducts.length,
                           itemBuilder: (context, index) {
                             final product = visibleProducts[index];
+                            Widget card = ProductCard(
+                              key: ValueKey('product-${product.id}'),
+                              product: product,
+                              onTap: () => _openProductDetail(product),
+                            );
+
+                            if (catalog.selectedStore == null &&
+                                product.storeName != null &&
+                                product.storeName!.isNotEmpty) {
+                              card = Stack(
+                                children: [
+                                  card,
+                                  Positioned(
+                                    top: 4,
+                                    left: 4,
+                                    right: 4,
+                                    child: Align(
+                                      alignment: Alignment.topLeft,
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.primary.withValues(alpha: 0.9),
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        child: Text(
+                                          product.storeName!,
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            }
+
                             return RepaintBoundary(
-                              child: ProductCard(
-                                key: ValueKey('product-${product.id}'),
-                                product: product,
-                                onTap: () => _openProductDetail(product),
-                              ),
+                              child: card,
                             );
                           },
                         ),

@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../stora_login/stora_login.dart';
 import '../../data/api/api_client.dart';
 import '../../data/stores/account_status_store.dart';
 import 'barcode_scanner_screen.dart';
+import 'inventory_list_screen.dart';
 import '../models/cart_item.dart';
 import '../models/product.dart';
 import '../models/sale.dart';
@@ -67,9 +69,11 @@ class _PosScreenState extends State<PosScreen> {
   String _query = '';
   String _selectedCategory = 'All';
   bool _isCheckingOut = false;
+  Timer? _searchDebounce;
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _searchController.dispose();
     super.dispose();
   }
@@ -275,7 +279,12 @@ class _PosScreenState extends State<PosScreen> {
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 10),
               child: TextField(
                 controller: _searchController,
-                onChanged: (v) => setState(() => _query = v),
+                onChanged: (v) {
+                  _searchDebounce?.cancel();
+                  _searchDebounce = Timer(const Duration(milliseconds: 250), () {
+                    setState(() => _query = v);
+                  });
+                },
                 onSubmitted: (v) => _handleBarcode(v),
                 style: TextStyle(color: HomeColors.textPrimary, fontSize: 14),
                 decoration: InputDecoration(
@@ -293,6 +302,7 @@ class _PosScreenState extends State<PosScreen> {
                           IconButton(
                             icon: const Icon(Icons.close, color: AppColors.label, size: 18),
                             onPressed: () {
+                              _searchDebounce?.cancel();
                               _searchController.clear();
                               setState(() => _query = '');
                             },
@@ -335,9 +345,7 @@ class _PosScreenState extends State<PosScreen> {
                     final freeLimit = AccountStatusStore.instance.productLimit > 0
                         ? AccountStatusStore.instance.productLimit
                         : 20;
-                    final allIdx = InventoryStore.instance.products.indexOf(p);
-                    final isLocked = !AccountStatusStore.instance.isPremium &&
-                        (allIdx >= freeLimit || (allIdx == -1 && i >= freeLimit));
+                    final isLocked = !AccountStatusStore.instance.isPremium && i >= freeLimit;
                     return RepaintBoundary(
                       child: _PosProductCard(
                         key: ValueKey('pos_product_${p.id}'),
@@ -355,11 +363,8 @@ class _PosScreenState extends State<PosScreen> {
                             showStoraSnackBar(context, '"${p.name}" is out of stock');
                             return;
                           }
-                          final inCart = cart.items.firstWhere(
-                            (it) => it.product.id == p.id,
-                            orElse: () => CartItem(product: p, quantity: 0),
-                          );
-                          if (inCart.quantity >= p.stock) {
+                          final inCartQty = cart.getQuantity(p.id);
+                          if (inCartQty >= p.stock) {
                             showStoraSnackBar(
                               context,
                               'Maximum available stock for "${p.name}" (${p.stock}) already in cart',
@@ -368,9 +373,12 @@ class _PosScreenState extends State<PosScreen> {
                           }
                           HapticFeedback.selectionClick();
                           cart.add(p);
-                          _searchController.clear();
-                          setState(() => _query = '');
-                          FocusScope.of(context).unfocus();
+                          if (_query.isNotEmpty) {
+                            _searchDebounce?.cancel();
+                            _searchController.clear();
+                            setState(() => _query = '');
+                            FocusScope.of(context).unfocus();
+                          }
                         },
                       ),
                     );
@@ -402,43 +410,115 @@ class _PosScreenState extends State<PosScreen> {
               ),
             ),
             Expanded(
-              child: cart.items.isEmpty
+              child: InventoryStore.instance.products.isEmpty
                   ? Center(
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 40),
+                        padding: const EdgeInsets.symmetric(horizontal: 36),
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Container(
-                              padding: const EdgeInsets.all(18),
+                              padding: const EdgeInsets.all(22),
                               decoration: BoxDecoration(
                                 color: HomeColors.cardElevated,
                                 shape: BoxShape.circle,
                                 border: Border.all(color: HomeColors.cardBorder),
                               ),
-                              child: const Icon(Icons.shopping_bag_outlined, size: 40, color: AppColors.purpleLight),
+                              child: const Icon(Icons.inventory_2_outlined, size: 44, color: AppColors.purpleLight),
                             ),
-                            const SizedBox(height: 16),
+                            const SizedBox(height: 18),
                             Text(
-                              'Virtual cart is empty',
-                              style: TextStyle(color: HomeColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w700),
+                              'No Products in Inventory',
+                              style: TextStyle(color: HomeColors.textPrimary, fontSize: 17, fontWeight: FontWeight.w800),
                             ),
-                            const SizedBox(height: 6),
+                            const SizedBox(height: 8),
                             Text(
-                              'Search above or scan a barcode to add products directly.',
+                              'Add products to your inventory first before you can ring up sales or process checkouts.',
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: HomeColors.textSecondary, fontSize: 13),
+                              style: TextStyle(color: HomeColors.textSecondary, fontSize: 13, height: 1.4),
+                            ),
+                            const SizedBox(height: 20),
+                            ElevatedButton.icon(
+                              onPressed: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(builder: (_) => const InventoryListScreen()),
+                                );
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.purpleLight,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                              icon: const Icon(Icons.add_box_outlined, size: 18),
+                              label: const Text('Go to Inventory', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                             ),
                           ],
                         ),
                       ),
                     )
-                  : ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
-                      itemCount: cart.items.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: 10),
-                      itemBuilder: (context, i) => _CartRow(item: cart.items[i]),
-                    ),
+                  : (cart.items.isEmpty
+                      ? Center(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 32),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(18),
+                                  decoration: BoxDecoration(
+                                    color: HomeColors.cardElevated,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: HomeColors.cardBorder),
+                                  ),
+                                  child: const Icon(Icons.shopping_bag_outlined, size: 40, color: AppColors.purpleLight),
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'Virtual cart is empty',
+                                  style: TextStyle(color: HomeColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w700),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  'Tap any product above or scan a barcode to add it to your cart.',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(color: HomeColors.textSecondary, fontSize: 13),
+                                ),
+                                const SizedBox(height: 16),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                  decoration: BoxDecoration(
+                                    color: HomeColors.cardBackground,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: HomeColors.cardBorder),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text('1. Pick Item', style: TextStyle(color: AppColors.purpleLight, fontSize: 11, fontWeight: FontWeight.bold)),
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6),
+                                        child: Icon(Icons.arrow_forward_rounded, size: 12, color: HomeColors.textSecondary),
+                                      ),
+                                      Text('2. Review Cart', style: TextStyle(color: HomeColors.textSecondary, fontSize: 11, fontWeight: FontWeight.w600)),
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6),
+                                        child: Icon(Icons.arrow_forward_rounded, size: 12, color: HomeColors.textSecondary),
+                                      ),
+                                      Text('3. Checkout', style: TextStyle(color: HomeColors.textSecondary, fontSize: 11, fontWeight: FontWeight.w600)),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
+                      : ListView.separated(
+                          padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
+                          itemCount: cart.items.length,
+                          separatorBuilder: (_, _) => const SizedBox(height: 10),
+                          itemBuilder: (context, i) => _CartRow(item: cart.items[i]),
+                        )),
             ),
             Container(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
