@@ -2,48 +2,28 @@ import csv
 from datetime import timedelta
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
+from django.db.models import Q
 from django.http import HttpResponse
 from django.utils import timezone
 from django.utils.html import format_html
 
 from stora_backend.admin_site import stora_admin_site
 
-from .models import User, PasswordResetToken, PaymentProof, SubscriptionConfig, StoreLocation, AIInsight, EmailVerificationCode, PendingRegistration
-
-
-class StoreLocationInline(admin.StackedInline):
-    model = StoreLocation
-    extra = 0
-    can_delete = False
-    classes = ("collapse",)
-    fields = (
-        ("is_open", "is_visible"),
-        ("payment_phone_number", "payment_account_name"),
-        ("payment_qr_code", "qr_code_preview"),
-        "address",
-        ("latitude", "longitude"),
-    )
-    readonly_fields = ("qr_code_preview",)
-
-    @admin.display(description="QR Code Preview")
-    def qr_code_preview(self, obj):
-        if obj and obj.payment_qr_code:
-            try:
-                url = obj.payment_qr_code.url
-                return format_html(
-                    '<a href="{0}" target="_blank" title="Click to view full QR code">'
-                    '<img src="{0}" style="max-height: 120px; max-width: 120px; object-fit: contain; border-radius: 8px; border: 1px solid #FF6B00; background: #fff; padding: 4px;" />'
-                    '</a>',
-                    url,
-                )
-            except Exception:
-                pass
-        return format_html('<span style="color: #94a3b8; font-style: italic; font-size: 12px;">No QR code uploaded</span>')
+from .models import (
+    User,
+    PasswordResetToken,
+    PaymentProof,
+    SubscriptionConfig,
+    StoreLocation,
+    StorePaymentMethod,
+    AIInsight,
+    EmailVerificationCode,
+    PendingRegistration,
+)
 
 
 @admin.register(User, site=stora_admin_site)
 class UserAdmin(DjangoUserAdmin):
-    inlines = [StoreLocationInline]
     fieldsets = DjangoUserAdmin.fieldsets + (
         ("Store & Role info", {"fields": ("role", "business_name", "avatar", "fcm_token", "is_email_verified")}),
         ("Subscription", {"fields": ("is_premium", "premium_until")}),
@@ -444,36 +424,24 @@ class SubscriptionConfigAdmin(admin.ModelAdmin):
 @admin.register(StoreLocation, site=stora_admin_site)
 class StoreLocationAdmin(admin.ModelAdmin):
     list_display = (
-        "qr_code_display",
         "business_name_col",
         "owner",
-        "payment_phone_number_col",
-        "payment_account_name_col",
         "address",
+        "latitude",
+        "longitude",
         "is_open",
         "is_visible",
         "updated_at",
     )
-    search_fields = (
-        "owner__email",
-        "owner__business_name",
-        "address",
-        "payment_phone_number",
-        "payment_account_name",
-    )
+    search_fields = ("owner__email", "owner__business_name", "address")
     list_select_related = ("owner",)
     list_filter = ("is_open", "is_visible", "updated_at")
-    readonly_fields = ("qr_code_preview", "updated_at")
     fieldsets = (
         ("Store Identity", {
             "fields": ("owner", "is_open", "is_visible")
         }),
-        ("GCash & Mobile Payment Details", {
-            "fields": ("payment_phone_number", "payment_account_name", "payment_qr_code", "qr_code_preview"),
-            "description": "Store GCash number and QR code presented to customers at checkout."
-        }),
         ("Location & Map Coordinates", {
-            "fields": ("address", "latitude", "longitude", "updated_at")
+            "fields": ("address", "latitude", "longitude")
         }),
     )
 
@@ -481,11 +449,72 @@ class StoreLocationAdmin(admin.ModelAdmin):
     def business_name_col(self, obj):
         return obj.owner.business_name or "—"
 
+
+class HasQRCodeFilter(admin.SimpleListFilter):
+    title = "QR Code Uploaded"
+    parameter_name = "has_qr"
+
+    def lookups(self, request, model_admin):
+        return (
+            ("yes", "With QR Code"),
+            ("no", "Without QR Code"),
+        )
+
+    def queryset(self, request, queryset):
+        if self.value() == "yes":
+            return queryset.exclude(payment_qr_code="").exclude(payment_qr_code__isnull=True)
+        if self.value() == "no":
+            return queryset.filter(Q(payment_qr_code="") | Q(payment_qr_code__isnull=True))
+        return queryset
+
+
+@admin.register(StorePaymentMethod, site=stora_admin_site)
+class StorePaymentMethodAdmin(admin.ModelAdmin):
+    list_display = (
+        "qr_code_display",
+        "business_name_col",
+        "owner_email_col",
+        "payment_phone_number_col",
+        "payment_account_name_col",
+        "qr_status_badge",
+        "store_status_badge",
+        "updated_at",
+    )
+    list_display_links = ("qr_code_display", "business_name_col")
+    search_fields = (
+        "owner__email",
+        "owner__business_name",
+        "payment_phone_number",
+        "payment_account_name",
+    )
+    list_select_related = ("owner",)
+    list_filter = (HasQRCodeFilter, "is_open", "is_visible")
+    readonly_fields = ("qr_code_preview", "updated_at")
+    fields = (
+        "owner",
+        "payment_phone_number",
+        "payment_account_name",
+        "payment_qr_code",
+        "qr_code_preview",
+        "updated_at",
+    )
+
+    @admin.display(description="Business Name", ordering="owner__business_name")
+    def business_name_col(self, obj):
+        return obj.owner.business_name or "—"
+
+    @admin.display(description="Owner Email", ordering="owner__email")
+    def owner_email_col(self, obj):
+        return obj.owner.email
+
     @admin.display(description="GCash Number")
     def payment_phone_number_col(self, obj):
         if obj.payment_phone_number:
-            return format_html('<span style="font-weight: 600; color: #ffffff;">{}</span>', obj.payment_phone_number)
-        return format_html('<span style="color: #888888; font-style: italic;">Not set</span>')
+            return format_html(
+                '<span style="font-weight: 700; color: #ffffff; letter-spacing: 0.5px;">{}</span>',
+                obj.payment_phone_number,
+            )
+        return format_html('<span style="color: #f87171; font-style: italic; font-size: 11px;">Not configured</span>')
 
     @admin.display(description="Account Name")
     def payment_account_name_col(self, obj):
@@ -500,24 +529,44 @@ class StoreLocationAdmin(admin.ModelAdmin):
                 url = obj.payment_qr_code.url
                 return format_html(
                     '<a href="{0}" target="_blank" title="Click to view full QR code">'
-                    '<img src="{0}" style="height: 44px; width: 44px; object-fit: contain; border-radius: 6px; border: 1px solid #FF6B00; background: #fff; padding: 2px;" />'
+                    '<img src="{0}" style="height: 48px; width: 48px; object-fit: contain; border-radius: 6px; border: 1px solid #FF6B00; background: #fff; padding: 2px; box-shadow: 0 2px 6px rgba(0,0,0,0.3);" />'
                     '</a>',
                     url,
                 )
             except Exception:
                 pass
-        return format_html('<span style="color: #888888; font-style: italic; font-size: 11px;">No QR</span>')
+        return format_html('<span style="color: #f87171; font-style: italic; font-size: 11px;">No QR</span>')
 
-    @admin.display(description="QR Code Preview")
+    @admin.display(description="QR Status")
+    def qr_status_badge(self, obj):
+        if obj.payment_qr_code:
+            return format_html(
+                '<span style="background: rgba(16, 185, 129, 0.18); color: #34d399; border: 1px solid rgba(52, 211, 153, 0.4); padding: 3px 8px; border-radius: 6px; font-weight: 700; font-size: 11px;">Active</span>'
+            )
+        return format_html(
+            '<span style="background: rgba(239, 68, 68, 0.18); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); padding: 3px 8px; border-radius: 6px; font-weight: 700; font-size: 11px;">Missing QR</span>'
+        )
+
+    @admin.display(description="Store Status")
+    def store_status_badge(self, obj):
+        if obj.is_open:
+            return format_html(
+                '<span style="color: #4ade80; font-weight: 600; font-size: 12px;">● Open</span>'
+            )
+        return format_html(
+            '<span style="color: #f87171; font-weight: 600; font-size: 12px;">○ Closed</span>'
+        )
+
+    @admin.display(description="Current QR Code Preview")
     def qr_code_preview(self, obj):
         if obj.payment_qr_code:
             try:
                 url = obj.payment_qr_code.url
                 return format_html(
-                    '<div style="margin-top: 5px;">'
+                    '<div style="margin-top: 6px;">'
                     '<a href="{0}" target="_blank">'
-                    '<img src="{0}" style="max-height: 180px; max-width: 180px; object-fit: contain; border-radius: 8px; border: 1px solid #FF6B00; background: #fff; padding: 4px;" />'
-                    '</a><br><small style="color: #94a3b8;">Click to open full size</small></div>',
+                    '<img src="{0}" style="max-height: 240px; max-width: 240px; object-fit: contain; border-radius: 10px; border: 2px solid #FF6B00; background: #fff; padding: 6px; box-shadow: 0 4px 14px rgba(0,0,0,0.4);" />'
+                    '</a><br><small style="color: #94a3b8; display: inline-block; margin-top: 4px;">Click image to view full-resolution</small></div>',
                     url,
                 )
             except Exception:

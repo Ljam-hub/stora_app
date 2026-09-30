@@ -322,6 +322,20 @@ class StoreLocation(models.Model):
         return f"{self.owner.business_name or self.owner.email} ({self.latitude}, {self.longitude})"
 
 
+class StorePaymentMethod(StoreLocation):
+    """Proxy model dedicated to managing Store GCash numbers and QR codes in Django Admin."""
+
+    class Meta:
+        proxy = True
+        verbose_name = "Store QR Code & Number"
+        verbose_name_plural = "Store QR Codes & Numbers"
+
+    def __str__(self):
+        name = self.owner.business_name or self.owner.email
+        num = self.payment_phone_number or "No GCash number"
+        return f"{name} ({num})"
+
+
 class AIInsight(models.Model):
     PRIORITY_HIGH = "high"
     PRIORITY_MEDIUM = "medium"
