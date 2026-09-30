@@ -314,6 +314,7 @@ class StoreLocation(models.Model):
     payment_phone_number = models.CharField(max_length=50, blank=True, default="", help_text="Store's GCash / mobile payment number")
     payment_account_name = models.CharField(max_length=150, blank=True, default="", help_text="Store's payment receiver name")
     payment_qr_code = models.ImageField(upload_to="store_qr/", null=True, blank=True, help_text="Custom payment QR code image")
+    accept_gcash_payments = models.BooleanField(default=True, help_text="Allow customers to pay via GCash / mobile payment at checkout")
     is_visible = models.BooleanField(default=True)
     is_open = models.BooleanField(default=True)
     updated_at = models.DateTimeField(auto_now=True)

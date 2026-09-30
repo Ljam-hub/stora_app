@@ -358,7 +358,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 ],
 
                 // Store Payment Options Card (GCash / QR Code & Mobile Number)
-                if (currentStore != null && (currentStore.paymentPhoneNumber.isNotEmpty || currentStore.paymentQrUrl != null)) ...[
+                if (currentStore != null && currentStore.acceptGcashPayments && (currentStore.paymentPhoneNumber.isNotEmpty || currentStore.paymentQrUrl != null)) ...[
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(

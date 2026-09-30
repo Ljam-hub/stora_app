@@ -14,6 +14,7 @@ class StoreStatusStore extends ChangeNotifier {
   String _paymentPhoneNumber = '';
   String _paymentAccountName = '';
   String? _paymentQrUrl;
+  bool _acceptGcashPayments = true;
 
   bool get isOpen => _isOpen;
   bool get isLoaded => _isLoaded;
@@ -24,6 +25,7 @@ class StoreStatusStore extends ChangeNotifier {
   String get paymentPhoneNumber => _paymentPhoneNumber;
   String get paymentAccountName => _paymentAccountName;
   String? get paymentQrUrl => _paymentQrUrl;
+  bool get acceptGcashPayments => _acceptGcashPayments;
 
   bool get hasValidLocation {
     if (!_isLoaded) return true;
@@ -60,6 +62,7 @@ class StoreStatusStore extends ChangeNotifier {
       _paymentPhoneNumber = data['payment_phone_number']?.toString() ?? '';
       _paymentAccountName = data['payment_account_name']?.toString() ?? '';
       _paymentQrUrl = data['payment_qr_url']?.toString();
+      _acceptGcashPayments = _parseBool(data['accept_gcash_payments'], true);
       _isLoaded = true;
       notifyListeners();
     } catch (_) {
@@ -105,10 +108,12 @@ class StoreStatusStore extends ChangeNotifier {
     required String paymentPhoneNumber,
     required String paymentAccountName,
     String? paymentQrUrl,
+    bool? acceptGcashPayments,
   }) {
     _paymentPhoneNumber = paymentPhoneNumber;
     _paymentAccountName = paymentAccountName;
     if (paymentQrUrl != null) _paymentQrUrl = paymentQrUrl;
+    if (acceptGcashPayments != null) _acceptGcashPayments = acceptGcashPayments;
     notifyListeners();
   }
 
@@ -122,6 +127,7 @@ class StoreStatusStore extends ChangeNotifier {
     _paymentPhoneNumber = '';
     _paymentAccountName = '';
     _paymentQrUrl = null;
+    _acceptGcashPayments = true;
     notifyListeners();
   }
 }

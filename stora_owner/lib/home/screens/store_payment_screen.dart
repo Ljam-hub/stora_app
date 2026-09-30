@@ -23,6 +23,7 @@ class _StorePaymentScreenState extends State<StorePaymentScreen> {
   Uint8List? _pickedQrBytes;
   String? _pickedQrFilename;
   String? _existingQrUrl;
+  bool _acceptGcash = true;
   bool _qrCleared = false;
   bool _isLoading = true;
   bool _isSaving = false;
@@ -45,6 +46,7 @@ class _StorePaymentScreenState extends State<StorePaymentScreen> {
     _phoneController.text = status.paymentPhoneNumber;
     _nameController.text = status.paymentAccountName;
     _existingQrUrl = status.paymentQrUrl;
+    _acceptGcash = status.acceptGcashPayments;
 
     try {
       final data = await ApiClient.instance.getStoreLocation();
@@ -52,11 +54,15 @@ class _StorePaymentScreenState extends State<StorePaymentScreen> {
         final phone = data['payment_phone_number']?.toString() ?? '';
         final name = data['payment_account_name']?.toString() ?? '';
         final qrUrl = data['payment_qr_url']?.toString();
+        final acceptGcash = (data['accept_gcash_payments'] is bool)
+            ? (data['accept_gcash_payments'] as bool)
+            : (data['accept_gcash_payments']?.toString().toLowerCase() == 'true' || data['accept_gcash_payments'] == null);
 
         setState(() {
           _phoneController.text = phone;
           _nameController.text = name;
           _existingQrUrl = qrUrl;
+          _acceptGcash = acceptGcash;
           _isLoading = false;
         });
 
@@ -64,6 +70,7 @@ class _StorePaymentScreenState extends State<StorePaymentScreen> {
           paymentPhoneNumber: phone,
           paymentAccountName: name,
           paymentQrUrl: qrUrl,
+          acceptGcashPayments: acceptGcash,
         );
       }
     } catch (_) {
@@ -158,6 +165,7 @@ class _StorePaymentScreenState extends State<StorePaymentScreen> {
         paymentQrBytes: _pickedQrBytes,
         paymentQrFilename: _pickedQrFilename,
         clearQrCode: _qrCleared,
+        acceptGcashPayments: _acceptGcash,
       );
 
       final updatedQrUrl = _qrCleared ? null : (res['payment_qr_url']?.toString() ?? _existingQrUrl);
@@ -166,6 +174,7 @@ class _StorePaymentScreenState extends State<StorePaymentScreen> {
         paymentPhoneNumber: phone,
         paymentAccountName: name,
         paymentQrUrl: updatedQrUrl,
+        acceptGcashPayments: _acceptGcash,
       );
 
       if (mounted) {
@@ -211,6 +220,112 @@ class _StorePaymentScreenState extends State<StorePaymentScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    // Accept GCash at Checkout Toggle Card
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      decoration: BoxDecoration(
+                        color: HomeColors.cardBackground,
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(
+                          color: _acceptGcash
+                              ? AppColors.primary.withValues(alpha: 0.45)
+                              : HomeColors.cardBorder,
+                          width: _acceptGcash ? 1.5 : 1.0,
+                        ),
+                        boxShadow: HomeColors.cardShadow,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: _acceptGcash
+                                            ? AppColors.primary.withValues(alpha: 0.15)
+                                            : HomeColors.textSecondary.withValues(alpha: 0.12),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Icon(
+                                        _acceptGcash ? Icons.payments_rounded : Icons.money_off_rounded,
+                                        color: _acceptGcash ? AppColors.primary : HomeColors.textSecondary,
+                                        size: 20,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'Accept GCash at Checkout',
+                                            style: TextStyle(
+                                              color: HomeColors.textPrimary,
+                                              fontSize: 14.5,
+                                              fontWeight: FontWeight.w800,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            _acceptGcash
+                                                ? 'Active • Displayed to customers'
+                                                : 'Paused • Cash on Pickup only',
+                                            style: TextStyle(
+                                              color: _acceptGcash ? const Color(0xFF34D399) : const Color(0xFFFBBF24),
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Switch.adaptive(
+                                value: _acceptGcash,
+                                activeThumbColor: AppColors.primary,
+                                activeTrackColor: AppColors.primary.withValues(alpha: 0.38),
+                                onChanged: (val) {
+                                  HapticFeedback.selectionClick();
+                                  setState(() => _acceptGcash = val);
+                                },
+                              ),
+                            ],
+                          ),
+                          if (!_acceptGcash) ...[
+                            const SizedBox(height: 10),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFBBF24).withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: const Color(0xFFFBBF24).withValues(alpha: 0.3)),
+                              ),
+                              child: const Row(
+                                children: [
+                                  Icon(Icons.info_outline_rounded, color: Color(0xFFFBBF24), size: 16),
+                                  SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      'Your QR code and number remain saved, but are hidden from customers at checkout.',
+                                      style: TextStyle(color: Color(0xFFFBBF24), fontSize: 11.5, height: 1.3),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
                     // Guide banner
                     Container(
                       padding: const EdgeInsets.all(14),

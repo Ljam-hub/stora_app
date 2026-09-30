@@ -968,6 +968,7 @@ class StoreLocationSerializer(serializers.ModelSerializer):
             "payment_phone_number",
             "payment_account_name",
             "payment_qr_code",
+            "accept_gcash_payments",
             "is_visible",
             "is_open",
             "updated_at",

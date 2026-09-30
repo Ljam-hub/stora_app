@@ -438,7 +438,7 @@ class StoreLocationAdmin(admin.ModelAdmin):
     list_filter = ("is_open", "is_visible", "updated_at")
     fieldsets = (
         ("Store Identity", {
-            "fields": ("owner", "is_open", "is_visible")
+            "fields": ("owner", "is_open", "is_visible", "accept_gcash_payments")
         }),
         ("Location & Map Coordinates", {
             "fields": ("address", "latitude", "longitude")
@@ -476,6 +476,7 @@ class StorePaymentMethodAdmin(admin.ModelAdmin):
         "owner_email_col",
         "payment_phone_number_col",
         "payment_account_name_col",
+        "gcash_status_badge",
         "qr_status_badge",
         "store_status_badge",
         "updated_at",
@@ -488,10 +489,11 @@ class StorePaymentMethodAdmin(admin.ModelAdmin):
         "payment_account_name",
     )
     list_select_related = ("owner",)
-    list_filter = (HasQRCodeFilter, "is_open", "is_visible")
+    list_filter = (HasQRCodeFilter, "accept_gcash_payments", "is_open", "is_visible")
     readonly_fields = ("qr_code_preview", "updated_at")
     fields = (
         "owner",
+        "accept_gcash_payments",
         "payment_phone_number",
         "payment_account_name",
         "payment_qr_code",
@@ -506,6 +508,16 @@ class StorePaymentMethodAdmin(admin.ModelAdmin):
     @admin.display(description="Owner Email", ordering="owner__email")
     def owner_email_col(self, obj):
         return obj.owner.email
+
+    @admin.display(description="GCash Checkout", ordering="accept_gcash_payments")
+    def gcash_status_badge(self, obj):
+        if obj.accept_gcash_payments:
+            return format_html(
+                '<span style="background: rgba(16, 185, 129, 0.18); color: #34d399; border: 1px solid rgba(52, 211, 153, 0.4); padding: 3px 8px; border-radius: 6px; font-weight: 700; font-size: 11px;">Enabled</span>'
+            )
+        return format_html(
+            '<span style="background: rgba(245, 158, 11, 0.18); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); padding: 3px 8px; border-radius: 6px; font-weight: 700; font-size: 11px;">Paused (Cash Only)</span>'
+        )
 
     @admin.display(description="GCash Number")
     def payment_phone_number_col(self, obj):

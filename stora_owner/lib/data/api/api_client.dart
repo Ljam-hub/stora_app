@@ -733,6 +733,7 @@ class ApiClient {
     List<int>? paymentQrBytes,
     String? paymentQrFilename,
     bool clearQrCode = false,
+    bool acceptGcashPayments = true,
   }) async {
     if (paymentQrBytes != null && paymentQrBytes.isNotEmpty) {
       final uri = _uri('/stores/my-location/');
@@ -746,6 +747,7 @@ class ApiClient {
         req.headers['Accept'] = 'application/json';
         req.fields['payment_phone_number'] = paymentPhoneNumber.trim();
         req.fields['payment_account_name'] = paymentAccountName.trim();
+        req.fields['accept_gcash_payments'] = acceptGcashPayments.toString();
         req.files.add(
           http.MultipartFile.fromBytes(
             'payment_qr_code',
@@ -780,6 +782,7 @@ class ApiClient {
       final body = <String, dynamic>{
         'payment_phone_number': paymentPhoneNumber.trim(),
         'payment_account_name': paymentAccountName.trim(),
+        'accept_gcash_payments': acceptGcashPayments,
       };
       if (clearQrCode) {
         body['payment_qr_code'] = null;

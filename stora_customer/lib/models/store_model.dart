@@ -14,6 +14,7 @@ class StoreModel {
   final String paymentPhoneNumber;
   final String paymentAccountName;
   final String? paymentQrUrl;
+  final bool acceptGcashPayments;
 
   StoreModel({
     required this.id,
@@ -29,6 +30,7 @@ class StoreModel {
     this.paymentPhoneNumber = '',
     this.paymentAccountName = '',
     this.paymentQrUrl,
+    this.acceptGcashPayments = true,
   });
 
   String get displayName {
@@ -74,6 +76,12 @@ class StoreModel {
       paymentPhoneNumber: (json['payment_phone_number'] as String?) ?? '',
       paymentAccountName: (json['payment_account_name'] as String?) ?? '',
       paymentQrUrl: ApiConfig.resolveMediaUrl(json['payment_qr_url'] as String?),
+      acceptGcashPayments: json['accept_gcash_payments'] == false ||
+              json['accept_gcash_payments'] == 0 ||
+              json['accept_gcash_payments'] == 'false' ||
+              json['accept_gcash_payments'] == '0'
+          ? false
+          : true,
     );
   }
 
@@ -89,6 +97,10 @@ class StoreModel {
       'avatar_url': avatarUrl,
       'is_open': isOpen,
       'role': role,
+      'payment_phone_number': paymentPhoneNumber,
+      'payment_account_name': paymentAccountName,
+      'payment_qr_url': paymentQrUrl,
+      'accept_gcash_payments': acceptGcashPayments,
     };
   }
 }

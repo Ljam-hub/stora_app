@@ -1302,6 +1302,7 @@ def list_stores(request):
             "payment_phone_number": loc.payment_phone_number if loc else "",
             "payment_account_name": loc.payment_account_name if loc else "",
             "payment_qr_url": payment_qr_url,
+            "accept_gcash_payments": loc.accept_gcash_payments if loc else True,
             "distance_km": distance_km,
             "is_open": is_open,
             "role": owner.role,
@@ -1328,6 +1329,7 @@ def store_location(request):
             "latitude": 14.5995,
             "longitude": 120.9842,
             "address": "Metro Manila, Philippines",
+            "accept_gcash_payments": True,
             "is_visible": True,
             "is_open": True,
         }
