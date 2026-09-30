@@ -317,69 +317,74 @@ class _OrderCardState extends State<OrderCard> with NavigationGuard<OrderCard> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Text(
-                          'Order #${order.id}',
-                          style: TextStyle(
-                            color: AppColors.textPrimary,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
-                          decoration: BoxDecoration(
-                            color: order.isGcashPayment
-                                ? const Color(0xFF1E3A8A).withValues(alpha: 0.25)
-                                : const Color(0xFF064E3B).withValues(alpha: 0.25),
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(
-                              color: order.isGcashPayment
-                                  ? const Color(0xFF60A5FA).withValues(alpha: 0.5)
-                                  : const Color(0xFF34D399).withValues(alpha: 0.5),
-                              width: 0.8,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Wrap(
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: 8,
+                        runSpacing: 4,
+                        children: [
+                          Text(
+                            'Order #${order.id}',
+                            style: TextStyle(
+                              color: AppColors.textPrimary,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                order.isGcashPayment ? Icons.account_balance_wallet_rounded : Icons.payments_outlined,
-                                size: 11,
-                                color: order.isGcashPayment ? const Color(0xFF93C5FD) : const Color(0xFF6EE7B7),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                            decoration: BoxDecoration(
+                              color: order.isGcashPayment
+                                  ? const Color(0xFF1E3A8A).withValues(alpha: 0.25)
+                                  : const Color(0xFF064E3B).withValues(alpha: 0.25),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(
+                                color: order.isGcashPayment
+                                    ? const Color(0xFF60A5FA).withValues(alpha: 0.5)
+                                    : const Color(0xFF34D399).withValues(alpha: 0.5),
+                                width: 0.8,
                               ),
-                              const SizedBox(width: 3.5),
-                              Text(
-                                order.isGcashPayment ? 'GCash' : 'Cash',
-                                style: TextStyle(
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  order.isGcashPayment ? Icons.account_balance_wallet_rounded : Icons.payments_outlined,
+                                  size: 11,
                                   color: order.isGcashPayment ? const Color(0xFF93C5FD) : const Color(0xFF6EE7B7),
-                                  fontSize: 10.5,
-                                  fontWeight: FontWeight.bold,
                                 ),
-                              ),
-                            ],
+                                const SizedBox(width: 3.5),
+                                Text(
+                                  order.isGcashPayment ? 'GCash' : 'Cash',
+                                  style: TextStyle(
+                                    color: order.isGcashPayment ? const Color(0xFF93C5FD) : const Color(0xFF6EE7B7),
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                    if (order.formattedDate.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 2),
-                        child: Text(
-                          order.formattedDate,
-                          style: TextStyle(
-                            color: AppColors.textMuted,
-                            fontSize: 12,
-                          ),
-                        ),
+                        ],
                       ),
-                  ],
+                      if (order.formattedDate.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 2),
+                          child: Text(
+                            order.formattedDate,
+                            style: TextStyle(
+                              color: AppColors.textMuted,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
+                const SizedBox(width: 8),
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [

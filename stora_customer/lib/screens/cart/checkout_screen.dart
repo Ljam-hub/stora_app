@@ -677,6 +677,31 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                                   fit: BoxFit.contain,
                                                   width: 280,
                                                   height: 280,
+                                                  loadingBuilder: (context, child, progress) {
+                                                    if (progress == null) return child;
+                                                    return const SizedBox(
+                                                      width: 280,
+                                                      height: 280,
+                                                      child: Center(
+                                                        child: CircularProgressIndicator(color: AppColors.primary),
+                                                      ),
+                                                    );
+                                                  },
+                                                  errorBuilder: (context, error, stackTrace) => Container(
+                                                    width: 280,
+                                                    height: 280,
+                                                    color: Colors.grey[100],
+                                                    child: const Center(
+                                                      child: Column(
+                                                        mainAxisSize: MainAxisSize.min,
+                                                        children: [
+                                                          Icon(Icons.broken_image_rounded, size: 40, color: Colors.grey),
+                                                          SizedBox(height: 8),
+                                                          Text('Unable to load QR image', style: TextStyle(color: Colors.black54, fontSize: 12)),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  ),
                                                 ),
                                               ),
                                             ],
@@ -709,6 +734,27 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                         width: 48,
                                         height: 48,
                                         fit: BoxFit.cover,
+                                        loadingBuilder: (context, child, progress) {
+                                          if (progress == null) return child;
+                                          return Container(
+                                            width: 48,
+                                            height: 48,
+                                            color: AppColors.cardBorder.withValues(alpha: 0.3),
+                                            child: const Center(
+                                              child: SizedBox(
+                                                width: 16,
+                                                height: 16,
+                                                child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                        errorBuilder: (context, error, stackTrace) => Container(
+                                          width: 48,
+                                          height: 48,
+                                          color: AppColors.cardBorder.withValues(alpha: 0.3),
+                                          child: const Icon(Icons.qr_code_2_rounded, size: 24, color: AppColors.primary),
+                                        ),
                                       ),
                                     ),
                                     const SizedBox(width: 12),
