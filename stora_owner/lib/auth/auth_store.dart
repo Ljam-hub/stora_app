@@ -70,9 +70,15 @@ class AuthStore extends ChangeNotifier {
         businessName: session.businessName,
         isEmailVerified: isEmailVerified,
       );
+    } on ApiException catch (e) {
+      // Server explicitly rejected credentials (401 = deleted / deactivated account)
+      if (e.statusCode == 401) {
+        await logout();
+        return false;
+      }
+      // Other API errors (500, network issues) — stay logged in with cached data
     } catch (_) {
-      // Offline — keep locally-stored isEmailVerified value
-    }
+      // Offline / unexpected — keep locally-stored values
     OwnerNotificationService.instance.init();
     notifyListeners();
     return true;

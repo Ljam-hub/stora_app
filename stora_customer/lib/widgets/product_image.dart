@@ -24,7 +24,7 @@ class ProductImage extends StatelessWidget {
     this.categoryName = '',
     this.width,
     this.height,
-    this.fit = BoxFit.cover,
+    this.fit = BoxFit.contain,
     this.iconSize = 32,
     this.borderRadius,
   });
@@ -52,13 +52,20 @@ class ProductImage extends StatelessWidget {
           final resolved = ApiConfig.resolveMediaUrl(raw);
           if (resolved != null) {
             final targetCacheWidth = width != null ? (width! * 2.5).toInt() : 360;
-            return Image.network(
-              resolved,
+            return Container(
               width: width,
               height: height,
-              fit: fit,
-              cacheWidth: targetCacheWidth,
-              errorBuilder: (context, error, stackTrace) => _buildFallback(),
+              color: AppColors.cardElevated,
+              alignment: Alignment.center,
+              padding: const EdgeInsets.all(4),
+              child: Image.network(
+                resolved,
+                width: width,
+                height: height,
+                fit: fit,
+                cacheWidth: targetCacheWidth,
+                errorBuilder: (context, error, stackTrace) => _buildFallback(),
+              ),
             );
           }
         } else {
@@ -81,13 +88,20 @@ class ProductImage extends StatelessWidget {
           }
           if (bytes != null && bytes.isNotEmpty) {
             final targetCacheWidth = width != null ? (width! * 2.5).toInt() : 360;
-            return Image.memory(
-              bytes,
+            return Container(
               width: width,
               height: height,
-              fit: fit,
-              cacheWidth: targetCacheWidth,
-              errorBuilder: (context, error, stackTrace) => _buildFallback(),
+              color: AppColors.cardElevated,
+              alignment: Alignment.center,
+              padding: const EdgeInsets.all(4),
+              child: Image.memory(
+                bytes,
+                width: width,
+                height: height,
+                fit: fit,
+                cacheWidth: targetCacheWidth,
+                errorBuilder: (context, error, stackTrace) => _buildFallback(),
+              ),
             );
           }
         }

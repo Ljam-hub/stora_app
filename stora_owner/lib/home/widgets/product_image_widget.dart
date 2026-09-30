@@ -26,7 +26,7 @@ class ProductImageWidget extends StatelessWidget {
     this.width,
     this.height,
     this.borderRadius,
-    this.fit = BoxFit.cover,
+    this.fit = BoxFit.contain,
     this.iconSize = 24,
   });
 
@@ -37,13 +37,20 @@ class ProductImageWidget extends StatelessWidget {
     if (imageBytes != null && imageBytes!.isNotEmpty) {
       return ClipRRect(
         borderRadius: radius,
-        child: Image.memory(
-          imageBytes!,
+        child: Container(
           width: width,
           height: height,
-          cacheWidth: 360,
-          fit: fit,
-          errorBuilder: (context, error, stackTrace) => _buildPlaceholder(radius),
+          color: HomeColors.cardElevated,
+          alignment: Alignment.center,
+          padding: const EdgeInsets.all(4),
+          child: Image.memory(
+            imageBytes!,
+            width: width,
+            height: height,
+            cacheWidth: 360,
+            fit: fit,
+            errorBuilder: (context, error, stackTrace) => _buildPlaceholder(radius),
+          ),
         ),
       );
     }
@@ -52,13 +59,20 @@ class ProductImageWidget extends StatelessWidget {
     if (resolvedUrl != null && resolvedUrl.isNotEmpty) {
       return ClipRRect(
         borderRadius: radius,
-        child: Image.network(
-          resolvedUrl,
+        child: Container(
           width: width,
           height: height,
-          cacheWidth: 360,
-          fit: fit,
-          errorBuilder: (context, error, stackTrace) => _buildPlaceholder(radius),
+          color: HomeColors.cardElevated,
+          alignment: Alignment.center,
+          padding: const EdgeInsets.all(4),
+          child: Image.network(
+            resolvedUrl,
+            width: width,
+            height: height,
+            cacheWidth: 360,
+            fit: fit,
+            errorBuilder: (context, error, stackTrace) => _buildPlaceholder(radius),
+          ),
         ),
       );
     }

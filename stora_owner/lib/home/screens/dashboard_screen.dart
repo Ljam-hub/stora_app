@@ -1610,8 +1610,8 @@ class _WalkInPaymentQrCard extends StatelessWidget {
                           'Payment QR Sign',
                           style: TextStyle(
                             color: HomeColors.textPrimary,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w800,
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w700,
                             letterSpacing: -0.2,
                           ),
                           maxLines: 1,
@@ -1770,10 +1770,12 @@ class _PaymentQrModalSheet extends StatelessWidget {
                             'Scan to Pay (Walk-in)',
                             style: TextStyle(
                               color: HomeColors.textPrimary,
-                              fontSize: 16.5,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: -0.3,
+                              fontSize: 14.5,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: -0.2,
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                           const SizedBox(height: 4),
                           Wrap(

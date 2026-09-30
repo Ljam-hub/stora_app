@@ -43,6 +43,15 @@ class AuthProvider extends ChangeNotifier {
         try {
           final profile = await CustomerApiService.instance.fetchProfile();
           _currentUser = profile;
+        } on ApiException catch (e) {
+          // Server explicitly rejected credentials (401 = deleted / deactivated)
+          if (e.statusCode == 401) {
+            await logout();
+            _isLoading = false;
+            notifyListeners();
+            return false;
+          }
+          // Other API errors (500, etc.) — stay logged in with cached data
         } catch (_) {
           // Offline — keep locally stored user data including isEmailVerified
         }

@@ -643,9 +643,9 @@ class _ImagePickerFieldState extends State<_ImagePickerField> {
               borderRadius: BorderRadius.circular(14),
               border: Border.all(color: AppColors.fieldBorder, width: 1.2),
               image: _bytes != null
-                  ? DecorationImage(image: MemoryImage(_bytes!), fit: BoxFit.cover)
+                  ? DecorationImage(image: MemoryImage(_bytes!), fit: BoxFit.contain)
                   : (_url != null && _url!.trim().isNotEmpty && ApiConfig.resolveMediaUrl(_url) != null
-                      ? DecorationImage(image: NetworkImage(ApiConfig.resolveMediaUrl(_url)!), fit: BoxFit.cover)
+                      ? DecorationImage(image: NetworkImage(ApiConfig.resolveMediaUrl(_url)!), fit: BoxFit.contain)
                       : null),
             ),
             child: _loading

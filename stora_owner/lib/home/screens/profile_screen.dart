@@ -552,6 +552,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         final storeName = auth.businessName?.isNotEmpty == true ? auth.businessName! : 'Your Store';
         final ownerEmail = auth.email ?? '';
 
+        final isDark = ThemeModeController.instance.isDarkMode;
         final isPremium = account.isPremium;
         final isPending = account.latestPaymentProof?.isPending == true;
         final isRejected = account.latestPaymentProof?.isRejected == true &&
@@ -564,17 +565,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ? 'Proof Rejected'
                     : 'Free plan';
         final planColor = isPremium
-            ? HomeColors.successText
+            ? (isDark ? const Color(0xFFFBBF24) : const Color(0xFFB45309))
             : isRejected
                 ? AppColors.error
                 : AppColors.purpleLight;
         final planBg = isPremium
-            ? HomeColors.successBg
+            ? (isDark ? const Color(0xFF451A03) : const Color(0xFFFEF3C7))
             : isRejected
                 ? HomeColors.dangerBg
                 : isPending
                     ? HomeColors.warningBg
                     : HomeColors.surfaceHover;
+        final planBorder = isPremium
+            ? Border.all(color: (isDark ? const Color(0xFFF59E0B) : const Color(0xFFD97706)).withValues(alpha: 0.6), width: 1)
+            : null;
+        final planIcon = isPremium ? Icons.workspace_premium_rounded : null;
 
         return Scaffold(
           backgroundColor: HomeColors.background,
@@ -728,7 +733,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     runSpacing: 4,
                                     crossAxisAlignment: WrapCrossAlignment.center,
                                     children: [
-                                      StatusChip(label: planLabel, color: planColor, background: planBg),
+                                      StatusChip(
+                                        label: planLabel,
+                                        color: planColor,
+                                        background: planBg,
+                                        border: planBorder,
+                                        icon: planIcon,
+                                      ),
                                       if (AuthStore.instance.isEmailVerified)
                                         Row(
                                           mainAxisSize: MainAxisSize.min,
