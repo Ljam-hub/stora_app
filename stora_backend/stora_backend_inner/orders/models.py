@@ -51,6 +51,18 @@ class Order(models.Model):
     customer_address = models.TextField(blank=True, default="")
     notes = models.TextField(blank=True, default="")
 
+    PAYMENT_METHOD_CASH = "cash"
+    PAYMENT_METHOD_GCASH = "gcash"
+    PAYMENT_METHOD_CHOICES = (
+        (PAYMENT_METHOD_CASH, "Cash on Pickup"),
+        (PAYMENT_METHOD_GCASH, "GCash / Online Payment"),
+    )
+    payment_method = models.CharField(
+        max_length=20,
+        choices=PAYMENT_METHOD_CHOICES,
+        default=PAYMENT_METHOD_CASH,
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_PENDING)
     decline_reason = models.CharField(max_length=255, blank=True, null=True)

@@ -550,6 +550,7 @@ class CustomerApiService {
     required String customerPhone,
     required String customerAddress,
     String notes = '',
+    String paymentMethod = 'cash',
     required List<CustomerOrderItem> items,
   }) async {
     final response = await _dispatch(
@@ -561,6 +562,7 @@ class CustomerApiService {
         'customer_phone': customerPhone.trim(),
         'customer_address': customerAddress.trim(),
         'notes': notes.trim(),
+        'payment_method': paymentMethod,
         'items_data': items.map((e) => e.toJson()).toList(),
       },
     );

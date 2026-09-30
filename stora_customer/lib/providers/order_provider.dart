@@ -397,6 +397,7 @@ class OrderProvider extends ChangeNotifier {
     required String customerPhone,
     required String customerAddress,
     String notes,
+    String paymentMethod,
     required List<CustomerOrderItem> items,
   })? mockPlaceOrderHandler;
 
@@ -406,6 +407,7 @@ class OrderProvider extends ChangeNotifier {
     required String customerPhone,
     required String customerAddress,
     String notes = '',
+    String paymentMethod = 'cash',
     required List<CustomerOrderItem> items,
   }) async {
     if (_isPlacingOrder) {
@@ -424,6 +426,7 @@ class OrderProvider extends ChangeNotifier {
               customerPhone: customerPhone,
               customerAddress: customerAddress,
               notes: notes,
+              paymentMethod: paymentMethod,
               items: items,
             )
           : await CustomerApiService.instance.placeOrder(
@@ -432,6 +435,7 @@ class OrderProvider extends ChangeNotifier {
               customerPhone: customerPhone,
               customerAddress: customerAddress,
               notes: notes,
+              paymentMethod: paymentMethod,
               items: items,
             );
       _orders.insert(0, order);

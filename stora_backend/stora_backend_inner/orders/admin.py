@@ -27,13 +27,14 @@ class OrderAdmin(admin.ModelAdmin):
         "items_count",
         "total_amount_display",
         "status_badge",
+        "payment_badge",
         "owner_display",
         "customer_name",
         "customer_phone_display",
         "created_at",
     )
     list_display_links = ("id", "products_summary")
-    list_filter = ("status", "created_at", "owner")
+    list_filter = ("status", "payment_method", "created_at", "owner")
     date_hierarchy = "created_at"
     search_fields = (
         "id",
@@ -45,6 +46,7 @@ class OrderAdmin(admin.ModelAdmin):
     )
     readonly_fields = (
         "status_badge",
+        "payment_badge",
         "total_amount_display",
         "created_at",
         "expires_at",
@@ -119,6 +121,18 @@ class OrderAdmin(admin.ModelAdmin):
             label,
         )
 
+    @admin.display(description="Payment Method")
+    def payment_badge(self, obj):
+        if obj.payment_method == Order.PAYMENT_METHOD_GCASH:
+            return format_html(
+                '<span style="background-color: #1e3a8a; color: #93c5fd; padding: 4px 8px; '
+                'border-radius: 6px; font-weight: 700; font-size: 11px;">📱 GCash</span>'
+            )
+        return format_html(
+            '<span style="background-color: #064e3b; color: #6ee7b7; padding: 4px 8px; '
+            'border-radius: 6px; font-weight: 700; font-size: 11px;">💵 Cash on Pickup</span>'
+        )
+
     @admin.display(description="Total Amount")
     def total_amount_display(self, obj):
         if not obj.pk:
@@ -154,6 +168,8 @@ class OrderAdmin(admin.ModelAdmin):
             "customer_phone",
             "customer_address",
             "notes",
+            "payment_method",
+            "payment_badge",
             "status",
             "status_badge",
             "decline_reason",
@@ -226,6 +242,7 @@ class OrderAdmin(admin.ModelAdmin):
             "Items Summary",
             "Total Quantity",
             "Total Amount (PHP)",
+            "Payment Method",
             "Status",
             "Notes",
         ])
@@ -250,6 +267,7 @@ class OrderAdmin(admin.ModelAdmin):
                 summary,
                 total_qty,
                 f"{amt:.2f}",
+                order.get_payment_method_display(),
                 order.get_status_display(),
                 order.notes or "",
             ])

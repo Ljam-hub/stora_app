@@ -77,6 +77,7 @@ class CustomerOrder {
   final DateTime? latestMessageAt;
   final bool latestMessageIsUnsent;
   final String? receiptNumberField;
+  final String paymentMethod;
 
   CustomerOrder({
     required this.id,
@@ -101,7 +102,11 @@ class CustomerOrder {
     this.latestMessageAt,
     this.latestMessageIsUnsent = false,
     this.receiptNumberField,
+    this.paymentMethod = 'cash',
   });
+
+  bool get isGcashPayment => paymentMethod.toLowerCase() == 'gcash';
+  String get paymentMethodDisplay => isGcashPayment ? 'GCash' : 'Cash on Pickup';
 
   String get receiptNumber => (receiptNumberField != null && receiptNumberField!.trim().isNotEmpty)
       ? receiptNumberField!.trim()
@@ -231,6 +236,7 @@ class CustomerOrder {
       latestMessageAt: json['latest_message'] is Map && json['latest_message']['created_at'] != null ? DateTime.tryParse(json['latest_message']['created_at'].toString()) : null,
       latestMessageIsUnsent: json['latest_message'] is Map ? (json['latest_message']['is_unsent'] as bool? ?? false) : false,
       receiptNumberField: json['receipt_number'] as String?,
+      paymentMethod: (json['payment_method'] as String?) ?? 'cash',
     );
   }
 }

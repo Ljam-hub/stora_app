@@ -789,6 +789,7 @@ class OrderSerializer(serializers.ModelSerializer):
             "customer_phone",
             "customer_address",
             "notes",
+            "payment_method",
             "status",
             "decline_reason",
             "counter_notes",

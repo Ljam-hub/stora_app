@@ -107,6 +107,7 @@ void main() {
           required String customerPhone,
           required String customerAddress,
           String notes = '',
+          String paymentMethod = 'cash',
           required List<CustomerOrderItem> items,
         }) async {
           return CustomerOrder(
@@ -117,6 +118,7 @@ void main() {
             customerPhone: customerPhone,
             customerAddress: customerAddress,
             notes: notes,
+            paymentMethod: paymentMethod,
             status: 'pending',
             totalAmount: 95.0,
             items: items,
