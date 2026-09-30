@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../data/api/api_client.dart';
+import '../../data/api/api_config.dart';
 import '../../stora_login/theme/app_colors.dart';
 import '../../stora_login/utils/snackbar.dart';
 import '../stores/store_status_store.dart';
@@ -53,7 +54,8 @@ class _StorePaymentScreenState extends State<StorePaymentScreen> {
       if (mounted) {
         final phone = data['payment_phone_number']?.toString() ?? '';
         final name = data['payment_account_name']?.toString() ?? '';
-        final qrUrl = data['payment_qr_url']?.toString();
+        final rawQr = (data['payment_qr_url'] ?? data['payment_qr_code'])?.toString();
+        final qrUrl = (rawQr != null && rawQr.isNotEmpty) ? ApiConfig.resolveMediaUrl(rawQr) : null;
         final acceptGcash = (data['accept_gcash_payments'] is bool)
             ? (data['accept_gcash_payments'] as bool)
             : (data['accept_gcash_payments']?.toString().toLowerCase() == 'true' || data['accept_gcash_payments'] == null);
@@ -70,6 +72,7 @@ class _StorePaymentScreenState extends State<StorePaymentScreen> {
           paymentPhoneNumber: phone,
           paymentAccountName: name,
           paymentQrUrl: qrUrl,
+          clearQrCode: qrUrl == null,
           acceptGcashPayments: acceptGcash,
         );
       }
@@ -168,16 +171,28 @@ class _StorePaymentScreenState extends State<StorePaymentScreen> {
         acceptGcashPayments: _acceptGcash,
       );
 
-      final updatedQrUrl = _qrCleared ? null : (res['payment_qr_url']?.toString() ?? _existingQrUrl);
+      final rawQr = (res['payment_qr_url'] ?? res['payment_qr_code'])?.toString();
+      final updatedQrUrl = _qrCleared
+          ? null
+          : ((rawQr != null && rawQr.isNotEmpty)
+              ? ApiConfig.resolveMediaUrl(rawQr)
+              : _existingQrUrl);
 
       StoreStatusStore.instance.updatePaymentDetails(
         paymentPhoneNumber: phone,
         paymentAccountName: name,
         paymentQrUrl: updatedQrUrl,
+        clearQrCode: _qrCleared,
         acceptGcashPayments: _acceptGcash,
       );
 
       if (mounted) {
+        setState(() {
+          _pickedQrBytes = null;
+          _pickedQrFilename = null;
+          _existingQrUrl = updatedQrUrl;
+          _qrCleared = false;
+        });
         showStoraSnackBar(context, 'Payment details saved successfully!', isError: false);
         Navigator.of(context).pop();
       }
@@ -192,25 +207,79 @@ class _StorePaymentScreenState extends State<StorePaymentScreen> {
     }
   }
 
+  bool get _hasUnsavedChanges {
+    final status = StoreStatusStore.instance;
+    return _pickedQrBytes != null ||
+        _qrCleared ||
+        _phoneController.text.trim() != status.paymentPhoneNumber ||
+        _nameController.text.trim() != status.paymentAccountName;
+  }
+
+  Future<bool> _handleBackPress() async {
+    if (!_hasUnsavedChanges) return true;
+    final discard = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: HomeColors.cardBackground,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text('Unsaved Changes', style: TextStyle(color: HomeColors.textPrimary, fontWeight: FontWeight.bold)),
+        content: Text(
+          'You have unsaved changes to your payment information or QR code. Do you want to discard them?',
+          style: TextStyle(color: HomeColors.textSecondary, fontSize: 13),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text('Keep Editing', style: TextStyle(color: HomeColors.textSecondary)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: HomeColors.dangerText,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Discard'),
+          ),
+        ],
+      ),
+    );
+    return discard ?? false;
+  }
+
   @override
   Widget build(BuildContext context) {
     final hasQr = !_qrCleared && (_pickedQrBytes != null || (_existingQrUrl != null && _existingQrUrl!.isNotEmpty));
 
-    return Scaffold(
-      backgroundColor: HomeColors.background,
-      appBar: AppBar(
+    return PopScope(
+      canPop: !_hasUnsavedChanges,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        final shouldPop = await _handleBackPress();
+        if (shouldPop && context.mounted) {
+          Navigator.of(context).pop();
+        }
+      },
+      child: Scaffold(
         backgroundColor: HomeColors.background,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_rounded, color: HomeColors.textPrimary),
-          onPressed: () => Navigator.of(context).pop(),
+        appBar: AppBar(
+          backgroundColor: HomeColors.background,
+          elevation: 0,
+          leading: IconButton(
+            icon: Icon(Icons.arrow_back_rounded, color: HomeColors.textPrimary),
+            onPressed: () async {
+              final shouldPop = await _handleBackPress();
+              if (shouldPop && context.mounted) {
+                Navigator.of(context).pop();
+              }
+            },
+          ),
+          title: Text(
+            'Store Payment & QR',
+            style: TextStyle(color: HomeColors.textPrimary, fontSize: 18, fontWeight: FontWeight.w800),
+          ),
+          centerTitle: true,
         ),
-        title: Text(
-          'Store Payment & QR',
-          style: TextStyle(color: HomeColors.textPrimary, fontSize: 18, fontWeight: FontWeight.w800),
-        ),
-        centerTitle: true,
-      ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : SafeArea(
@@ -291,9 +360,37 @@ class _StorePaymentScreenState extends State<StorePaymentScreen> {
                                 value: _acceptGcash,
                                 activeThumbColor: AppColors.primary,
                                 activeTrackColor: AppColors.primary.withValues(alpha: 0.38),
-                                onChanged: (val) {
+                                onChanged: (val) async {
                                   HapticFeedback.selectionClick();
                                   setState(() => _acceptGcash = val);
+                                  try {
+                                    await ApiClient.instance.updateStorePaymentInfo(
+                                      paymentPhoneNumber: _phoneController.text.trim(),
+                                      paymentAccountName: _nameController.text.trim(),
+                                      acceptGcashPayments: val,
+                                    );
+                                    StoreStatusStore.instance.updatePaymentDetails(
+                                      paymentPhoneNumber: _phoneController.text.trim(),
+                                      paymentAccountName: _nameController.text.trim(),
+                                      acceptGcashPayments: val,
+                                    );
+                                    if (context.mounted) {
+                                      showStoraSnackBar(
+                                        context,
+                                        val
+                                            ? 'Online payments active at checkout.'
+                                            : 'Online payments paused. Checkout set to Cash on Pickup.',
+                                        isError: false,
+                                      );
+                                    }
+                                  } catch (e) {
+                                    if (mounted) {
+                                      setState(() => _acceptGcash = !val);
+                                    }
+                                    if (context.mounted) {
+                                      showStoraSnackBar(context, 'Failed to update setting: $e', isError: true);
+                                    }
+                                  }
                                 },
                               ),
                             ],
@@ -542,8 +639,14 @@ class _StorePaymentScreenState extends State<StorePaymentScreen> {
                                             fit: BoxFit.contain,
                                           )
                                         : Image.network(
-                                            _existingQrUrl!,
+                                            ApiConfig.resolveMediaUrl(_existingQrUrl) ?? _existingQrUrl!,
                                             fit: BoxFit.contain,
+                                            loadingBuilder: (context, child, loadingProgress) {
+                                              if (loadingProgress == null) return child;
+                                              return const Center(
+                                                child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2),
+                                              );
+                                            },
                                             errorBuilder: (context, error, stackTrace) => const Center(
                                               child: Icon(Icons.broken_image_rounded, size: 40, color: Colors.grey),
                                             ),
@@ -658,6 +761,7 @@ class _StorePaymentScreenState extends State<StorePaymentScreen> {
                 ),
               ),
             ),
+      ),
     );
   }
 }

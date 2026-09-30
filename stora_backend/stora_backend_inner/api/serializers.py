@@ -958,6 +958,7 @@ class FCMTokenSerializer(serializers.Serializer):
 
 class StoreLocationSerializer(serializers.ModelSerializer):
     payment_qr_code = serializers.ImageField(required=False, allow_null=True)
+    payment_qr_url = serializers.SerializerMethodField()
 
     class Meta:
         model = StoreLocation
@@ -969,12 +970,36 @@ class StoreLocationSerializer(serializers.ModelSerializer):
             "payment_phone_number",
             "payment_account_name",
             "payment_qr_code",
+            "payment_qr_url",
             "accept_gcash_payments",
             "is_visible",
             "is_open",
             "updated_at",
         )
-        read_only_fields = ("id", "updated_at")
+        read_only_fields = ("id", "updated_at", "payment_qr_url")
+
+    def get_payment_qr_url(self, obj):
+        if not obj.payment_qr_code:
+            return None
+        request = self.context.get("request")
+        if request:
+            try:
+                return request.build_absolute_uri(obj.payment_qr_code.url)
+            except Exception:
+                pass
+        return getattr(obj.payment_qr_code, "url", None)
+
+    def to_representation(self, instance):
+        ret = super().to_representation(instance)
+        qr_url = ret.get("payment_qr_url")
+        if not qr_url and getattr(instance, "payment_qr_code", None):
+            try:
+                qr_url = instance.payment_qr_code.url
+            except Exception:
+                qr_url = None
+        ret["payment_qr_url"] = qr_url
+        return ret
+
 
 
 class AIInsightSerializer(serializers.ModelSerializer):

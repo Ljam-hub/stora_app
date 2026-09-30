@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../data/api/api_client.dart';
+import '../../data/api/api_config.dart';
 
 class StoreStatusStore extends ChangeNotifier {
   StoreStatusStore._();
@@ -61,7 +62,8 @@ class StoreStatusStore extends ChangeNotifier {
       _address = data['address']?.toString() ?? '';
       _paymentPhoneNumber = data['payment_phone_number']?.toString() ?? '';
       _paymentAccountName = data['payment_account_name']?.toString() ?? '';
-      _paymentQrUrl = data['payment_qr_url']?.toString();
+      final rawQr = (data['payment_qr_url'] ?? data['payment_qr_code'])?.toString();
+      _paymentQrUrl = (rawQr != null && rawQr.isNotEmpty) ? ApiConfig.resolveMediaUrl(rawQr) : null;
       _acceptGcashPayments = _parseBool(data['accept_gcash_payments'], true);
       _isLoaded = true;
       notifyListeners();
@@ -108,11 +110,16 @@ class StoreStatusStore extends ChangeNotifier {
     required String paymentPhoneNumber,
     required String paymentAccountName,
     String? paymentQrUrl,
+    bool clearQrCode = false,
     bool? acceptGcashPayments,
   }) {
     _paymentPhoneNumber = paymentPhoneNumber;
     _paymentAccountName = paymentAccountName;
-    if (paymentQrUrl != null) _paymentQrUrl = paymentQrUrl;
+    if (clearQrCode) {
+      _paymentQrUrl = null;
+    } else if (paymentQrUrl != null) {
+      _paymentQrUrl = ApiConfig.resolveMediaUrl(paymentQrUrl);
+    }
     if (acceptGcashPayments != null) _acceptGcashPayments = acceptGcashPayments;
     notifyListeners();
   }

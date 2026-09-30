@@ -75,7 +75,7 @@ class StoreModel {
       role: (json['role'] as String?) ?? 'owner',
       paymentPhoneNumber: (json['payment_phone_number'] as String?) ?? '',
       paymentAccountName: (json['payment_account_name'] as String?) ?? '',
-      paymentQrUrl: ApiConfig.resolveMediaUrl(json['payment_qr_url'] as String?),
+      paymentQrUrl: ApiConfig.resolveMediaUrl((json['payment_qr_url'] ?? json['payment_qr_code']) as String?),
       acceptGcashPayments: json['accept_gcash_payments'] == false ||
               json['accept_gcash_payments'] == 0 ||
               json['accept_gcash_payments'] == 'false' ||
