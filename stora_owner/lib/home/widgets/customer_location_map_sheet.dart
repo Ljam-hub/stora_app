@@ -276,14 +276,38 @@ class _CustomerLocationMapSheetState extends State<CustomerLocationMapSheet> {
       if (launched) return;
     } catch (_) {}
 
-    // 3. Google Maps directions URL in external app/browser
+    // 3. If native map apps are not installed, inform the user via SnackBar and open in web browser
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Row(
+            children: [
+              Icon(Icons.info_outline_rounded, color: Colors.amberAccent, size: 20),
+              SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'No map app installed. Opening in web browser...',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Colors.white),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: const Color(0xFF1E293B),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    }
+
+    // 4. Google Maps directions URL in external app/browser
     final mapsDirUrl = Uri.parse('https://www.google.com/maps/dir/?api=1&destination=$lat,$lon&travelmode=driving');
     try {
       final launched = await launchUrl(mapsDirUrl, mode: LaunchMode.externalApplication);
       if (launched) return;
     } catch (_) {}
 
-    // 4. Platform default fallback
+    // 5. Platform default fallback
     try {
       final launched = await launchUrl(mapsDirUrl, mode: LaunchMode.platformDefault);
       if (launched) return;
@@ -291,7 +315,7 @@ class _CustomerLocationMapSheetState extends State<CustomerLocationMapSheet> {
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not open map navigation app.')),
+        const SnackBar(content: Text('Could not open map navigation or web browser.')),
       );
     }
   }
