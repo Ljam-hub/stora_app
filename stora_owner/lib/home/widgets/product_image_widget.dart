@@ -32,47 +32,88 @@ class ProductImageWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final radius = borderRadius ?? BorderRadius.circular(12);
+    final radius = borderRadius ?? BorderRadius.circular(14);
+    final isDark = ThemeModeController.instance.isDarkMode;
+
+    Widget wrapInStudioStage(Widget child) {
+      return Container(
+        width: width,
+        height: height,
+        decoration: BoxDecoration(
+          borderRadius: radius,
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: isDark
+                ? [
+                    HomeColors.surfaceHover.withValues(alpha: 0.65),
+                    HomeColors.cardElevated,
+                  ]
+                : [
+                    Colors.white,
+                    const Color(0xFFF1F5F9),
+                  ],
+          ),
+          border: Border.all(
+            color: (isDark ? Colors.white : Colors.black).withValues(alpha: isDark ? 0.08 : 0.05),
+            width: 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: radius,
+          child: Padding(
+            padding: (width != null && width! < 50) ? const EdgeInsets.all(3) : const EdgeInsets.all(8),
+            child: Center(child: child),
+          ),
+        ),
+      );
+    }
 
     if (imageBytes != null && imageBytes!.isNotEmpty) {
-      return ClipRRect(
-        borderRadius: radius,
-        child: Container(
-          width: width,
-          height: height,
-          color: HomeColors.cardElevated,
-          alignment: Alignment.center,
-          padding: const EdgeInsets.all(4),
-          child: Image.memory(
-            imageBytes!,
-            width: width,
-            height: height,
-            cacheWidth: 360,
-            fit: fit,
-            errorBuilder: (context, error, stackTrace) => _buildPlaceholder(radius),
-          ),
+      return wrapInStudioStage(
+        Image.memory(
+          imageBytes!,
+          width: double.infinity,
+          height: double.infinity,
+          cacheWidth: 480,
+          fit: fit,
+          filterQuality: FilterQuality.medium,
+          errorBuilder: (context, error, stackTrace) => _buildPlaceholder(radius),
         ),
       );
     }
 
     final resolvedUrl = ApiConfig.resolveMediaUrl(imageUrl);
     if (resolvedUrl != null && resolvedUrl.isNotEmpty) {
-      return ClipRRect(
-        borderRadius: radius,
-        child: Container(
-          width: width,
-          height: height,
-          color: HomeColors.cardElevated,
-          alignment: Alignment.center,
-          padding: const EdgeInsets.all(4),
-          child: Image.network(
-            resolvedUrl,
-            width: width,
-            height: height,
-            cacheWidth: 360,
-            fit: fit,
-            errorBuilder: (context, error, stackTrace) => _buildPlaceholder(radius),
-          ),
+      return wrapInStudioStage(
+        Image.network(
+          resolvedUrl,
+          width: double.infinity,
+          height: double.infinity,
+          cacheWidth: 480,
+          fit: fit,
+          filterQuality: FilterQuality.medium,
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) return child;
+            return Center(
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: AppColors.purpleLight.withValues(alpha: 0.6),
+                ),
+              ),
+            );
+          },
+          errorBuilder: (context, error, stackTrace) => _buildPlaceholder(radius),
         ),
       );
     }

@@ -31,14 +31,50 @@ class ProductImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Widget image = _buildImage();
-    if (borderRadius != null) {
-      image = ClipRRect(borderRadius: borderRadius!, child: image);
-    }
-    return image;
-  }
+    final radius = borderRadius ?? BorderRadius.circular(16);
+    final isDark = CustomerThemeController.instance.isDarkMode;
 
-  Widget _buildImage() {
+    Widget wrapInStudioStage(Widget child) {
+      return Container(
+        width: width,
+        height: height,
+        decoration: BoxDecoration(
+          borderRadius: radius,
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: isDark
+                ? [
+                    AppColors.surfaceHover.withValues(alpha: 0.65),
+                    AppColors.cardElevated,
+                  ]
+                : [
+                    Colors.white,
+                    const Color(0xFFF1F5F9),
+                  ],
+          ),
+          border: Border.all(
+            color: (isDark ? Colors.white : Colors.black).withValues(alpha: isDark ? 0.08 : 0.05),
+            width: 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: radius,
+          child: Padding(
+            padding: (width != null && width! < 50) ? const EdgeInsets.all(3) : const EdgeInsets.all(8),
+            child: Center(child: child),
+          ),
+        ),
+      );
+    }
+
     final raw = imageData?.trim();
     if (raw != null && raw.isNotEmpty) {
       try {
@@ -51,20 +87,29 @@ class ProductImage extends StatelessWidget {
             raw.startsWith('static/')) {
           final resolved = ApiConfig.resolveMediaUrl(raw);
           if (resolved != null) {
-            final targetCacheWidth = width != null ? (width! * 2.5).toInt() : 360;
-            return Container(
-              width: width,
-              height: height,
-              color: AppColors.cardElevated,
-              alignment: Alignment.center,
-              padding: const EdgeInsets.all(4),
-              child: Image.network(
+            final targetCacheWidth = width != null ? (width! * 2.5).toInt() : 480;
+            return wrapInStudioStage(
+              Image.network(
                 resolved,
-                width: width,
-                height: height,
+                width: double.infinity,
+                height: double.infinity,
                 fit: fit,
+                filterQuality: FilterQuality.medium,
                 cacheWidth: targetCacheWidth,
-                errorBuilder: (context, error, stackTrace) => _buildFallback(),
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return Center(
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppColors.primary.withValues(alpha: 0.6),
+                      ),
+                    ),
+                  );
+                },
+                errorBuilder: (context, error, stackTrace) => _buildFallback(radius),
               ),
             );
           }
@@ -87,20 +132,16 @@ class ProductImage extends StatelessWidget {
             }
           }
           if (bytes != null && bytes.isNotEmpty) {
-            final targetCacheWidth = width != null ? (width! * 2.5).toInt() : 360;
-            return Container(
-              width: width,
-              height: height,
-              color: AppColors.cardElevated,
-              alignment: Alignment.center,
-              padding: const EdgeInsets.all(4),
-              child: Image.memory(
+            final targetCacheWidth = width != null ? (width! * 2.5).toInt() : 480;
+            return wrapInStudioStage(
+              Image.memory(
                 bytes,
-                width: width,
-                height: height,
+                width: double.infinity,
+                height: double.infinity,
                 fit: fit,
+                filterQuality: FilterQuality.medium,
                 cacheWidth: targetCacheWidth,
-                errorBuilder: (context, error, stackTrace) => _buildFallback(),
+                errorBuilder: (context, error, stackTrace) => _buildFallback(radius),
               ),
             );
           }
@@ -109,10 +150,10 @@ class ProductImage extends StatelessWidget {
         debugPrint('ProductImage decode error: $e');
       }
     }
-    return _buildFallback();
+    return _buildFallback(radius);
   }
 
-  Widget _buildFallback() {
+  Widget _buildFallback([BorderRadius? radius]) {
     final cat = categoryName.toLowerCase();
     final IconData iconData;
     final List<Color> gradientColors;
@@ -134,16 +175,24 @@ class ProductImage extends StatelessWidget {
       gradientColors = const [Color(0xFF1F1A28), Color(0xFF141018)];
     }
 
-    return Container(
-      width: width,
-      height: height,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: gradientColors,
+    final effectiveRadius = radius ?? BorderRadius.circular(16);
+    return ClipRRect(
+      borderRadius: effectiveRadius,
+      child: Container(
+        width: width,
+        height: height,
+        decoration: BoxDecoration(
+          borderRadius: effectiveRadius,
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: gradientColors,
+          ),
+          border: Border.all(
+            color: (CustomerThemeController.instance.isDarkMode ? Colors.white : Colors.black).withValues(alpha: 0.08),
+            width: 1,
+          ),
         ),
-      ),
       child: Stack(
         alignment: Alignment.center,
         children: [

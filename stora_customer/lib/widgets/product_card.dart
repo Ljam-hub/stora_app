@@ -166,75 +166,94 @@ class ProductCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image with Badges
+            // Modern Image Stage with Floating Badges
             Expanded(
               flex: 5,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  Hero(
-                    tag: 'product-image-${product.id}',
-                    child: ProductImage(
-                      imageData: product.image,
-                      categoryName: product.categoryName,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(8, 8, 8, 2),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Hero(
+                      tag: 'product-image-${product.id}',
+                      child: ProductImage(
+                        imageData: product.image,
+                        categoryName: product.categoryName,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
                     ),
-                  ),
-                  // Category Badge
-                  if (product.categoryName.isNotEmpty)
+                    // Category Badge
+                    if (product.categoryName.isNotEmpty)
+                      Positioned(
+                        top: 7,
+                        left: 7,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
+                          decoration: BoxDecoration(
+                            color: AppColors.cardBackground.withValues(alpha: 0.88),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: AppColors.cardBorder.withValues(alpha: 0.8), width: 0.8),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.15),
+                                blurRadius: 4,
+                                offset: const Offset(0, 1),
+                              ),
+                            ],
+                          ),
+                          child: Text(
+                            product.categoryName,
+                            style: TextStyle(
+                              color: AppColors.accentText,
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.2,
+                            ),
+                          ),
+                        ),
+                      ),
+                    // Stock Status Badge
                     Positioned(
-                      top: 8,
-                      left: 8,
+                      top: 7,
+                      right: 7,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: 6.5, vertical: 3),
                         decoration: BoxDecoration(
-                          color: AppColors.background.withValues(alpha: 0.85),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: AppColors.cardBorder, width: 0.8),
+                          color: (product.isOutOfStock
+                                  ? AppColors.dangerBg
+                                  : (product.isLowStock ? AppColors.warningBg : AppColors.successBg))
+                              .withValues(alpha: 0.92),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: product.isOutOfStock
+                                ? AppColors.danger
+                                : (product.isLowStock ? AppColors.warning : AppColors.success),
+                            width: 0.8,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.15),
+                              blurRadius: 4,
+                              offset: const Offset(0, 1),
+                            ),
+                          ],
                         ),
                         child: Text(
-                          product.categoryName,
+                          product.isOutOfStock
+                              ? 'Out of stock'
+                              : (product.isLowStock ? '${product.stock} left' : '${product.stock} in stock'),
                           style: TextStyle(
-                            color: AppColors.accentText,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
+                            color: product.isOutOfStock
+                                ? AppColors.danger
+                                : (product.isLowStock ? AppColors.warningText : AppColors.successText),
+                            fontSize: 8.5,
+                            fontWeight: FontWeight.w800,
                           ),
                         ),
                       ),
                     ),
-                  // Stock Status Badge
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: (product.isOutOfStock
-                                ? AppColors.dangerBg
-                                : (product.isLowStock ? AppColors.warningBg : AppColors.successBg))
-                            .withValues(alpha: 0.9),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: product.isOutOfStock
-                              ? AppColors.danger
-                              : (product.isLowStock ? AppColors.warning : AppColors.success),
-                          width: 0.8,
-                        ),
-                      ),
-                      child: Text(
-                        product.isOutOfStock
-                            ? 'Out of stock'
-                            : (product.isLowStock ? '${product.stock} left' : '${product.stock} in stock'),
-                        style: TextStyle(
-                          color: product.isOutOfStock
-                              ? AppColors.danger
-                              : (product.isLowStock ? AppColors.warningText : AppColors.successText),
-                          fontSize: 9,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
 

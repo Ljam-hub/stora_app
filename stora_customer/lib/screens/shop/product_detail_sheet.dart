@@ -60,9 +60,10 @@ class _ProductDetailSheetState extends State<ProductDetailSheet> {
                 ),
               ),
 
-              // Hero Image
-              SizedBox(
-                height: 220,
+              // Hero Image with Modern Studio Stage
+              Container(
+                height: 230,
+                margin: const EdgeInsets.fromLTRB(16, 4, 16, 0),
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
@@ -71,6 +72,7 @@ class _ProductDetailSheetState extends State<ProductDetailSheet> {
                       child: ProductImage(
                         imageData: product.image,
                         categoryName: product.categoryName,
+                        borderRadius: BorderRadius.circular(22),
                         iconSize: 52,
                       ),
                     ),
@@ -80,7 +82,8 @@ class _ProductDetailSheetState extends State<ProductDetailSheet> {
                       child: Container(
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: Colors.black.withValues(alpha: 0.45),
+                          color: Colors.black.withValues(alpha: 0.5),
+                          border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
                         ),
                         child: IconButton(
                           icon: const Icon(Icons.flag_outlined, color: Colors.white, size: 18),
@@ -107,12 +110,18 @@ class _ProductDetailSheetState extends State<ProductDetailSheet> {
                     Positioned(
                       top: 12,
                       right: 12,
-                      child: IconButton(
-                        icon: const Icon(Icons.close, color: Colors.white),
-                        style: IconButton.styleFrom(
-                          backgroundColor: Colors.black.withValues(alpha: 0.5),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.black.withValues(alpha: 0.5),
+                          border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
                         ),
-                        onPressed: () => Navigator.pop(context),
+                        child: IconButton(
+                          icon: const Icon(Icons.close_rounded, color: Colors.white, size: 18),
+                          constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                          padding: EdgeInsets.zero,
+                          onPressed: () => Navigator.pop(context),
+                        ),
                       ),
                     ),
                   ],
