@@ -1,6 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap');
 
 :root {
+  color-scheme: dark;
   /* Stora Portal Orange Theme Tokens */
   --bg-primary: #0E0B14;
   --bg-card: #1B1526;
@@ -26,6 +27,7 @@
 }
 
 body.stora-login-page {
+  color-scheme: dark;
   margin: 0;
   min-height: 100vh;
   display: grid;
@@ -135,21 +137,70 @@ body.stora-login-page {
 }
 
 .stora-login-field input {
+  color-scheme: dark !important;
   width: 100%;
   padding: 13px 14px;
-  border: 1px solid var(--border-card) !important;
+  border: 1px solid var(--border-field, #3E3254) !important;
   border-radius: 10px;
+  background-color: var(--bg-field) !important;
   background: var(--bg-field) !important;
   color: var(--text-white) !important;
+  caret-color: var(--orange-primary, #FF6B00) !important;
   font-family: var(--font-sans);
   font-size: 14px;
   outline: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 50000s ease-in-out 0s;
+}
+
+.stora-login-field input::placeholder {
+  color: var(--text-muted) !important;
+  opacity: 1;
 }
 
 .stora-login-field input:focus {
   border-color: var(--orange-primary) !important;
   box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.22) !important;
+}
+
+/* Chrome / Safari / Edge autofill and auto-selected override to eliminate white/light-blue background */
+.stora-login-field input:-webkit-autofill,
+.stora-login-field input:-webkit-autofill:hover, 
+.stora-login-field input:-webkit-autofill:focus, 
+.stora-login-field input:-webkit-autofill:active,
+.stora-login-field input:-internal-autofill-selected {
+  -webkit-text-fill-color: #FFFFFF !important;
+  color: #FFFFFF !important;
+  -webkit-box-shadow: 0 0 0 1000px #140F1D inset !important;
+  box-shadow: 0 0 0 1000px #140F1D inset !important;
+  caret-color: var(--orange-primary, #FF6B00) !important;
+  background-color: #140F1D !important;
+  background: #140F1D !important;
+  border-color: var(--border-field, #3E3254) !important;
+  transition: background-color 50000s ease-in-out 0s;
+}
+
+.stora-login-field input:-webkit-autofill:focus {
+  border-color: var(--orange-primary, #FF6B00) !important;
+  -webkit-box-shadow: 0 0 0 1000px #140F1D inset, 0 0 0 3px rgba(255, 107, 0, 0.22) !important;
+  box-shadow: 0 0 0 1000px #140F1D inset, 0 0 0 3px rgba(255, 107, 0, 0.22) !important;
+}
+
+/* Firefox autofill override */
+.stora-login-field input:-moz-autofill,
+.stora-login-field input:-moz-autofill:hover,
+.stora-login-field input:-moz-autofill:focus {
+  box-shadow: 0 0 0 1000px #140F1D inset !important;
+  color: #FFFFFF !important;
+  -moz-text-fill-color: #FFFFFF !important;
+  caret-color: var(--orange-primary, #FF6B00) !important;
+}
+
+#id_username,
+#id_password {
+  color-scheme: dark !important;
+  color: #FFFFFF !important;
+  -webkit-text-fill-color: #FFFFFF !important;
+  background-color: #140F1D !important;
 }
 
 .stora-password-wrapper {
