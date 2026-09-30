@@ -690,7 +690,7 @@ class _ImagePickerFieldState extends State<_ImagePickerField> {
                               Text(
                                 'Tap to choose from gallery',
                                 style: TextStyle(
-                                  color: AppColors.textMuted,
+                                  color: Color(0xFF94A3B8),
                                   fontSize: 11,
                                 ),
                               ),

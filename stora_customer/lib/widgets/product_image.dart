@@ -219,6 +219,7 @@ class ProductImage extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 }

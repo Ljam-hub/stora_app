@@ -2,6 +2,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import '../../data/api/api_config.dart';
 import '../../stora_login/theme/app_colors.dart';
+import '../theme/theme_mode_controller.dart';
 import '../theme/home_colors.dart';
 
 /// Renders a product image from [imageBytes] if available,
