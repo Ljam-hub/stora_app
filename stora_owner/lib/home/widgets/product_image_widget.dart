@@ -27,7 +27,7 @@ class ProductImageWidget extends StatelessWidget {
     this.width,
     this.height,
     this.borderRadius,
-    this.fit = BoxFit.contain,
+    this.fit = BoxFit.cover,
     this.iconSize = 24,
   });
 
@@ -69,10 +69,7 @@ class ProductImageWidget extends StatelessWidget {
         ),
         child: ClipRRect(
           borderRadius: radius,
-          child: Padding(
-            padding: (width != null && width! < 50) ? const EdgeInsets.all(3) : const EdgeInsets.all(8),
-            child: Center(child: child),
-          ),
+          child: child,
         ),
       );
     }

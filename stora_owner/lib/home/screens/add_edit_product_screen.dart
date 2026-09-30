@@ -700,27 +700,23 @@ class _ImagePickerFieldState extends State<_ImagePickerField> {
                       : Stack(
                           fit: StackFit.expand,
                           children: [
-                            // Studio preview stage
-                            Container(
-                              color: const Color(0xFF1E172B),
-                              padding: const EdgeInsets.all(12),
-                              child: Center(
-                                child: _bytes != null
-                                    ? Image.memory(
-                                        _bytes!,
-                                        fit: BoxFit.contain,
-                                        width: double.infinity,
-                                        height: double.infinity,
-                                      )
-                                    : (_url != null && _url!.trim().isNotEmpty && ApiConfig.resolveMediaUrl(_url) != null
-                                        ? Image.network(
-                                            ApiConfig.resolveMediaUrl(_url)!,
-                                            fit: BoxFit.contain,
-                                            width: double.infinity,
-                                            height: double.infinity,
-                                          )
-                                        : const SizedBox()),
-                              ),
+                            // Fitted preview stage
+                            SizedBox.expand(
+                              child: _bytes != null
+                                  ? Image.memory(
+                                      _bytes!,
+                                      fit: BoxFit.cover,
+                                      width: double.infinity,
+                                      height: double.infinity,
+                                    )
+                                  : (_url != null && _url!.trim().isNotEmpty && ApiConfig.resolveMediaUrl(_url) != null
+                                      ? Image.network(
+                                          ApiConfig.resolveMediaUrl(_url)!,
+                                          fit: BoxFit.cover,
+                                          width: double.infinity,
+                                          height: double.infinity,
+                                        )
+                                      : const SizedBox()),
                             ),
                             // Change photo indicator pill at bottom right
                             Positioned(
