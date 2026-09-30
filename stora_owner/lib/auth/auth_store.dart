@@ -79,6 +79,7 @@ class AuthStore extends ChangeNotifier {
       // Other API errors (500, network issues) — stay logged in with cached data
     } catch (_) {
       // Offline / unexpected — keep locally-stored values
+    }
     OwnerNotificationService.instance.init();
     notifyListeners();
     return true;
