@@ -45,6 +45,7 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
   int? _roadDurationMinutes;
   bool _isLoadingRoute = false;
   bool _showRoute = true;
+  bool _isOpeningNavigation = false;
 
   // Radar beacon pulse animation
   late final AnimationController _pulseAnim;
@@ -346,65 +347,76 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
   }
 
   Future<void> _openGoogleMapsDirections(StoreModel store) async {
-    if (!store.hasValidLocation) return;
-    final lat = store.latitude;
-    final lon = store.longitude;
-
-    // 1. Native turn-by-turn navigation intent
-    final googleNavUri = Uri.parse('google.navigation:q=$lat,$lon&mode=d');
+    if (!store.hasValidLocation || _isOpeningNavigation) return;
+    _isOpeningNavigation = true;
     try {
-      final launched = await launchUrl(googleNavUri, mode: LaunchMode.externalNonBrowserApplication);
-      if (launched) return;
-    } catch (_) {}
+      final lat = store.latitude;
+      final lon = store.longitude;
 
-    // 2. Generic geo: intent with store title
-    final geoUri = Uri.parse('geo:$lat,$lon?q=$lat,$lon(${Uri.encodeComponent(store.displayName)})');
-    try {
-      final launched = await launchUrl(geoUri, mode: LaunchMode.externalNonBrowserApplication);
-      if (launched) return;
-    } catch (_) {}
+      // 1. Native turn-by-turn navigation intent
+      final googleNavUri = Uri.parse('google.navigation:q=$lat,$lon&mode=d');
+      try {
+        final launched = await launchUrl(googleNavUri, mode: LaunchMode.externalNonBrowserApplication);
+        if (launched) return;
+      } catch (_) {}
 
-    // 3. If native map apps are not installed, inform the user via SnackBar and open in web browser
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Row(
-            children: [
-              Icon(Icons.info_outline_rounded, color: Colors.amberAccent, size: 20),
-              SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  'No map app installed. Opening in web browser...',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Colors.white),
+      // 2. Generic geo: intent with store title
+      final geoUri = Uri.parse('geo:$lat,$lon?q=$lat,$lon(${Uri.encodeComponent(store.displayName)})');
+      try {
+        final launched = await launchUrl(geoUri, mode: LaunchMode.externalNonBrowserApplication);
+        if (launched) return;
+      } catch (_) {}
+
+      // 3. If native map apps are not installed, inform the user via SnackBar and open in web browser
+      if (mounted) {
+        ScaffoldMessenger.of(context).clearSnackBars();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Row(
+              children: [
+                Icon(Icons.info_outline_rounded, color: Colors.amberAccent, size: 20),
+                SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'No map app installed. Opening in web browser...',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Colors.white),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
+            backgroundColor: const Color(0xFF1E293B),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            duration: const Duration(milliseconds: 1500),
           ),
-          backgroundColor: const Color(0xFF1E293B),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          duration: const Duration(seconds: 4),
-        ),
-      );
-    }
+        );
+        // Allow user to read the message for 1.5 seconds before launching browser
+        await Future.delayed(const Duration(milliseconds: 1500));
+      }
 
-    // 4. Google Maps directions URL in external browser/app
-    final mapsDirUrl = Uri.parse('https://www.google.com/maps/dir/?api=1&destination=$lat,$lon&travelmode=driving');
-    try {
-      final launched = await launchUrl(mapsDirUrl, mode: LaunchMode.externalApplication);
-      if (launched) return;
-    } catch (_) {}
+      if (!mounted) return;
 
-    // 5. Platform default fallback
-    try {
-      final launched = await launchUrl(mapsDirUrl, mode: LaunchMode.platformDefault);
-      if (launched) return;
-    } catch (_) {}
+      // 4. Google Maps directions URL in external browser/app
+      final mapsDirUrl = Uri.parse('https://www.google.com/maps/dir/?api=1&destination=$lat,$lon&travelmode=driving');
+      try {
+        final launched = await launchUrl(mapsDirUrl, mode: LaunchMode.externalApplication);
+        if (launched) return;
+      } catch (_) {}
 
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not open map navigation or web browser.')),
-      );
+      // 5. Platform default fallback
+      try {
+        final launched = await launchUrl(mapsDirUrl, mode: LaunchMode.platformDefault);
+        if (launched) return;
+      } catch (_) {}
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).clearSnackBars();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not open map navigation or web browser.')),
+        );
+      }
+    } finally {
+      _isOpeningNavigation = false;
     }
   }
 
