@@ -269,6 +269,7 @@ class _OrderCardState extends State<_OrderCard> {
   String get customerPhone => (widget.order['customer_phone'] as String?) ?? '';
   String get customerAddress => (widget.order['customer_address'] as String?) ?? '';
   String get notes => (widget.order['notes'] as String?) ?? '';
+  String? get declineReason => widget.order['decline_reason'] as String?;
   String get paymentMethod => (widget.order['payment_method'] as String?)?.toLowerCase() ?? 'cash';
   bool get isGcashPayment => paymentMethod == 'gcash';
   String get totalAmount {
@@ -347,7 +348,7 @@ class _OrderCardState extends State<_OrderCard> {
       case 'accepted':
         return 'ACCEPTED (PREPARING)';
       case 'declined':
-        return 'DECLINED';
+        return declineReason?.toLowerCase().contains('customer') == true ? 'CANCELLED' : 'DECLINED';
       case 'auto_declined':
         return 'EXPIRED';
       case 'counter_offer':
@@ -884,7 +885,7 @@ class _OrderCardState extends State<_OrderCard> {
           ),
 
           // Contact Details & Message Customer Option
-          if (customerEmail.isNotEmpty || customerPhone.isNotEmpty || customerAddress.isNotEmpty || notes.isNotEmpty || customerId != null)
+          if (customerEmail.isNotEmpty || customerPhone.isNotEmpty || customerAddress.isNotEmpty || notes.isNotEmpty || customerId != null || (declineReason != null && declineReason!.isNotEmpty))
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               padding: const EdgeInsets.all(12),
@@ -1009,6 +1010,27 @@ class _OrderCardState extends State<_OrderCard> {
                       ],
                     ),
                   ),
+                  if (declineReason != null && declineReason!.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 6),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(
+                            declineReason!.toLowerCase().contains('customer') ? Icons.cancel_outlined : Icons.info_outline_rounded,
+                            color: HomeColors.dangerText,
+                            size: 14,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Reason: $declineReason',
+                              style: TextStyle(color: HomeColors.dangerText, fontSize: 12, fontWeight: FontWeight.w600),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   if (customerId != null) ...[
                     const SizedBox(height: 8),
                     InkWell(
