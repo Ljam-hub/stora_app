@@ -1605,13 +1605,17 @@ class _WalkInPaymentQrCard extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Text(
-                        'Payment QR Sign',
-                        style: TextStyle(
-                          color: HomeColors.textPrimary,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -0.2,
+                      Flexible(
+                        child: Text(
+                          'Payment QR Sign',
+                          style: TextStyle(
+                            color: HomeColors.textPrimary,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.2,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       const SizedBox(width: 6),
@@ -1640,18 +1644,27 @@ class _WalkInPaymentQrCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 3),
                   Text(
                     hasQr
-                        ? 'Tap to open • Walk-in customers scan with GCash, Maya & Bank apps'
-                        : 'Tap to setup your GCash/Maya QR code for walk-in shoppers',
+                        ? 'Tap to open • Show QR to walk-in shoppers'
+                        : 'Tap to setup QR for walk-in shoppers',
                     style: TextStyle(
                       color: HomeColors.textSecondary,
                       fontSize: 11.5,
                       height: 1.25,
                     ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 5),
+                  Wrap(
+                    spacing: 4,
+                    runSpacing: 3,
+                    children: const [
+                      _PaymentMiniBadge('GCash', Color(0xFF007DFE)),
+                      _PaymentMiniBadge('Maya', Color(0xFF16A34A)),
+                      _PaymentMiniBadge('QR Ph', Color(0xFFDC2626)),
+                      _PaymentMiniBadge('Banks', Color(0xFF6366F1)),
+                    ],
                   ),
                 ],
               ),
@@ -1757,18 +1770,21 @@ class _PaymentQrModalSheet extends StatelessWidget {
                             'Scan to Pay (Walk-in)',
                             style: TextStyle(
                               color: HomeColors.textPrimary,
-                              fontSize: 17,
+                              fontSize: 16.5,
                               fontWeight: FontWeight.w800,
                               letterSpacing: -0.3,
                             ),
                           ),
-                          Text(
-                            'GCash • Maya • QR Ph • Any Bank App',
-                            style: TextStyle(
-                              color: HomeColors.textSecondary,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                            ),
+                          const SizedBox(height: 4),
+                          Wrap(
+                            spacing: 4,
+                            runSpacing: 3,
+                            children: const [
+                              _PaymentMiniBadge('GCash', Color(0xFF007DFE)),
+                              _PaymentMiniBadge('Maya', Color(0xFF16A34A)),
+                              _PaymentMiniBadge('QR Ph', Color(0xFFDC2626)),
+                              _PaymentMiniBadge('Bank Apps', Color(0xFF6366F1)),
+                            ],
                           ),
                         ],
                       ),
@@ -2040,5 +2056,30 @@ class _PaymentQrModalSheet extends StatelessWidget {
   }
 }
 
+class _PaymentMiniBadge extends StatelessWidget {
+  final String label;
+  final Color color;
 
+  const _PaymentMiniBadge(this.label, this.color);
 
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 5.5, vertical: 1.5),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: color.withValues(alpha: 0.35), width: 0.8),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 9.5,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.1,
+        ),
+      ),
+    );
+  }
+}

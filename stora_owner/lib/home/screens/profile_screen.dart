@@ -604,192 +604,260 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   const SizedBox(height: 24),
 
+                  // Profile Header Card (matching Customer Profile structure)
                   Container(
-                    padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
+                    padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
                       color: HomeColors.cardBackground,
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(color: HomeColors.cardBorder),
                       boxShadow: HomeColors.cardShadow,
                     ),
-                    child: Center(
-                      child: Column(
-                        children: [
-                          Stack(
-                            clipBehavior: Clip.none,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(3),
-                                decoration: const BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  gradient: HomeColors.purpleGradient,
-                                ),
-                                child: CircleAvatar(
-                                  radius: 38,
-                                  backgroundColor: HomeColors.cardElevated,
-                                  backgroundImage: (auth.avatarUrl != null && auth.avatarUrl!.isNotEmpty)
-                                      ? NetworkImage(auth.avatarUrl!)
-                                      : null,
-                                  child: (auth.avatarUrl == null || auth.avatarUrl!.isEmpty)
-                                      ? const Icon(Icons.storefront_rounded, color: AppColors.purpleLight, size: 38)
-                                      : null,
-                                ),
-                              ),
-                              Positioned(
-                                bottom: 0,
-                                right: 0,
-                                child: GestureDetector(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            // Avatar on LEFT with camera edit badge
+                            Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                GestureDetector(
                                   onTap: _isUploadingAvatar ? null : _pickAndUploadAvatar,
                                   child: Container(
-                                    padding: const EdgeInsets.all(7),
+                                    width: 68,
+                                    height: 68,
                                     decoration: BoxDecoration(
-                                      color: AppColors.primary,
+                                      gradient: HomeColors.purpleGradient,
                                       shape: BoxShape.circle,
-                                      border: Border.all(color: HomeColors.cardBackground, width: 2),
+                                      border: Border.all(color: AppColors.primary.withValues(alpha: 0.5), width: 2),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: AppColors.primary.withValues(alpha: 0.25),
+                                          blurRadius: 10,
+                                          offset: const Offset(0, 4),
+                                        ),
+                                      ],
                                     ),
-                                    child: _isUploadingAvatar
-                                        ? const SizedBox(
-                                            width: 14,
-                                            height: 14,
-                                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                                          )
-                                        : const Icon(Icons.camera_alt_rounded, color: Colors.white, size: 14),
+                                    child: ClipOval(
+                                      child: (auth.avatarUrl != null && auth.avatarUrl!.isNotEmpty)
+                                          ? Image.network(
+                                              auth.avatarUrl!,
+                                              width: 68,
+                                              height: 68,
+                                              fit: BoxFit.cover,
+                                              errorBuilder: (context, error, stackTrace) => Center(
+                                                child: Text(
+                                                  (storeName.isNotEmpty ? storeName[0] : 'S').toUpperCase(),
+                                                  style: const TextStyle(
+                                                    fontSize: 26,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Colors.white,
+                                                  ),
+                                                ),
+                                              ),
+                                            )
+                                          : Center(
+                                              child: (storeName.isNotEmpty)
+                                                  ? Text(
+                                                      storeName[0].toUpperCase(),
+                                                      style: const TextStyle(
+                                                        fontSize: 26,
+                                                        fontWeight: FontWeight.bold,
+                                                        color: Colors.white,
+                                                      ),
+                                                    )
+                                                  : const Icon(Icons.storefront_rounded, color: Colors.white, size: 30),
+                                            ),
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 14),
-                          Text(storeName,
-                              style: TextStyle(color: HomeColors.textPrimary, fontSize: 19, fontWeight: FontWeight.w800)),
-                          const SizedBox(height: 4),
-                          Text(ownerEmail, style: TextStyle(color: HomeColors.textSecondary, fontSize: 13)),
-                          const SizedBox(height: 8),
-                          if (AuthStore.instance.isEmailVerified)
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: const [
-                                Icon(Icons.verified_rounded, color: AppColors.secondaryLight, size: 14),
-                                SizedBox(width: 4),
-                                Text(
-                                  'Email Verified',
-                                  style: TextStyle(
-                                    color: AppColors.secondaryLight,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
+                                Positioned(
+                                  bottom: 0,
+                                  right: 0,
+                                  child: GestureDetector(
+                                    onTap: _isUploadingAvatar ? null : _pickAndUploadAvatar,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(5),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.primary,
+                                        shape: BoxShape.circle,
+                                        border: Border.all(color: HomeColors.cardBackground, width: 2),
+                                      ),
+                                      child: _isUploadingAvatar
+                                          ? const SizedBox(
+                                              width: 12,
+                                              height: 12,
+                                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                            )
+                                          : const Icon(Icons.camera_alt_rounded, size: 13, color: Colors.white),
+                                    ),
                                   ),
                                 ),
                               ],
-                            )
-                          else
-                            InkWell(
-                              onTap: () {
-                                Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (_) => EmailVerificationScreen(email: ownerEmail),
-                                  ),
-                                );
-                              },
-                              borderRadius: BorderRadius.circular(8),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: AppColors.warningAmber.withValues(alpha: 0.15),
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: AppColors.warningAmber.withValues(alpha: 0.4)),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: const [
-                                    Icon(Icons.warning_amber_rounded, color: AppColors.warningAmber, size: 14),
-                                    SizedBox(width: 4),
-                                    Text(
-                                      'Verify Email',
-                                      style: TextStyle(
-                                        color: AppColors.warningAmber,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
                             ),
-                          const SizedBox(height: 12),
-                          StatusChip(label: planLabel, color: planColor, background: planBg),
-                          if (isRejected) ...[
-                            const SizedBox(height: 12),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: HomeColors.dangerBg,
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(color: AppColors.error.withValues(alpha: 0.4)),
-                              ),
-                              child: Row(
+                            const SizedBox(width: 16),
+                            // Store Info in CENTER
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Expanded(
-                                    child: InkWell(
-                                      onTap: () {
-                                        final proof = account.latestPaymentProof;
-                                        final proofAmount = (proof != null && proof.amount.isNotEmpty)
-                                            ? double.tryParse(proof.amount)
-                                            : null;
-                                        Navigator.of(context).push(
-                                          MaterialPageRoute(
-                                            builder: (_) => SubscriptionStatusScreen(
-                                              status: SubscriptionStatus.fromBackend(
-                                                proof?.status ?? 'rejected',
-                                                proof?.submittedAt ?? DateTime.now(),
-                                                referenceNumber: proof?.referenceNumber,
-                                                amount: proofAmount ?? account.monthlyPrice,
+                                  Text(
+                                    storeName,
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: HomeColors.textPrimary,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    ownerEmail,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: HomeColors.textSecondary,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Wrap(
+                                    spacing: 6,
+                                    runSpacing: 4,
+                                    crossAxisAlignment: WrapCrossAlignment.center,
+                                    children: [
+                                      StatusChip(label: planLabel, color: planColor, background: planBg),
+                                      if (AuthStore.instance.isEmailVerified)
+                                        Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: const [
+                                            Icon(Icons.verified_rounded, color: AppColors.secondaryLight, size: 14),
+                                            SizedBox(width: 3),
+                                            Text(
+                                              'Verified',
+                                              style: TextStyle(
+                                                color: AppColors.secondaryLight,
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w600,
                                               ),
                                             ),
-                                          ),
-                                        );
-                                      },
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          const Icon(Icons.error_outline_rounded, color: AppColors.error, size: 16),
-                                          const SizedBox(width: 6),
-                                          Flexible(
-                                            child: Text(
-                                              isPremium
-                                                  ? 'Renewal proof rejected. Tap to review.'
-                                                  : 'Payment proof rejected. Tap to resubmit.',
-                                              style: const TextStyle(color: AppColors.error, fontSize: 12, fontWeight: FontWeight.w600),
+                                          ],
+                                        )
+                                      else
+                                        InkWell(
+                                          onTap: () {
+                                            Navigator.of(context).push(
+                                              MaterialPageRoute(
+                                                builder: (_) => EmailVerificationScreen(email: ownerEmail),
+                                              ),
+                                            );
+                                          },
+                                          borderRadius: BorderRadius.circular(6),
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: AppColors.warningAmber.withValues(alpha: 0.15),
+                                              borderRadius: BorderRadius.circular(6),
+                                              border: Border.all(color: AppColors.warningAmber.withValues(alpha: 0.4)),
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: const [
+                                                Icon(Icons.warning_amber_rounded, color: AppColors.warningAmber, size: 12),
+                                                SizedBox(width: 2),
+                                                Text(
+                                                  'Verify',
+                                                  style: TextStyle(
+                                                    color: AppColors.warningAmber,
+                                                    fontSize: 11,
+                                                    fontWeight: FontWeight.w700,
+                                                  ),
+                                                ),
+                                              ],
                                             ),
                                           ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                  GestureDetector(
-                                    behavior: HitTestBehavior.opaque,
-                                    onTap: () {
-                                      AccountStatusStore.instance.dismissRejectedProof(account.latestPaymentProof?.id);
-                                    },
-                                    child: const Padding(
-                                      padding: EdgeInsets.only(left: 6, top: 2, bottom: 2),
-                                      child: Icon(Icons.close_rounded, size: 16, color: AppColors.error),
-                                    ),
+                                        ),
+                                    ],
                                   ),
                                 ],
                               ),
                             ),
+                            // Edit Profile Icon on RIGHT
+                            IconButton(
+                              icon: Icon(Icons.edit_outlined, color: HomeColors.accentText),
+                              tooltip: 'Edit Profile',
+                              onPressed: () => _showEditProfileDialog(context),
+                            ),
                           ],
+                        ),
+                        if (isRejected) ...[
+                          const SizedBox(height: 14),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: HomeColors.dangerBg,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: AppColors.error.withValues(alpha: 0.4)),
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: InkWell(
+                                    onTap: () {
+                                      final proof = account.latestPaymentProof;
+                                      final proofAmount = (proof != null && proof.amount.isNotEmpty)
+                                          ? double.tryParse(proof.amount)
+                                          : null;
+                                      Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                          builder: (_) => SubscriptionStatusScreen(
+                                            status: SubscriptionStatus.fromBackend(
+                                              proof?.status ?? 'rejected',
+                                              proof?.submittedAt ?? DateTime.now(),
+                                              referenceNumber: proof?.referenceNumber,
+                                              amount: proofAmount ?? account.monthlyPrice,
+                                            ),
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(Icons.error_outline_rounded, color: AppColors.error, size: 16),
+                                        const SizedBox(width: 6),
+                                        Flexible(
+                                          child: Text(
+                                            isPremium
+                                                ? 'Renewal proof rejected. Tap to review.'
+                                                : 'Payment proof rejected. Tap to resubmit.',
+                                            style: const TextStyle(color: AppColors.error, fontSize: 12, fontWeight: FontWeight.w600),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                GestureDetector(
+                                  behavior: HitTestBehavior.opaque,
+                                  onTap: () {
+                                    AccountStatusStore.instance.dismissRejectedProof(account.latestPaymentProof?.id);
+                                  },
+                                  child: const Padding(
+                                    padding: EdgeInsets.only(left: 6, top: 2, bottom: 2),
+                                    child: Icon(Icons.close_rounded, size: 16, color: AppColors.error),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ],
-                      ),
+                      ],
                     ),
                   ),
                   const SizedBox(height: 24),
-
-                  _MenuTile(
-                    icon: Icons.edit_note_rounded,
-                    label: 'Edit profile',
-                    onTap: () => _showEditProfileDialog(context),
-                  ),
                   _MenuTile(
                     icon: Icons.lock_outline_rounded,
                     label: 'Change password',
