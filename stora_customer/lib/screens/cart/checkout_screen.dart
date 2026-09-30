@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/cart_provider.dart';
@@ -64,7 +65,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             Text('Locating your current address...'),
           ],
         ),
-        duration: Duration(seconds: 4),
+        duration: Duration(milliseconds: 1500),
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -85,6 +86,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         SnackBar(
           content: Text('Location detected: ${result.address!}'),
           backgroundColor: AppColors.success,
+          duration: const Duration(milliseconds: 1500),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -93,6 +95,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         SnackBar(
           content: Text(result.errorMessage ?? 'Unable to detect location. Please enter your address manually.'),
           backgroundColor: AppColors.danger,
+          duration: const Duration(milliseconds: 1500),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -348,6 +351,179 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                             ],
                           ),
                         ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                ],
+
+                // Store Payment Options Card (GCash / QR Code & Mobile Number)
+                if (currentStore != null && (currentStore.paymentPhoneNumber.isNotEmpty || currentStore.paymentQrUrl != null)) ...[
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppColors.cardBackground,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.qr_code_scanner_rounded, color: AppColors.primary, size: 20),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Store Payment Details',
+                              style: TextStyle(
+                                color: AppColors.textPrimary,
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        if (currentStore.paymentPhoneNumber.isNotEmpty) ...[
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    currentStore.paymentAccountName.isNotEmpty ? currentStore.paymentAccountName : 'GCash / Mobile Payment',
+                                    style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                                  ),
+                                  Text(
+                                    currentStore.paymentPhoneNumber,
+                                    style: TextStyle(
+                                      color: AppColors.textPrimary,
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              OutlinedButton.icon(
+                                onPressed: () {
+                                  Clipboard.setData(ClipboardData(text: currentStore.paymentPhoneNumber));
+                                  HapticFeedback.lightImpact();
+                                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Row(
+                                        children: [
+                                          Icon(Icons.check_circle_rounded, color: AppColors.success, size: 16),
+                                          SizedBox(width: 8),
+                                          Text('Payment number copied to clipboard!'),
+                                        ],
+                                      ),
+                                      duration: Duration(milliseconds: 1500),
+                                      behavior: SnackBarBehavior.floating,
+                                    ),
+                                  );
+                                },
+                                icon: const Icon(Icons.copy_rounded, size: 14),
+                                label: const Text('Copy'),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: AppColors.primary,
+                                  side: const BorderSide(color: AppColors.primary),
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                        if (currentStore.paymentQrUrl != null) ...[
+                          const SizedBox(height: 12),
+                          GestureDetector(
+                            onTap: () {
+                              showDialog(
+                                context: context,
+                                builder: (_) => Dialog(
+                                  backgroundColor: Colors.transparent,
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.all(16),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius: BorderRadius.circular(16),
+                                        ),
+                                        child: Column(
+                                          children: [
+                                            Text(
+                                              'Scan to Pay (${currentStore.displayName})',
+                                              style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 16),
+                                            ),
+                                            const SizedBox(height: 12),
+                                            ClipRRect(
+                                              borderRadius: BorderRadius.circular(8),
+                                              child: Image.network(
+                                                currentStore.paymentQrUrl!,
+                                                fit: BoxFit.contain,
+                                                width: 280,
+                                                height: 280,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      const SizedBox(height: 12),
+                                      TextButton.icon(
+                                        onPressed: () => Navigator.pop(context),
+                                        icon: const Icon(Icons.close_rounded, color: Colors.white),
+                                        label: const Text('Close', style: TextStyle(color: Colors.white)),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: AppColors.cardElevated,
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: AppColors.cardBorder),
+                              ),
+                              child: Row(
+                                children: [
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(6),
+                                    child: Image.network(
+                                      currentStore.paymentQrUrl!,
+                                      width: 48,
+                                      height: 48,
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Payment QR Code Available',
+                                          style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold, fontSize: 13),
+                                        ),
+                                        Text(
+                                          'Tap to enlarge and scan with GCash / Banking app',
+                                          style: TextStyle(color: AppColors.textSecondary, fontSize: 11),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const Icon(Icons.fullscreen_rounded, color: AppColors.primary, size: 22),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),

@@ -2442,6 +2442,11 @@ select.select2-hidden-accessible,
   margin: 0 !important;
 }
 
+#toolbar form label,
+#toolbar form label img {
+  display: none !important;
+}
+
 #toolbar form #searchbar {
   width: 320px !important;
   max-width: 100% !important;

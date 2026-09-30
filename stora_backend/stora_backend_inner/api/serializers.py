@@ -956,9 +956,22 @@ class FCMTokenSerializer(serializers.Serializer):
 
 
 class StoreLocationSerializer(serializers.ModelSerializer):
+    payment_qr_code = serializers.ImageField(required=False, allow_null=True)
+
     class Meta:
         model = StoreLocation
-        fields = ("id", "latitude", "longitude", "address", "is_visible", "is_open", "updated_at")
+        fields = (
+            "id",
+            "latitude",
+            "longitude",
+            "address",
+            "payment_phone_number",
+            "payment_account_name",
+            "payment_qr_code",
+            "is_visible",
+            "is_open",
+            "updated_at",
+        )
         read_only_fields = ("id", "updated_at")
 
 

@@ -26,6 +26,14 @@ import '../widgets/offline_banner.dart';
 class StoraShell extends StatefulWidget {
   const StoraShell({super.key});
 
+  static void switchToTab(BuildContext context, int tabIndex, {AlertsFilter? alertsFilter}) {
+    if (alertsFilter != null) {
+      AlertsScreen.setFilter(alertsFilter);
+    }
+    final state = context.findAncestorStateOfType<_StoraShellState>();
+    state?.setTab(tabIndex);
+  }
+
   @override
   State<StoraShell> createState() => _StoraShellState();
 }
@@ -33,6 +41,12 @@ class StoraShell extends StatefulWidget {
 class _StoraShellState extends State<StoraShell> with WidgetsBindingObserver {
   int _index = 0;
   DateTime? _lastBackPressTime;
+
+  void setTab(int index) {
+    if (mounted) {
+      setState(() => _index = index);
+    }
+  }
 
   late final List<Widget> _screens;
 

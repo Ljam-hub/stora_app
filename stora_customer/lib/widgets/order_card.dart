@@ -10,7 +10,7 @@ import '../services/api_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/navigation_guard.dart';
 import 'customer_report_dialog.dart';
-import '../services/receipt_service.dart';
+import 'customer_receipt_dialog.dart';
 import 'notification_badge.dart';
 import 'order_status_stepper.dart';
 
@@ -170,106 +170,7 @@ class _OrderCardState extends State<OrderCard> with NavigationGuard<OrderCard> {
   }
 
   void _showReceiptOptions(BuildContext context, CustomerOrder order) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: AppColors.cardBackground,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.cardBorder,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Receipt #${order.receiptNumber}',
-                style: TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Order #${order.id} • ${order.customerDisplayName}',
-                style: TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 20),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () async {
-                        Navigator.pop(ctx);
-                        try {
-                          await CustomerReceiptService.instance.shareReceipt(order);
-                        } catch (e) {
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Share error: $e'), backgroundColor: AppColors.danger),
-                            );
-                          }
-                        }
-                      },
-                      icon: const Icon(Icons.share_rounded, size: 18),
-                      label: const Text('Share', style: TextStyle(fontWeight: FontWeight.bold)),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.textPrimary,
-                        side: BorderSide(color: AppColors.cardBorder),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () async {
-                        Navigator.pop(ctx);
-                        try {
-                          await CustomerReceiptService.instance.printReceipt(order);
-                        } catch (e) {
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Print error: $e'), backgroundColor: AppColors.danger),
-                            );
-                          }
-                        }
-                      },
-                      icon: const Icon(Icons.print_rounded, size: 18),
-                      label: const Text('Print', style: TextStyle(fontWeight: FontWeight.bold)),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-            ],
-          ),
-        ),
-      ),
-    );
+    CustomerReceiptDialog.show(context, order);
   }
 
   Future<void> _handleDeleteOrder(BuildContext context, CustomerOrder order) async {

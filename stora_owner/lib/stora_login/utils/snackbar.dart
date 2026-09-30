@@ -72,6 +72,7 @@ void showStoraSnackBar(
       ),
       backgroundColor: bg,
       behavior: SnackBarBehavior.floating,
+      duration: const Duration(milliseconds: 1500),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
     ),
   );

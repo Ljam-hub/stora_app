@@ -437,7 +437,13 @@ def me(request):
 
     if request.method == "DELETE":
         user = request.user
-        user.delete()
+        with transaction.atomic():
+            # Delete products before categories to prevent ProtectedError on Category
+            user.products.all().delete()
+            user.categories.all().delete()
+            if hasattr(user, "location"):
+                user.location.delete()
+            user.delete()
         return Response({"detail": "Account deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
 
     if request.method in ["PATCH", "PUT"]:
@@ -1278,6 +1284,13 @@ def list_stores(request):
             distance_km = round(_haversine_km(user_lat, user_lng, lat, lng), 2)
 
         avatar_url = _safe_avatar_url(request, owner)
+        payment_qr_url = None
+        if loc and loc.payment_qr_code:
+            try:
+                payment_qr_url = request.build_absolute_uri(loc.payment_qr_code.url)
+            except Exception:
+                payment_qr_url = loc.payment_qr_code.url
+
         stores_data.append({
             "id": owner.id,
             "business_name": owner.business_name,
@@ -1286,6 +1299,9 @@ def list_stores(request):
             "latitude": lat,
             "longitude": lng,
             "address": address,
+            "payment_phone_number": loc.payment_phone_number if loc else "",
+            "payment_account_name": loc.payment_account_name if loc else "",
+            "payment_qr_url": payment_qr_url,
             "distance_km": distance_km,
             "is_open": is_open,
             "role": owner.role,
@@ -1299,6 +1315,7 @@ def list_stores(request):
 
 @api_view(["GET", "PUT", "POST", "PATCH"])
 @permission_classes([IsAuthenticated])
+@parser_classes([JSONParser, MultiPartParser, FormParser])
 def store_location(request):
     """Get or update current owner's store location."""
     user = request.user
@@ -1317,12 +1334,12 @@ def store_location(request):
     )
 
     if request.method in ["PUT", "POST", "PATCH"]:
-        serializer = StoreLocationSerializer(location, data=request.data, partial=True)
+        serializer = StoreLocationSerializer(location, data=request.data, partial=True, context={"request": request})
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data)
 
-    return Response(StoreLocationSerializer(location).data)
+    return Response(StoreLocationSerializer(location, context={"request": request}).data)
 
 
 @api_view(["GET"])

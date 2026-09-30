@@ -727,6 +727,72 @@ class ApiClient {
     return <String, dynamic>{};
   }
 
+  Future<Map<String, dynamic>> updateStorePaymentInfo({
+    required String paymentPhoneNumber,
+    required String paymentAccountName,
+    List<int>? paymentQrBytes,
+    String? paymentQrFilename,
+    bool clearQrCode = false,
+  }) async {
+    if (paymentQrBytes != null && paymentQrBytes.isNotEmpty) {
+      final uri = _uri('/stores/my-location/');
+      final token = await AppDatabase.instance.authDao.readAccessToken();
+
+      http.MultipartRequest buildRequest(String? bearerToken) {
+        final req = http.MultipartRequest('PUT', uri);
+        if (bearerToken != null && bearerToken.isNotEmpty) {
+          req.headers['Authorization'] = 'Bearer $bearerToken';
+        }
+        req.headers['Accept'] = 'application/json';
+        req.fields['payment_phone_number'] = paymentPhoneNumber.trim();
+        req.fields['payment_account_name'] = paymentAccountName.trim();
+        req.files.add(
+          http.MultipartFile.fromBytes(
+            'payment_qr_code',
+            paymentQrBytes,
+            filename: paymentQrFilename ?? 'payment_qr.png',
+          ),
+        );
+        return req;
+      }
+
+      try {
+        var streamedResponse = await buildRequest(token).send().timeout(const Duration(seconds: 25));
+        var response = await http.Response.fromStream(streamedResponse);
+        if (response.statusCode == 401 && await _refreshAccessToken()) {
+          final newToken = await AppDatabase.instance.authDao.readAccessToken();
+          streamedResponse = await buildRequest(newToken).send().timeout(const Duration(seconds: 25));
+          response = await http.Response.fromStream(streamedResponse);
+        }
+        if (response.statusCode != 200) _throw(response);
+        final decoded = _decode(response);
+        if (decoded is Map<String, dynamic>) return decoded;
+        if (decoded is Map) return Map<String, dynamic>.from(decoded);
+        return <String, dynamic>{};
+      } on TimeoutException {
+        throw ApiException('Server timed out. Is stora_backend running at ${ApiConfig.baseUrl}?');
+      } on SocketException {
+        throw ApiException('Could not reach the server at ${ApiConfig.baseUrl}');
+      } on http.ClientException {
+        throw ApiException('Could not reach the server at ${ApiConfig.baseUrl}');
+      }
+    } else {
+      final body = <String, dynamic>{
+        'payment_phone_number': paymentPhoneNumber.trim(),
+        'payment_account_name': paymentAccountName.trim(),
+      };
+      if (clearQrCode) {
+        body['payment_qr_code'] = null;
+      }
+      final response = await _send('PUT', '/stores/my-location/', body: body);
+      if (response.statusCode != 200) _throw(response);
+      final decoded = _decode(response);
+      if (decoded is Map<String, dynamic>) return decoded;
+      if (decoded is Map) return Map<String, dynamic>.from(decoded);
+      return <String, dynamic>{};
+    }
+  }
+
   // ---------- Business Store Insights ----------
 
   Future<List<Map<String, dynamic>>> fetchBusinessInsights() => fetchAiInsights();

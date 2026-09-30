@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../../data/stores/account_status_store.dart';
@@ -40,6 +41,8 @@ class InventoryStore extends ChangeNotifier {
   int get totalStock => _products.fold(0, (sum, p) => sum + p.stock);
 
   List<Product> get lowStock => _products.where((p) => p.stock < 5).toList();
+
+  List<Product> get inStock => _products.where((p) => p.stock >= 5).toList();
 
   void decrementStockLocally(String productId, int quantity) {
     final idx = _products.indexWhere((p) => p.id == productId);
@@ -96,71 +99,118 @@ class InventoryStore extends ChangeNotifier {
   bool _savingProduct = false;
   final Set<String> _pendingProductDeletions = <String>{};
 
+  Future<void> _syncProductCreationToServer(Product p, String localId) async {
+    try {
+      final apiData = await _api.createProduct(p.toJson());
+      final created = Product.fromJson(apiData);
+      final idx = _products.indexWhere((item) => item.id == localId);
+      if (idx != -1) {
+        _products[idx] = created;
+      }
+      await _db.productDao.deleteProduct(localId);
+      await _db.productDao.upsertProduct(created);
+      AccountStatusStore.instance.fetchStatus();
+      notifyListeners();
+    } on ApiException catch (e) {
+      if (e.statusCode != null && e.statusCode! < 500) {
+        _error = e.message;
+        _products.removeWhere((item) => item.id == localId);
+        await _db.productDao.deleteProduct(localId);
+        notifyListeners();
+      } else {
+        await _db.syncDao.enqueueSync(
+          entityType: 'product',
+          action: 'create',
+          entityId: localId,
+          payload: jsonEncode(p.toJson()),
+        );
+      }
+    } catch (_) {
+      await _db.syncDao.enqueueSync(
+        entityType: 'product',
+        action: 'create',
+        entityId: localId,
+        payload: jsonEncode(p.toJson()),
+      );
+    }
+  }
+
+  Future<void> _syncProductUpdateToServer(Product p) async {
+    try {
+      final apiData = await _api.updateProduct(p.id, p.toJson());
+      final updated = Product.fromJson(apiData);
+      final idx = _products.indexWhere((item) => item.id == p.id);
+      if (idx != -1) {
+        _products[idx] = updated;
+      }
+      await _db.productDao.upsertProduct(updated);
+      notifyListeners();
+    } on ApiException catch (e) {
+      if (e.statusCode == 404) {
+        try {
+          final created = Product.fromJson(await _api.createProduct(p.toJson()));
+          final idx = _products.indexWhere((item) => item.id == p.id);
+          if (idx != -1) {
+            _products[idx] = created;
+          }
+          await _db.productDao.deleteProduct(p.id);
+          await _db.productDao.upsertProduct(created);
+          notifyListeners();
+        } catch (_) {}
+      } else if (e.statusCode != null && e.statusCode! < 500) {
+        _error = e.message;
+        notifyListeners();
+      } else {
+        await _db.syncDao.enqueueSync(
+          entityType: 'product',
+          action: 'update',
+          entityId: p.id,
+          payload: jsonEncode(p.toJson()),
+        );
+      }
+    } catch (_) {
+      await _db.syncDao.enqueueSync(
+        entityType: 'product',
+        action: 'update',
+        entityId: p.id,
+        payload: jsonEncode(p.toJson()),
+      );
+    }
+  }
+
   Future<bool> addProduct(Product p) async {
     if (_savingProduct) return false;
     _savingProduct = true;
     try {
       p.stock = p.stock.clamp(0, AccountStatusStore.instance.isPremium ? kMaxStockPremium : kMaxStock);
 
-    // Enforce cached plan limits before saving locally or online
-    final accountStatus = AccountStatusStore.instance.status;
-    if (!accountStatus.isPremium) {
-      final trialEnds = accountStatus.trialEndsAt;
-      if (trialEnds != null && DateTime.now().toUtc().isAfter(trialEnds.toUtc())) {
-        _error = 'Your free trial has expired. Please upgrade to premium.';
-        notifyListeners();
-        return false;
+      // Enforce cached plan limits before saving locally or online
+      final accountStatus = AccountStatusStore.instance.status;
+      if (!accountStatus.isPremium) {
+        final trialEnds = accountStatus.trialEndsAt;
+        if (trialEnds != null && DateTime.now().toUtc().isAfter(trialEnds.toUtc())) {
+          _error = 'Your free trial has expired. Please upgrade to premium.';
+          notifyListeners();
+          return false;
+        }
+        if (accountStatus.productLimit > 0 && _products.length >= accountStatus.productLimit) {
+          _error = 'Free plan limit reached (${accountStatus.productLimit} products). Please upgrade to premium.';
+          notifyListeners();
+          return false;
+        }
       }
-      if (accountStatus.productLimit > 0 && _products.length >= accountStatus.productLimit) {
-        _error = 'Free plan limit reached (${accountStatus.productLimit} products). Please upgrade to premium.';
-        notifyListeners();
-        return false;
-      }
-    }
 
-    Map<String, dynamic>? apiData;
-    try {
-      apiData = await _api.createProduct(p.toJson());
-    } on ApiException catch (e) {
-      if (e.statusCode != null && e.statusCode! < 500) {
-        _error = e.message;
-        notifyListeners();
-        return false;
-      }
-    } catch (_) {
-      // Offline fallback
-    }
+      // Optimistic local add: assign temporary local ID, add to list and DB immediately (0ms UI lag!)
+      final localId = 'local-${DateTime.now().microsecondsSinceEpoch}';
+      p.id = localId;
+      _products.add(p);
+      await _db.productDao.upsertProduct(p);
+      _error = null;
+      notifyListeners();
 
-    if (apiData != null) {
-      try {
-        final created = Product.fromJson(apiData);
-        _products.add(created);
-        await _db.productDao.upsertProduct(created);
-        _error = null;
-        notifyListeners();
-        AccountStatusStore.instance.fetchStatus();
-        return true;
-      } catch (e) {
-        _error = 'Parse error: $e';
-        notifyListeners();
-        return false;
-      }
-    }
-
-    // Offline fallback: save locally with temporary local ID and queue sync
-    final localId = 'local-${DateTime.now().microsecondsSinceEpoch}';
-    p.id = localId;
-    _products.add(p);
-    await _db.productDao.upsertProduct(p);
-    await _db.syncDao.enqueueSync(
-      entityType: 'product',
-      action: 'create',
-      entityId: localId,
-      payload: jsonEncode(p.toJson()),
-    );
-    _error = null;
-    notifyListeners();
-    return true;
+      // Dispatch server sync asynchronously in background
+      unawaited(_syncProductCreationToServer(p, localId));
+      return true;
     } finally {
       _savingProduct = false;
     }
@@ -170,58 +220,25 @@ class InventoryStore extends ChangeNotifier {
     p.stock = p.stock.clamp(0, AccountStatusStore.instance.isPremium ? kMaxStockPremium : kMaxStock);
     final isLocal = p.id.startsWith('local-');
 
-    if (!isLocal) {
-      try {
-        final updated = Product.fromJson(await _api.updateProduct(p.id, p.toJson()));
-        final idx = _products.indexWhere((item) => item.id == p.id);
-        if (idx != -1) {
-          _products[idx] = updated;
-        }
-        await _db.productDao.upsertProduct(updated);
-        _error = null;
-        notifyListeners();
-        return true;
-      } on ApiException catch (e) {
-        if (e.statusCode == 404) {
-          // If not found on server, re-create on server seamlessly
-          try {
-            final created = Product.fromJson(await _api.createProduct(p.toJson()));
-            final idx = _products.indexWhere((item) => item.id == p.id);
-            if (idx != -1) {
-              _products[idx] = created;
-            }
-            await _db.productDao.deleteProduct(p.id);
-            await _db.productDao.upsertProduct(created);
-            _error = null;
-            notifyListeners();
-            return true;
-          } catch (_) {}
-        }
-        if (e.statusCode != null && e.statusCode! < 500) {
-          _error = e.message;
-          notifyListeners();
-          return false;
-        }
-        // Network failure: fall through to save locally and queue sync
-      } catch (_) {
-        // Network failure: fall through to save locally and queue sync
-      }
-    }
-
-    // Local / Offline save
+    // Optimistic local update: update in-memory list and DB immediately (0ms UI lag!)
     final idx = _products.indexWhere((item) => item.id == p.id);
     if (idx != -1) {
       _products[idx] = p;
     }
     await _db.productDao.upsertProduct(p);
-    await _db.syncDao.enqueueSync(
-      entityType: 'product',
-      action: 'update',
-      entityId: p.id,
-      payload: jsonEncode(p.toJson()),
-    );
     _error = null;
     notifyListeners();
+
+    if (!isLocal) {
+      unawaited(_syncProductUpdateToServer(p));
+    } else {
+      await _db.syncDao.enqueueSync(
+        entityType: 'product',
+        action: 'update',
+        entityId: p.id,
+        payload: jsonEncode(p.toJson()),
+      );
+    }
     return true;
   }
 

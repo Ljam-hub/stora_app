@@ -20,6 +20,7 @@ import '../stores/store_status_store.dart';
 import '../stores/orders_store.dart';
 import '../stores/chat_store.dart';
 import 'owner_chat_screen.dart';
+import 'store_payment_screen.dart';
 
 // ---------------------------------------------------------------------
 // Profile — store header (name, owner, plan pill) plus a settings
@@ -833,6 +834,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     onTap: () => PastReceiptsSheet.show(context),
                   ),
                   _MenuTile(
+                    icon: Icons.qr_code_2_rounded,
+                    label: 'Store Payment & QR Code',
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const StorePaymentScreen()),
+                      );
+                    },
+                  ),
+                  _MenuTile(
                     icon: Icons.support_agent_rounded,
                     label: 'Contact STORA Support',
                     onTap: _openSupportChat,
@@ -901,7 +911,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   onChanged: (val) async {
                                     try {
                                       await store.setOpenStatus(val);
-                                    } catch (_) {}
+                                      if (context.mounted) {
+                                        showStoraSnackBar(
+                                          context,
+                                          val ? 'Store is now Online — accepting orders!' : 'Store is now Offline — orders paused.',
+                                          isError: false,
+                                        );
+                                      }
+                                    } catch (e) {
+                                      if (context.mounted) {
+                                        showStoraSnackBar(context, 'Failed to update store status: $e', isError: true);
+                                      }
+                                    }
                                   },
                                 ),
                             ],

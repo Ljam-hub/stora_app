@@ -12,7 +12,6 @@ import '../../subscription/subscription_screen.dart';
 import 'add_edit_product_screen.dart';
 import 'alerts_screen.dart';
 import 'business_insights_screen.dart';
-import 'inventory_list_screen.dart';
 import 'pending_orders_screen.dart';
 import 'pos_screen.dart';
 import 'profile_screen.dart';
@@ -23,6 +22,7 @@ import '../stores/chat_store.dart';
 import '../stores/store_status_store.dart';
 import '../stores/utang_store.dart';
 import 'utang_ledger_screen.dart';
+import '../shell/stora_shell.dart';
 import '../widgets/fade_slide_in.dart';
 import '../widgets/notification_badge.dart';
 
@@ -403,7 +403,7 @@ class DashboardScreen extends StatelessWidget {
                           badgeColor: HomeColors.successText,
                           badgeBg: HomeColors.successBg,
                           value: '${store.totalStock}',
-                          onTap: () => DashboardScreen.safeNavigate(context, const InventoryListScreen()),
+                          onTap: () => StoraShell.switchToTab(context, 4, alertsFilter: AlertsFilter.inStock),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -416,7 +416,7 @@ class DashboardScreen extends StatelessWidget {
                           badgeBg: HomeColors.dangerBg,
                           value: '$lowStockCount',
                           valueColor: lowStockCount > 0 ? AppColors.error : HomeColors.textPrimary,
-                          onTap: () => DashboardScreen.safeNavigate(context, const AlertsScreen()),
+                          onTap: () => StoraShell.switchToTab(context, 4, alertsFilter: AlertsFilter.lowStock),
                         ),
                       ),
                     ],

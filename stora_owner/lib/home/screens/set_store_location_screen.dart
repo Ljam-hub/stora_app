@@ -9,6 +9,7 @@ import '../../data/api/api_client.dart';
 import '../../stora_login/theme/app_colors.dart';
 import '../stores/store_status_store.dart';
 import '../theme/home_colors.dart';
+import 'store_payment_screen.dart';
 
 class SetStoreLocationScreen extends StatefulWidget {
   const SetStoreLocationScreen({super.key});
@@ -162,6 +163,7 @@ class _SetStoreLocationScreenState extends State<SetStoreLocationScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             behavior: SnackBarBehavior.floating,
+            duration: const Duration(milliseconds: 1500),
             backgroundColor: HomeColors.successBg,
             content: Row(
               children: [
@@ -281,6 +283,7 @@ class _SetStoreLocationScreenState extends State<SetStoreLocationScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             behavior: SnackBarBehavior.floating,
+            duration: const Duration(milliseconds: 1500),
             backgroundColor: HomeColors.successBg,
             content: Row(
               children: [
@@ -852,6 +855,24 @@ class _SetStoreLocationScreenState extends State<SetStoreLocationScreen> {
                         backgroundColor: AppColors.primary,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                         elevation: 0,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    height: 48,
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => const StorePaymentScreen()),
+                        );
+                      },
+                      icon: const Icon(Icons.qr_code_2_rounded, size: 18),
+                      label: const Text('Configure Payment & QR Code'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: HomeColors.textPrimary,
+                        side: BorderSide(color: HomeColors.cardBorder),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                       ),
                     ),
                   ),

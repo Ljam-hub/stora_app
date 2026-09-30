@@ -11,6 +11,9 @@ class StoreStatusStore extends ChangeNotifier {
   double _latitude = 14.5995;
   double _longitude = 120.9842;
   String _address = '';
+  String _paymentPhoneNumber = '';
+  String _paymentAccountName = '';
+  String? _paymentQrUrl;
 
   bool get isOpen => _isOpen;
   bool get isLoaded => _isLoaded;
@@ -18,6 +21,9 @@ class StoreStatusStore extends ChangeNotifier {
   double get latitude => _latitude;
   double get longitude => _longitude;
   String get address => _address;
+  String get paymentPhoneNumber => _paymentPhoneNumber;
+  String get paymentAccountName => _paymentAccountName;
+  String? get paymentQrUrl => _paymentQrUrl;
 
   bool get hasValidLocation {
     if (!_isLoaded) return true;
@@ -51,6 +57,9 @@ class StoreStatusStore extends ChangeNotifier {
           ? (data['longitude'] as num).toDouble()
           : (double.tryParse(data['longitude']?.toString() ?? '120.9842') ?? 120.9842);
       _address = data['address']?.toString() ?? '';
+      _paymentPhoneNumber = data['payment_phone_number']?.toString() ?? '';
+      _paymentAccountName = data['payment_account_name']?.toString() ?? '';
+      _paymentQrUrl = data['payment_qr_url']?.toString();
       _isLoaded = true;
       notifyListeners();
     } catch (_) {
@@ -92,6 +101,17 @@ class StoreStatusStore extends ChangeNotifier {
     notifyListeners();
   }
 
+  void updatePaymentDetails({
+    required String paymentPhoneNumber,
+    required String paymentAccountName,
+    String? paymentQrUrl,
+  }) {
+    _paymentPhoneNumber = paymentPhoneNumber;
+    _paymentAccountName = paymentAccountName;
+    if (paymentQrUrl != null) _paymentQrUrl = paymentQrUrl;
+    notifyListeners();
+  }
+
   void reset() {
     _isOpen = true;
     _isLoaded = false;
@@ -99,6 +119,9 @@ class StoreStatusStore extends ChangeNotifier {
     _latitude = 14.5995;
     _longitude = 120.9842;
     _address = '';
+    _paymentPhoneNumber = '';
+    _paymentAccountName = '';
+    _paymentQrUrl = null;
     notifyListeners();
   }
 }

@@ -161,14 +161,71 @@ class UserAdmin(DjangoUserAdmin):
         # Non-superusers can't change their username/email from admin
         return ("username", "email")
 
+    actions = ["deactivate_users_and_close_stores", "activate_users_and_open_stores"]
+
+    @admin.action(description="Deactivate selected accounts (Hides store & products from customers)")
+    def deactivate_users_and_close_stores(self, request, queryset):
+        count = 0
+        for user in queryset:
+            user.is_active = False
+            user.is_blocked = True
+            user.block_reason = "Deactivated by administrator"
+            user.save(update_fields=["is_active", "is_blocked", "block_reason"])
+            if hasattr(user, "location"):
+                user.location.is_open = False
+                user.location.is_visible = False
+                user.location.save(update_fields=["is_open", "is_visible"])
+            count += 1
+        self.message_user(request, f"{count} account(s) deactivated. Stores are now closed and hidden from customers.")
+
+    @admin.action(description="Activate selected accounts (Restores store visibility)")
+    def activate_users_and_open_stores(self, request, queryset):
+        count = 0
+        for user in queryset:
+            user.is_active = True
+            user.is_blocked = False
+            user.block_reason = ""
+            user.save(update_fields=["is_active", "is_blocked", "block_reason"])
+            if hasattr(user, "location"):
+                user.location.is_visible = True
+                user.location.save(update_fields=["is_visible"])
+            count += 1
+        self.message_user(request, f"{count} account(s) activated successfully.")
+
+    def delete_model(self, request, obj):
+        from django.db import transaction
+        with transaction.atomic():
+            obj.products.all().delete()
+            obj.categories.all().delete()
+            if hasattr(obj, "location"):
+                obj.location.delete()
+            super().delete_model(request, obj)
+
+    def delete_queryset(self, request, queryset):
+        from django.db import transaction
+        with transaction.atomic():
+            for obj in queryset:
+                obj.products.all().delete()
+                obj.categories.all().delete()
+                if hasattr(obj, "location"):
+                    obj.location.delete()
+            super().delete_queryset(request, queryset)
+
     def save_model(self, request, obj, form, change):
         # Synchronize is_active and is_blocked bidirectionally so they
         # never drift out of sync regardless of which field the admin edits.
-        if getattr(obj, "is_blocked", False):
+        if getattr(obj, "is_blocked", False) or not obj.is_active:
             obj.is_active = False
+            if hasattr(obj, "location"):
+                obj.location.is_open = False
+                obj.location.is_visible = False
+                obj.location.save(update_fields=["is_open", "is_visible"])
         else:
             obj.is_active = True
             obj.block_reason = ""
+            if hasattr(obj, "location"):
+                obj.location.is_visible = True
+                obj.location.save(update_fields=["is_visible"])
         super().save_model(request, obj, form, change)
 
 

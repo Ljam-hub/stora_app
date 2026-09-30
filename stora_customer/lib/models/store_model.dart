@@ -11,6 +11,9 @@ class StoreModel {
   final String? avatarUrl;
   final bool isOpen;
   final String role;
+  final String paymentPhoneNumber;
+  final String paymentAccountName;
+  final String? paymentQrUrl;
 
   StoreModel({
     required this.id,
@@ -23,6 +26,9 @@ class StoreModel {
     this.avatarUrl,
     this.isOpen = true,
     this.role = 'owner',
+    this.paymentPhoneNumber = '',
+    this.paymentAccountName = '',
+    this.paymentQrUrl,
   });
 
   String get displayName {
@@ -65,6 +71,9 @@ class StoreModel {
           ? false
           : true,
       role: (json['role'] as String?) ?? 'owner',
+      paymentPhoneNumber: (json['payment_phone_number'] as String?) ?? '',
+      paymentAccountName: (json['payment_account_name'] as String?) ?? '',
+      paymentQrUrl: ApiConfig.resolveMediaUrl(json['payment_qr_url'] as String?),
     );
   }
 

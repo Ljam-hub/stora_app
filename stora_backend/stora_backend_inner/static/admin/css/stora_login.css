@@ -152,6 +152,37 @@ body.stora-login-page {
   box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.22) !important;
 }
 
+.stora-password-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.stora-password-wrapper input {
+  padding-right: 44px !important;
+}
+
+.stora-password-toggle {
+  position: absolute;
+  right: 12px;
+  background: transparent;
+  border: none;
+  padding: 6px;
+  cursor: pointer;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.stora-password-toggle:hover {
+  color: var(--text-white);
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
 .stora-login-field ul.errorlist {
   margin: 0 0 6px;
   padding: 0;

@@ -308,6 +308,7 @@ class _ShopScreenState extends State<ShopScreen> {
                       height: 94,
                       child: ListView.builder(
                         scrollDirection: Axis.horizontal,
+                        physics: const BouncingScrollPhysics(),
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         itemCount: allStores.length,
                         itemBuilder: (context, index) {
@@ -772,49 +773,12 @@ class _ShopScreenState extends State<ShopScreen> {
                           itemCount: visibleProducts.length,
                           itemBuilder: (context, index) {
                             final product = visibleProducts[index];
-                            Widget card = ProductCard(
-                              key: ValueKey('product-${product.id}'),
-                              product: product,
-                              onTap: () => _openProductDetail(product),
-                            );
-
-                            if (catalog.selectedStore == null &&
-                                product.storeName != null &&
-                                product.storeName!.isNotEmpty) {
-                              card = Stack(
-                                children: [
-                                  card,
-                                  Positioned(
-                                    top: 4,
-                                    left: 4,
-                                    right: 4,
-                                    child: Align(
-                                      alignment: Alignment.topLeft,
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                        decoration: BoxDecoration(
-                                          color: AppColors.primary.withValues(alpha: 0.9),
-                                          borderRadius: BorderRadius.circular(8),
-                                        ),
-                                        child: Text(
-                                          product.storeName!,
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              );
-                            }
-
                             return RepaintBoundary(
-                              child: card,
+                              child: ProductCard(
+                                key: ValueKey('product-${product.id}'),
+                                product: product,
+                                onTap: () => _openProductDetail(product),
+                              ),
                             );
                           },
                         ),
