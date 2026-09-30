@@ -29,6 +29,7 @@ class OrderAdmin(admin.ModelAdmin):
         "status_badge",
         "owner_display",
         "customer_name",
+        "customer_phone_display",
         "created_at",
     )
     list_display_links = ("id", "products_summary")
@@ -65,6 +66,12 @@ class OrderAdmin(admin.ModelAdmin):
                 obj.customer.email,
             )
         return format_html('<span style="color: #888888; font-style: italic;">Guest</span>')
+
+    @admin.display(description="Customer Phone")
+    def customer_phone_display(self, obj):
+        if obj.customer_phone:
+            return format_html('<span style="color: #ffffff; font-weight: 500;">{}</span>', obj.customer_phone)
+        return format_html('<span style="color: #888888; font-style: italic;">—</span>')
 
     @admin.display(description="Products Ordered")
     def products_summary(self, obj):

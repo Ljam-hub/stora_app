@@ -11,8 +11,39 @@ from stora_backend.admin_site import stora_admin_site
 from .models import User, PasswordResetToken, PaymentProof, SubscriptionConfig, StoreLocation, AIInsight, EmailVerificationCode, PendingRegistration
 
 
+class StoreLocationInline(admin.StackedInline):
+    model = StoreLocation
+    extra = 0
+    can_delete = False
+    classes = ("collapse",)
+    fields = (
+        ("is_open", "is_visible"),
+        ("payment_phone_number", "payment_account_name"),
+        ("payment_qr_code", "qr_code_preview"),
+        "address",
+        ("latitude", "longitude"),
+    )
+    readonly_fields = ("qr_code_preview",)
+
+    @admin.display(description="QR Code Preview")
+    def qr_code_preview(self, obj):
+        if obj and obj.payment_qr_code:
+            try:
+                url = obj.payment_qr_code.url
+                return format_html(
+                    '<a href="{0}" target="_blank" title="Click to view full QR code">'
+                    '<img src="{0}" style="max-height: 120px; max-width: 120px; object-fit: contain; border-radius: 8px; border: 1px solid #FF6B00; background: #fff; padding: 4px;" />'
+                    '</a>',
+                    url,
+                )
+            except Exception:
+                pass
+        return format_html('<span style="color: #94a3b8; font-style: italic; font-size: 12px;">No QR code uploaded</span>')
+
+
 @admin.register(User, site=stora_admin_site)
 class UserAdmin(DjangoUserAdmin):
+    inlines = [StoreLocationInline]
     fieldsets = DjangoUserAdmin.fieldsets + (
         ("Store & Role info", {"fields": ("role", "business_name", "avatar", "fcm_token", "is_email_verified")}),
         ("Subscription", {"fields": ("is_premium", "premium_until")}),
@@ -412,14 +443,86 @@ class SubscriptionConfigAdmin(admin.ModelAdmin):
 
 @admin.register(StoreLocation, site=stora_admin_site)
 class StoreLocationAdmin(admin.ModelAdmin):
-    list_display = ("owner", "business_name_col", "latitude", "longitude", "address", "is_visible", "updated_at")
-    search_fields = ("owner__email", "owner__business_name", "address")
+    list_display = (
+        "qr_code_display",
+        "business_name_col",
+        "owner",
+        "payment_phone_number_col",
+        "payment_account_name_col",
+        "address",
+        "is_open",
+        "is_visible",
+        "updated_at",
+    )
+    search_fields = (
+        "owner__email",
+        "owner__business_name",
+        "address",
+        "payment_phone_number",
+        "payment_account_name",
+    )
     list_select_related = ("owner",)
-    list_filter = ("is_visible",)
+    list_filter = ("is_open", "is_visible", "updated_at")
+    readonly_fields = ("qr_code_preview", "updated_at")
+    fieldsets = (
+        ("Store Identity", {
+            "fields": ("owner", "is_open", "is_visible")
+        }),
+        ("GCash & Mobile Payment Details", {
+            "fields": ("payment_phone_number", "payment_account_name", "payment_qr_code", "qr_code_preview"),
+            "description": "Store GCash number and QR code presented to customers at checkout."
+        }),
+        ("Location & Map Coordinates", {
+            "fields": ("address", "latitude", "longitude", "updated_at")
+        }),
+    )
 
-    @admin.display(description="Business Name")
+    @admin.display(description="Business Name", ordering="owner__business_name")
     def business_name_col(self, obj):
         return obj.owner.business_name or "—"
+
+    @admin.display(description="GCash Number")
+    def payment_phone_number_col(self, obj):
+        if obj.payment_phone_number:
+            return format_html('<span style="font-weight: 600; color: #ffffff;">{}</span>', obj.payment_phone_number)
+        return format_html('<span style="color: #888888; font-style: italic;">Not set</span>')
+
+    @admin.display(description="Account Name")
+    def payment_account_name_col(self, obj):
+        if obj.payment_account_name:
+            return obj.payment_account_name
+        return format_html('<span style="color: #888888; font-style: italic;">—</span>')
+
+    @admin.display(description="QR Code")
+    def qr_code_display(self, obj):
+        if obj.payment_qr_code:
+            try:
+                url = obj.payment_qr_code.url
+                return format_html(
+                    '<a href="{0}" target="_blank" title="Click to view full QR code">'
+                    '<img src="{0}" style="height: 44px; width: 44px; object-fit: contain; border-radius: 6px; border: 1px solid #FF6B00; background: #fff; padding: 2px;" />'
+                    '</a>',
+                    url,
+                )
+            except Exception:
+                pass
+        return format_html('<span style="color: #888888; font-style: italic; font-size: 11px;">No QR</span>')
+
+    @admin.display(description="QR Code Preview")
+    def qr_code_preview(self, obj):
+        if obj.payment_qr_code:
+            try:
+                url = obj.payment_qr_code.url
+                return format_html(
+                    '<div style="margin-top: 5px;">'
+                    '<a href="{0}" target="_blank">'
+                    '<img src="{0}" style="max-height: 180px; max-width: 180px; object-fit: contain; border-radius: 8px; border: 1px solid #FF6B00; background: #fff; padding: 4px;" />'
+                    '</a><br><small style="color: #94a3b8;">Click to open full size</small></div>',
+                    url,
+                )
+            except Exception:
+                pass
+        return format_html('<span style="color: #94a3b8; font-style: italic;">No QR code uploaded yet</span>')
 
 
 @admin.register(AIInsight, site=stora_admin_site)
