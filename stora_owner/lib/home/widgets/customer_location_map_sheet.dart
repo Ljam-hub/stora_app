@@ -744,7 +744,7 @@ class _CustomerLocationMapSheetState extends State<CustomerLocationMapSheet> {
                       onPressed: _customerPoint != null ? _openNavigation : null,
                       icon: const Icon(Icons.navigation_rounded, size: 20, color: Colors.black),
                       label: const Text(
-                        'Start Road Navigation (Google Maps)',
+                        'Start Road Navigation',
                         style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5, color: Colors.black),
                       ),
                     ),
