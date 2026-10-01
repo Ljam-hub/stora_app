@@ -42,6 +42,9 @@ class _LoginScreenState extends State<LoginScreen> {
     if (mounted) {
       if (success) {
         TextInput.finishAutofillContext(shouldSave: true);
+        // Brief yield so Android's AutofillManager can capture fields and present the "Save password" dialog
+        await Future.delayed(const Duration(milliseconds: 250));
+        if (!mounted) return;
         if (auth.currentUser?.isEmailVerified == false) {
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(
