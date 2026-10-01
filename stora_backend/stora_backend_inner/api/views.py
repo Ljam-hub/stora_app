@@ -260,6 +260,14 @@ def health_check(request):
                 backend_inst = UniversalEmailBackend()
                 diag["brevo_verified_sender"] = backend_inst._get_brevo_verified_sender(force_refresh=True)
                 diag["brevo_senders_list"] = UniversalEmailBackend._cached_senders_list
+
+                # Fetch recent transactional delivery events
+                ev_req = urllib.request.Request(
+                    "https://api.brevo.com/v3/smtp/statistics/events?limit=15&sort=desc",
+                    headers={"api-key": brevo_key, "Accept": "application/json", "User-Agent": "StoraDiag/1.0"}
+                )
+                with urllib.request.urlopen(ev_req, timeout=5) as er:
+                    diag["brevo_recent_events"] = json.loads(er.read().decode("utf-8")).get("events", [])
             except Exception as be:
                 diag["brevo_sender_fetch_error"] = str(be)
 

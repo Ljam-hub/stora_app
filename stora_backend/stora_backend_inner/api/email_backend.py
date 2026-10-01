@@ -168,9 +168,21 @@ class UniversalEmailBackend(BaseEmailBackend):
             if name_part:
                 sender_name = name_part
 
+        # Deduplicate and validate recipient emails
+        to_list = []
+        seen = set()
+        for to in message.to:
+            cleaned = to.strip()
+            if cleaned and cleaned.lower() not in seen:
+                seen.add(cleaned.lower())
+                to_list.append({"email": cleaned})
+        if not to_list:
+            logger.warning("No valid recipients for email: %s", message.subject)
+            return False
+
         payload = {
             "sender": {"name": sender_name, "email": sender_email},
-            "to": [{"email": to.strip()} for to in message.to],
+            "to": to_list,
             "subject": message.subject,
             "textContent": message.body,
         }

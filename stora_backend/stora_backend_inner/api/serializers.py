@@ -176,8 +176,7 @@ class RegisterSerializer(serializers.Serializer):
                 other_role = "Customer" if pending.role == "customer" else "Store Owner"
                 app_target = "Store Owner" if role == "owner" else "Customer"
                 raise serializers.ValidationError({"email": f"This email has a pending {other_role} registration and cannot be used in the {app_target} app."})
-            else:
-                raise serializers.ValidationError({"email": "An account with this email already exists."})
+            # If same role, allow re-registration to refresh the verification code and credentials cleanly
 
         return attrs
 
