@@ -179,7 +179,10 @@ def download_owner(request):
 
 def release_info_api(request):
     info = get_github_release_info()
-    return JsonResponse(info)
+    resp = JsonResponse(info)
+    resp["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0"
+    resp["Pragma"] = "no-cache"
+    return resp
 
 
 def root_status(request):
@@ -206,7 +209,10 @@ def root_status(request):
             "owner_download_url": info.get("owner_download_url", DEFAULT_OWNER_URL),
         }
         try:
-            return render(request, "portal.html", context)
+            resp = render(request, "portal.html", context)
+            resp["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0"
+            resp["Pragma"] = "no-cache"
+            return resp
         except Exception as exc:
             logger.error("Failed to render portal.html: %s", exc)
 
