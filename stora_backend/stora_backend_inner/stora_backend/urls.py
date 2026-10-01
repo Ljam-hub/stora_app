@@ -22,12 +22,12 @@ logger = logging.getLogger(__name__)
 
 GITHUB_REPO = "Ljam-hub/stora_app"
 DEFAULT_RELEASE_TAG = "v1.2.0"
-DEFAULT_CUSTOMER_SIZE = "56.1 MB"
-DEFAULT_OWNER_SIZE = "81.0 MB"
+DEFAULT_CUSTOMER_SIZE = "56.06 MB"
+DEFAULT_OWNER_SIZE = "80.98 MB"
 DEFAULT_CUSTOMER_URL = f"https://github.com/{GITHUB_REPO}/releases/latest/download/Stora-Customer.apk"
 DEFAULT_OWNER_URL = f"https://github.com/{GITHUB_REPO}/releases/latest/download/Stora.apk"
-CACHE_KEY = "stora_github_release_info_v120_c"
-LAST_KNOWN_KEY = "stora_github_release_last_known_v120_c"
+CACHE_KEY = "stora_github_release_info_v120_d"
+LAST_KNOWN_KEY = "stora_github_release_last_known_v120_d"
 CACHE_TIMEOUT = 300  # 5 minutes
 
 
@@ -35,8 +35,6 @@ def format_bytes_to_mb(size_in_bytes):
     if not size_in_bytes or not isinstance(size_in_bytes, (int, float)):
         return None
     mb = size_in_bytes / (1024 * 1024)
-    if mb >= 10:
-        return f"{mb:.1f} MB"
     return f"{mb:.2f} MB"
 
 
