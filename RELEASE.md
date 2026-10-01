@@ -3,8 +3,8 @@
 **Release Tag:** `v1.2.0`  
 **Date:** September 30, 2026  
 **Artifacts:** 
-- `Stora-Customer.apk` (56.06 MB)
-- `Stora-Owner.apk` / `Stora.apk` (80.98 MB)
+- `Stora-Customer.apk` (56.1 MB)
+- `Stora-Owner.apk` / `Stora.apk` (81.0 MB)
 
 ---
 

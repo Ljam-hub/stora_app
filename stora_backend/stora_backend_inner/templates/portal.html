@@ -101,7 +101,7 @@
               <span>Download Customer APK</span>
               <span aria-hidden="true">&#8595;</span>
             </a>
-            <span id="customer-apk-size" style="color: #9CA3AF; font-size: 12px; font-weight: 600; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 6px;">{{ customer_apk_size|default:"56.06 MB" }}</span>
+            <span id="customer-apk-size" style="color: #9CA3AF; font-size: 12px; font-weight: 600; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 6px;">{{ customer_apk_size|default:"56.1 MB" }}</span>
           </div>
         </div>
 
@@ -128,7 +128,7 @@
               <span>Download Owner APK</span>
               <span aria-hidden="true">&#8595;</span>
             </a>
-            <span id="owner-apk-size" style="color: #9CA3AF; font-size: 12px; font-weight: 600; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 6px;">{{ owner_apk_size|default:"80.98 MB" }}</span>
+            <span id="owner-apk-size" style="color: #9CA3AF; font-size: 12px; font-weight: 600; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 6px;">{{ owner_apk_size|default:"81.0 MB" }}</span>
           </div>
         </div>
       </div>
@@ -180,7 +180,7 @@
       function formatMb(bytes) {
         if (!bytes || isNaN(bytes)) return null;
         var mb = bytes / (1024 * 1024);
-        return mb.toFixed(2) + ' MB';
+        return mb.toFixed(1) + ' MB';
       }
 
       function applyReleaseData(data) {
