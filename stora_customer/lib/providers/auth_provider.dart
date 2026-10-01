@@ -318,7 +318,7 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> logout() async {
     try {
-      await CustomerApiService.instance.clearFcmToken();
+      await CustomerApiService.instance.clearFcmToken().timeout(const Duration(milliseconds: 1500));
     } catch (_) {}
     await SessionManager.instance.clearSession();
     // Clear persisted seen orders so the next user starts fresh

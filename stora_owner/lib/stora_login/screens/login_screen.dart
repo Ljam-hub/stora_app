@@ -39,6 +39,7 @@ class _LoginScreenState extends State<LoginScreen> {
       showStoraSnackBar(context, 'Please fix the errors above');
       return;
     }
+    FocusScope.of(context).unfocus();
 
     setState(() => _busy = true);
     try {
@@ -48,8 +49,8 @@ class _LoginScreenState extends State<LoginScreen> {
       );
       if (!mounted) return;
       TextInput.finishAutofillContext(shouldSave: true);
-      // Brief yield so Android's AutofillManager can capture fields and present the "Save password" dialog
-      await Future.delayed(const Duration(milliseconds: 250));
+      // Yield so Android's AutofillManager can capture fields and present the "Save password to Google" dialog
+      await Future.delayed(const Duration(milliseconds: 400));
       if (!mounted) return;
       if (!AuthStore.instance.isEmailVerified) {
         Navigator.of(context).pushReplacement(

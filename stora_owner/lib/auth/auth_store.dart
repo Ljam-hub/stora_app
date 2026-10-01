@@ -186,7 +186,7 @@ class AuthStore extends ChangeNotifier {
 
   Future<void> logout() async {
     try {
-      await ApiClient.instance.clearFcmToken();
+      await ApiClient.instance.clearFcmToken().timeout(const Duration(milliseconds: 1500));
     } catch (_) {}
     OrdersStore.instance.clear();
     InventoryStore.instance.reset();
@@ -198,13 +198,15 @@ class AuthStore extends ChangeNotifier {
     StoreStatusStore.instance.reset();
 
     final db = AppDatabase.instance;
-    await db.delete(db.products).go();
-    await db.delete(db.categories).go();
-    await db.delete(db.sales).go();
-    await db.delete(db.saleItems).go();
-    await db.delete(db.syncQueueEntries).go();
+    await db.transaction(() async {
+      await db.delete(db.products).go();
+      await db.delete(db.categories).go();
+      await db.delete(db.sales).go();
+      await db.delete(db.saleItems).go();
+      await db.delete(db.syncQueueEntries).go();
+      await db.authDao.clearSession();
+    });
 
-    await db.authDao.clearSession();
     email = null;
     businessName = null;
     avatarUrl = null;

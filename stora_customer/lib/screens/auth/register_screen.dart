@@ -45,6 +45,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (mounted) {
       if (success) {
         TextInput.finishAutofillContext(shouldSave: true);
+        // Yield so Android's AutofillManager can capture fields and present the "Save password to Google" dialog
+        await Future.delayed(const Duration(milliseconds: 400));
+        if (!mounted) return;
+
         // Route to verification screen so user verifies their email code
         if (auth.currentUser?.isEmailVerified == true) {
           Navigator.of(context).pushReplacementNamed('/home');

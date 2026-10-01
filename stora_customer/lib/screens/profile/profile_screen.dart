@@ -516,39 +516,52 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _handleLogout() {
+    bool isLoggingOut = false;
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.cardBackground,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: AppColors.cardBorder),
-        ),
-        title: Text('Log Out', style: TextStyle(color: AppColors.textPrimary, fontSize: 17, fontWeight: FontWeight.bold)),
-        content: Text(
-          'Are you sure you want to log out?',
-          style: TextStyle(color: AppColors.textSecondary, fontSize: 14, height: 1.45),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text('Cancel', style: TextStyle(color: AppColors.textSecondary, fontSize: 14)),
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: AppColors.cardBackground,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: AppColors.cardBorder),
           ),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(ctx);
-              context.read<OrderProvider>().reset();
-              context.read<ChatProvider>().reset();
-              context.read<CartProvider>().clear();
-              HiddenProductsStore.instance.clear();
-              await context.read<AuthProvider>().logout();
-              if (mounted) {
-                Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
-              }
-            },
-            child: const Text('Log Out', style: TextStyle(color: AppColors.danger, fontSize: 14, fontWeight: FontWeight.bold)),
+          title: Text('Log Out', style: TextStyle(color: AppColors.textPrimary, fontSize: 17, fontWeight: FontWeight.bold)),
+          content: Text(
+            isLoggingOut ? 'Logging out...' : 'Are you sure you want to log out?',
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 14, height: 1.45),
           ),
-        ],
+          actions: [
+            if (!isLoggingOut)
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text('Cancel', style: TextStyle(color: AppColors.textSecondary, fontSize: 14)),
+              ),
+            TextButton(
+              onPressed: isLoggingOut
+                  ? null
+                  : () async {
+                      setDialogState(() => isLoggingOut = true);
+                      final nav = Navigator.of(context);
+                      context.read<OrderProvider>().reset();
+                      context.read<ChatProvider>().reset();
+                      context.read<CartProvider>().clear();
+                      HiddenProductsStore.instance.clear();
+                      await context.read<AuthProvider>().logout();
+                      if (ctx.mounted) Navigator.pop(ctx);
+                      nav.pushNamedAndRemoveUntil('/login', (route) => false);
+                    },
+              child: isLoggingOut
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.danger),
+                    )
+                  : const Text('Log Out', style: TextStyle(color: AppColors.danger, fontSize: 14, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
       ),
     );
   }

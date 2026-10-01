@@ -640,7 +640,8 @@ class CustomerApiService {
 
   Future<void> clearFcmToken() async {
     try {
-      await _dispatch('POST', _uri('/auth/clear-fcm-token/'));
+      await _dispatch('POST', _uri('/auth/clear-fcm-token/'))
+          .timeout(const Duration(milliseconds: 1500));
     } catch (_) {}
   }
 

@@ -1196,49 +1196,63 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _confirmLogout(BuildContext context) {
+    bool isLoggingOut = false;
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: HomeColors.cardBackground,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: HomeColors.cardBorder),
-        ),
-        title: Text('Log Out', style: TextStyle(color: HomeColors.textPrimary, fontSize: 17, fontWeight: FontWeight.bold)),
-        content: Text(
-          'Are you sure you want to log out?',
-          style: TextStyle(color: HomeColors.textSecondary, fontSize: 14, height: 1.45),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: Text('Cancel', style: TextStyle(color: HomeColors.textSecondary, fontSize: 14)),
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: HomeColors.cardBackground,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: HomeColors.cardBorder),
           ),
-          ElevatedButton(
-            onPressed: () async {
-              final nav = Navigator.of(context);
-              Navigator.of(ctx).pop();
-              await AuthStore.instance.logout();
-              OrdersStore.instance.stopPolling();
-              OrdersStore.instance.clear();
-              ChatStore.instance.stopPolling();
-              ChatStore.instance.clear();
-              StoreStatusStore.instance.reset();
-              InventoryStore.instance.reset();
-              CategoryStore.instance.reset();
-              SalesStore.instance.reset();
-              CartStore.instance.clear();
-              AccountStatusStore.instance.reset();
-              nav.pushNamedAndRemoveUntil('/login', (route) => false);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.error,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          title: Text('Log Out', style: TextStyle(color: HomeColors.textPrimary, fontSize: 17, fontWeight: FontWeight.bold)),
+          content: Text(
+            isLoggingOut ? 'Logging out...' : 'Are you sure you want to log out?',
+            style: TextStyle(color: HomeColors.textSecondary, fontSize: 14, height: 1.45),
+          ),
+          actions: [
+            if (!isLoggingOut)
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: Text('Cancel', style: TextStyle(color: HomeColors.textSecondary, fontSize: 14)),
+              ),
+            ElevatedButton(
+              onPressed: isLoggingOut
+                  ? null
+                  : () async {
+                      setDialogState(() => isLoggingOut = true);
+                      final nav = Navigator.of(context);
+                      OrdersStore.instance.stopPolling();
+                      ChatStore.instance.stopPolling();
+                      await AuthStore.instance.logout();
+                      OrdersStore.instance.clear();
+                      ChatStore.instance.clear();
+                      StoreStatusStore.instance.reset();
+                      InventoryStore.instance.reset();
+                      CategoryStore.instance.reset();
+                      SalesStore.instance.reset();
+                      CartStore.instance.clear();
+                      AccountStatusStore.instance.reset();
+                      if (ctx.mounted) Navigator.of(ctx).pop();
+                      nav.pushNamedAndRemoveUntil('/login', (route) => false);
+                    },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.error,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              child: isLoggingOut
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    )
+                  : const Text('Log Out', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
             ),
-            child: const Text('Log Out', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

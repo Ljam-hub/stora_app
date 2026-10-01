@@ -56,6 +56,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
+    FocusScope.of(context).unfocus();
+
     setState(() => _busy = true);
     try {
       await AuthStore.instance.register(
@@ -65,6 +67,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
       );
       if (!mounted) return;
       TextInput.finishAutofillContext(shouldSave: true);
+      // Yield so Android's AutofillManager can capture fields and present the "Save password to Google" dialog
+      await Future.delayed(const Duration(milliseconds: 400));
+      if (!mounted) return;
 
       // Route to verification screen so user verifies their email code
       if (AuthStore.instance.isEmailVerified) {

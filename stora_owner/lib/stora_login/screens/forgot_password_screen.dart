@@ -159,6 +159,24 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         isLoading: _busy,
                         onPressed: _submit,
                       ),
+                      const SizedBox(height: 14),
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        child: const Text(
+                          'Remembered password? Back to Login',
+                          style: TextStyle(
+                            color: AppColors.purpleLight,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      const Text(
+                        'Your current password will remain unchanged until you create a new one.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Color(0xFF6B627A), fontSize: 11.5),
+                      ),
                     ],
                   ),
                 ),

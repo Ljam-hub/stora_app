@@ -819,7 +819,8 @@ class ApiClient {
 
   Future<void> clearFcmToken() async {
     try {
-      await _send('POST', '/auth/clear-fcm-token/');
+      await _send('POST', '/auth/clear-fcm-token/')
+          .timeout(const Duration(milliseconds: 1500));
     } catch (_) {}
   }
 

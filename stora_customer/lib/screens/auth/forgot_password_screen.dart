@@ -309,6 +309,26 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> with Widget
                   isLoading: _isLoading,
                   onPressed: _handleSendCode,
                 ),
+                const SizedBox(height: 14),
+                Center(
+                  child: TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text(
+                      'Remembered password? Back to Login',
+                      style: TextStyle(
+                        color: AppColors.accentText,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Your current password will remain unchanged until you create a new one.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: AppColors.textMuted, fontSize: 11.5),
+                ),
               ] else ...[
                 CustomTextField(
                   controller: _codeController,
