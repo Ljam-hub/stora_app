@@ -39,7 +39,6 @@ class _LoginScreenState extends State<LoginScreen> {
       showStoraSnackBar(context, 'Please fix the errors above');
       return;
     }
-    FocusScope.of(context).unfocus();
 
     setState(() => _busy = true);
     try {
@@ -49,8 +48,9 @@ class _LoginScreenState extends State<LoginScreen> {
       );
       if (!mounted) return;
       TextInput.finishAutofillContext(shouldSave: true);
+      FocusScope.of(context).unfocus();
       // Yield so Android's AutofillManager can capture fields and present the "Save password to Google" dialog
-      await Future.delayed(const Duration(milliseconds: 400));
+      await Future.delayed(const Duration(milliseconds: 350));
       if (!mounted) return;
       if (!AuthStore.instance.isEmailVerified) {
         Navigator.of(context).pushReplacement(
@@ -86,6 +86,7 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Form(
               key: _formKey,
               child: AutofillGroup(
+                onDisposeAction: AutofillContextAction.commit,
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.stretch,

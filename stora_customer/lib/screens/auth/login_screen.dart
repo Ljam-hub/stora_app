@@ -32,8 +32,6 @@ class _LoginScreenState extends State<LoginScreen> {
     final auth = context.read<AuthProvider>();
     if (auth.isLoading) return;
     if (!_formKey.currentState!.validate()) return;
-    FocusScope.of(context).unfocus();
-
     final success = await auth.login(
       _emailController.text,
       _passwordController.text,
@@ -42,8 +40,9 @@ class _LoginScreenState extends State<LoginScreen> {
     if (mounted) {
       if (success) {
         TextInput.finishAutofillContext(shouldSave: true);
+        FocusScope.of(context).unfocus();
         // Yield so Android's AutofillManager can capture fields and present the "Save password to Google" dialog
-        await Future.delayed(const Duration(milliseconds: 400));
+        await Future.delayed(const Duration(milliseconds: 350));
         if (!mounted) return;
         if (auth.currentUser?.isEmailVerified == false) {
           Navigator.of(context).pushReplacement(
@@ -80,6 +79,7 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Form(
               key: _formKey,
               child: AutofillGroup(
+                onDisposeAction: AutofillContextAction.commit,
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.stretch,

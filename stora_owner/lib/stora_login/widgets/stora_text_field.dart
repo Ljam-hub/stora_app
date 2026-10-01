@@ -124,7 +124,8 @@ class _StoraTextFieldState extends State<StoraTextField> {
           controller: widget.controller,
           obscureText: _obscured,
           maxLines: _obscured ? 1 : widget.maxLines,
-          keyboardType: widget.keyboardType,
+          keyboardType: widget.keyboardType ??
+              (_obscured ? TextInputType.visiblePassword : TextInputType.text),
           autofillHints: widget.autofillHints,
           style: TextStyle(color: textColor, fontSize: 14, fontWeight: FontWeight.w500),
           validator: widget.validator,
