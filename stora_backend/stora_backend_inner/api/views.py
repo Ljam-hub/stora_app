@@ -165,29 +165,26 @@ def send_verification_email(user, code_obj):
     if isinstance(from_email, str):
         from_email = from_email.strip('"').strip("'")
 
-    def _send_worker():
-        try:
-            send_mail(
-                subject="STORA — Your Verification Code",
-                message=(
-                    f"Hello,\n\n"
-                    f"Thank you for signing up for STORA!\n\n"
-                    f"Your 6-digit verification code is: {code_obj.code}\n\n"
-                    f"This code will expire in 15 minutes.\n\n"
-                    f"— The STORA Team"
-                ),
-                from_email=from_email,
-                recipient_list=[user.email],
-                html_message=html_content,
-                fail_silently=False,
-            )
-            logger.info("Verification code email dispatched successfully to %s", user.email)
-            return True
-        except Exception as mail_err:
-            logger.error("Failed to send verification code email to %s: %s", user.email, mail_err)
-            return False
-
-    return dispatch_email_async(_send_worker)
+    try:
+        sent = send_mail(
+            subject="STORA — Your Verification Code",
+            message=(
+                f"Hello,\n\n"
+                f"Thank you for signing up for STORA!\n\n"
+                f"Your 6-digit verification code is: {code_obj.code}\n\n"
+                f"This code will expire in 15 minutes.\n\n"
+                f"— The STORA Team"
+            ),
+            from_email=from_email,
+            recipient_list=[user.email],
+            html_message=html_content,
+            fail_silently=False,
+        )
+        logger.info("Verification code email dispatched successfully to %s (count=%s)", user.email, sent)
+        return True
+    except Exception as mail_err:
+        logger.error("Failed to send verification code email to %s: %s", user.email, mail_err)
+        return False
 
 
 LAST_ASYNC_EMAIL_ERROR = None
@@ -261,9 +258,29 @@ def health_check(request):
                 diag["brevo_verified_sender"] = backend_inst._get_brevo_verified_sender(force_refresh=True)
                 diag["brevo_senders_list"] = UniversalEmailBackend._cached_senders_list
 
-                # Fetch recent transactional delivery events
+                # Fetch Brevo account details (credits, relay status)
+                try:
+                    acc_req = urllib.request.Request(
+                        "https://api.brevo.com/v3/account",
+                        headers={"api-key": brevo_key, "Accept": "application/json", "User-Agent": "StoraDiag/1.0"}
+                    )
+                    with urllib.request.urlopen(acc_req, timeout=5) as ar:
+                        diag["brevo_account"] = json.loads(ar.read().decode("utf-8"))
+                except Exception as ae:
+                    diag["brevo_account_error"] = str(ae)
+
+                # Fetch recent transactional delivery events (support event & email filters)
+                ev_filter = request.GET.get("event", "")
+                ev_email = request.GET.get("email", "")
+                ev_limit = request.GET.get("limit", "15")
+                ev_url = f"https://api.brevo.com/v3/smtp/statistics/events?limit={ev_limit}&sort=desc"
+                if ev_filter:
+                    ev_url += f"&event={ev_filter}"
+                if ev_email:
+                    ev_url += f"&email={ev_email}"
+
                 ev_req = urllib.request.Request(
-                    "https://api.brevo.com/v3/smtp/statistics/events?limit=15&sort=desc",
+                    ev_url,
                     headers={"api-key": brevo_key, "Accept": "application/json", "User-Agent": "StoraDiag/1.0"}
                 )
                 with urllib.request.urlopen(ev_req, timeout=5) as er:
@@ -811,28 +828,25 @@ def forgot_password_request(request):
         # Determine target recipient(s) - deduplicated
         recipients = [user.email]
 
-        def _send_reset_email():
-            try:
-                send_mail(
-                    subject="STORA — Password Reset Code",
-                    message=(
-                        f"Hello,\n\n"
-                        f"We received a request to reset your password for your STORA account ({user.email}).\n\n"
-                        f"Your 6-digit reset code is: {display_code}\n\n"
-                        f"This code will expire in 1 hour.\n\n"
-                        f"If you didn't request this, you can safely ignore this email.\n\n"
-                        f"— The STORA Team"
-                    ),
-                    from_email=from_email,
-                    recipient_list=recipients,
-                    html_message=html_content,
-                    fail_silently=False,
-                )
-                logger.info("Password reset token dispatched successfully to %s", recipients)
-            except Exception as mail_err:
-                logger.error("Failed to send password reset email to %s: %s", recipients, mail_err)
-
-        dispatch_email_async(_send_reset_email)
+        try:
+            sent = send_mail(
+                subject="STORA — Password Reset Code",
+                message=(
+                    f"Hello,\n\n"
+                    f"We received a request to reset your password for your STORA account ({user.email}).\n\n"
+                    f"Your 6-digit reset code is: {display_code}\n\n"
+                    f"This code will expire in 1 hour.\n\n"
+                    f"If you didn't request this, you can safely ignore this email.\n\n"
+                    f"— The STORA Team"
+                ),
+                from_email=from_email,
+                recipient_list=recipients,
+                html_message=html_content,
+                fail_silently=False,
+            )
+            logger.info("Password reset token dispatched successfully to %s (count=%s)", recipients, sent)
+        except Exception as mail_err:
+            logger.error("Failed to send password reset email to %s: %s", recipients, mail_err)
     except User.DoesNotExist:
         logger.info("Forgot password requested for non-existent email: %s (raw: %s)", email, raw_email)
     return Response({"detail": "If that email is registered, a reset code has been sent."})

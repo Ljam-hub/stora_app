@@ -382,14 +382,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> with Widget
                       ),
                   ],
                 ),
-                const SizedBox(height: 8),
-                TextButton(
-                  onPressed: () => setState(() => _codeSent = false),
-                  child: Text(
-                    'Change email address',
-                    style: TextStyle(color: AppColors.textMuted, fontSize: 12),
-                  ),
-                ),
               ],
             ],
           ),
