@@ -113,6 +113,10 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> with WidgetsB
 
   String _extractResetToken(String text) {
     final trimmed = text.trim();
+    final digits = trimmed.replaceAll(RegExp(r'\D'), '');
+    if (digits.length == 6) {
+      return digits;
+    }
     final uuidRegex = RegExp(r'[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}');
     final match = uuidRegex.firstMatch(trimmed);
     if (match != null) {

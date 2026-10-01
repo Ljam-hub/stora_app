@@ -735,7 +735,12 @@ def forgot_password_request(request):
 
         # Invalidate old tokens
         PasswordResetToken.objects.filter(user=user, used=False).update(used=True)
-        token_obj = PasswordResetToken.objects.create(user=user)
+        import secrets
+        import uuid as uuid_mod
+        code_int = secrets.randbelow(900000) + 100000
+        display_code = f"{code_int}"
+        uuid_token = uuid_mod.UUID(f"00000000-0000-0000-0000-{code_int:012d}")
+        token_obj = PasswordResetToken.objects.create(user=user, token=uuid_token)
 
         html_content = f"""
         <!DOCTYPE html>
@@ -766,15 +771,15 @@ def forgot_password_request(request):
                       </p>
                       <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="width: 100%; margin: 0 0 20px 0;">
                         <tr>
-                          <td align="center" style="background-color: #141018; border: 2px solid #9B87F5; border-radius: 12px; padding: 14px 12px; word-break: break-all; word-wrap: break-word;">
-                            <div style="font-family: Consolas, 'Courier New', Courier, monospace; font-size: 15px; font-weight: 700; letter-spacing: 0.5px; color: #C4B5FD; line-height: 1.4; word-break: break-all; word-wrap: break-word;">
-                              {token_obj.token}
+                          <td align="center" style="background-color: #141018; border: 2px solid #9B87F5; border-radius: 12px; padding: 16px 12px;">
+                            <div style="font-size: 32px; font-weight: 800; letter-spacing: 6px; color: #B9A9FF; text-align: center;">
+                              {display_code}
                             </div>
                           </td>
                         </tr>
                       </table>
                       <p style="color: #8E8798; font-size: 13px; line-height: 1.5; margin: 0 0 20px 0;">
-                        This code will expire in <strong style="color: #D1D5DB;">1 hour</strong>. If you didn't request a password reset, you can safely ignore this email.
+                        This 6-digit code will expire in <strong style="color: #D1D5DB;">1 hour</strong>. If you didn't request a password reset, you can safely ignore this email.
                       </p>
                       <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0">
                         <tr>
@@ -803,10 +808,8 @@ def forgot_password_request(request):
         if isinstance(from_email, str):
             from_email = from_email.strip('"').strip("'")
 
-        # Determine target recipient(s)
+        # Determine target recipient(s) - deduplicated
         recipients = [user.email]
-        if raw_email and raw_email != user.email.lower() and "@" in raw_email:
-            recipients.append(raw_email)
 
         def _send_reset_email():
             try:
@@ -815,7 +818,7 @@ def forgot_password_request(request):
                     message=(
                         f"Hello,\n\n"
                         f"We received a request to reset your password for your STORA account ({user.email}).\n\n"
-                        f"Your reset code is: {token_obj.token}\n\n"
+                        f"Your 6-digit reset code is: {display_code}\n\n"
                         f"This code will expire in 1 hour.\n\n"
                         f"If you didn't request this, you can safely ignore this email.\n\n"
                         f"— The STORA Team"
@@ -840,15 +843,39 @@ def forgot_password_request(request):
 def forgot_password_confirm(request):
     serializer = ResetPasswordSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
-    token_str = serializer.validated_data["token"].strip()
-    try:
-        token_obj = PasswordResetToken.objects.select_related("user").get(
-            token=token_str
-        )
-    except (PasswordResetToken.DoesNotExist, ValueError):
+    raw_token = serializer.validated_data["token"].strip()
+
+    import uuid as uuid_mod
+    token_obj = None
+
+    # 1. Try parsing as 6-digit code
+    digits_only = "".join(c for c in raw_token if c.isdigit())
+    if len(digits_only) == 6:
+        try:
+            code_int = int(digits_only)
+            code_uuid = uuid_mod.UUID(f"00000000-0000-0000-0000-{code_int:012d}")
+            token_obj = PasswordResetToken.objects.select_related("user").filter(
+                token=code_uuid, used=False
+            ).first()
+        except Exception:
+            token_obj = None
+
+    # 2. Try parsing as full UUID if not found yet
+    if not token_obj:
+        try:
+            full_uuid = uuid_mod.UUID(raw_token)
+            token_obj = PasswordResetToken.objects.select_related("user").filter(
+                token=full_uuid
+            ).first()
+        except Exception:
+            token_obj = None
+
+    if not token_obj:
         return Response({"detail": "Invalid or expired reset code."}, status=status.HTTP_400_BAD_REQUEST)
+
     if not token_obj.is_valid():
         return Response({"detail": "This reset code has expired or was already used."}, status=status.HTTP_400_BAD_REQUEST)
+
     user = token_obj.user
     user.set_password(serializer.validated_data["new_password"])
     user.save(update_fields=["password"])
