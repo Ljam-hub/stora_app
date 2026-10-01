@@ -829,9 +829,58 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 ],
                 const SizedBox(height: 20),
 
-                // Delivery Info Section
+                // In-Store Pickup Notice Card
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF56A10).withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFFF56A10).withValues(alpha: 0.35)),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF56A10).withValues(alpha: 0.2),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.storefront_rounded, color: Color(0xFFFB923C), size: 20),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'In-Store Pickup Only',
+                              style: TextStyle(
+                                color: AppColors.textPrimary,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13.5,
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              'This store does not provide delivery. Your items will be packed for you to pick up directly at the store counter.',
+                              style: TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 12,
+                                height: 1.4,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Customer & Pickup Info Section
                 Text(
-                  'Delivery Information',
+                  'Customer & Pickup Information',
                   style: TextStyle(
                     color: AppColors.textPrimary,
                     fontSize: 16,
@@ -867,8 +916,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   key: const Key('checkout_address_field'),
                   fieldKey: const Key('checkout_address_input'),
                   controller: _addressController,
-                  label: 'Delivery / Pickup Address',
-                  hint: 'House/Unit No., Street, Barangay, City',
+                  label: 'Customer Address / Landmark',
+                  hint: 'House/Unit No., Street, Purok, or nearby landmark',
                   prefixIcon: Icons.location_on_outlined,
                   prefixIconTooltip: 'Auto-detect current location',
                   onPrefixIconPressed: _handleAutoLocate,
@@ -887,14 +936,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           onPressed: _handleAutoLocate,
                         ),
                   maxLines: 2,
-                  validator: (val) => val == null || val.trim().isEmpty ? 'Please provide your address' : null,
+                  validator: (val) => val == null || val.trim().isEmpty ? 'Please provide your address or landmark' : null,
                 ),
                 const SizedBox(height: 14),
 
                 CustomTextField(
                   controller: _notesController,
-                  label: 'Order Notes / Instructions (Optional)',
-                  hint: 'e.g. Please deliver before 5 PM, ring the bell',
+                  label: 'Pickup Notes / Instructions (Optional)',
+                  hint: 'e.g. Will pick up around 4 PM, please pack in paper bag',
                   prefixIcon: Icons.note_outlined,
                   maxLines: 2,
                 ),

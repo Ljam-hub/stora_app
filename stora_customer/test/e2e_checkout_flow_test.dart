@@ -190,9 +190,10 @@ void main() {
 
         // 6. Proceed to Checkout
         await tester.tap(find.byKey(const Key('cart_checkout_button')));
-        await pumpUntilFound(tester, find.text('Delivery Information'));
+        await pumpUntilFound(tester, find.text('Customer & Pickup Information'));
 
-        expect(find.text('Delivery Information'), findsOneWidget);
+        expect(find.text('In-Store Pickup Only'), findsOneWidget);
+        expect(find.text('Customer & Pickup Information'), findsOneWidget);
         expect(find.byKey(const Key('checkout_place_order_button')), findsOneWidget);
 
         // 7. Place Order

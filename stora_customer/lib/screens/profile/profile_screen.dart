@@ -303,7 +303,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 borderRadius: BorderRadius.circular(20),
                 side: BorderSide(color: AppColors.cardBorder),
               ),
-              title: Text('Default Delivery Info', style: TextStyle(color: AppColors.textPrimary)),
+              title: Text('Default Contact & Pickup Info', style: TextStyle(color: AppColors.textPrimary)),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -315,7 +315,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   const SizedBox(height: 14),
                   CustomTextField(
                     controller: addressController,
-                    label: 'Delivery Address',
+                    label: 'Saved Address / Landmark',
                     prefixIcon: Icons.location_on_outlined,
                     prefixIconTooltip: 'Locate current address',
                     onPrefixIconPressed: autoLocate,
@@ -923,7 +923,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           Icon(Icons.location_on_outlined, color: AppColors.accentText, size: 20),
                           const SizedBox(width: 8),
                           Text(
-                            'Default Delivery Info',
+                            'Default Contact & Pickup Info',
                             style: TextStyle(
                               color: AppColors.textPrimary,
                               fontWeight: FontWeight.bold,

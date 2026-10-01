@@ -205,11 +205,11 @@ class CustomerReceiptService {
               ),
               pw.Divider(thickness: 0.5, borderStyle: pw.BorderStyle.dashed),
 
-              // Delivery Info
+              // Customer Info
               if (order.customerAddress.isNotEmpty) ...[
                 pw.SizedBox(height: 2),
                 pw.Text(
-                  'Deliver to: ${order.customerAddress}',
+                  'Customer: ${order.customerAddress}',
                   textAlign: pw.TextAlign.center,
                   style: const pw.TextStyle(fontSize: 6, color: PdfColors.grey700),
                 ),

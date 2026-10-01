@@ -59,7 +59,7 @@ class _CartScreenState extends State<CartScreen> {
       await auth.saveDeliveryDetails(address: result.address!);
       messenger.showSnackBar(
         SnackBar(
-          content: Text('Delivery address set: ${result.address!}'),
+          content: Text('Location address set: ${result.address!}'),
           backgroundColor: AppColors.success,
           behavior: SnackBarBehavior.floating,
           duration: const Duration(milliseconds: 1500),
@@ -222,7 +222,7 @@ class _CartScreenState extends State<CartScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Deliver To:',
+                                'Your Location / Landmark:',
                                 style: TextStyle(
                                   color: AppColors.textSecondary,
                                   fontSize: 11,
