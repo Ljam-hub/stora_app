@@ -310,6 +310,43 @@ class CustomerCreditTests(TestCase):
         self.assertTrue(pay_resp2.data["is_fully_paid"])
         self.assertEqual(pay_resp2.data["status"], "settled")
 
+    def test_rapid_double_tap_payment_idempotent(self):
+        self.client.force_authenticate(user=self.owner)
+        payload = {
+            "customer_name": "Rapid Tap Customer",
+            "total_amount": "100.00",
+            "due_date": "2026-10-10",
+        }
+        create_resp = self.client.post("/api/credits/", data=payload, format="json")
+        credit_id = create_resp.data["id"]
+
+        # First tap
+        pay_resp1 = self.client.post(
+            f"/api/credits/{credit_id}/add_payment/",
+            data={"amount": "30.00", "notes": "First tap"},
+            format="json",
+        )
+        self.assertEqual(pay_resp1.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(pay_resp1.data["amount_paid"], "30.00")
+        self.assertEqual(pay_resp1.data["balance"], "70.00")
+
+        # Second tap immediately (within 4 seconds)
+        pay_resp2 = self.client.post(
+            f"/api/credits/{credit_id}/add_payment/",
+            data={"amount": "30.00", "notes": "First tap"},
+            format="json",
+        )
+        # Should be handled gracefully with 200 OK without double-charging
+        self.assertEqual(pay_resp2.status_code, status.HTTP_200_OK)
+        self.assertEqual(pay_resp2.data["amount_paid"], "30.00")
+        self.assertEqual(pay_resp2.data["balance"], "70.00")
+
+        # Ensure database has exactly 1 payment record, not 2
+        from sales.models import CustomerCredit
+        credit = CustomerCredit.objects.get(id=credit_id)
+        self.assertEqual(credit.payments.count(), 1)
+        self.assertEqual(credit.amount_paid, Decimal("30.00"))
+
     def test_credit_admin_changelist_and_dashboard(self):
         admin_user = User.objects.create_superuser(
             username="admin_credit@test.com",

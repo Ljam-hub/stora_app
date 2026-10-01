@@ -19,6 +19,7 @@ class _UtangLedgerScreenState extends State<UtangLedgerScreen> {
   String _selectedFilter = 'Active'; // 'Active', 'Overdue', 'Due Soon', 'Paid', 'All'
   String _searchQuery = '';
   final _searchController = TextEditingController();
+  bool _isOpeningDialog = false;
 
   @override
   void dispose() {
@@ -129,6 +130,9 @@ class _UtangLedgerScreenState extends State<UtangLedgerScreen> {
   }
 
   void _showNewUtangDialog() async {
+    if (_isOpeningDialog) return;
+    _isOpeningDialog = true;
+
     final nameCtrl = TextEditingController();
     final phoneCtrl = TextEditingController();
     final amountCtrl = TextEditingController();
@@ -137,11 +141,16 @@ class _UtangLedgerScreenState extends State<UtangLedgerScreen> {
     String selectedFrequency = 'none'; // 'none', 'daily', 'weekly', 'monthly'
     int selectedGraceDays = 0;
     DateTime selectedDueDate = DateTime.now().add(const Duration(days: 7));
+    bool isSubmitting = false;
 
-    await showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
+    try {
+      await showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => StatefulBuilder(
+          builder: (dialogContext, setDialogState) => PopScope(
+            canPop: !isSubmitting,
+            child: AlertDialog(
           backgroundColor: HomeColors.cardBackground,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
@@ -454,226 +463,281 @@ class _UtangLedgerScreenState extends State<UtangLedgerScreen> {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: Text('Cancel', style: TextStyle(color: HomeColors.textSecondary)),
+              onPressed: isSubmitting ? null : () => Navigator.of(ctx).pop(),
+              child: Text('Cancel', style: TextStyle(color: isSubmitting ? HomeColors.textSecondary.withValues(alpha: 0.5) : HomeColors.textSecondary)),
             ),
             ElevatedButton(
-              onPressed: () async {
-                final name = nameCtrl.text.trim();
-                final phone = phoneCtrl.text.trim();
-                final rawAmt = double.tryParse(amountCtrl.text.replaceAll(',', '').trim()) ?? 0.0;
-                final rate = selectedFrequency == 'none'
-                    ? 0.0
-                    : (double.tryParse(penaltyCtrl.text.replaceAll(',', '').trim()) ?? 0.0);
+              onPressed: isSubmitting
+                  ? null
+                  : () async {
+                      final name = nameCtrl.text.trim();
+                      final phone = phoneCtrl.text.trim();
+                      final rawAmt = double.tryParse(amountCtrl.text.replaceAll(',', '').trim()) ?? 0.0;
+                      final rate = selectedFrequency == 'none'
+                          ? 0.0
+                          : (double.tryParse(penaltyCtrl.text.replaceAll(',', '').trim()) ?? 0.0);
 
-                if (name.isEmpty) {
-                  showStoraSnackBar(context, 'Please enter customer name');
-                  return;
-                }
-                if (rawAmt <= 0) {
-                  showStoraSnackBar(context, 'Please enter a valid amount');
-                  return;
-                }
+                      if (name.isEmpty) {
+                        showStoraSnackBar(context, 'Please enter customer name');
+                        return;
+                      }
+                      if (rawAmt <= 0) {
+                        showStoraSnackBar(context, 'Please enter a valid amount');
+                        return;
+                      }
 
-                await UtangStore.instance.addUtang(
-                  customerName: name,
-                  customerPhone: phone,
-                  totalAmount: rawAmt,
-                  dueDate: selectedDueDate,
-                  penaltyFrequency: selectedFrequency,
-                  penaltyRate: rate < 0 ? 0.0 : rate,
-                  gracePeriodDays: selectedGraceDays,
-                  notes: notesCtrl.text.trim(),
-                  items: [
-                    UtangItem(
-                      productName: notesCtrl.text.trim().isNotEmpty ? notesCtrl.text.trim() : 'Store Purchase',
-                      quantity: 1,
-                      unitPrice: rawAmt,
-                    ),
-                  ],
-                );
+                      setDialogState(() => isSubmitting = true);
+                      try {
+                        await UtangStore.instance.addUtang(
+                          customerName: name,
+                          customerPhone: phone,
+                          totalAmount: rawAmt,
+                          dueDate: selectedDueDate,
+                          penaltyFrequency: selectedFrequency,
+                          penaltyRate: rate < 0 ? 0.0 : rate,
+                          gracePeriodDays: selectedGraceDays,
+                          notes: notesCtrl.text.trim(),
+                          items: [
+                            UtangItem(
+                              productName: notesCtrl.text.trim().isNotEmpty ? notesCtrl.text.trim() : 'Store Purchase',
+                              quantity: 1,
+                              unitPrice: rawAmt,
+                            ),
+                          ],
+                        );
 
-                if (ctx.mounted) Navigator.of(ctx).pop();
-                if (context.mounted) {
-                  showStoraSnackBar(context, 'Utang recorded for $name', isError: false);
-                }
-              },
+                        if (ctx.mounted) Navigator.of(ctx).pop();
+                        if (mounted) {
+                          showStoraSnackBar(context, 'Utang recorded for $name', isError: false);
+                        }
+                      } catch (e) {
+                        if (ctx.mounted) {
+                          setDialogState(() => isSubmitting = false);
+                        }
+                        if (mounted) {
+                          showStoraSnackBar(context, 'Failed to save utang: $e');
+                        }
+                      }
+                    },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.amber[700],
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               ),
-              child: const Text('Save Entry', style: TextStyle(fontWeight: FontWeight.bold)),
+              child: isSubmitting
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    )
+                  : const Text('Save Entry', style: TextStyle(fontWeight: FontWeight.bold)),
             ),
           ],
         ),
       ),
-    );
-
-    nameCtrl.dispose();
-    phoneCtrl.dispose();
-    amountCtrl.dispose();
-    notesCtrl.dispose();
-    penaltyCtrl.dispose();
+    ),
+  );
+    } finally {
+      _isOpeningDialog = false;
+      nameCtrl.dispose();
+      phoneCtrl.dispose();
+      amountCtrl.dispose();
+      notesCtrl.dispose();
+      penaltyCtrl.dispose();
+    }
   }
 
   void _showRecordPaymentDialog(UtangRecord record) async {
+    if (_isOpeningDialog) return;
+    _isOpeningDialog = true;
+
     final effectiveDue = record.penaltyAmount > 0 ? record.totalDueWithPenalty : record.balance;
     final paymentCtrl = TextEditingController(text: effectiveDue.toStringAsFixed(2));
     final noteCtrl = TextEditingController();
+    bool isSubmitting = false;
 
-    await showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: HomeColors.cardBackground,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: HomeColors.cardBorder),
-        ),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: const Color(0xFF10B981).withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(10),
+    try {
+      await showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => StatefulBuilder(
+          builder: (dialogCtx, setDialogState) => PopScope(
+            canPop: !isSubmitting,
+            child: AlertDialog(
+              backgroundColor: HomeColors.cardBackground,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+                side: BorderSide(color: HomeColors.cardBorder),
               ),
-              child: const Icon(Icons.price_check_rounded, color: Color(0xFF10B981), size: 20),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                'Record Payment',
-                style: TextStyle(color: HomeColors.textPrimary, fontSize: 17, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Customer: ${record.customerName}',
-              style: TextStyle(color: HomeColors.textPrimary, fontWeight: FontWeight.w700, fontSize: 14),
-            ),
-            const SizedBox(height: 6),
-            if (record.penaltyAmount > 0) ...[
-              Text(
-                'Principal Balance: ₱${record.balance.toStringAsFixed(2)}',
-                style: TextStyle(color: HomeColors.textSecondary, fontSize: 12),
-              ),
-              Text(
-                'Late Penalty: +₱${record.penaltyAmount.toStringAsFixed(2)} (${record.overdueUnitsLabel} late @ ₱${record.penaltyRate.toStringAsFixed(0)}/${record.penaltyFrequencyShortUnit})',
-                style: const TextStyle(color: AppColors.error, fontSize: 12, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                'Total Collectible: ₱${record.totalDueWithPenalty.toStringAsFixed(2)}',
-                style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 14),
-              ),
-            ] else ...[
-              Text(
-                'Current Balance: ₱${record.balance.toStringAsFixed(2)}',
-                style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 13),
-              ),
-            ],
-            const SizedBox(height: 14),
-            TextField(
-              controller: paymentCtrl,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              style: TextStyle(color: HomeColors.textPrimary, fontSize: 18, fontWeight: FontWeight.bold),
-              decoration: InputDecoration(
-                labelText: 'Amount Paid (₱)',
-                labelStyle: TextStyle(color: HomeColors.textSecondary),
-                filled: true,
-                fillColor: HomeColors.cardElevated,
-                prefixIcon: const Icon(Icons.attach_money_rounded, color: Color(0xFF10B981)),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              children: [
-                if (record.penaltyAmount > 0) ...[
-                  ActionChip(
-                    label: Text('Pay Total (₱${record.totalDueWithPenalty.toStringAsFixed(2)})', style: const TextStyle(fontSize: 11)),
-                    onPressed: () => paymentCtrl.text = record.totalDueWithPenalty.toStringAsFixed(2),
-                    backgroundColor: HomeColors.cardElevated,
-                    labelStyle: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold),
+              title: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.price_check_rounded, color: Color(0xFF10B981), size: 20),
                   ),
-                  ActionChip(
-                    label: Text('Principal Only (₱${record.balance.toStringAsFixed(2)})', style: const TextStyle(fontSize: 11)),
-                    onPressed: () => paymentCtrl.text = record.balance.toStringAsFixed(2),
-                    backgroundColor: HomeColors.cardElevated,
-                    labelStyle: TextStyle(color: HomeColors.textPrimary),
-                  ),
-                ] else ...[
-                  ActionChip(
-                    label: const Text('Exact Full Payment', style: TextStyle(fontSize: 11)),
-                    onPressed: () => paymentCtrl.text = record.balance.toStringAsFixed(2),
-                    backgroundColor: HomeColors.cardElevated,
-                    labelStyle: TextStyle(color: HomeColors.textPrimary),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Record Payment',
+                      style: TextStyle(color: HomeColors.textPrimary, fontSize: 17, fontWeight: FontWeight.bold),
+                    ),
                   ),
                 ],
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Customer: ${record.customerName}',
+                    style: TextStyle(color: HomeColors.textPrimary, fontWeight: FontWeight.w700, fontSize: 14),
+                  ),
+                  const SizedBox(height: 6),
+                  if (record.penaltyAmount > 0) ...[
+                    Text(
+                      'Principal Balance: ₱${record.balance.toStringAsFixed(2)}',
+                      style: TextStyle(color: HomeColors.textSecondary, fontSize: 12),
+                    ),
+                    Text(
+                      'Late Penalty: +₱${record.penaltyAmount.toStringAsFixed(2)} (${record.overdueUnitsLabel} late @ ₱${record.penaltyRate.toStringAsFixed(0)}/${record.penaltyFrequencyShortUnit})',
+                      style: const TextStyle(color: AppColors.error, fontSize: 12, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Total Collectible: ₱${record.totalDueWithPenalty.toStringAsFixed(2)}',
+                      style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 14),
+                    ),
+                  ] else ...[
+                    Text(
+                      'Current Balance: ₱${record.balance.toStringAsFixed(2)}',
+                      style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 13),
+                    ),
+                  ],
+                  const SizedBox(height: 14),
+                  TextField(
+                    controller: paymentCtrl,
+                    enabled: !isSubmitting,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    style: TextStyle(color: HomeColors.textPrimary, fontSize: 18, fontWeight: FontWeight.bold),
+                    decoration: InputDecoration(
+                      labelText: 'Amount Paid (₱)',
+                      labelStyle: TextStyle(color: HomeColors.textSecondary),
+                      filled: true,
+                      fillColor: HomeColors.cardElevated,
+                      prefixIcon: const Icon(Icons.attach_money_rounded, color: Color(0xFF10B981)),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: [
+                      if (record.penaltyAmount > 0) ...[
+                        ActionChip(
+                          label: Text('Pay Total (₱${record.totalDueWithPenalty.toStringAsFixed(2)})', style: const TextStyle(fontSize: 11)),
+                          onPressed: isSubmitting ? null : () => setDialogState(() => paymentCtrl.text = record.totalDueWithPenalty.toStringAsFixed(2)),
+                          backgroundColor: HomeColors.cardElevated,
+                          labelStyle: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold),
+                        ),
+                        ActionChip(
+                          label: Text('Principal Only (₱${record.balance.toStringAsFixed(2)})', style: const TextStyle(fontSize: 11)),
+                          onPressed: isSubmitting ? null : () => setDialogState(() => paymentCtrl.text = record.balance.toStringAsFixed(2)),
+                          backgroundColor: HomeColors.cardElevated,
+                          labelStyle: TextStyle(color: HomeColors.textPrimary),
+                        ),
+                      ] else ...[
+                        ActionChip(
+                          label: const Text('Exact Full Payment', style: TextStyle(fontSize: 11)),
+                          onPressed: isSubmitting ? null : () => setDialogState(() => paymentCtrl.text = record.balance.toStringAsFixed(2)),
+                          backgroundColor: HomeColors.cardElevated,
+                          labelStyle: TextStyle(color: HomeColors.textPrimary),
+                        ),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: noteCtrl,
+                    enabled: !isSubmitting,
+                    style: TextStyle(color: HomeColors.textPrimary, fontSize: 13),
+                    decoration: InputDecoration(
+                      labelText: 'Payment Note (e.g. Cash, Online Payment)',
+                      labelStyle: TextStyle(color: HomeColors.textSecondary),
+                      filled: true,
+                      fillColor: HomeColors.cardElevated,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: isSubmitting ? null : () => Navigator.of(dialogCtx).pop(),
+                  child: Text('Cancel', style: TextStyle(color: isSubmitting ? HomeColors.textSecondary.withValues(alpha: 0.5) : HomeColors.textSecondary)),
+                ),
+                ElevatedButton(
+                  onPressed: isSubmitting
+                      ? null
+                      : () async {
+                          final paid = double.tryParse(paymentCtrl.text.replaceAll(',', '').trim()) ?? 0.0;
+                          final maxAllowed = record.penaltyAmount > 0 ? record.totalDueWithPenalty : record.balance;
+                          if (paid <= 0) {
+                            showStoraSnackBar(context, 'Please enter a valid payment amount');
+                            return;
+                          }
+                          if (paid > maxAllowed + 0.01) {
+                            showStoraSnackBar(context, 'Payment cannot exceed total due of ₱${maxAllowed.toStringAsFixed(2)}');
+                            return;
+                          }
+
+                          setDialogState(() => isSubmitting = true);
+                          try {
+                            await UtangStore.instance.recordPayment(
+                              recordId: record.id,
+                              amount: paid,
+                              note: noteCtrl.text.trim().isNotEmpty ? noteCtrl.text.trim() : null,
+                            );
+                            if (dialogCtx.mounted) Navigator.of(dialogCtx).pop();
+                            if (mounted) {
+                              showStoraSnackBar(context, 'Payment of ₱${paid.toStringAsFixed(2)} recorded!', isError: false);
+                            }
+                          } catch (e) {
+                            if (dialogCtx.mounted) {
+                              setDialogState(() => isSubmitting = false);
+                            }
+                            if (mounted) {
+                              showStoraSnackBar(context, 'Error recording payment: $e');
+                            }
+                          }
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF10B981),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                  child: isSubmitting
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        )
+                      : const Text('Confirm Payment', style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
               ],
             ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: noteCtrl,
-              style: TextStyle(color: HomeColors.textPrimary, fontSize: 13),
-              decoration: InputDecoration(
-                labelText: 'Payment Note (e.g. Cash, Online Payment)',
-                labelStyle: TextStyle(color: HomeColors.textSecondary),
-                filled: true,
-                fillColor: HomeColors.cardElevated,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-              ),
-            ),
-          ],
+          ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: Text('Cancel', style: TextStyle(color: HomeColors.textSecondary)),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final paid = double.tryParse(paymentCtrl.text.replaceAll(',', '').trim()) ?? 0.0;
-              final maxAllowed = record.penaltyAmount > 0 ? record.totalDueWithPenalty : record.balance;
-              if (paid <= 0) {
-                showStoraSnackBar(context, 'Please enter a valid payment amount');
-                return;
-              }
-              if (paid > maxAllowed + 0.01) {
-                showStoraSnackBar(context, 'Payment cannot exceed total due of ₱${maxAllowed.toStringAsFixed(2)}');
-                return;
-              }
-              await UtangStore.instance.recordPayment(
-                recordId: record.id,
-                amount: paid,
-                note: noteCtrl.text.trim().isNotEmpty ? noteCtrl.text.trim() : null,
-              );
-              if (ctx.mounted) Navigator.of(ctx).pop();
-              if (mounted) {
-                showStoraSnackBar(context, 'Payment of ₱${paid.toStringAsFixed(2)} recorded!', isError: false);
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF10B981),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            ),
-            child: const Text('Confirm Payment', style: TextStyle(fontWeight: FontWeight.bold)),
-          ),
-        ],
-      ),
-    );
-
-    paymentCtrl.dispose();
-    noteCtrl.dispose();
+      );
+    } finally {
+      _isOpeningDialog = false;
+      paymentCtrl.dispose();
+      noteCtrl.dispose();
+    }
   }
 
   void _sendReminder(UtangRecord record) {

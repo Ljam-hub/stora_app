@@ -352,6 +352,13 @@ class UtangStore extends ChangeNotifier {
   bool _isSyncing = false;
   bool get isSyncing => _isSyncing;
 
+  final Set<String> _processingPaymentRecordIds = {};
+
+  @visibleForTesting
+  void setRecordsForTesting(List<UtangRecord> records) {
+    _records = List.from(records);
+  }
+
   List<UtangRecord> get records => List.unmodifiable(_records);
 
   List<UtangRecord> get activeRecords => _records.where((r) => !r.isFullyPaid).toList();
@@ -571,50 +578,81 @@ class UtangStore extends ChangeNotifier {
     required double amount,
     String? note,
   }) async {
-    final index = _records.indexWhere((r) => r.id == recordId);
-    if (index == -1) return;
+    if (amount <= 0) return;
 
-    final existing = _records[index];
-    final payment = UtangPayment(
-      id: 'pay-${DateTime.now().millisecondsSinceEpoch}',
-      amount: amount,
-      paidAt: DateTime.now(),
-      note: note,
-    );
-
-    double updatedTotalAmount = existing.totalAmount;
-    List<UtangItem> updatedItems = existing.items;
-    if (amount > existing.balance && existing.penaltyAmount > 0) {
-      final penaltyPaid = (amount - existing.balance).clamp(0.0, existing.penaltyAmount);
-      updatedTotalAmount += penaltyPaid;
-      updatedItems = [
-        ...existing.items,
-        UtangItem(
-          productName: 'Late Payment Penalty Fee',
-          quantity: 1,
-          unitPrice: penaltyPaid,
-        ),
-      ];
+    // Mutex guard: prevent concurrent double-processing for the same record
+    if (_processingPaymentRecordIds.contains(recordId)) {
+      debugPrint('UtangStore: Payment already processing for record $recordId, ignoring duplicate in-flight call.');
+      return;
     }
+    _processingPaymentRecordIds.add(recordId);
 
-    final updatedPayments = List<UtangPayment>.from(existing.payments)..add(payment);
-    _records[index] = existing.copyWith(
-      totalAmount: updatedTotalAmount,
-      items: updatedItems,
-      payments: updatedPayments,
-    );
-    notifyListeners();
-    await _save();
+    try {
+      final index = _records.indexWhere((r) => r.id == recordId);
+      if (index == -1) return;
 
-    if (!recordId.startsWith('utang-') && !recordId.startsWith('sample-')) {
-      try {
-        await ApiClient.instance.addCreditPayment(recordId, {
-          'amount': amount,
-          'notes': note ?? '',
-        });
-      } catch (e) {
-        debugPrint('UtangStore cloud payment error: $e');
+      final existing = _records[index];
+
+      // Safeguard against rapid duplicate payments with identical amount within 3 seconds
+      if (existing.payments.isNotEmpty) {
+        final lastPayment = existing.payments.last;
+        final timeSinceLastPayment = DateTime.now().difference(lastPayment.paidAt);
+        if ((lastPayment.amount - amount).abs() < 0.001 && timeSinceLastPayment.inSeconds < 3) {
+          debugPrint('UtangStore: Rapid duplicate payment detected within ${timeSinceLastPayment.inMilliseconds}ms, ignoring.');
+          return;
+        }
       }
+
+      // Safeguard: do not allow payments if balance + penalty is already 0
+      final maxAllowed = existing.penaltyAmount > 0 ? existing.totalDueWithPenalty : existing.balance;
+      if (maxAllowed <= 0.001) {
+        debugPrint('UtangStore: Utang record $recordId is already fully settled, ignoring payment.');
+        return;
+      }
+
+      final payment = UtangPayment(
+        id: 'pay-${DateTime.now().millisecondsSinceEpoch}',
+        amount: amount,
+        paidAt: DateTime.now(),
+        note: note,
+      );
+
+      double updatedTotalAmount = existing.totalAmount;
+      List<UtangItem> updatedItems = existing.items;
+      if (amount > existing.balance && existing.penaltyAmount > 0) {
+        final penaltyPaid = (amount - existing.balance).clamp(0.0, existing.penaltyAmount);
+        updatedTotalAmount += penaltyPaid;
+        updatedItems = [
+          ...existing.items,
+          UtangItem(
+            productName: 'Late Payment Penalty Fee',
+            quantity: 1,
+            unitPrice: penaltyPaid,
+          ),
+        ];
+      }
+
+      final updatedPayments = List<UtangPayment>.from(existing.payments)..add(payment);
+      _records[index] = existing.copyWith(
+        totalAmount: updatedTotalAmount,
+        items: updatedItems,
+        payments: updatedPayments,
+      );
+      notifyListeners();
+      await _save();
+
+      if (!recordId.startsWith('utang-') && !recordId.startsWith('sample-')) {
+        try {
+          await ApiClient.instance.addCreditPayment(recordId, {
+            'amount': amount,
+            'notes': note ?? '',
+          });
+        } catch (e) {
+          debugPrint('UtangStore cloud payment error: $e');
+        }
+      }
+    } finally {
+      _processingPaymentRecordIds.remove(recordId);
     }
   }
 

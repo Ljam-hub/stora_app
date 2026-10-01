@@ -1093,28 +1093,46 @@ class CustomerCreditViewSet(OwnerQuerysetMixin, viewsets.ModelViewSet):
         except Exception:
             return Response({"error": "Invalid payment amount."}, status=status.HTTP_400_BAD_REQUEST)
 
-        if credit.is_fully_paid:
-            return Response({"error": "This credit loan is already fully settled."}, status=status.HTTP_400_BAD_REQUEST)
-        if amount_dec > credit.balance + Decimal("0.01"):
-            return Response(
-                {"error": f"Payment amount (₱{amount_dec:.2f}) cannot exceed the remaining balance (₱{credit.balance:.2f})."},
-                status=status.HTTP_400_BAD_REQUEST,
+        with transaction.atomic():
+            # Lock the credit row to serialize concurrent payment attempts
+            locked_credit = CustomerCredit.objects.select_for_update().get(pk=credit.pk)
+
+            # Rapid duplicate check (idempotency window: 4 seconds)
+            # If an identical payment for this credit was just recorded within 4 seconds,
+            # return the existing record instead of double-applying.
+            recent_duplicate = CreditPayment.objects.filter(
+                credit=locked_credit,
+                amount=amount_dec,
+                paid_at__gte=timezone.now() - timedelta(seconds=4),
+            ).first()
+            if recent_duplicate:
+                return Response(
+                    CustomerCreditSerializer(locked_credit, context={"request": request}).data,
+                    status=status.HTTP_200_OK,
+                )
+
+            if locked_credit.is_fully_paid:
+                return Response({"error": "This credit loan is already fully settled."}, status=status.HTTP_400_BAD_REQUEST)
+            if amount_dec > locked_credit.balance + Decimal("0.01"):
+                return Response(
+                    {"error": f"Payment amount (₱{amount_dec:.2f}) cannot exceed the remaining balance (₱{locked_credit.balance:.2f})."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            payment_method = request.data.get("payment_method", "cash")
+            notes = request.data.get("notes", "")
+
+            CreditPayment.objects.create(
+                credit=locked_credit,
+                amount=amount_dec,
+                payment_method=payment_method,
+                notes=notes,
             )
-
-        payment_method = request.data.get("payment_method", "cash")
-        notes = request.data.get("notes", "")
-
-        payment = CreditPayment.objects.create(
-            credit=credit,
-            amount=amount_dec,
-            payment_method=payment_method,
-            notes=notes,
-        )
-        credit.refresh_from_db()
-        return Response(
-            CustomerCreditSerializer(credit, context={"request": request}).data,
-            status=status.HTTP_201_CREATED,
-        )
+            locked_credit.refresh_from_db()
+            return Response(
+                CustomerCreditSerializer(locked_credit, context={"request": request}).data,
+                status=status.HTTP_201_CREATED,
+            )
 
 
 @api_view(["POST"])

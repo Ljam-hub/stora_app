@@ -263,4 +263,75 @@ void main() {
       expect(alert, isNull);
     });
   });
+
+  group('UtangStore Anti-Double-Tap Payment Tests', () {
+    test('rapid duplicate payment call within 3 seconds is ignored', () async {
+      final store = UtangStore.instance;
+      final initialRecord = UtangRecord(
+        id: 'sample-double-tap-test',
+        customerName: 'Juan Dela Cruz',
+        customerPhone: '09123456789',
+        totalAmount: 1000.0,
+        createdAt: DateTime.now(),
+        dueDate: DateTime.now().add(const Duration(days: 7)),
+      );
+
+      store.setRecordsForTesting([initialRecord]);
+      expect(store.records.first.balance, equals(1000.0));
+      expect(store.records.first.payments.length, equals(0));
+
+      // First payment tap
+      await store.recordPayment(
+        recordId: 'sample-double-tap-test',
+        amount: 250.0,
+        note: 'Cash payment',
+      );
+
+      expect(store.records.first.payments.length, equals(1));
+      expect(store.records.first.balance, equals(750.0));
+
+      // Second immediate tap with identical amount
+      await store.recordPayment(
+        recordId: 'sample-double-tap-test',
+        amount: 250.0,
+        note: 'Cash payment',
+      );
+
+      // Should be ignored: still 1 payment, balance still 750.0
+      expect(store.records.first.payments.length, equals(1));
+      expect(store.records.first.balance, equals(750.0));
+    });
+
+    test('concurrent simultaneous payments for same record are serialized/guarded', () async {
+      final store = UtangStore.instance;
+      final initialRecord = UtangRecord(
+        id: 'sample-concurrent-test',
+        customerName: 'Maria Santos',
+        customerPhone: '09987654321',
+        totalAmount: 500.0,
+        createdAt: DateTime.now(),
+        dueDate: DateTime.now().add(const Duration(days: 7)),
+      );
+
+      store.setRecordsForTesting([initialRecord]);
+
+      // Fire two payments concurrently
+      await Future.wait([
+        store.recordPayment(
+          recordId: 'sample-concurrent-test',
+          amount: 200.0,
+          note: 'Concurrent 1',
+        ),
+        store.recordPayment(
+          recordId: 'sample-concurrent-test',
+          amount: 200.0,
+          note: 'Concurrent 2',
+        ),
+      ]);
+
+      // Mutex + rapid duplicate check ensures only 1 payment was applied
+      expect(store.records.first.payments.length, equals(1));
+      expect(store.records.first.balance, equals(300.0));
+    });
+  });
 }
