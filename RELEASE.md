@@ -1,6 +1,6 @@
-# Stora Release v1.2.1
+# Stora Release v1.2.0
 
-**Release Tag:** `v1.2.1`  
+**Release Tag:** `v1.2.0`  
 **Date:** September 30, 2026  
 **Artifacts:** 
 - `Stora-Customer.apk` (56.1 MB)
@@ -10,13 +10,13 @@
 
 ## 🚀 Overview
 
-Release `v1.2.1` introduces full GCash / mobile payment and QR code configuration, direct on-screen digital paper receipt viewing for customer and owner apps, unified stock alerts tab navigation, optimistic instant product creation and editing, standardized 1.5-second feedback guides, and hardened account lifecycle protection in the Django Admin backend.
+Release `v1.2.0` introduces full GCash / mobile payment and QR code configuration, direct on-screen digital paper receipt viewing for customer and owner apps, unified stock alerts tab navigation, optimistic instant product creation and editing, standardized 1.5-second feedback guides, and hardened account lifecycle protection in the Django Admin backend.
 
 ---
 
 ## 📱 Mobile Applications
 
-### 🛍️ Stora Customer (`v1.2.1`)
+### 🛍️ Stora Customer (`v1.2.0`)
 - **Direct Digital Receipt Viewer:** Tapping the receipt icon on order cards now opens an authentic on-screen digital paper receipt displaying itemized breakdown, store details, totals, and payment method without forcing the system print dialog.
 - **Store Payment & QR Code at Checkout:** Customers can view the store's GCash / mobile payment number with a 1-tap Copy action (+ 1.5s SnackBar guide) and tap to view enlarged store payment QR codes.
 - **High-Contrast Stock Visibility:** Overhauled product detail stock badge with vivid neon status dots and high-contrast bold indicators for healthy stock, low stock (<5), and sold-out states.
@@ -24,7 +24,7 @@ Release `v1.2.1` introduces full GCash / mobile payment and QR code configuratio
 - **Smooth Store Carousel:** Added bouncing scroll physics to the Available Stores horizontal carousel.
 - **Snappy 1.5s SnackBars:** Standardized all SnackBar notification durations to 1.5 seconds.
 
-### 🏪 Stora Owner (`v1.2.1`)
+### 🏪 Stora Owner (`v1.2.0`)
 - **Store Payment & QR Code Setup:** Created `StorePaymentScreen` accessible from Profile and Store Location settings. Owners can configure their GCash/Maya number, account name, and upload/preview/change their payment QR code from camera or gallery.
 - **Unified Alerts & Stock Status Screen:** 
   - Tapping **"Low stock"** or **"In stock"** on the Home dashboard switches directly to the Alerts tab (no duplicate route stacked on top of the shell).
