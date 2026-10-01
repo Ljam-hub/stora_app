@@ -158,6 +158,27 @@ void main() {
       final janSales = allSales.where((s) => s.date.year == 2026 && s.date.month == 1).toList();
       expect(janSales, isEmpty);
     });
+
+    test('sorts sales by newest date and oldest date correctly', () {
+      final saleJuly = Sale(id: '1', date: DateTime(2026, 7, 10, 10, 0), items: [], total: 50.0);
+      final saleAug = Sale(id: '2', date: DateTime(2026, 8, 15, 12, 0), items: [], total: 100.0);
+      final saleSepOld = Sale(id: '3', date: DateTime(2026, 9, 1, 8, 0), items: [], total: 150.0);
+      final saleSepNew = Sale(id: '4', date: DateTime(2026, 9, 20, 17, 30), items: [], total: 200.0);
+
+      final unsorted = [saleAug, saleSepOld, saleJuly, saleSepNew];
+
+      // Newest Date first (descending)
+      final sortedNewest = List<Sale>.from(unsorted)..sort((a, b) => b.date.compareTo(a.date));
+      expect(sortedNewest.map((s) => s.id).toList(), ['4', '3', '2', '1']);
+      expect(sortedNewest.first.id, '4'); // Sept 20 is newest
+      expect(sortedNewest.last.id, '1');  // July 10 is oldest
+
+      // Oldest Date first (ascending)
+      final sortedOldest = List<Sale>.from(unsorted)..sort((a, b) => a.date.compareTo(b.date));
+      expect(sortedOldest.map((s) => s.id).toList(), ['1', '2', '3', '4']);
+      expect(sortedOldest.first.id, '1'); // July 10 is oldest
+      expect(sortedOldest.last.id, '4');  // Sept 20 is newest
+    });
   });
 
   group('Product Image Serialization & Clearing', () {

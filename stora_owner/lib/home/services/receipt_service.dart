@@ -7,6 +7,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:share_plus/share_plus.dart';
 import '../models/sale.dart';
+import '../stores/utang_store.dart';
 import '../utils/date_utils.dart';
 
 class ReceiptService {
@@ -554,6 +555,197 @@ class ReceiptService {
     final file = File('${dir.path}/stora_subscription_receipt_${DateTime.now().millisecondsSinceEpoch}.pdf');
     await file.writeAsBytes(pdfBytes);
     return file;
+  }
+
+  /// Generates 58mm thermal receipt PDF bytes for an utang loan payment.
+  Future<Uint8List> generateUtangPaymentReceiptPdf({
+    required UtangRecord record,
+    required UtangPayment payment,
+    required double previousBalance,
+    String? businessName,
+  }) async {
+    final pdf = pw.Document();
+    final storeName = (businessName != null && businessName.trim().isNotEmpty)
+        ? businessName.trim()
+        : 'STORA STORE';
+    final dateFormat = DateFormat('MMM dd, yyyy - hh:mm a');
+    final formattedDate = dateFormat.format(toManila(payment.paidAt));
+    final receiptNum = 'PAY-${payment.id.replaceFirst('pay-', '')}';
+    final remainingDue = record.penaltyAmount > 0 ? record.totalDueWithPenalty : record.balance;
+
+    final pageFormat = PdfPageFormat(
+      58 * PdfPageFormat.mm,
+      double.infinity,
+      marginAll: 3 * PdfPageFormat.mm,
+    );
+
+    pdf.addPage(
+      pw.Page(
+        pageFormat: pageFormat,
+        build: (pw.Context context) {
+          return pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.center,
+            mainAxisSize: pw.MainAxisSize.min,
+            children: [
+              // Header
+              pw.Text(
+                storeName.toUpperCase(),
+                textAlign: pw.TextAlign.center,
+                style: pw.TextStyle(
+                  fontSize: 12,
+                  fontWeight: pw.FontWeight.bold,
+                ),
+              ),
+              pw.SizedBox(height: 2),
+              pw.Text(
+                'PAYMENT RECEIPT (UTANG)',
+                style: const pw.TextStyle(fontSize: 8),
+              ),
+              pw.SizedBox(height: 4),
+              pw.Text(
+                'Receipt #: $receiptNum',
+                style: pw.TextStyle(fontSize: 7, fontWeight: pw.FontWeight.bold),
+              ),
+              pw.Text(
+                formattedDate,
+                style: const pw.TextStyle(fontSize: 7),
+              ),
+              pw.SizedBox(height: 4),
+              pw.Text(
+                'Customer: ${record.customerName}',
+                style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold),
+              ),
+              if (record.customerPhone.isNotEmpty) ...[
+                pw.Text('Mobile: ${record.customerPhone}', style: const pw.TextStyle(fontSize: 7)),
+              ],
+              pw.Divider(thickness: 0.5, borderStyle: pw.BorderStyle.dashed),
+              pw.SizedBox(height: 3),
+
+              // Balances breakdown
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text('Previous Balance:', style: const pw.TextStyle(fontSize: 8)),
+                  pw.Text('PHP ${previousBalance.toStringAsFixed(2)}', style: const pw.TextStyle(fontSize: 8)),
+                ],
+              ),
+              pw.SizedBox(height: 2),
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text('Amount Paid:', style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold)),
+                  pw.Text('PHP ${payment.amount.toStringAsFixed(2)}', style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold)),
+                ],
+              ),
+              if (payment.note != null && payment.note!.trim().isNotEmpty) ...[
+                pw.SizedBox(height: 2),
+                pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Text('Note:', style: const pw.TextStyle(fontSize: 7)),
+                    pw.Text(payment.note!, style: const pw.TextStyle(fontSize: 7)),
+                  ],
+                ),
+              ],
+              pw.Divider(thickness: 0.5, borderStyle: pw.BorderStyle.dashed),
+              pw.SizedBox(height: 2),
+
+              // Remaining Balance
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text('Remaining Balance:', style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold)),
+                  pw.Text('PHP ${remainingDue.toStringAsFixed(2)}', style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold)),
+                ],
+              ),
+              if (record.isFullyPaid) ...[
+                pw.SizedBox(height: 4),
+                pw.Container(
+                  padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: pw.BoxDecoration(
+                    border: pw.Border.all(width: 1),
+                    borderRadius: const pw.BorderRadius.all(pw.Radius.circular(4)),
+                  ),
+                  child: pw.Text(
+                    'FULLY SETTLED / BAYAD NA',
+                    style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold),
+                  ),
+                ),
+              ] else ...[
+                pw.SizedBox(height: 2),
+                pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Text('Due Date:', style: const pw.TextStyle(fontSize: 7)),
+                    pw.Text(DateFormat('MMM dd, yyyy').format(record.dueDate), style: const pw.TextStyle(fontSize: 7)),
+                  ],
+                ),
+              ],
+
+              pw.SizedBox(height: 6),
+              pw.Divider(thickness: 0.5, borderStyle: pw.BorderStyle.dashed),
+              pw.SizedBox(height: 4),
+              pw.Text('Salamat sa inyong pagbayad!', style: const pw.TextStyle(fontSize: 7)),
+              pw.Text('Managed via Stora App', style: const pw.TextStyle(fontSize: 6)),
+            ],
+          );
+        },
+      ),
+    );
+
+    return pdf.save();
+  }
+
+  /// Sends utang payment receipt to Bluetooth or system thermal printer
+  Future<void> printUtangPaymentReceipt({
+    required UtangRecord record,
+    required UtangPayment payment,
+    required double previousBalance,
+    String? businessName,
+  }) async {
+    final pdfBytes = await generateUtangPaymentReceiptPdf(
+      record: record,
+      payment: payment,
+      previousBalance: previousBalance,
+      businessName: businessName,
+    );
+    final receiptNum = 'PAY-${payment.id.replaceFirst('pay-', '')}';
+    await Printing.layoutPdf(
+      onLayout: (PdfPageFormat format) async => pdfBytes,
+      name: 'Utang_Receipt_$receiptNum.pdf',
+    );
+  }
+
+  /// Shares utang payment receipt PDF directly to Messenger, Viber, SMS, WhatsApp, etc.
+  Future<void> shareUtangPaymentReceipt({
+    required UtangRecord record,
+    required UtangPayment payment,
+    required double previousBalance,
+    String? businessName,
+  }) async {
+    final pdfBytes = await generateUtangPaymentReceiptPdf(
+      record: record,
+      payment: payment,
+      previousBalance: previousBalance,
+      businessName: businessName,
+    );
+    final output = await getTemporaryDirectory();
+    final receiptNum = 'PAY-${payment.id.replaceFirst('pay-', '')}';
+    final file = File('${output.path}/utang_receipt_$receiptNum.pdf');
+    await file.writeAsBytes(pdfBytes);
+
+    final remainingDue = record.penaltyAmount > 0 ? record.totalDueWithPenalty : record.balance;
+    final storeName = businessName ?? 'Our Store';
+    final shareText = 'Salamat ${record.customerName}! Natanggap ang bayad na PHP ${payment.amount.toStringAsFixed(2)} mula sa $storeName.\n'
+        'Natitirang balanse: PHP ${remainingDue.toStringAsFixed(2)}.\n'
+        'Receipt #: $receiptNum\n'
+        'Petsa: ${DateFormat('MMM dd, yyyy h:mm a').format(payment.paidAt)}';
+
+    await Share.shareXFiles(
+      [XFile(file.path)],
+      text: shareText,
+      subject: 'Utang Payment Receipt #$receiptNum',
+    );
   }
 }
 

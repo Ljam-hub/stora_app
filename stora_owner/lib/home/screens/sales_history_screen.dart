@@ -76,6 +76,7 @@ class SalesHistoryScreen extends StatefulWidget {
 
 class _SalesHistoryScreenState extends State<SalesHistoryScreen> {
   String _selectedFilterKey = 'all'; // 'all', 'today', 'month_YYYY_MM'
+  String _sortOrder = 'newest'; // 'newest', 'oldest'
 
   @override
   void initState() {
@@ -105,33 +106,44 @@ class _SalesHistoryScreenState extends State<SalesHistoryScreen> {
   }
 
   List<Sale> _getFilteredSales(List<Sale> allSales) {
-    if (_selectedFilterKey == 'all') return allSales;
-    final nowManila = toManila(DateTime.now());
-
-    if (_selectedFilterKey == 'today') {
-      return allSales.where((s) {
+    List<Sale> result;
+    if (_selectedFilterKey == 'all') {
+      result = List<Sale>.from(allSales);
+    } else if (_selectedFilterKey == 'today') {
+      final nowManila = toManila(DateTime.now());
+      result = allSales.where((s) {
         final sDate = toManila(s.date);
         return sDate.year == nowManila.year &&
             sDate.month == nowManila.month &&
             sDate.day == nowManila.day;
       }).toList();
-    }
-
-    if (_selectedFilterKey.startsWith('month_')) {
+    } else if (_selectedFilterKey.startsWith('month_')) {
       final parts = _selectedFilterKey.split('_');
       if (parts.length == 3) {
         final year = int.tryParse(parts[1]);
         final month = int.tryParse(parts[2]);
         if (year != null && month != null) {
-          return allSales.where((s) {
+          result = allSales.where((s) {
             final sDate = toManila(s.date);
             return sDate.year == year && sDate.month == month;
           }).toList();
+        } else {
+          result = List<Sale>.from(allSales);
         }
+      } else {
+        result = List<Sale>.from(allSales);
       }
+    } else {
+      result = List<Sale>.from(allSales);
     }
 
-    return allSales;
+    if (_sortOrder == 'oldest') {
+      result.sort((a, b) => a.date.compareTo(b.date));
+    } else {
+      result.sort((a, b) => b.date.compareTo(a.date));
+    }
+
+    return result;
   }
 
   String _getFilterLabel(List<DateTime> availableMonths) {
@@ -290,7 +302,29 @@ class _SalesHistoryScreenState extends State<SalesHistoryScreen> {
                             ),
                           );
                         }
-                        if (index == 3) return const SizedBox(height: 16);
+                        if (index == 3) {
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 14, bottom: 12),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Text(
+                                  '${filteredSales.length} ${filteredSales.length == 1 ? 'sale' : 'sales'}',
+                                  style: TextStyle(
+                                    color: HomeColors.textSecondary,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                _SalesSortDropdown(
+                                  sortOrder: _sortOrder,
+                                  onSelected: (newOrder) => setState(() => _sortOrder = newOrder),
+                                ),
+                              ],
+                            ),
+                          );
+                        }
 
                         if (filteredSales.isEmpty) {
                           return Container(
@@ -727,6 +761,110 @@ class _MonthDropdownChip extends StatelessWidget {
           ),
         );
       }).toList(),
+    );
+  }
+}
+
+class _SalesSortDropdown extends StatelessWidget {
+  final String sortOrder;
+  final ValueChanged<String> onSelected;
+
+  const _SalesSortDropdown({
+    required this.sortOrder,
+    required this.onSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isNewest = sortOrder == 'newest';
+
+    return PopupMenuButton<String>(
+      onSelected: onSelected,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      color: HomeColors.cardBackground,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: HomeColors.cardBackground,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: HomeColors.cardBorder),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.swap_vert_rounded,
+              size: 16,
+              color: AppColors.purpleLight,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              isNewest ? 'Newest Date' : 'Oldest Date',
+              style: TextStyle(
+                color: HomeColors.textPrimary,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(width: 2),
+            Icon(
+              Icons.arrow_drop_down_rounded,
+              size: 18,
+              color: HomeColors.textSecondary,
+            ),
+          ],
+        ),
+      ),
+      itemBuilder: (ctx) => [
+        PopupMenuItem(
+          value: 'newest',
+          child: Row(
+            children: [
+              Icon(
+                Icons.arrow_downward_rounded,
+                size: 16,
+                color: isNewest ? AppColors.purpleLight : HomeColors.textSecondary,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Newest Date First',
+                style: TextStyle(
+                  color: isNewest ? AppColors.purpleLight : HomeColors.textPrimary,
+                  fontWeight: isNewest ? FontWeight.w700 : FontWeight.w500,
+                ),
+              ),
+              if (isNewest) ...[
+                const Spacer(),
+                const Icon(Icons.check_rounded, size: 16, color: AppColors.purpleLight),
+              ],
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          value: 'oldest',
+          child: Row(
+            children: [
+              Icon(
+                Icons.arrow_upward_rounded,
+                size: 16,
+                color: !isNewest ? AppColors.purpleLight : HomeColors.textSecondary,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Oldest Date First',
+                style: TextStyle(
+                  color: !isNewest ? AppColors.purpleLight : HomeColors.textPrimary,
+                  fontWeight: !isNewest ? FontWeight.w700 : FontWeight.w500,
+                ),
+              ),
+              if (!isNewest) ...[
+                const Spacer(),
+                const Icon(Icons.check_rounded, size: 16, color: AppColors.purpleLight),
+              ],
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

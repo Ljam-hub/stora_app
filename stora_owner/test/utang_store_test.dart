@@ -1,6 +1,9 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:stora/data/services/utang_reminder_helper.dart';
+import 'package:stora/home/services/receipt_service.dart';
 import 'package:stora/home/stores/utang_store.dart';
+import 'package:stora/home/widgets/utang_payment_receipt_dialog.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -332,6 +335,60 @@ void main() {
       // Mutex + rapid duplicate check ensures only 1 payment was applied
       expect(store.records.first.payments.length, equals(1));
       expect(store.records.first.balance, equals(300.0));
+    });
+  });
+
+  group('UtangPaymentReceiptDialog & ReceiptService Tests', () {
+    final testRecord = UtangRecord(
+      id: 'rec-test-receipt',
+      customerName: 'Rosalinda Cruz',
+      customerPhone: '09181234567',
+      totalAmount: 1000.0,
+      createdAt: DateTime(2026, 9, 20),
+      dueDate: DateTime(2026, 10, 10),
+      payments: [
+        UtangPayment(
+          id: 'pay-test-1',
+          amount: 300.0,
+          paidAt: DateTime(2026, 9, 25, 14, 30),
+          note: 'GCash',
+        ),
+      ],
+    );
+
+    test('generateUtangPaymentReceiptPdf generates valid PDF bytes', () async {
+      final pdfBytes = await ReceiptService.instance.generateUtangPaymentReceiptPdf(
+        record: testRecord,
+        payment: testRecord.payments.first,
+        previousBalance: 1000.0,
+        businessName: 'Tindahan ni Nanay',
+      );
+      expect(pdfBytes, isNotEmpty);
+      expect(String.fromCharCodes(pdfBytes.take(4)), equals('%PDF'));
+    });
+
+    testWidgets('UtangPaymentReceiptDialog renders financial details and actions', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: UtangPaymentReceiptDialog(
+              record: testRecord,
+              payment: testRecord.payments.first,
+              previousBalance: 1000.0,
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('OFFICIAL PAYMENT RECEIPT'), findsOneWidget);
+      expect(find.text('Rosalinda Cruz'), findsOneWidget);
+      expect(find.text('09181234567'), findsOneWidget);
+      expect(find.text('₱1000.00'), findsOneWidget); // Previous balance
+      expect(find.text('₱300.00'), findsOneWidget);  // Amount paid
+      expect(find.text('₱700.00'), findsOneWidget);  // Remaining balance
+      expect(find.text('Share'), findsOneWidget);
+      expect(find.text('Print'), findsOneWidget);
+      expect(find.byKey(const Key('utang_receipt_done_button')), findsOneWidget);
     });
   });
 }

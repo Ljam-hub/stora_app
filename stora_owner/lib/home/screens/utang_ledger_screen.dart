@@ -7,6 +7,7 @@ import '../../auth/auth_store.dart';
 import '../../stora_login/stora_login.dart';
 import '../stores/utang_store.dart';
 import '../theme/home_colors.dart';
+import '../widgets/utang_payment_receipt_dialog.dart';
 
 class UtangLedgerScreen extends StatefulWidget {
   const UtangLedgerScreen({super.key});
@@ -697,6 +698,7 @@ class _UtangLedgerScreenState extends State<UtangLedgerScreen> {
 
                           setDialogState(() => isSubmitting = true);
                           try {
+                            final previousDue = record.penaltyAmount > 0 ? record.totalDueWithPenalty : record.balance;
                             await UtangStore.instance.recordPayment(
                               recordId: record.id,
                               amount: paid,
@@ -705,6 +707,19 @@ class _UtangLedgerScreenState extends State<UtangLedgerScreen> {
                             if (dialogCtx.mounted) Navigator.of(dialogCtx).pop();
                             if (mounted) {
                               showStoraSnackBar(context, 'Payment of ₱${paid.toStringAsFixed(2)} recorded!', isError: false);
+                              final updated = UtangStore.instance.records.firstWhere(
+                                (r) => r.id == record.id,
+                                orElse: () => record,
+                              );
+                              final latestPay = updated.payments.isNotEmpty ? updated.payments.last : null;
+                              if (latestPay != null) {
+                                await UtangPaymentReceiptDialog.show(
+                                  context,
+                                  record: updated,
+                                  payment: latestPay,
+                                  previousBalance: previousDue,
+                                );
+                              }
                             }
                           } catch (e) {
                             if (dialogCtx.mounted) {
@@ -1504,12 +1519,29 @@ class _UtangLedgerScreenState extends State<UtangLedgerScreen> {
                       final p = record.payments[i];
                       return ListTile(
                         dense: true,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
                         leading: const Icon(Icons.check_circle_rounded, color: Color(0xFF10B981), size: 18),
                         title: Text('₱${p.amount.toStringAsFixed(2)}',
                             style: TextStyle(color: HomeColors.textPrimary, fontSize: 13, fontWeight: FontWeight.bold)),
                         subtitle: Text(
                           '${DateFormat('MMM dd, yyyy h:mm a').format(p.paidAt)}${p.note != null ? ' · ${p.note}' : ''}',
                           style: TextStyle(color: HomeColors.textSecondary, fontSize: 11),
+                        ),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.receipt_long_rounded, color: Color(0xFF10B981), size: 20),
+                          tooltip: 'View / Print Receipt',
+                          onPressed: () {
+                            final paymentsUpTo = record.payments.sublist(0, i + 1);
+                            final totalPaidUpTo = paymentsUpTo.fold(0.0, (sum, item) => sum + item.amount);
+                            final previousBal = record.totalAmount - (totalPaidUpTo - p.amount);
+
+                            UtangPaymentReceiptDialog.show(
+                              context,
+                              record: record,
+                              payment: p,
+                              previousBalance: previousBal > 0 ? previousBal : p.amount,
+                            );
+                          },
                         ),
                       );
                     },
