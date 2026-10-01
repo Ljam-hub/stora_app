@@ -24,7 +24,7 @@ class _StorePaymentScreenState extends State<StorePaymentScreen> {
   Uint8List? _pickedQrBytes;
   String? _pickedQrFilename;
   String? _existingQrUrl;
-  bool _acceptGcash = true;
+  bool _acceptOnlinePayments = true;
   bool _qrCleared = false;
   bool _isLoading = true;
   bool _isSaving = false;
@@ -47,7 +47,7 @@ class _StorePaymentScreenState extends State<StorePaymentScreen> {
     _phoneController.text = status.paymentPhoneNumber;
     _nameController.text = status.paymentAccountName;
     _existingQrUrl = status.paymentQrUrl;
-    _acceptGcash = status.acceptGcashPayments;
+    _acceptOnlinePayments = status.acceptOnlinePayments;
 
     try {
       final data = await ApiClient.instance.getStoreLocation();
@@ -56,7 +56,7 @@ class _StorePaymentScreenState extends State<StorePaymentScreen> {
         final name = data['payment_account_name']?.toString() ?? '';
         final rawQr = (data['payment_qr_url'] ?? data['payment_qr_code'])?.toString();
         final qrUrl = (rawQr != null && rawQr.isNotEmpty) ? ApiConfig.resolveMediaUrl(rawQr) : null;
-        final acceptGcash = (data['accept_gcash_payments'] is bool)
+        final acceptOnlinePayments = (data['accept_gcash_payments'] is bool)
             ? (data['accept_gcash_payments'] as bool)
             : (data['accept_gcash_payments']?.toString().toLowerCase() == 'true' || data['accept_gcash_payments'] == null);
 
@@ -64,7 +64,7 @@ class _StorePaymentScreenState extends State<StorePaymentScreen> {
           _phoneController.text = phone;
           _nameController.text = name;
           _existingQrUrl = qrUrl;
-          _acceptGcash = acceptGcash;
+          _acceptOnlinePayments = acceptOnlinePayments;
           _isLoading = false;
         });
 
@@ -73,7 +73,7 @@ class _StorePaymentScreenState extends State<StorePaymentScreen> {
           paymentAccountName: name,
           paymentQrUrl: qrUrl,
           clearQrCode: qrUrl == null,
-          acceptGcashPayments: acceptGcash,
+          acceptOnlinePayments: acceptOnlinePayments,
         );
       }
     } catch (_) {
@@ -168,7 +168,7 @@ class _StorePaymentScreenState extends State<StorePaymentScreen> {
         paymentQrBytes: _pickedQrBytes,
         paymentQrFilename: _pickedQrFilename,
         clearQrCode: _qrCleared,
-        acceptGcashPayments: _acceptGcash,
+        acceptGcashPayments: _acceptOnlinePayments,
       );
 
       final rawQr = (res['payment_qr_url'] ?? res['payment_qr_code'])?.toString();
@@ -183,7 +183,7 @@ class _StorePaymentScreenState extends State<StorePaymentScreen> {
         paymentAccountName: name,
         paymentQrUrl: updatedQrUrl,
         clearQrCode: _qrCleared,
-        acceptGcashPayments: _acceptGcash,
+        acceptOnlinePayments: _acceptOnlinePayments,
       );
 
       if (mounted) {
@@ -289,17 +289,17 @@ class _StorePaymentScreenState extends State<StorePaymentScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Accept GCash at Checkout Toggle Card
+                    // Accept Online Payments at Checkout Toggle Card
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                       decoration: BoxDecoration(
                         color: HomeColors.cardBackground,
                         borderRadius: BorderRadius.circular(18),
                         border: Border.all(
-                          color: _acceptGcash
+                          color: _acceptOnlinePayments
                               ? AppColors.primary.withValues(alpha: 0.45)
                               : HomeColors.cardBorder,
-                          width: _acceptGcash ? 1.5 : 1.0,
+                          width: _acceptOnlinePayments ? 1.5 : 1.0,
                         ),
                         boxShadow: HomeColors.cardShadow,
                       ),
@@ -315,14 +315,14 @@ class _StorePaymentScreenState extends State<StorePaymentScreen> {
                                     Container(
                                       padding: const EdgeInsets.all(8),
                                       decoration: BoxDecoration(
-                                        color: _acceptGcash
+                                        color: _acceptOnlinePayments
                                             ? AppColors.primary.withValues(alpha: 0.15)
                                             : HomeColors.textSecondary.withValues(alpha: 0.12),
                                         shape: BoxShape.circle,
                                       ),
                                       child: Icon(
-                                        _acceptGcash ? Icons.payments_rounded : Icons.money_off_rounded,
-                                        color: _acceptGcash ? AppColors.primary : HomeColors.textSecondary,
+                                        _acceptOnlinePayments ? Icons.payments_rounded : Icons.money_off_rounded,
+                                        color: _acceptOnlinePayments ? AppColors.primary : HomeColors.textSecondary,
                                         size: 20,
                                       ),
                                     ),
@@ -332,7 +332,7 @@ class _StorePaymentScreenState extends State<StorePaymentScreen> {
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            'Accept GCash at Checkout',
+                                            'Accept Online Payments at Checkout',
                                             style: TextStyle(
                                               color: HomeColors.textPrimary,
                                               fontSize: 14.5,
@@ -341,11 +341,11 @@ class _StorePaymentScreenState extends State<StorePaymentScreen> {
                                           ),
                                           const SizedBox(height: 2),
                                           Text(
-                                            _acceptGcash
+                                            _acceptOnlinePayments
                                                 ? 'Active • Displayed to customers'
                                                 : 'Paused • Cash on Pickup only',
                                             style: TextStyle(
-                                              color: _acceptGcash ? const Color(0xFF34D399) : const Color(0xFFFBBF24),
+                                              color: _acceptOnlinePayments ? const Color(0xFF34D399) : const Color(0xFFFBBF24),
                                               fontSize: 12,
                                               fontWeight: FontWeight.w600,
                                             ),
@@ -357,12 +357,12 @@ class _StorePaymentScreenState extends State<StorePaymentScreen> {
                                 ),
                               ),
                               Switch.adaptive(
-                                value: _acceptGcash,
+                                value: _acceptOnlinePayments,
                                 activeThumbColor: AppColors.primary,
                                 activeTrackColor: AppColors.primary.withValues(alpha: 0.38),
                                 onChanged: (val) async {
                                   HapticFeedback.selectionClick();
-                                  setState(() => _acceptGcash = val);
+                                  setState(() => _acceptOnlinePayments = val);
                                   try {
                                     await ApiClient.instance.updateStorePaymentInfo(
                                       paymentPhoneNumber: _phoneController.text.trim(),
@@ -372,7 +372,7 @@ class _StorePaymentScreenState extends State<StorePaymentScreen> {
                                     StoreStatusStore.instance.updatePaymentDetails(
                                       paymentPhoneNumber: _phoneController.text.trim(),
                                       paymentAccountName: _nameController.text.trim(),
-                                      acceptGcashPayments: val,
+                                      acceptOnlinePayments: val,
                                     );
                                     if (context.mounted) {
                                       showStoraSnackBar(
@@ -385,7 +385,7 @@ class _StorePaymentScreenState extends State<StorePaymentScreen> {
                                     }
                                   } catch (e) {
                                     if (mounted) {
-                                      setState(() => _acceptGcash = !val);
+                                      setState(() => _acceptOnlinePayments = !val);
                                     }
                                     if (context.mounted) {
                                       showStoraSnackBar(context, 'Failed to update setting: $e', isError: true);
@@ -395,7 +395,7 @@ class _StorePaymentScreenState extends State<StorePaymentScreen> {
                               ),
                             ],
                           ),
-                          if (!_acceptGcash) ...[
+                          if (!_acceptOnlinePayments) ...[
                             const SizedBox(height: 10),
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -488,7 +488,7 @@ class _StorePaymentScreenState extends State<StorePaymentScreen> {
                               const Icon(Icons.phone_android_rounded, color: AppColors.primary, size: 18),
                               const SizedBox(width: 8),
                               Text(
-                                'Payment Mobile Number (GCash / Maya)',
+                                'Payment Mobile Number',
                                 style: TextStyle(
                                   color: HomeColors.textPrimary,
                                   fontSize: 13.5,
@@ -608,7 +608,7 @@ class _StorePaymentScreenState extends State<StorePaymentScreen> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Upload a screenshot of your store\'s GCash, Maya, or bank QR code.',
+                            'Upload a screenshot of your store\'s payment QR code.',
                             style: TextStyle(color: HomeColors.textSecondary, fontSize: 12),
                           ),
                           const SizedBox(height: 16),

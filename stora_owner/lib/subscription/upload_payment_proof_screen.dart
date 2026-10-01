@@ -11,29 +11,32 @@ import 'subscription_status.dart';
 import 'past_receipts_sheet.dart';
 
 // ---------------------------------------------------------------------
-// Upload GCash Proof — instructs the owner to send the plan price to
-// a GCash number or scan the dynamic QR code from backend, then submit
+// Upload Payment Proof — instructs the owner to send the plan price to
+// the payment number or scan the dynamic QR code from backend, then submit
 // a screenshot + reference number for review.
 // ---------------------------------------------------------------------
-class UploadGcashProofScreen extends StatefulWidget {
+class UploadPaymentProofScreen extends StatefulWidget {
   final int? amount;
-  final String? gcashNumber;
-  final String? gcashName;
+  final String? paymentNumber;
+  final String? paymentName;
   final String? qrCodeUrl;
 
-  const UploadGcashProofScreen({
+  const UploadPaymentProofScreen({
     super.key,
     this.amount,
-    this.gcashNumber,
-    this.gcashName,
+    this.paymentNumber,
+    this.paymentName,
     this.qrCodeUrl,
   });
 
+  String? get gcashNumber => paymentNumber;
+  String? get gcashName => paymentName;
+
   @override
-  State<UploadGcashProofScreen> createState() => _UploadGcashProofScreenState();
+  State<UploadPaymentProofScreen> createState() => _UploadPaymentProofScreenState();
 }
 
-class _UploadGcashProofScreenState extends State<UploadGcashProofScreen> {
+class _UploadPaymentProofScreenState extends State<UploadPaymentProofScreen> {
   final _referenceController = TextEditingController();
   Uint8List? _screenshotBytes;
   bool _picking = false;
@@ -41,10 +44,10 @@ class _UploadGcashProofScreenState extends State<UploadGcashProofScreen> {
 
   int get _amount =>
       widget.amount ?? AccountStatusStore.instance.monthlyPrice.toInt();
-  String get _gcashNumber =>
-      widget.gcashNumber ?? AccountStatusStore.instance.gcashNumber;
-  String get _gcashName =>
-      widget.gcashName ?? AccountStatusStore.instance.gcashName;
+  String get _paymentNumber =>
+      widget.paymentNumber ?? AccountStatusStore.instance.paymentNumber;
+  String get _paymentName =>
+      widget.paymentName ?? AccountStatusStore.instance.paymentName;
   String? get _qrCodeUrl =>
       widget.qrCodeUrl ?? AccountStatusStore.instance.qrCodeUrl;
 
@@ -86,7 +89,7 @@ class _UploadGcashProofScreenState extends State<UploadGcashProofScreen> {
   Future<void> _submit() async {
     if (_submitting) return;
     if (_screenshotBytes == null) {
-      showStoraSnackBar(context, 'Please attach your GCash screenshot');
+      showStoraSnackBar(context, 'Please attach your payment screenshot');
       return;
     }
     final ref = _referenceController.text.trim();
@@ -166,7 +169,7 @@ class _UploadGcashProofScreenState extends State<UploadGcashProofScreen> {
                           color: Color(0xFF005CEE), size: 26),
                       SizedBox(width: 8),
                       Text(
-                        'GCash QR Code',
+                        'Payment QR Code',
                         style: TextStyle(
                           color: Color(0xFF1E1E2D),
                           fontSize: 18,
@@ -222,7 +225,7 @@ class _UploadGcashProofScreenState extends State<UploadGcashProofScreen> {
               ),
               const SizedBox(height: 16),
               Text(
-                _gcashName.isNotEmpty ? _gcashName : 'STORA Admin',
+                _paymentName.isNotEmpty ? _paymentName : 'STORA Admin',
                 style: const TextStyle(
                   color: Color(0xFF1E1E2D),
                   fontSize: 16,
@@ -231,7 +234,7 @@ class _UploadGcashProofScreenState extends State<UploadGcashProofScreen> {
               ),
               const SizedBox(height: 4),
               Text(
-                _gcashNumber,
+                _paymentNumber,
                 style: const TextStyle(
                   color: Color(0xFF4A5568),
                   fontSize: 14,
@@ -254,7 +257,7 @@ class _UploadGcashProofScreenState extends State<UploadGcashProofScreen> {
                     SizedBox(width: 6),
                     Flexible(
                       child: Text(
-                        'Scan to pay via GCash, Maya, or any InstaPay app',
+                        'Scan to pay via online payment or any banking app',
                         style: TextStyle(
                           color: Color(0xFF005CEE),
                           fontSize: 12,
@@ -274,7 +277,7 @@ class _UploadGcashProofScreenState extends State<UploadGcashProofScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final displayName = _gcashName.isNotEmpty ? _gcashName : 'STORA Admin';
+    final displayName = _paymentName.isNotEmpty ? _paymentName : 'STORA Admin';
     final hasQrCode = _qrCodeUrl != null && _qrCodeUrl!.isNotEmpty;
 
     return Scaffold(
@@ -301,7 +304,7 @@ class _UploadGcashProofScreenState extends State<UploadGcashProofScreen> {
                   ),
                   Expanded(
                     child: Text(
-                      'Pay via GCash',
+                      'Online Payment',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: HomeColors.textPrimary,
@@ -394,7 +397,7 @@ class _UploadGcashProofScreenState extends State<UploadGcashProofScreen> {
               ),
               const SizedBox(height: 20),
 
-              // GCash Account Details Card (Name + Number)
+              // Payment Account Details Card (Name + Number)
               Container(
                 decoration: BoxDecoration(
                   color: HomeColors.cardBackground,
@@ -423,18 +426,15 @@ class _UploadGcashProofScreenState extends State<UploadGcashProofScreen> {
                               color: Color(0xFF005CEE),
                               shape: BoxShape.circle,
                             ),
-                            child: const Text(
-                              'G',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w900,
-                                fontSize: 13,
-                              ),
+                            child: const Icon(
+                              Icons.account_balance_wallet_rounded,
+                              color: Colors.white,
+                              size: 15,
                             ),
                           ),
                           const SizedBox(width: 10),
                           Text(
-                            'GCash Account Details',
+                            'Payment Account Details',
                             style: TextStyle(
                               color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF60A5FA) : const Color(0xFF005CEE),
                               fontSize: 13.5,
@@ -511,7 +511,7 @@ class _UploadGcashProofScreenState extends State<UploadGcashProofScreen> {
 
                     Divider(color: HomeColors.cardBorder, height: 1),
 
-                    // GCash Number Row
+                    // Payment Number Row
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 12, 12, 14),
                       child: Row(
@@ -521,7 +521,7 @@ class _UploadGcashProofScreenState extends State<UploadGcashProofScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'GCASH NUMBER',
+                                  'PAYMENT NUMBER',
                                   style: TextStyle(
                                     color: HomeColors.textSecondary,
                                     fontSize: 11,
@@ -531,7 +531,7 @@ class _UploadGcashProofScreenState extends State<UploadGcashProofScreen> {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  _gcashNumber,
+                                  _paymentNumber,
                                   style: TextStyle(
                                     color: HomeColors.textPrimary,
                                     fontSize: 17,
@@ -545,11 +545,11 @@ class _UploadGcashProofScreenState extends State<UploadGcashProofScreen> {
                           FilledButton.icon(
                             onPressed: () {
                               Clipboard.setData(
-                                ClipboardData(text: _gcashNumber),
+                                ClipboardData(text: _paymentNumber),
                               );
                               showStoraSnackBar(
                                 context,
-                                'GCash number copied',
+                                'Payment number copied',
                                 isError: false,
                               );
                             },
@@ -697,7 +697,7 @@ class _UploadGcashProofScreenState extends State<UploadGcashProofScreen> {
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        'Tap QR to enlarge • Accepts GCash, Maya & InstaPay',
+                        'Tap QR to enlarge • Scan to pay online',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: HomeColors.textMuted,
@@ -762,7 +762,7 @@ class _UploadGcashProofScreenState extends State<UploadGcashProofScreen> {
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
-                                  '+ Attach GCash Receipt',
+                                  '+ Attach Payment Receipt',
                                   style: TextStyle(
                                     color: HomeColors.textPrimary,
                                     fontSize: 13.5,
@@ -920,3 +920,5 @@ class _UploadGcashProofScreenState extends State<UploadGcashProofScreen> {
     );
   }
 }
+
+typedef UploadGcashProofScreen = UploadPaymentProofScreen;

@@ -1,4 +1,4 @@
-﻿import 'package:flutter/gestures.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:stora/auth/auth_store.dart';
@@ -53,6 +53,7 @@ class _LoginScreenState extends State<LoginScreen> {
           MaterialPageRoute(
             builder: (_) => EmailVerificationScreen(
               email: _emailController.text.trim(),
+              autoSendOnEntry: false,
             ),
           ),
         );

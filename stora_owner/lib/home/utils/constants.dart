@@ -11,6 +11,6 @@ const int kMaxStockPremium = 99999;
 const int kFreePlanProductLimit = 20;
 
 /// Premium plan's monthly price (₱) — shown on SubscriptionScreen and
-/// must match the amount UploadGcashProofScreen asks the owner to send,
+/// must match the amount UploadPaymentProofScreen asks the owner to send,
 /// so both reference this instead of repeating the number.
 const int kPremiumMonthlyPrice = 70;

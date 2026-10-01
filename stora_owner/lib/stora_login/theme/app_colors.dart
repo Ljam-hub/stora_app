@@ -20,6 +20,7 @@ class AppColors {
   static const label = Color(0xFF8E8798);
   static const hint = Color(0xFF6E6678);
   static const error = Color(0xFFEF4444);
-  static const gcashBlue = Color(0xFF007DFE);
+  static const paymentBlue = Color(0xFF007DFE);
+  static const gcashBlue = paymentBlue; // Backwards-compatible alias
   static const warningAmber = Color(0xFFF59E0B);
 }

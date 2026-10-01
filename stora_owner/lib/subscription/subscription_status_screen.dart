@@ -8,14 +8,14 @@ import 'past_receipts_sheet.dart';
 import 'subscription_receipt_modal.dart';
 import 'subscription_screen.dart';
 import 'subscription_status.dart';
-import 'upload_gcash_proof_screen.dart';
+import 'upload_payment_proof_screen.dart';
 import '../home/theme/home_colors.dart';
 import '../home/utils/date_utils.dart';
 import '../home/widgets/status_chip.dart';
 
 // ---------------------------------------------------------------------
-// Subscription Status — shown after a GCash proof has been submitted
-// (from UploadGcashProofScreen) or reopened from the Profile menu,
+// Subscription Status — shown after a payment proof has been submitted
+// (from UploadPaymentProofScreen) or reopened from the Profile menu,
 // tracking review progress: Submitted -> Under review -> Approved / Rejected.
 // ---------------------------------------------------------------------
 class SubscriptionStatusScreen extends StatefulWidget {
@@ -314,7 +314,7 @@ class _SubscriptionStatusScreenState extends State<SubscriptionStatusScreen> {
                                   Text(
                                     AccountStatusStore.instance.isPremium
                                         ? 'Your extension proof could not be verified. Note: Your current Premium subscription is still active (${AccountStatusStore.instance.daysLeft} days left). You can resubmit or dismiss this warning.'
-                                        : 'Your GCash payment proof was reviewed and could not be verified by the admin. Please verify your reference number, ensure the payment was sent to the correct GCash account, and submit a clear screenshot.',
+                                        : 'Your payment proof was reviewed and could not be verified by the admin. Please verify your reference number, ensure the payment was sent to the correct account, and submit a clear screenshot.',
                                     style: const TextStyle(color: Color(0xFFFEE2E2), fontSize: 12.5, height: 1.4),
                                   ),
                                 ],
@@ -360,7 +360,7 @@ class _SubscriptionStatusScreenState extends State<SubscriptionStatusScreen> {
                       ? 'Resubmit renewal proof'
                       : 'Resubmit payment proof',
                   onPressed: () => Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(builder: (_) => const UploadGcashProofScreen()),
+                    MaterialPageRoute(builder: (_) => const UploadPaymentProofScreen()),
                   ),
                 ),
                 const SizedBox(height: 12),

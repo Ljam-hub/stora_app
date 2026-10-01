@@ -232,7 +232,7 @@ else:
 
 _default_from = os.getenv(
     "DEFAULT_FROM_EMAIL",
-    f"STORA <{EMAIL_HOST_USER}>" if EMAIL_HOST_USER else "STORA <noreply@stora.app>"
+    f"STORA <{EMAIL_HOST_USER}>" if EMAIL_HOST_USER else "STORA <osiallj@gmail.com>"
 )
 DEFAULT_FROM_EMAIL = _default_from.strip('"').strip("'")
 

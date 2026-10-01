@@ -160,30 +160,34 @@ def send_verification_email(user, code_obj):
     from_email = (
         getattr(django_settings, "DEFAULT_FROM_EMAIL", None)
         or getattr(django_settings, "EMAIL_HOST_USER", None)
-        or "STORA <laisojl014@gmail.com>"
+        or "STORA <osiallj@gmail.com>"
     )
     if isinstance(from_email, str):
         from_email = from_email.strip('"').strip("'")
-    try:
-        send_mail(
-            subject="STORA — Your Verification Code",
-            message=(
-                f"Hello,\n\n"
-                f"Thank you for signing up for STORA!\n\n"
-                f"Your 6-digit verification code is: {code_obj.code}\n\n"
-                f"This code will expire in 15 minutes.\n\n"
-                f"— The STORA Team"
-            ),
-            from_email=from_email,
-            recipient_list=[user.email],
-            html_message=html_content,
-            fail_silently=False,
-        )
-        logger.info("Verification code email dispatched successfully to %s", user.email)
-        return True
-    except Exception as mail_err:
-        logger.error("Failed to send verification code email to %s: %s", user.email, mail_err)
-        return False
+
+    def _send_worker():
+        try:
+            send_mail(
+                subject="STORA — Your Verification Code",
+                message=(
+                    f"Hello,\n\n"
+                    f"Thank you for signing up for STORA!\n\n"
+                    f"Your 6-digit verification code is: {code_obj.code}\n\n"
+                    f"This code will expire in 15 minutes.\n\n"
+                    f"— The STORA Team"
+                ),
+                from_email=from_email,
+                recipient_list=[user.email],
+                html_message=html_content,
+                fail_silently=False,
+            )
+            logger.info("Verification code email dispatched successfully to %s", user.email)
+            return True
+        except Exception as mail_err:
+            logger.error("Failed to send verification code email to %s: %s", user.email, mail_err)
+            return False
+
+    return dispatch_email_async(_send_worker)
 
 
 def dispatch_email_async(func, *args, **kwargs):
@@ -368,17 +372,18 @@ def resend_verification_code(request):
     # Check pending registration first
     pending = PendingRegistration.objects.filter(email__iexact=email).first()
     if pending:
-        # Rate limiting: 60s cooldown based on created_at
-        if pending.created_at >= timezone.now() - timedelta(seconds=60):
-            wait_seconds = max(1, 60 - int((timezone.now() - pending.created_at).total_seconds()))
+        # Rate limiting: 30s cooldown based on created_at
+        if pending.created_at >= timezone.now() - timedelta(seconds=30):
+            wait_seconds = max(1, 30 - int((timezone.now() - pending.created_at).total_seconds()))
             return Response(
                 {"detail": f"Please wait {wait_seconds} seconds before requesting another code."},
                 status=status.HTTP_429_TOO_MANY_REQUESTS,
             )
         import secrets
         pending.code = f"{secrets.randbelow(900000) + 100000}"
+        pending.created_at = timezone.now()
         pending.expires_at = timezone.now() + timedelta(minutes=15)
-        pending.save(update_fields=["code", "expires_at"])
+        pending.save(update_fields=["code", "created_at", "expires_at"])
         try:
             send_verification_email(pending, pending)
         except Exception as e:
@@ -396,10 +401,10 @@ def resend_verification_code(request):
 
     recent_code = EmailVerificationCode.objects.filter(
         user=user,
-        created_at__gte=timezone.now() - timedelta(seconds=60),
+        created_at__gte=timezone.now() - timedelta(seconds=30),
     ).first()
     if recent_code:
-        wait_seconds = max(1, 60 - int((timezone.now() - recent_code.created_at).total_seconds()))
+        wait_seconds = max(1, 30 - int((timezone.now() - recent_code.created_at).total_seconds()))
         return Response(
             {"detail": f"Please wait {wait_seconds} seconds before requesting another code."},
             status=status.HTTP_429_TOO_MANY_REQUESTS,
@@ -422,6 +427,13 @@ def login(request):
     serializer.is_valid(raise_exception=True)
     user = serializer.validated_data["user"]
     update_last_login(None, user)
+    if not getattr(user, "is_email_verified", False):
+        try:
+            code_obj = EmailVerificationCode.generate_code(user)
+            send_verification_email(user, code_obj)
+            logger.info("Dispatched initial verification code for unverified login: %s", user.email)
+        except Exception as e:
+            logger.error("Failed to dispatch verification email on login for %s: %s", user.email, e)
     return Response(_tokens_for(user, request=request))
 
 
@@ -716,7 +728,7 @@ def forgot_password_request(request):
         from_email = (
             getattr(django_settings, "DEFAULT_FROM_EMAIL", None)
             or getattr(django_settings, "EMAIL_HOST_USER", None)
-            or "STORA <laisojl014@gmail.com>"
+            or "STORA <osiallj@gmail.com>"
         )
         if isinstance(from_email, str):
             from_email = from_email.strip('"').strip("'")

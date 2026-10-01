@@ -5,7 +5,7 @@ import '../stora_login/stora_login.dart';
 import '../home/theme/home_colors.dart';
 import '../home/widgets/status_chip.dart';
 import 'past_receipts_sheet.dart';
-import 'upload_gcash_proof_screen.dart';
+import 'upload_payment_proof_screen.dart';
 
 // ---------------------------------------------------------------------
 // Subscription — shows active Premium status or upgrade options.
@@ -260,10 +260,10 @@ class SubscriptionScreen extends StatelessWidget {
                       label: 'Extend / Renew Subscription',
                       onPressed: () => Navigator.of(context).push(
                         MaterialPageRoute(
-                          builder: (_) => UploadGcashProofScreen(
+                          builder: (_) => UploadPaymentProofScreen(
                             amount: price,
-                            gcashNumber: account.gcashNumber,
-                            gcashName: account.gcashName,
+                            paymentNumber: account.paymentNumber,
+                            paymentName: account.paymentName,
                             qrCodeUrl: account.qrCodeUrl,
                           ),
                         ),
@@ -404,10 +404,10 @@ class SubscriptionScreen extends StatelessWidget {
                       label: 'Upgrade ₱$price/mo',
                       onPressed: () => Navigator.of(context).push(
                         MaterialPageRoute(
-                          builder: (_) => UploadGcashProofScreen(
+                          builder: (_) => UploadPaymentProofScreen(
                             amount: price,
-                            gcashNumber: account.gcashNumber,
-                            gcashName: account.gcashName,
+                            paymentNumber: account.paymentNumber,
+                            paymentName: account.paymentName,
                             qrCodeUrl: account.qrCodeUrl,
                           ),
                         ),

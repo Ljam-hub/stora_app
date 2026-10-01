@@ -17,6 +17,8 @@ logger = logging.getLogger(__name__)
 
 
 class UniversalEmailBackend(BaseEmailBackend):
+    _cached_brevo_sender = os.getenv("BREVO_SENDER_EMAIL", "osiallj@gmail.com").strip()
+
     def __init__(self, fail_silently=False, **kwargs):
         super().__init__(fail_silently=fail_silently, **kwargs)
         self.brevo_api_key = os.getenv("BREVO_API_KEY", "").strip()
@@ -77,12 +79,14 @@ class UniversalEmailBackend(BaseEmailBackend):
             return False
 
     def _get_brevo_verified_sender(self):
-        if hasattr(self, "_cached_brevo_sender") and self._cached_brevo_sender:
-            return self._cached_brevo_sender
+        if UniversalEmailBackend._cached_brevo_sender:
+            return UniversalEmailBackend._cached_brevo_sender
         configured = os.getenv("BREVO_SENDER_EMAIL", "").strip()
         if configured:
-            self._cached_brevo_sender = configured
-            return self._cached_brevo_sender
+            UniversalEmailBackend._cached_brevo_sender = configured
+            return UniversalEmailBackend._cached_brevo_sender
+        if not self.brevo_api_key:
+            return "osiallj@gmail.com"
         try:
             req = urllib.request.Request(
                 "https://api.brevo.com/v3/senders",
@@ -97,28 +101,25 @@ class UniversalEmailBackend(BaseEmailBackend):
                 senders = data.get("senders", [])
                 for s in senders:
                     if s.get("active") and s.get("email"):
-                        self._cached_brevo_sender = s["email"].strip()
-                        logger.info("Auto-selected Brevo verified sender: %s", self._cached_brevo_sender)
-                        return self._cached_brevo_sender
+                        UniversalEmailBackend._cached_brevo_sender = s["email"].strip()
+                        logger.info("Auto-selected Brevo verified sender: %s", UniversalEmailBackend._cached_brevo_sender)
+                        return UniversalEmailBackend._cached_brevo_sender
         except Exception as e:
             logger.warning("Could not auto-fetch Brevo verified sender: %s", e)
-        return None
+        UniversalEmailBackend._cached_brevo_sender = "osiallj@gmail.com"
+        return UniversalEmailBackend._cached_brevo_sender
 
     def _send_via_brevo(self, message, html_content):
         url = "https://api.brevo.com/v3/smtp/email"
         verified_sender = self._get_brevo_verified_sender()
-
-        sender_name = "STORA"
         sender_email = verified_sender or "osiallj@gmail.com"
+        sender_name = "STORA"
 
         from_email = message.from_email or ""
         if "<" in from_email and ">" in from_email:
-            sender_name = from_email.split("<")[0].strip().strip('"').strip("'")
-            parsed_email = from_email.split("<")[1].split(">")[0].strip()
-            if not verified_sender and "@" in parsed_email:
-                sender_email = parsed_email
-        elif "@" in from_email and not verified_sender:
-            sender_email = from_email.strip()
+            name_part = from_email.split("<")[0].strip().strip('"').strip("'")
+            if name_part:
+                sender_name = name_part
 
         payload = {
             "sender": {"name": sender_name, "email": sender_email},

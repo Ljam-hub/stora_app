@@ -1660,10 +1660,9 @@ class _WalkInPaymentQrCard extends StatelessWidget {
                     spacing: 4,
                     runSpacing: 3,
                     children: const [
-                      _PaymentMiniBadge('GCash', Color(0xFF007DFE)),
-                      _PaymentMiniBadge('Maya', Color(0xFF16A34A)),
+                      _PaymentMiniBadge('Online Payment', Color(0xFF007DFE)),
                       _PaymentMiniBadge('QR Ph', Color(0xFFDC2626)),
-                      _PaymentMiniBadge('Banks', Color(0xFF6366F1)),
+                      _PaymentMiniBadge('Bank Apps', Color(0xFF6366F1)),
                     ],
                   ),
                 ],
@@ -1782,8 +1781,7 @@ class _PaymentQrModalSheet extends StatelessWidget {
                             spacing: 4,
                             runSpacing: 3,
                             children: const [
-                              _PaymentMiniBadge('GCash', Color(0xFF007DFE)),
-                              _PaymentMiniBadge('Maya', Color(0xFF16A34A)),
+                              _PaymentMiniBadge('Online Payment', Color(0xFF007DFE)),
                               _PaymentMiniBadge('QR Ph', Color(0xFFDC2626)),
                               _PaymentMiniBadge('Bank Apps', Color(0xFF6366F1)),
                             ],
@@ -1921,7 +1919,7 @@ class _PaymentQrModalSheet extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'GCash / Mobile Number',
+                                  'Payment Mobile Number',
                                   style: TextStyle(color: HomeColors.textSecondary, fontSize: 11),
                                 ),
                                 Text(
@@ -2022,7 +2020,7 @@ class _PaymentQrModalSheet extends StatelessWidget {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          'Upload your store\'s GCash, Maya, or Bank QR code so walk-in customers can scan and pay directly on your phone.',
+                          'Upload your store\'s payment QR code so walk-in customers can scan and pay directly on your phone.',
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             color: HomeColors.textSecondary,

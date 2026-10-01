@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:stora/auth/auth_store.dart';
 import 'package:stora/data/api/api_client.dart';
@@ -74,6 +74,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           MaterialPageRoute(
             builder: (_) => EmailVerificationScreen(
               email: _emailController.text.trim(),
+              autoSendOnEntry: false,
             ),
           ),
         );

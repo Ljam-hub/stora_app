@@ -481,7 +481,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                 Row(
                                   children: [
                                     Text(
-                                      'GCash / Online Payment',
+                                      'Online Payment',
                                       style: TextStyle(
                                         color: AppColors.textPrimary,
                                         fontWeight: FontWeight.bold,
@@ -508,7 +508,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  'Scan QR or transfer via GCash after store acceptance.',
+                                  'Scan QR or transfer online after store acceptance.',
                                   style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
                                 ),
                               ],
@@ -583,7 +583,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                               const Icon(Icons.qr_code_scanner_rounded, color: AppColors.primary, size: 18),
                               const SizedBox(width: 8),
                               Text(
-                                'Store GCash Details',
+                                'Store Payment Details',
                                 style: TextStyle(
                                   color: AppColors.textPrimary,
                                   fontSize: 14,
@@ -601,7 +601,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      currentStore.paymentAccountName.isNotEmpty ? currentStore.paymentAccountName : 'GCash Mobile Number',
+                                      currentStore.paymentAccountName.isNotEmpty ? currentStore.paymentAccountName : 'Payment Mobile Number',
                                       style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
                                     ),
                                     Text(
@@ -767,7 +767,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                             style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold, fontSize: 13),
                                           ),
                                           Text(
-                                            'Tap to enlarge and scan with GCash',
+                                            'Tap to enlarge and scan QR',
                                             style: TextStyle(color: AppColors.textSecondary, fontSize: 11),
                                           ),
                                         ],

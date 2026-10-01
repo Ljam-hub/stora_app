@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../services/api_service.dart';
@@ -19,6 +20,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> with Widget
 
   bool _codeSent = false;
   bool _isLoading = false;
+  int _resendCooldown = 60;
+  Timer? _timer;
+  bool _isResending = false;
 
   @override
   void initState() {
@@ -26,9 +30,27 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> with Widget
     WidgetsBinding.instance.addObserver(this);
   }
 
+  void _startCooldownTimer() {
+    _timer?.cancel();
+    setState(() => _resendCooldown = 60);
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      if (_resendCooldown <= 1) {
+        timer.cancel();
+        setState(() => _resendCooldown = 0);
+      } else {
+        setState(() => _resendCooldown--);
+      }
+    });
+  }
+
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _timer?.cancel();
     _emailController.dispose();
     _codeController.dispose();
     _newPasswordController.dispose();
@@ -124,6 +146,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> with Widget
           _codeSent = true;
           _isLoading = false;
         });
+        _startCooldownTimer();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Reset code sent! Check your inbox.'),
@@ -151,6 +174,40 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> with Widget
           ),
         );
       }
+    }
+  }
+
+  Future<void> _handleResendCode() async {
+    if (_resendCooldown > 0 || _isResending) return;
+    final email = _emailController.text.trim();
+    if (email.isEmpty || !email.contains('@')) {
+      setState(() => _codeSent = false);
+      return;
+    }
+
+    setState(() => _isResending = true);
+    try {
+      await CustomerApiService.instance.forgotPassword(email);
+      if (mounted) {
+        _startCooldownTimer();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('A fresh reset code has been sent to your email.'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString().replaceAll('Exception: ', '')),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isResending = false);
     }
   }
 
@@ -282,9 +339,52 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> with Widget
                   onPressed: _handleResetPassword,
                 ),
                 const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      "Didn't receive the code? ",
+                      style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                    ),
+                    if (_isResending)
+                      SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: AppColors.accentText,
+                        ),
+                      )
+                    else if (_resendCooldown > 0)
+                      Text(
+                        'Resend in ${_resendCooldown}s',
+                        style: TextStyle(
+                          color: AppColors.textMuted,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      )
+                    else
+                      GestureDetector(
+                        onTap: _handleResendCode,
+                        child: Text(
+                          'Resend Code',
+                          style: TextStyle(
+                            color: AppColors.accentText,
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 8),
                 TextButton(
                   onPressed: () => setState(() => _codeSent = false),
-                  child: Text('Resend code to email', style: TextStyle(color: AppColors.accentText)),
+                  child: Text(
+                    'Change email address',
+                    style: TextStyle(color: AppColors.textMuted, fontSize: 12),
+                  ),
                 ),
               ],
             ],

@@ -869,7 +869,7 @@ class _OwnerChatThreadScreenState extends State<OwnerChatThreadScreen> with Widg
     {'icon': Icons.waving_hand_rounded, 'text': 'Hello! How can I help you today?'},
     {'icon': Icons.inventory_2_outlined, 'text': 'Your order is prepared and ready!'},
     {'icon': Icons.delivery_dining_outlined, 'text': 'Rider is on the way to deliver.'},
-    {'icon': Icons.qr_code_rounded, 'text': 'Please send GCash payment screenshot.'},
+    {'icon': Icons.qr_code_rounded, 'text': 'Please send payment screenshot.'},
     {'icon': Icons.favorite_border_rounded, 'text': 'Thank you for shopping with us!'},
   ];
 

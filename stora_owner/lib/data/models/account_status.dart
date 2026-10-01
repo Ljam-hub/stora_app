@@ -51,8 +51,10 @@ class AccountStatus {
   final int daysLeft;
   final bool canAddProduct;
   final double monthlyPrice;
-  final String gcashNumber;
-  final String gcashName;
+  final String paymentNumber;
+  final String paymentName;
+  String get gcashNumber => paymentNumber;
+  String get gcashName => paymentName;
   final String? qrCodeUrl;
   final PaymentProofInfo? latestPaymentProof;
 
@@ -66,11 +68,14 @@ class AccountStatus {
     required this.daysLeft,
     required this.canAddProduct,
     this.monthlyPrice = 70.0,
-    this.gcashNumber = '0917 000 0070',
-    this.gcashName = 'STORA Admin',
+    String? paymentNumber,
+    String? paymentName,
+    String? gcashNumber,
+    String? gcashName,
     this.qrCodeUrl,
     this.latestPaymentProof,
-  });
+  })  : paymentNumber = paymentNumber ?? gcashNumber ?? '0917 000 0070',
+        paymentName = paymentName ?? gcashName ?? 'STORA Admin';
 
   factory AccountStatus.fromJson(Map<String, dynamic> json) {
     final proofJson = json['latest_payment_proof'] is Map ? Map<String, dynamic>.from(json['latest_payment_proof'] as Map) : null;
@@ -92,8 +97,8 @@ class AccountStatus {
       daysLeft: _asInt(json['days_left'], 0),
       canAddProduct: json['can_add_product'] == true,
       monthlyPrice: _asDouble(json['monthly_price'], 70.0),
-      gcashNumber: json['gcash_number']?.toString() ?? '0917 000 0070',
-      gcashName: json['gcash_name']?.toString() ?? 'STORA Admin',
+      paymentNumber: json['payment_number']?.toString() ?? json['gcash_number']?.toString() ?? '0917 000 0070',
+      paymentName: json['payment_name']?.toString() ?? json['gcash_name']?.toString() ?? 'STORA Admin',
       qrCodeUrl: json['qr_code']?.toString(),
       latestPaymentProof: proofJson != null ? PaymentProofInfo.fromJson(proofJson) : null,
     );
@@ -106,8 +111,8 @@ class AccountStatus {
     daysLeft: 14,
     canAddProduct: true,
     monthlyPrice: 70.0,
-    gcashNumber: '0917 000 0070',
-    gcashName: 'STORA Admin',
+    paymentNumber: '0917 000 0070',
+    paymentName: 'STORA Admin',
     qrCodeUrl: null,
   );
 }

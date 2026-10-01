@@ -103,7 +103,7 @@ class SubscriptionReceiptModal {
                       Divider(color: HomeColors.cardBorder, height: 16),
                       _receiptRow('Amount', amountFormatted, valueColor: HomeColors.successText, isBold: true),
                       Divider(color: HomeColors.cardBorder, height: 16),
-                      _receiptRow('Payment Method', 'GCash'),
+                      _receiptRow('Payment Method', 'Online Payment'),
                       Divider(color: HomeColors.cardBorder, height: 16),
                       _receiptRow('Reference #', ref),
                       Divider(color: HomeColors.cardBorder, height: 16),

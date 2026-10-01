@@ -1,4 +1,4 @@
-/// The lifecycle of a submitted GCash payment proof, shown as a
+/// The lifecycle of a submitted online payment proof, shown as a
 /// tracker on the Subscription Status screen.
 enum SubscriptionStep { submitted, underReview, approved, rejected }
 

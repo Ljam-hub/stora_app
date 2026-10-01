@@ -53,6 +53,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             MaterialPageRoute(
               builder: (_) => EmailVerificationScreen(
                 email: _emailController.text.trim(),
+                autoSendOnEntry: false,
               ),
             ),
           );

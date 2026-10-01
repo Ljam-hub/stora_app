@@ -276,7 +276,7 @@ class ReceiptService {
     required String referenceNumber,
     required DateTime date,
     required DateTime? expiresAt,
-    String paymentMethod = 'GCash',
+    String paymentMethod = 'Online Payment',
   }) async {
     final pdf = pw.Document();
     final dateFormat = DateFormat('MMM dd, yyyy - hh:mm a');

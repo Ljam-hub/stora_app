@@ -625,7 +625,7 @@ class _UtangLedgerScreenState extends State<UtangLedgerScreen> {
               controller: noteCtrl,
               style: TextStyle(color: HomeColors.textPrimary, fontSize: 13),
               decoration: InputDecoration(
-                labelText: 'Payment Note (e.g. Cash, Gcash)',
+                labelText: 'Payment Note (e.g. Cash, Online Payment)',
                 labelStyle: TextStyle(color: HomeColors.textSecondary),
                 filled: true,
                 fillColor: HomeColors.cardElevated,

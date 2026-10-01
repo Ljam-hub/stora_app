@@ -47,6 +47,8 @@ class AccountStatusStore extends ChangeNotifier {
   int get productCount => _status.productCount;
   int get productLimit => _status.productLimit;
   double get monthlyPrice => _status.monthlyPrice;
+  String get paymentNumber => _status.paymentNumber;
+  String get paymentName => _status.paymentName;
   String get gcashNumber => _status.gcashNumber;
   String get gcashName => _status.gcashName;
   String? get qrCodeUrl => _status.qrCodeUrl;

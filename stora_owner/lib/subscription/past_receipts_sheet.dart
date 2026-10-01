@@ -185,7 +185,7 @@ class _PastReceiptsSheetState extends State<PastReceiptsSheet> {
               ),
               const SizedBox(height: 6),
               Text(
-                'Receipts are generated after your GCash payment proof is reviewed and accepted by the admin. Unverified or pending proofs will not show receipts in advance.',
+                'Receipts are generated after your payment proof is reviewed and accepted by the admin. Unverified or pending proofs will not show receipts in advance.',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: HomeColors.textSecondary, fontSize: 12.5, height: 1.4),
               ),

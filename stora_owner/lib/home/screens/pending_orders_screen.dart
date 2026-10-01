@@ -271,7 +271,8 @@ class _OrderCardState extends State<_OrderCard> {
   String get notes => (widget.order['notes'] as String?) ?? '';
   String? get declineReason => widget.order['decline_reason'] as String?;
   String get paymentMethod => (widget.order['payment_method'] as String?)?.toLowerCase() ?? 'cash';
-  bool get isGcashPayment => paymentMethod == 'gcash';
+  bool get isOnlinePayment => paymentMethod == 'gcash';
+  bool get isGcashPayment => isOnlinePayment;
   String get totalAmount {
     if ((status == 'accepted' || status == 'ready' || status == 'completed') && widget.order['counter_price'] != null) {
       final cp = double.tryParse(widget.order['counter_price'].toString());
@@ -773,40 +774,6 @@ class _OrderCardState extends State<_OrderCard> {
                               ),
                             ),
                           ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
-                            decoration: BoxDecoration(
-                              color: isGcashPayment
-                                  ? const Color(0xFF1E3A8A).withValues(alpha: 0.25)
-                                  : const Color(0xFF064E3B).withValues(alpha: 0.25),
-                              borderRadius: BorderRadius.circular(6),
-                              border: Border.all(
-                                color: isGcashPayment
-                                    ? const Color(0xFF3B82F6).withValues(alpha: 0.5)
-                                    : const Color(0xFF10B981).withValues(alpha: 0.5),
-                                width: 0.8,
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  isGcashPayment ? Icons.account_balance_wallet_rounded : Icons.payments_outlined,
-                                  size: 10,
-                                  color: isGcashPayment ? const Color(0xFF93C5FD) : const Color(0xFF6EE7B7),
-                                ),
-                                const SizedBox(width: 3),
-                                Text(
-                                  isGcashPayment ? 'GCash' : 'Cash',
-                                  style: TextStyle(
-                                    color: isGcashPayment ? const Color(0xFF93C5FD) : const Color(0xFF6EE7B7),
-                                    fontSize: 9.5,
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
                         ],
                       ),
                       const SizedBox(height: 3),
@@ -990,8 +957,8 @@ class _OrderCardState extends State<_OrderCard> {
                     child: Row(
                       children: [
                         Icon(
-                          isGcashPayment ? Icons.account_balance_wallet_rounded : Icons.payments_outlined,
-                          color: isGcashPayment ? const Color(0xFF60A5FA) : const Color(0xFF34D399),
+                          isOnlinePayment ? Icons.account_balance_wallet_rounded : Icons.payments_outlined,
+                          color: isOnlinePayment ? const Color(0xFF60A5FA) : const Color(0xFF34D399),
                           size: 14,
                         ),
                         const SizedBox(width: 8),
@@ -1000,9 +967,9 @@ class _OrderCardState extends State<_OrderCard> {
                           style: TextStyle(color: HomeColors.textSecondary, fontSize: 12),
                         ),
                         Text(
-                          isGcashPayment ? 'GCash / Online Payment' : 'Cash on Pickup',
+                          isOnlinePayment ? 'Online Payment' : 'Cash on Pickup',
                           style: TextStyle(
-                            color: isGcashPayment ? const Color(0xFF93C5FD) : const Color(0xFF6EE7B7),
+                            color: isOnlinePayment ? const Color(0xFF93C5FD) : const Color(0xFF6EE7B7),
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
                           ),

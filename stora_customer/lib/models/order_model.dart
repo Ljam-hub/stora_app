@@ -105,8 +105,9 @@ class CustomerOrder {
     this.paymentMethod = 'cash',
   });
 
-  bool get isGcashPayment => paymentMethod.toLowerCase() == 'gcash';
-  String get paymentMethodDisplay => isGcashPayment ? 'GCash' : 'Cash on Pickup';
+  bool get isOnlinePayment => paymentMethod.toLowerCase() == 'gcash' || paymentMethod.toLowerCase() == 'online';
+  bool get isGcashPayment => isOnlinePayment;
+  String get paymentMethodDisplay => isOnlinePayment ? 'Online Payment' : 'Cash on Pickup';
 
   String get receiptNumber => (receiptNumberField != null && receiptNumberField!.trim().isNotEmpty)
       ? receiptNumberField!.trim()

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../data/api/api_client.dart';
@@ -21,19 +22,82 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> with WidgetsB
   final _passwordController = TextEditingController();
   final _confirmController = TextEditingController();
   bool _busy = false;
+  String? _email;
+  int _resendCooldown = 60;
+  Timer? _timer;
+  bool _isResending = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _startCooldownTimer();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkClipboardForToken();
     });
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_email == null) {
+      final args = ModalRoute.of(context)?.settings.arguments;
+      if (args is String && args.isNotEmpty) {
+        _email = args;
+      }
+    }
+  }
+
+  void _startCooldownTimer() {
+    _timer?.cancel();
+    setState(() => _resendCooldown = 60);
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      if (_resendCooldown <= 1) {
+        timer.cancel();
+        setState(() => _resendCooldown = 0);
+      } else {
+        setState(() => _resendCooldown--);
+      }
+    });
+  }
+
+  Future<void> _handleResendCode() async {
+    if (_resendCooldown > 0 || _isResending) return;
+    final email = _email?.trim() ?? '';
+    if (email.isEmpty) {
+      showStoraSnackBar(context, 'No email found. Please return to the forgot password screen.');
+      return;
+    }
+
+    setState(() => _isResending = true);
+    try {
+      final message = await ApiClient.instance.requestPasswordReset(email);
+      if (!mounted) return;
+      showStoraSnackBar(
+        context,
+        message.isNotEmpty ? message : 'A fresh reset code has been sent to your email.',
+        isError: false,
+      );
+      _startCooldownTimer();
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      showStoraSnackBar(context, e.message);
+    } catch (e) {
+      if (!mounted) return;
+      showStoraSnackBar(context, 'Failed to resend reset code. Please try again.');
+    } finally {
+      if (mounted) setState(() => _isResending = false);
+    }
+  }
+
+  @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _timer?.cancel();
     _tokenController.dispose();
     _passwordController.dispose();
     _confirmController.dispose();
@@ -254,6 +318,46 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> with WidgetsB
                         label: 'Reset password',
                         isLoading: _busy,
                         onPressed: _submit,
+                      ),
+                      const SizedBox(height: 18),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Text(
+                            "Didn't receive the code? ",
+                            style: TextStyle(color: AppColors.label, fontSize: 13),
+                          ),
+                          if (_isResending)
+                            SizedBox(
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: AppColors.primaryLight,
+                              ),
+                            )
+                          else if (_resendCooldown > 0)
+                            Text(
+                              'Resend in ${_resendCooldown}s',
+                              style: TextStyle(
+                                color: AppColors.label.withValues(alpha: 0.6),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            )
+                          else
+                            GestureDetector(
+                              onTap: _handleResendCode,
+                              child: const Text(
+                                'Resend Code',
+                                style: TextStyle(
+                                  color: AppColors.primaryLight,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                     ],
                   ),

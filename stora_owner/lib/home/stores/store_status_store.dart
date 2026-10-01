@@ -27,6 +27,7 @@ class StoreStatusStore extends ChangeNotifier {
   String get paymentAccountName => _paymentAccountName;
   String? get paymentQrUrl => _paymentQrUrl;
   bool get acceptGcashPayments => _acceptGcashPayments;
+  bool get acceptOnlinePayments => _acceptGcashPayments;
 
   bool get hasValidLocation {
     if (!_isLoaded) return true;
@@ -112,6 +113,7 @@ class StoreStatusStore extends ChangeNotifier {
     String? paymentQrUrl,
     bool clearQrCode = false,
     bool? acceptGcashPayments,
+    bool? acceptOnlinePayments,
   }) {
     _paymentPhoneNumber = paymentPhoneNumber;
     _paymentAccountName = paymentAccountName;
@@ -120,7 +122,8 @@ class StoreStatusStore extends ChangeNotifier {
     } else if (paymentQrUrl != null) {
       _paymentQrUrl = ApiConfig.resolveMediaUrl(paymentQrUrl);
     }
-    if (acceptGcashPayments != null) _acceptGcashPayments = acceptGcashPayments;
+    final online = acceptOnlinePayments ?? acceptGcashPayments;
+    if (online != null) _acceptGcashPayments = online;
     notifyListeners();
   }
 
