@@ -190,24 +190,35 @@ def send_verification_email(user, code_obj):
     return dispatch_email_async(_send_worker)
 
 
+LAST_ASYNC_EMAIL_ERROR = None
+LAST_ASYNC_EMAIL_SUCCESS = None
+
+
 def dispatch_email_async(func, *args, **kwargs):
     """
     Executes email sending asynchronously in a background thread in production
     and development, allowing the HTTP response to return instantly to the mobile client (<100ms).
     Executes synchronously in automated unit tests so assertions on django.core.mail.outbox remain deterministic.
     """
+    global LAST_ASYNC_EMAIL_ERROR, LAST_ASYNC_EMAIL_SUCCESS
     backend = getattr(django_settings, "EMAIL_BACKEND", "")
     if "locmem" in backend or "test" in sys.argv:
         try:
-            return func(*args, **kwargs)
+            res = func(*args, **kwargs)
+            LAST_ASYNC_EMAIL_SUCCESS = f"{timezone.now().isoformat()}: sync success"
+            return res
         except Exception as e:
+            LAST_ASYNC_EMAIL_ERROR = f"{timezone.now().isoformat()}: {type(e).__name__}: {e}"
             logger.error("Error in sync email dispatch: %s", e, exc_info=True)
             return None
 
     def _safe_worker():
+        global LAST_ASYNC_EMAIL_ERROR, LAST_ASYNC_EMAIL_SUCCESS
         try:
             func(*args, **kwargs)
+            LAST_ASYNC_EMAIL_SUCCESS = f"{timezone.now().isoformat()}: async worker dispatched successfully"
         except Exception as e:
+            LAST_ASYNC_EMAIL_ERROR = f"{timezone.now().isoformat()}: {type(e).__name__}: {e}"
             logger.error("Unhandled exception in async email dispatch worker: %s", e, exc_info=True)
 
     thread = threading.Thread(target=_safe_worker, daemon=False)
@@ -218,7 +229,58 @@ def dispatch_email_async(func, *args, **kwargs):
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def health_check(request):
-    return Response({"status": "ok", "message": "Stora backend is reachable"})
+    data = {"status": "ok", "message": "Stora backend is reachable"}
+    if request.GET.get("diag") == "1" or request.GET.get("check_email") or request.GET.get("test_to"):
+        import os
+        import json
+        import urllib.request
+        from .email_backend import UniversalEmailBackend
+
+        brevo_key = os.getenv("BREVO_API_KEY", "").strip()
+        resend_key = os.getenv("RESEND_API_KEY", "").strip()
+
+        diag = {
+            "email_backend": getattr(django_settings, "EMAIL_BACKEND", None),
+            "brevo_configured": bool(brevo_key),
+            "brevo_key_preview": (brevo_key[:6] + "..." + brevo_key[-4:]) if len(brevo_key) > 10 else ("set" if brevo_key else "NOT SET"),
+            "resend_configured": bool(resend_key),
+            "email_host": getattr(django_settings, "EMAIL_HOST", None),
+            "email_port": getattr(django_settings, "EMAIL_PORT", None),
+            "email_host_user": getattr(django_settings, "EMAIL_HOST_USER", None),
+            "default_from": getattr(django_settings, "DEFAULT_FROM_EMAIL", None),
+            "cached_brevo_sender": UniversalEmailBackend._cached_brevo_sender,
+            "last_backend_error": UniversalEmailBackend.last_error,
+            "last_backend_status": UniversalEmailBackend.last_status,
+            "last_async_dispatch_error": LAST_ASYNC_EMAIL_ERROR,
+            "last_async_dispatch_success": LAST_ASYNC_EMAIL_SUCCESS,
+        }
+
+        if brevo_key:
+            try:
+                backend_inst = UniversalEmailBackend()
+                diag["brevo_verified_sender"] = backend_inst._get_brevo_verified_sender(force_refresh=True)
+                diag["brevo_senders_list"] = UniversalEmailBackend._cached_senders_list
+            except Exception as be:
+                diag["brevo_sender_fetch_error"] = str(be)
+
+        test_to = request.GET.get("test_to")
+        if test_to:
+            try:
+                sent = send_mail(
+                    subject="STORA — Verification System Test",
+                    message="Your STORA verification email system is online and functional.\nTest Code: 123456",
+                    from_email=getattr(django_settings, "DEFAULT_FROM_EMAIL", "STORA <osiallj@gmail.com>"),
+                    recipient_list=[test_to.strip()],
+                    fail_silently=False,
+                )
+                diag["test_send_result"] = f"SUCCESS (count={sent})"
+            except Exception as se:
+                import traceback
+                diag["test_send_result"] = f"FAILED: {type(se).__name__}: {se}"
+                diag["test_send_traceback"] = traceback.format_exc()
+
+        data["email_diagnostic"] = diag
+    return Response(data)
 
 
 

@@ -1578,6 +1578,7 @@ class _WalkInPaymentQrCard extends StatelessWidget {
           ],
         ),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Container(
               padding: const EdgeInsets.all(10),
@@ -1602,6 +1603,7 @@ class _WalkInPaymentQrCard extends StatelessWidget {
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Row(
                     children: [
@@ -1656,14 +1658,17 @@ class _WalkInPaymentQrCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 5),
-                  Wrap(
-                    spacing: 4,
-                    runSpacing: 3,
-                    children: const [
-                      _PaymentMiniBadge('Online Payment', Color(0xFF007DFE)),
-                      _PaymentMiniBadge('QR Ph', Color(0xFFDC2626)),
-                      _PaymentMiniBadge('Bank Apps', Color(0xFF6366F1)),
-                    ],
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        _PaymentMiniBadge('Online Payment', Color(0xFF007DFE)),
+                        SizedBox(width: 5),
+                        _PaymentMiniBadge('Bank Apps', Color(0xFF6366F1)),
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -1776,15 +1781,18 @@ class _PaymentQrModalSheet extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          const SizedBox(height: 4),
-                          Wrap(
-                            spacing: 4,
-                            runSpacing: 3,
-                            children: const [
-                              _PaymentMiniBadge('Online Payment', Color(0xFF007DFE)),
-                              _PaymentMiniBadge('QR Ph', Color(0xFFDC2626)),
-                              _PaymentMiniBadge('Bank Apps', Color(0xFF6366F1)),
-                            ],
+                          const SizedBox(height: 5),
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: const [
+                                _PaymentMiniBadge('Online Payment', Color(0xFF007DFE)),
+                                SizedBox(width: 5),
+                                _PaymentMiniBadge('Bank Apps', Color(0xFF6366F1)),
+                              ],
+                            ),
                           ),
                         ],
                       ),

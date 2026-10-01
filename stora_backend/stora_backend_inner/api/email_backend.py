@@ -17,7 +17,10 @@ logger = logging.getLogger(__name__)
 
 
 class UniversalEmailBackend(BaseEmailBackend):
-    _cached_brevo_sender = os.getenv("BREVO_SENDER_EMAIL", "osiallj@gmail.com").strip()
+    _cached_brevo_sender = None
+    _cached_senders_list = []
+    last_error = None
+    last_status = None
 
     def __init__(self, fail_silently=False, **kwargs):
         super().__init__(fail_silently=fail_silently, **kwargs)
@@ -42,6 +45,7 @@ class UniversalEmailBackend(BaseEmailBackend):
                 if success:
                     sent_count += 1
             except Exception as e:
+                UniversalEmailBackend.last_error = f"{type(e).__name__}: {e}"
                 logger.error("Email send failed: %s", e)
                 if not self.fail_silently:
                     raise
@@ -59,34 +63,55 @@ class UniversalEmailBackend(BaseEmailBackend):
 
         # 1. Try Brevo REST API over HTTPS (Port 443)
         if self.brevo_api_key:
-            return self._send_via_brevo(message, html_content)
+            try:
+                if self._send_via_brevo(message, html_content):
+                    UniversalEmailBackend.last_status = "Sent via Brevo HTTPS"
+                    return True
+            except Exception as e:
+                UniversalEmailBackend.last_error = f"Brevo dispatch error: {e}"
+                logger.error("Brevo dispatch error: %s", e)
 
         # 2. Try Resend REST API over HTTPS (Port 443)
         if self.resend_api_key:
-            return self._send_via_resend(message, html_content)
+            try:
+                if self._send_via_resend(message, html_content):
+                    UniversalEmailBackend.last_status = "Sent via Resend HTTPS"
+                    return True
+            except Exception as e:
+                UniversalEmailBackend.last_error = f"Resend dispatch error: {e}"
+                logger.error("Resend dispatch error: %s", e)
 
         # 3. Fallback to standard SMTP (works locally where port 587 is unblocked)
         try:
             smtp_backend = SmtpEmailBackend(fail_silently=self.fail_silently)
-            return smtp_backend.send_messages([message]) > 0
+            success = smtp_backend.send_messages([message]) > 0
+            if success:
+                UniversalEmailBackend.last_status = "Sent via SMTP"
+            return success
         except Exception as e:
+            UniversalEmailBackend.last_error = f"SMTP fallback error: {e}"
             logger.error(
                 "SMTP fallback failed (expected on Render Free Tier due to blocked ports 25/465/587): %s",
                 e,
             )
-            if not self.fail_silently:
+            if not self.fail_silently and not self.brevo_api_key and not self.resend_api_key:
                 raise
             return False
 
-    def _get_brevo_verified_sender(self):
-        if UniversalEmailBackend._cached_brevo_sender:
+    def _get_brevo_verified_sender(self, force_refresh=False):
+        if not force_refresh and UniversalEmailBackend._cached_brevo_sender:
             return UniversalEmailBackend._cached_brevo_sender
+
         configured = os.getenv("BREVO_SENDER_EMAIL", "").strip()
         if configured:
             UniversalEmailBackend._cached_brevo_sender = configured
             return UniversalEmailBackend._cached_brevo_sender
+
         if not self.brevo_api_key:
-            return "osiallj@gmail.com"
+            fallback = os.getenv("EMAIL_HOST_USER", "osiallj@gmail.com").strip()
+            UniversalEmailBackend._cached_brevo_sender = fallback
+            return fallback
+
         try:
             req = urllib.request.Request(
                 "https://api.brevo.com/v3/senders",
@@ -99,17 +124,39 @@ class UniversalEmailBackend(BaseEmailBackend):
             with urllib.request.urlopen(req, timeout=5) as r:
                 data = json.loads(r.read().decode("utf-8"))
                 senders = data.get("senders", [])
+                UniversalEmailBackend._cached_senders_list = senders
+
+                preferred_user = os.getenv("EMAIL_HOST_USER", "").strip().lower()
+
+                # 1. Look for active sender matching EMAIL_HOST_USER
+                if preferred_user:
+                    for s in senders:
+                        if s.get("active") and s.get("email", "").strip().lower() == preferred_user:
+                            UniversalEmailBackend._cached_brevo_sender = s["email"].strip()
+                            logger.info("Selected preferred active Brevo sender: %s", UniversalEmailBackend._cached_brevo_sender)
+                            return UniversalEmailBackend._cached_brevo_sender
+
+                # 2. Look for ANY active verified sender
                 for s in senders:
                     if s.get("active") and s.get("email"):
                         UniversalEmailBackend._cached_brevo_sender = s["email"].strip()
-                        logger.info("Auto-selected Brevo verified sender: %s", UniversalEmailBackend._cached_brevo_sender)
+                        logger.info("Auto-selected active Brevo verified sender: %s", UniversalEmailBackend._cached_brevo_sender)
+                        return UniversalEmailBackend._cached_brevo_sender
+
+                # 3. Look for any listed sender
+                for s in senders:
+                    if s.get("email"):
+                        UniversalEmailBackend._cached_brevo_sender = s["email"].strip()
+                        logger.info("Selected first available Brevo sender: %s", UniversalEmailBackend._cached_brevo_sender)
                         return UniversalEmailBackend._cached_brevo_sender
         except Exception as e:
             logger.warning("Could not auto-fetch Brevo verified sender: %s", e)
-        UniversalEmailBackend._cached_brevo_sender = "osiallj@gmail.com"
-        return UniversalEmailBackend._cached_brevo_sender
 
-    def _send_via_brevo(self, message, html_content):
+        fallback = os.getenv("EMAIL_HOST_USER", "osiallj@gmail.com").strip()
+        UniversalEmailBackend._cached_brevo_sender = fallback
+        return fallback
+
+    def _send_via_brevo(self, message, html_content, retry=True):
         url = "https://api.brevo.com/v3/smtp/email"
         verified_sender = self._get_brevo_verified_sender()
         sender_email = verified_sender or "osiallj@gmail.com"
@@ -145,16 +192,27 @@ class UniversalEmailBackend(BaseEmailBackend):
         try:
             with urllib.request.urlopen(req, timeout=10) as response:
                 if response.status in (200, 201, 202):
-                    logger.info("Email successfully sent via Brevo to %s", message.to)
+                    logger.info("Email successfully sent via Brevo to %s (sender: %s)", message.to, sender_email)
                     return True
         except urllib.error.HTTPError as err:
             err_body = err.read().decode("utf-8", errors="replace")
             logger.error("Brevo API error (HTTP %s): %s", err.code, err_body)
+            UniversalEmailBackend.last_error = f"Brevo HTTP {err.code}: {err_body}"
+
+            # Auto-recovery if sender email was not authorized/verified
+            if retry and err.code in (400, 401, 403) and any(w in err_body.lower() for w in ["sender", "unauthorized", "verify", "verified"]):
+                logger.warning("Brevo rejected sender '%s'. Refreshing verified senders from API...", sender_email)
+                fresh_sender = self._get_brevo_verified_sender(force_refresh=True)
+                if fresh_sender and fresh_sender != sender_email:
+                    logger.info("Retrying Brevo dispatch with refreshed sender: %s", fresh_sender)
+                    return self._send_via_brevo(message, html_content, retry=False)
+
             if not self.fail_silently:
                 raise RuntimeError(f"Brevo API error {err.code}: {err_body}") from err
             return False
         except Exception as err:
             logger.error("Brevo connection failed: %s", err)
+            UniversalEmailBackend.last_error = f"Brevo connection: {err}"
             if not self.fail_silently:
                 raise
             return False
@@ -195,11 +253,13 @@ class UniversalEmailBackend(BaseEmailBackend):
         except urllib.error.HTTPError as err:
             err_body = err.read().decode("utf-8", errors="replace")
             logger.error("Resend API error (HTTP %s): %s", err.code, err_body)
+            UniversalEmailBackend.last_error = f"Resend HTTP {err.code}: {err_body}"
             if not self.fail_silently:
                 raise RuntimeError(f"Resend API error {err.code}: {err_body}") from err
             return False
         except Exception as err:
             logger.error("Resend connection failed: %s", err)
+            UniversalEmailBackend.last_error = f"Resend connection: {err}"
             if not self.fail_silently:
                 raise
             return False
