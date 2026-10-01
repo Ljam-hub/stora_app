@@ -23,11 +23,11 @@ logger = logging.getLogger(__name__)
 GITHUB_REPO = "Ljam-hub/stora_app"
 DEFAULT_RELEASE_TAG = "v1.2.0"
 DEFAULT_CUSTOMER_SIZE = "56.1 MB"
-DEFAULT_OWNER_SIZE = "80.8 MB"
+DEFAULT_OWNER_SIZE = "80.9 MB"
 DEFAULT_CUSTOMER_URL = f"https://github.com/{GITHUB_REPO}/releases/latest/download/Stora-Customer.apk"
 DEFAULT_OWNER_URL = f"https://github.com/{GITHUB_REPO}/releases/latest/download/Stora.apk"
-CACHE_KEY = "stora_github_release_info_v120"
-LAST_KNOWN_KEY = "stora_github_release_last_known_v120"
+CACHE_KEY = "stora_github_release_info_v120_b"
+LAST_KNOWN_KEY = "stora_github_release_last_known_v120_b"
 CACHE_TIMEOUT = 300  # 5 minutes
 
 
@@ -57,35 +57,6 @@ def get_github_release_info():
     if last_known and isinstance(last_known, dict):
         if last_known.get("tag_name", "") >= DEFAULT_RELEASE_TAG:
             info.update(last_known)
-
-    try:
-        repo_root = Path(settings.BASE_DIR).parent.parent
-        # Check repo-level apk/ folder first, then flutter-apk/ fallbacks
-        for cust_candidate in [
-            repo_root / "apk" / "Stora-Customer.apk",
-            repo_root / "stora_customer" / "apk" / "Stora-Customer.apk",
-            repo_root / "flutter-apk" / "Stora-Customer.apk",
-        ]:
-            if cust_candidate.exists():
-                formatted = format_bytes_to_mb(cust_candidate.stat().st_size)
-                if formatted:
-                    info["customer_apk_size"] = formatted
-                break
-
-        for owner_candidate in [
-            repo_root / "apk" / "Stora-Owner.apk",
-            repo_root / "apk" / "Stora.apk",
-            repo_root / "stora_owner" / "apk" / "Stora-Owner.apk",
-            repo_root / "stora_owner" / "apk" / "Stora.apk",
-            repo_root / "flutter-apk" / "Stora.apk",
-        ]:
-            if owner_candidate.exists():
-                formatted = format_bytes_to_mb(owner_candidate.stat().st_size)
-                if formatted:
-                    info["owner_apk_size"] = formatted
-                break
-    except Exception:
-        pass
 
     try:
         url = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest"
@@ -120,12 +91,40 @@ def get_github_release_info():
                             info["owner_apk_size"] = formatted_size
                         if download_url:
                             info["owner_download_url"] = download_url
-
-                cache.set(CACHE_KEY, info, CACHE_TIMEOUT)
-                cache.set(LAST_KNOWN_KEY, info, None)  # Persist last known good
     except Exception as exc:
         logger.warning("Could not fetch GitHub release info: %s", exc)
-        cache.set(CACHE_KEY, info, 60)
+
+    # Check local repo-level apk/ files and give precedence to built binaries served locally
+    try:
+        repo_root = Path(settings.BASE_DIR).parent.parent
+        for cust_candidate in [
+            repo_root / "apk" / "Stora-Customer.apk",
+            repo_root / "stora_customer" / "apk" / "Stora-Customer.apk",
+            repo_root / "flutter-apk" / "Stora-Customer.apk",
+        ]:
+            if cust_candidate.exists():
+                formatted = format_bytes_to_mb(cust_candidate.stat().st_size)
+                if formatted:
+                    info["customer_apk_size"] = formatted
+                break
+
+        for owner_candidate in [
+            repo_root / "apk" / "Stora-Owner.apk",
+            repo_root / "apk" / "Stora.apk",
+            repo_root / "stora_owner" / "apk" / "Stora-Owner.apk",
+            repo_root / "stora_owner" / "apk" / "Stora.apk",
+            repo_root / "flutter-apk" / "Stora.apk",
+        ]:
+            if owner_candidate.exists():
+                formatted = format_bytes_to_mb(owner_candidate.stat().st_size)
+                if formatted:
+                    info["owner_apk_size"] = formatted
+                break
+    except Exception:
+        pass
+
+    cache.set(CACHE_KEY, info, CACHE_TIMEOUT)
+    cache.set(LAST_KNOWN_KEY, info, None)  # Persist last known good
 
     return info
 
