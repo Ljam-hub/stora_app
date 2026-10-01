@@ -703,7 +703,8 @@ class _ImagePickerFieldState extends State<_ImagePickerField> {
                             children: [
                               // Fitted preview stage
                               Container(
-                                color: const Color(0xFF1E172B),
+                                color: Colors.white,
+                                padding: const EdgeInsets.all(8),
                                 child: _bytes != null
                                     ? Image.memory(
                                         _bytes!,

@@ -24,7 +24,7 @@ class ProductImage extends StatelessWidget {
     this.categoryName = '',
     this.width,
     this.height,
-    this.fit = BoxFit.cover,
+    this.fit = BoxFit.contain,
     this.iconSize = 32,
     this.borderRadius,
   });
@@ -40,26 +40,14 @@ class ProductImage extends StatelessWidget {
         height: height,
         decoration: BoxDecoration(
           borderRadius: radius,
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: isDark
-                ? [
-                    AppColors.surfaceHover.withValues(alpha: 0.65),
-                    AppColors.cardElevated,
-                  ]
-                : [
-                    Colors.white,
-                    const Color(0xFFF1F5F9),
-                  ],
-          ),
+          color: Colors.white,
           border: Border.all(
-            color: (isDark ? Colors.white : Colors.black).withValues(alpha: isDark ? 0.08 : 0.05),
+            color: Colors.black.withValues(alpha: 0.08),
             width: 1,
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.04),
+              color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.06),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -67,14 +55,10 @@ class ProductImage extends StatelessWidget {
         ),
         child: ClipRRect(
           borderRadius: radius,
-          child: fit == BoxFit.contain
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(8),
-                    child: child,
-                  ),
-                )
-              : child,
+          child: Padding(
+            padding: (width != null && width! < 50) ? const EdgeInsets.all(2) : const EdgeInsets.all(6),
+            child: Center(child: child),
+          ),
         ),
       );
     }
