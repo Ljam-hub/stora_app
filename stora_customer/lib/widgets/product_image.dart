@@ -67,7 +67,14 @@ class ProductImage extends StatelessWidget {
         ),
         child: ClipRRect(
           borderRadius: radius,
-          child: child,
+          child: fit == BoxFit.contain
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: child,
+                  ),
+                )
+              : child,
         ),
       );
     }

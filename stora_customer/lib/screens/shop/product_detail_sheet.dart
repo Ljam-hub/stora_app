@@ -62,7 +62,7 @@ class _ProductDetailSheetState extends State<ProductDetailSheet> {
 
               // Hero Image with Modern Studio Stage
               Container(
-                height: 230,
+                height: 250,
                 margin: const EdgeInsets.fromLTRB(16, 4, 16, 0),
                 child: Stack(
                   fit: StackFit.expand,
@@ -74,6 +74,7 @@ class _ProductDetailSheetState extends State<ProductDetailSheet> {
                         categoryName: product.categoryName,
                         borderRadius: BorderRadius.circular(22),
                         iconSize: 52,
+                        fit: BoxFit.contain,
                       ),
                     ),
                     Positioned(

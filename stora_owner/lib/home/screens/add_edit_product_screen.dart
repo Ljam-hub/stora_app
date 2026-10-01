@@ -632,132 +632,135 @@ class _ImagePickerFieldState extends State<_ImagePickerField> {
           ),
         ),
         const SizedBox(height: 8),
-        InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: _loading ? null : _pickImage,
-          child: Container(
-            width: double.infinity,
-            height: 150,
-            decoration: BoxDecoration(
-              color: AppColors.fieldBackground,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: hasImage ? AppColors.purpleLight.withValues(alpha: 0.4) : AppColors.fieldBorder,
-                width: 1.2,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.15),
-                  blurRadius: 10,
-                  offset: const Offset(0, 3),
+        Center(
+          child: InkWell(
+            borderRadius: BorderRadius.circular(18),
+            onTap: _loading ? null : _pickImage,
+            child: Container(
+              width: 190,
+              height: 190,
+              decoration: BoxDecoration(
+                color: AppColors.fieldBackground,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                  color: hasImage ? AppColors.purpleLight.withValues(alpha: 0.4) : AppColors.fieldBorder,
+                  width: 1.2,
                 ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(15),
-              child: _loading
-                  ? const Center(child: CircularProgressIndicator(color: AppColors.purpleLight, strokeWidth: 2))
-                  : !hasImage
-                      ? Container(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                AppColors.fieldBackground,
-                                Colors.black.withValues(alpha: 0.15),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.15),
+                    blurRadius: 10,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(17),
+                child: _loading
+                    ? const Center(child: CircularProgressIndicator(color: AppColors.purpleLight, strokeWidth: 2))
+                    : !hasImage
+                        ? Container(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [
+                                  AppColors.fieldBackground,
+                                  Colors.black.withValues(alpha: 0.15),
+                                ],
+                              ),
+                            ),
+                            child: const Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.add_photo_alternate_rounded, color: AppColors.purpleLight, size: 34),
+                                SizedBox(height: 10),
+                                FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Text(
+                                    '+ Upload Product Image',
+                                    style: TextStyle(
+                                      color: AppColors.purpleLight,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: -0.2,
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  'Tap to choose 1:1 photo',
+                                  style: TextStyle(
+                                    color: Color(0xFF94A3B8),
+                                    fontSize: 11,
+                                  ),
+                                ),
                               ],
                             ),
-                          ),
-                          child: const Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
+                          )
+                        : Stack(
+                            fit: StackFit.expand,
                             children: [
-                              Icon(Icons.add_photo_alternate_rounded, color: AppColors.purpleLight, size: 30),
-                              SizedBox(height: 8),
-                              FittedBox(
-                                fit: BoxFit.scaleDown,
-                                child: Text(
-                                  '+ Upload Product Image',
-                                  style: TextStyle(
-                                    color: AppColors.purpleLight,
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w700,
-                                    letterSpacing: -0.2,
+                              // Fitted preview stage
+                              Container(
+                                color: const Color(0xFF1E172B),
+                                child: _bytes != null
+                                    ? Image.memory(
+                                        _bytes!,
+                                        fit: BoxFit.contain,
+                                        width: double.infinity,
+                                        height: double.infinity,
+                                      )
+                                    : (_url != null && _url!.trim().isNotEmpty && ApiConfig.resolveMediaUrl(_url) != null
+                                        ? Image.network(
+                                            ApiConfig.resolveMediaUrl(_url)!,
+                                            fit: BoxFit.contain,
+                                            width: double.infinity,
+                                            height: double.infinity,
+                                          )
+                                        : const SizedBox()),
+                              ),
+                              // Change photo indicator pill at bottom right
+                              Positioned(
+                                bottom: 8,
+                                right: 8,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withValues(alpha: 0.7),
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(color: Colors.white.withValues(alpha: 0.15), width: 0.8),
+                                  ),
+                                  child: const Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.photo_camera_rounded, size: 13, color: Colors.white),
+                                      SizedBox(width: 4),
+                                      Text('Change', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600)),
+                                    ],
                                   ),
                                 ),
                               ),
-                              SizedBox(height: 4),
-                              Text(
-                                'Tap to choose from gallery',
-                                style: TextStyle(
-                                  color: Color(0xFF94A3B8),
-                                  fontSize: 11,
+                              // Delete / Clear image button at top right
+                              Positioned(
+                                top: 8,
+                                right: 8,
+                                child: GestureDetector(
+                                  onTap: _clearImage,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(5),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withValues(alpha: 0.75),
+                                      shape: BoxShape.circle,
+                                      border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+                                    ),
+                                    child: const Icon(Icons.close_rounded, size: 16, color: Colors.white),
+                                  ),
                                 ),
                               ),
                             ],
                           ),
-                        )
-                      : Stack(
-                          fit: StackFit.expand,
-                          children: [
-                            // Fitted preview stage
-                            SizedBox.expand(
-                              child: _bytes != null
-                                  ? Image.memory(
-                                      _bytes!,
-                                      fit: BoxFit.cover,
-                                      width: double.infinity,
-                                      height: double.infinity,
-                                    )
-                                  : (_url != null && _url!.trim().isNotEmpty && ApiConfig.resolveMediaUrl(_url) != null
-                                      ? Image.network(
-                                          ApiConfig.resolveMediaUrl(_url)!,
-                                          fit: BoxFit.cover,
-                                          width: double.infinity,
-                                          height: double.infinity,
-                                        )
-                                      : const SizedBox()),
-                            ),
-                            // Change photo indicator pill at bottom right
-                            Positioned(
-                              bottom: 8,
-                              right: 8,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                decoration: BoxDecoration(
-                                  color: Colors.black.withValues(alpha: 0.7),
-                                  borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(color: Colors.white.withValues(alpha: 0.15), width: 0.8),
-                                ),
-                                child: const Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(Icons.photo_camera_rounded, size: 13, color: Colors.white),
-                                    SizedBox(width: 4),
-                                    Text('Change', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600)),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            // Delete / Clear image button at top right
-                            Positioned(
-                              top: 8,
-                              right: 8,
-                              child: GestureDetector(
-                                onTap: _clearImage,
-                                child: Container(
-                                  padding: const EdgeInsets.all(5),
-                                  decoration: BoxDecoration(
-                                    color: Colors.black.withValues(alpha: 0.75),
-                                    shape: BoxShape.circle,
-                                    border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
-                                  ),
-                                  child: const Icon(Icons.close_rounded, size: 16, color: Colors.white),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+              ),
             ),
           ),
         ),

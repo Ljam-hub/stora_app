@@ -1647,7 +1647,7 @@ class _WalkInPaymentQrCard extends StatelessWidget {
                   const SizedBox(height: 3),
                   Text(
                     hasQr
-                        ? 'Tap to open • Show QR to walk-in shoppers'
+                        ? 'Show QR to walk-in shoppers'
                         : 'Tap to setup QR for walk-in shoppers',
                     style: TextStyle(
                       color: HomeColors.textSecondary,
@@ -1890,7 +1890,7 @@ class _PaymentQrModalSheet extends StatelessWidget {
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: const Text(
-                            'Show this screen to customer to scan',
+                            'Show QR to walk-in shoppers',
                             style: TextStyle(
                               color: Color(0xFF475569),
                               fontSize: 11,
