@@ -104,7 +104,7 @@
             <span id="customer-apk-size" style="color: #9CA3AF; font-size: 12px; font-weight: 600; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 6px;">{{ customer_apk_size|default:"20.3 MB" }}</span>
           </div>
           <div style="margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;">
-            <span style="color: #9CA3AF; font-size: 12px;">📱 Older or 32-bit phone?</span>
+            <span style="color: #9CA3AF; font-size: 12px;">Need 32-bit compatibility?</span>
             <a id="customer-arm32-apk-download"
                href="/download/customer/32bit/"
                style="color: #FF9E58; font-size: 12px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
@@ -141,7 +141,7 @@
             <span id="owner-apk-size" style="color: #9CA3AF; font-size: 12px; font-weight: 600; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 6px;">{{ owner_apk_size|default:"29.9 MB" }}</span>
           </div>
           <div style="margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;">
-            <span style="color: #9CA3AF; font-size: 12px;">📱 Older or 32-bit phone?</span>
+            <span style="color: #9CA3AF; font-size: 12px;">Need 32-bit compatibility?</span>
             <a id="owner-arm32-apk-download"
                href="/download/owner/32bit/"
                style="color: #4ADE80; font-size: 12px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
@@ -157,13 +157,13 @@
         <strong style="color: #FF9E58; font-size: 15px; display: block; margin-bottom: 8px;">💡 Having Trouble Downloading or Installing? Common Fixes:</strong>
         <ul style="margin: 0; padding-left: 20px;">
           <li style="margin-bottom: 6px;"><strong>Phone says "App not installed"?</strong>
-            1) Try downloading the <strong>32-bit APK</strong> link shown above (for phones running a 32-bit Android OS).<br>
-            2) If using a Samsung phone, turn OFF Auto Blocker: <strong>Settings &rarr; Security and privacy &rarr; Auto Blocker &rarr; OFF</strong>.</li>
-          <li style="margin-bottom: 6px;"><strong>Opening from Messenger / Facebook / TikTok?</strong> Meta &amp; TikTok in-app browsers block APK downloads. Tap the <strong>three dots (⋮)</strong> at the top right of your screen and select <strong>"Open in Chrome"</strong> or <strong>"Open in Browser"</strong>.</li>
-          <li style="margin-bottom: 6px;"><strong>"File might be harmful" warning?</strong> This is standard Android security for apps outside Google Play. Tap <strong>"Download anyway"</strong>.</li>
-          <li style="margin-bottom: 6px;"><strong>"Install unknown apps" blocked?</strong> Open your phone's <strong>Settings &rarr; Apps &rarr; Special app access &rarr; Install unknown apps</strong> &rarr; select your browser (Chrome) &rarr; toggle <strong>Allow from this source</strong> ON.</li>
-          <li style="margin-bottom: 6px;"><strong>Using an iPhone (iOS)?</strong> APK files are strictly for Android phones. iPhones and iPads cannot install APK files.</li>
-          <li><strong>"App not installed" or conflicting package?</strong> If you have an older test version installed, uninstall it from your home screen first, then install the new APK.</li>
+            &bull; <strong>Conflicting version:</strong> If an older or test version is already installed, uninstall it from your home screen first, then install the new APK.<br>
+            &bull; <strong>Architecture compatibility:</strong> Try downloading the <strong>32-bit APK</strong> link shown above.<br>
+            &bull; <strong>Security blockers:</strong> Check your device's <strong>Settings &rarr; Security &amp; privacy</strong> to ensure automated package blockers or app protection features allow installation.</li>
+          <li style="margin-bottom: 6px;"><strong>Opening from social media / in-app browsers?</strong> In-app browsers often block direct file downloads. Tap <strong>⋮ (three dots)</strong> at the top right of your screen and select <strong>"Open in Chrome"</strong> or <strong>"Open in Browser"</strong>.</li>
+          <li style="margin-bottom: 6px;"><strong>"File might be harmful" warning?</strong> This is standard Android security confirmation for APK downloads outside Google Play. Tap <strong>"Download anyway"</strong>.</li>
+          <li style="margin-bottom: 6px;"><strong>"Install unknown apps" blocked?</strong> Go to <strong>Settings &rarr; Apps &rarr; Special app access &rarr; Install unknown apps</strong> &rarr; select your browser (e.g. Chrome) &rarr; toggle <strong>Allow from this source</strong> ON.</li>
+          <li><strong>Using an iPhone (iOS)?</strong> APK files are strictly for Android smartphones. iPhones and iPads cannot install Android APK files.</li>
         </ul>
       </div>
     </section>
