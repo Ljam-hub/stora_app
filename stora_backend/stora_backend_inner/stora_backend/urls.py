@@ -24,10 +24,14 @@ GITHUB_REPO = "Ljam-hub/stora_app"
 DEFAULT_RELEASE_TAG = "v1.2.0"
 DEFAULT_CUSTOMER_SIZE = "20.3 MB"
 DEFAULT_OWNER_SIZE = "29.9 MB"
+DEFAULT_CUSTOMER_ARM32_SIZE = "18.3 MB"
+DEFAULT_OWNER_ARM32_SIZE = "26.3 MB"
 DEFAULT_CUSTOMER_URL = f"https://github.com/{GITHUB_REPO}/releases/latest/download/Stora-Customer.apk"
 DEFAULT_OWNER_URL = f"https://github.com/{GITHUB_REPO}/releases/latest/download/Stora.apk"
-CACHE_KEY = "stora_github_release_info_v120_f"
-LAST_KNOWN_KEY = "stora_github_release_last_known_v120_f"
+DEFAULT_CUSTOMER_ARM32_URL = f"https://github.com/{GITHUB_REPO}/releases/latest/download/Stora-Customer-arm32.apk"
+DEFAULT_OWNER_ARM32_URL = f"https://github.com/{GITHUB_REPO}/releases/latest/download/Stora-arm32.apk"
+CACHE_KEY = "stora_github_release_info_v120_g"
+LAST_KNOWN_KEY = "stora_github_release_last_known_v120_g"
 CACHE_TIMEOUT = 300  # 5 minutes
 
 
@@ -50,6 +54,10 @@ def get_github_release_info():
         "customer_download_url": DEFAULT_CUSTOMER_URL,
         "owner_apk_size": DEFAULT_OWNER_SIZE,
         "owner_download_url": DEFAULT_OWNER_URL,
+        "customer_arm32_apk_size": DEFAULT_CUSTOMER_ARM32_SIZE,
+        "customer_arm32_download_url": DEFAULT_CUSTOMER_ARM32_URL,
+        "owner_arm32_apk_size": DEFAULT_OWNER_ARM32_SIZE,
+        "owner_arm32_download_url": DEFAULT_OWNER_ARM32_URL,
     }
     last_known = cache.get(LAST_KNOWN_KEY)
     if last_known and isinstance(last_known, dict):
@@ -80,15 +88,27 @@ def get_github_release_info():
                     download_url = asset.get("browser_download_url")
 
                     if "customer" in name:
-                        if formatted_size:
-                            info["customer_apk_size"] = formatted_size
-                        if download_url:
-                            info["customer_download_url"] = download_url
+                        if "arm32" in name or "armeabi" in name:
+                            if formatted_size:
+                                info["customer_arm32_apk_size"] = formatted_size
+                            if download_url:
+                                info["customer_arm32_download_url"] = download_url
+                        else:
+                            if formatted_size:
+                                info["customer_apk_size"] = formatted_size
+                            if download_url:
+                                info["customer_download_url"] = download_url
                     elif "stora" in name or "owner" in name:
-                        if formatted_size:
-                            info["owner_apk_size"] = formatted_size
-                        if download_url:
-                            info["owner_download_url"] = download_url
+                        if "arm32" in name or "armeabi" in name:
+                            if formatted_size:
+                                info["owner_arm32_apk_size"] = formatted_size
+                            if download_url:
+                                info["owner_arm32_download_url"] = download_url
+                        else:
+                            if formatted_size:
+                                info["owner_apk_size"] = formatted_size
+                            if download_url:
+                                info["owner_download_url"] = download_url
     except Exception as exc:
         logger.warning("Could not fetch GitHub release info: %s", exc)
 
@@ -106,17 +126,39 @@ def get_github_release_info():
                     info["customer_apk_size"] = formatted
                 break
 
+        for cust_32_candidate in [
+            repo_root / "apk" / "Stora-Customer-arm32.apk",
+            repo_root / "stora_customer" / "apk" / "Stora-Customer-arm32.apk",
+            repo_root / "flutter-apk" / "Stora-Customer-arm32.apk",
+        ]:
+            if cust_32_candidate.exists():
+                formatted = format_bytes_to_mb(cust_32_candidate.stat().st_size)
+                if formatted:
+                    info["customer_arm32_apk_size"] = formatted
+                break
+
         for owner_candidate in [
-            repo_root / "apk" / "Stora-Owner.apk",
             repo_root / "apk" / "Stora.apk",
-            repo_root / "stora_owner" / "apk" / "Stora-Owner.apk",
+            repo_root / "apk" / "Stora-Owner.apk",
             repo_root / "stora_owner" / "apk" / "Stora.apk",
+            repo_root / "stora_owner" / "apk" / "Stora-Owner.apk",
             repo_root / "flutter-apk" / "Stora.apk",
         ]:
             if owner_candidate.exists():
                 formatted = format_bytes_to_mb(owner_candidate.stat().st_size)
                 if formatted:
                     info["owner_apk_size"] = formatted
+                break
+
+        for owner_32_candidate in [
+            repo_root / "apk" / "Stora-arm32.apk",
+            repo_root / "stora_owner" / "apk" / "Stora-arm32.apk",
+            repo_root / "flutter-apk" / "Stora-arm32.apk",
+        ]:
+            if owner_32_candidate.exists():
+                formatted = format_bytes_to_mb(owner_32_candidate.stat().st_size)
+                if formatted:
+                    info["owner_arm32_apk_size"] = formatted
                 break
     except Exception:
         pass
@@ -177,6 +219,54 @@ def download_owner(request):
     return redirect(info.get("owner_download_url") or DEFAULT_OWNER_URL)
 
 
+def download_customer_arm32(request):
+    source = request.GET.get("source", "").lower()
+    if source != "github":
+        try:
+            repo_root = Path(settings.BASE_DIR).parent.parent
+            for candidate in [
+                repo_root / "apk" / "Stora-Customer-arm32.apk",
+                repo_root / "flutter-apk" / "Stora-Customer-arm32.apk",
+                repo_root / "stora_customer" / "apk" / "Stora-Customer-arm32.apk",
+            ]:
+                if candidate.exists():
+                    from django.http import FileResponse
+                    return FileResponse(
+                        open(candidate, "rb"),
+                        as_attachment=True,
+                        filename="Stora-Customer-arm32.apk",
+                        content_type="application/vnd.android.package-archive",
+                    )
+        except Exception as exc:
+            logger.warning("Could not serve local customer arm32 APK: %s", exc)
+    info = get_github_release_info()
+    return redirect(info.get("customer_arm32_download_url") or DEFAULT_CUSTOMER_ARM32_URL)
+
+
+def download_owner_arm32(request):
+    source = request.GET.get("source", "").lower()
+    if source != "github":
+        try:
+            repo_root = Path(settings.BASE_DIR).parent.parent
+            for candidate in [
+                repo_root / "apk" / "Stora-arm32.apk",
+                repo_root / "flutter-apk" / "Stora-arm32.apk",
+                repo_root / "stora_owner" / "apk" / "Stora-arm32.apk",
+            ]:
+                if candidate.exists():
+                    from django.http import FileResponse
+                    return FileResponse(
+                        open(candidate, "rb"),
+                        as_attachment=True,
+                        filename="Stora-arm32.apk",
+                        content_type="application/vnd.android.package-archive",
+                    )
+        except Exception as exc:
+            logger.warning("Could not serve local owner arm32 APK: %s", exc)
+    info = get_github_release_info()
+    return redirect(info.get("owner_arm32_download_url") or DEFAULT_OWNER_ARM32_URL)
+
+
 def release_info_api(request):
     info = get_github_release_info()
     resp = JsonResponse(info)
@@ -196,6 +286,10 @@ def root_status(request):
             "customer_download_url": DEFAULT_CUSTOMER_URL,
             "owner_apk_size": DEFAULT_OWNER_SIZE,
             "owner_download_url": DEFAULT_OWNER_URL,
+            "customer_arm32_apk_size": DEFAULT_CUSTOMER_ARM32_SIZE,
+            "customer_arm32_download_url": DEFAULT_CUSTOMER_ARM32_URL,
+            "owner_arm32_apk_size": DEFAULT_OWNER_ARM32_SIZE,
+            "owner_arm32_download_url": DEFAULT_OWNER_ARM32_URL,
         }
 
     # If requested by a browser, render the modern Stora Backend Portal
@@ -207,6 +301,10 @@ def root_status(request):
             "customer_download_url": info.get("customer_download_url", DEFAULT_CUSTOMER_URL),
             "owner_apk_size": info.get("owner_apk_size", DEFAULT_OWNER_SIZE),
             "owner_download_url": info.get("owner_download_url", DEFAULT_OWNER_URL),
+            "customer_arm32_apk_size": info.get("customer_arm32_apk_size", DEFAULT_CUSTOMER_ARM32_SIZE),
+            "customer_arm32_download_url": info.get("customer_arm32_download_url", DEFAULT_CUSTOMER_ARM32_URL),
+            "owner_arm32_apk_size": info.get("owner_arm32_apk_size", DEFAULT_OWNER_ARM32_SIZE),
+            "owner_arm32_download_url": info.get("owner_arm32_download_url", DEFAULT_OWNER_ARM32_URL),
         }
         try:
             resp = render(request, "portal.html", context)
@@ -253,7 +351,11 @@ handler404 = custom_404_handler
 urlpatterns = [
     path("", root_status, name="root_status"),
     path("download/customer/", download_customer, name="download_customer"),
+    path("download/customer/32bit/", download_customer_arm32, name="download_customer_arm32"),
+    path("download/customer-arm32/", download_customer_arm32, name="download_customer_arm32_alt"),
     path("download/owner/", download_owner, name="download_owner"),
+    path("download/owner/32bit/", download_owner_arm32, name="download_owner_arm32"),
+    path("download/owner-arm32/", download_owner_arm32, name="download_owner_arm32_alt"),
     path("api/release-info/", release_info_api, name="release_info_api"),
     path(
         "admin/password_reset/",
