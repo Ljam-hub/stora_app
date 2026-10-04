@@ -54,18 +54,20 @@ def main():
             print(f"\n-> Building {app_name} Release APK...")
             with open(log_path, "w", encoding="utf-8", errors="replace") as log_file:
                 p = subprocess.Popen(
-                    [flutter_cmd, "build", "apk", "--release"],
+                    [flutter_cmd, "build", "apk", "--release", "--split-per-abi"],
                     cwd=str(app_dir),
                     stdout=subprocess.PIPE,
                     stderr=subprocess.STDOUT,
                     text=True,
+                    encoding="utf-8",
+                    errors="replace",
                     bufsize=1,
                 )
                 for line in p.stdout:
                     log_file.write(line)
                     stripped = line.strip()
                     if stripped.startswith("Running Gradle task") or "Built " in stripped or "Tree-shaking" in stripped:
-                        print(f"   [{app_name}] {stripped}")
+                        print(f"   [{app_name}] {stripped}".encode("ascii", errors="replace").decode("ascii"))
                 p.wait()
                 return p.returncode
 
@@ -96,28 +98,64 @@ def main():
     else:
         print("\nSkipping compile (--distribute-only specified). Proceeding to distribution...")
 
-    # Distribute APKs
-    cust_built = cust_dir / "build" / "app" / "outputs" / "flutter-apk" / "app-release.apk"
-    owner_built = owner_dir / "build" / "app" / "outputs" / "flutter-apk" / "app-release.apk"
+    # Distribute APKs (split-per-abi produces multiple architecture-specific APKs)
+    flutter_apk_output = Path("build") / "app" / "outputs" / "flutter-apk"
+    cust_output_dir = cust_dir / flutter_apk_output
+    owner_output_dir = owner_dir / flutter_apk_output
+
+    # ABI variants produced by --split-per-abi (arm64 is the primary for modern phones)
+    abi_variants = [
+        ("arm64-v8a", "arm64"),      # Modern 64-bit phones (vast majority)
+        ("armeabi-v7a", "arm32"),     # Older 32-bit phones
+        ("x86_64", "x86_64"),        # Emulators / Chromebooks
+    ]
+    primary_abi = "arm64-v8a"  # Used as the default "Stora-Customer.apk" / "Stora-Owner.apk"
 
     print("\nCopying APKs to all destination folders...")
 
-    if cust_built.exists():
-        for d in (cust_flutter_apk_dir, cust_apk_dir, root_apk_dir, apk_dir):
-            shutil.copy2(cust_built, d / "Stora-Customer.apk")
-        shutil.copy2(cust_built, cust_flutter_apk_dir / "app-release.apk")
-        print("-> Customer APK copied to all target folders (apk & flutter-apk).")
-    else:
-        print(f"[ERROR] Customer output not found: {cust_built}")
+    def distribute_app(app_label, output_dir, target_dirs, base_names):
+        """Distribute split-per-abi APKs for one app."""
+        found_any = False
+        for abi, short_name in abi_variants:
+            src = output_dir / f"app-{abi}-release.apk"
+            if not src.exists():
+                continue
+            found_any = True
+            mb = src.stat().st_size / (1024 * 1024)
+            print(f"   [{app_label}] {abi}: {mb:.1f} MB")
+            for d in target_dirs:
+                for base in base_names:
+                    shutil.copy2(src, d / f"{base}-{short_name}.apk")
+                # Primary ABI also gets copied as the default name
+                if abi == primary_abi:
+                    for base in base_names:
+                        shutil.copy2(src, d / f"{base}.apk")
 
-    if owner_built.exists():
-        for d in (owner_flutter_apk_dir, owner_apk_dir, root_apk_dir, apk_dir):
-            shutil.copy2(owner_built, d / "Stora-Owner.apk")
-            shutil.copy2(owner_built, d / "Stora.apk")
-        shutil.copy2(owner_built, owner_flutter_apk_dir / "app-release.apk")
-        print("-> Owner APK copied to all target folders (apk & flutter-apk).")
-    else:
-        print(f"[ERROR] Owner output not found: {owner_built}")
+        # Fallback: if no split APKs found, try the universal fat APK
+        if not found_any:
+            fat_apk = output_dir / "app-release.apk"
+            if fat_apk.exists():
+                print(f"   [{app_label}] universal fat APK (fallback)")
+                for d in target_dirs:
+                    for base in base_names:
+                        shutil.copy2(fat_apk, d / f"{base}.apk")
+                found_any = True
+
+        if found_any:
+            print(f"-> {app_label} APKs copied to all target folders.")
+        else:
+            print(f"[ERROR] No APK outputs found for {app_label} in {output_dir}")
+
+    distribute_app(
+        "Customer", cust_output_dir,
+        (cust_flutter_apk_dir, cust_apk_dir, root_apk_dir, apk_dir),
+        ["Stora-Customer"],
+    )
+    distribute_app(
+        "Owner", owner_output_dir,
+        (owner_flutter_apk_dir, owner_apk_dir, root_apk_dir, apk_dir),
+        ["Stora"],
+    )
 
     print("\n" + "=" * 60)
     print(" SUMMARY OF GENERATED APKS")
