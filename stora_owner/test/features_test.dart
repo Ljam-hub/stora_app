@@ -3,6 +3,7 @@ import 'package:stora/data/models/account_status.dart';
 import 'package:stora/home/models/product.dart';
 import 'package:stora/home/models/sale.dart';
 import 'package:stora/home/stores/cart_store.dart';
+import 'package:stora/home/stores/sales_store.dart';
 
 void main() {
   group('CartStore & Barcode scanning direct cart addition', () {
@@ -126,6 +127,60 @@ void main() {
       );
       expect(sale.displayCustomerName, 'Walk-in Customer');
       expect(orderSale.displayReceiptNumber, 'ORD-77');
+    });
+
+    test('detects utang payment method correctly', () {
+      final cashSale = Sale(
+        id: '105',
+        date: DateTime.now(),
+        items: [],
+        total: 100.0,
+        paymentMethod: 'cash',
+      );
+      final utangSale = Sale(
+        id: '106',
+        date: DateTime.now(),
+        items: [],
+        total: 150.0,
+        paymentMethod: 'utang',
+      );
+      final creditSale = Sale(
+        id: '107',
+        date: DateTime.now(),
+        items: [],
+        total: 75.0,
+        paymentMethod: 'credit',
+      );
+
+      expect(cashSale.isUtang, isFalse);
+      expect(cashSale.isCollected, isTrue);
+
+      expect(utangSale.isUtang, isTrue);
+      expect(utangSale.isCollected, isFalse);
+
+      expect(creditSale.isUtang, isTrue);
+      expect(creditSale.isCollected, isFalse);
+    });
+
+    test('SalesStore excludes Utang sales from todaysTotal and todaysSalesCount', () {
+      final now = DateTime.now();
+      final cash1 = Sale(id: 'c1', date: now, items: [], total: 100.0, paymentMethod: 'cash');
+      final online1 = Sale(id: 'o1', date: now, items: [], total: 50.0, paymentMethod: 'online');
+      final utang1 = Sale(id: 'u1', date: now, items: [], total: 200.0, paymentMethod: 'utang');
+
+      final store = SalesStore.instance;
+      store.setSalesForTesting([cash1, online1, utang1]);
+
+      // Total of all sales is 350, but earnings collected is 150
+      expect(store.todaysSales.length, 3);
+      expect(store.todaysCollectedSales.length, 2);
+      expect(store.todaysTotal, 150.0);
+      expect(store.todaysSalesCount, 2);
+      expect(store.todaysAverage, 75.0);
+      expect(store.todaysUtangTotal, 200.0);
+      expect(store.allTimeTotal, 150.0);
+
+      store.reset();
     });
   });
 

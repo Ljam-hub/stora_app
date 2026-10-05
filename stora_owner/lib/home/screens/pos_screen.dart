@@ -188,7 +188,7 @@ class _PosScreenState extends State<PosScreen> {
         changeAmount: paymentResult.change,
         customerName: paymentResult.customerName,
         notes: paymentResult.notes.isNotEmpty ? paymentResult.notes : null,
-        paymentMethod: paymentResult.paymentMethod,
+        paymentMethod: paymentResult.isUtang ? 'utang' : paymentResult.paymentMethod,
         referenceNumber: paymentResult.referenceNumber.isNotEmpty ? paymentResult.referenceNumber : null,
       );
       if (paymentResult.isUtang) {

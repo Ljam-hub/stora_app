@@ -264,21 +264,41 @@ class SalesStore extends ChangeNotifier {
     notifyListeners();
   }
 
+  @visibleForTesting
+  void setSalesForTesting(List<Sale> sales) {
+    _sales = List.from(sales);
+    notifyListeners();
+  }
+
   List<Sale> get todaysSales =>
       _sales.where((s) => isSameDay(s.date, DateTime.now())).toList();
 
-  double get todaysTotal => todaysSales.fold(0.0, (sum, s) => sum + s.total);
+  /// Sales completed and collected today (cash / online). Excludes unpaid Utang transactions.
+  List<Sale> get todaysCollectedSales =>
+      todaysSales.where((s) => !s.isUtang).toList();
 
-  int get todaysSalesCount => todaysSales.length;
+  /// Total collected earnings today (excludes unpaid Utang/Credit).
+  double get todaysTotal =>
+      todaysCollectedSales.fold(0.0, (sum, s) => sum + s.total);
 
-  double get todaysAverage => todaysSalesCount == 0 ? 0 : todaysTotal / todaysSalesCount;
+  int get todaysSalesCount => todaysCollectedSales.length;
 
-  double get allTimeTotal => _sales.fold(0.0, (sum, s) => sum + s.total);
+  double get todaysAverage =>
+      todaysSalesCount == 0 ? 0 : todaysTotal / todaysSalesCount;
+
+  /// All-time collected revenue (excludes unpaid Utang).
+  double get allTimeTotal =>
+      _sales.where((s) => !s.isUtang).fold(0.0, (sum, s) => sum + s.total);
+
+  /// Total Utang charged today (unpaid credit receivable).
+  double get todaysUtangTotal =>
+      todaysSales.where((s) => s.isUtang).fold(0.0, (sum, s) => sum + s.total);
 
   String get changeBadge {
     final yesterday = DateTime.now().subtract(const Duration(days: 1));
-    final yTotal =
-        _sales.where((s) => isSameDay(s.date, yesterday)).fold(0.0, (sum, s) => sum + s.total);
+    final yTotal = _sales
+        .where((s) => isSameDay(s.date, yesterday) && !s.isUtang)
+        .fold(0.0, (sum, s) => sum + s.total);
     if (yTotal == 0) {
       return todaysTotal > 0 ? '↗ +100%' : '0%';
     }

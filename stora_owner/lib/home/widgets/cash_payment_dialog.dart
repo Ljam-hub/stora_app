@@ -779,7 +779,7 @@ class _CashPaymentDialogState extends State<CashPaymentDialog> {
           penaltyFrequency: selectedFrequency,
           penaltyRate: rate < 0 ? 0.0 : rate,
           gracePeriodDays: selectedGraceDays,
-          paymentMethod: 'cash',
+          paymentMethod: 'utang',
           referenceNumber: '',
           notes: _notesController.text.trim(),
         ),

@@ -511,7 +511,9 @@ class _HistorySummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final total = filteredSales.fold(0.0, (sum, s) => sum + s.total);
+    final total = filteredSales.where((s) => !s.isUtang).fold(0.0, (sum, s) => sum + s.total);
+    final utangTotal = filteredSales.where((s) => s.isUtang).fold(0.0, (sum, s) => sum + s.total);
+    final collectedCount = filteredSales.where((s) => !s.isUtang).length;
 
     return Container(
       padding: const EdgeInsets.all(18),
@@ -678,6 +680,18 @@ class _HistorySummaryCard extends StatelessWidget {
                         ),
                       ),
                     ),
+                    if (utangTotal > 0)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: Text(
+                          '+ ₱${utangTotal.toStringAsFixed(2)} in Utang / Credit',
+                          style: const TextStyle(
+                            color: Color(0xFFE65100),
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -690,7 +704,7 @@ class _HistorySummaryCard extends StatelessWidget {
                       Icon(Icons.receipt_rounded, size: 14, color: HomeColors.accentText),
                       const SizedBox(width: 5),
                       Text(
-                        'Total sales',
+                        'Collected sales',
                         style: TextStyle(
                           color: HomeColors.textSecondary,
                           fontSize: 12,
@@ -701,7 +715,7 @@ class _HistorySummaryCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    '${filteredSales.length}',
+                    '$collectedCount',
                     style: TextStyle(
                       color: HomeColors.accentText,
                       fontSize: 22,
@@ -1035,6 +1049,30 @@ class _SaleCard extends StatelessWidget {
                         ),
                       ),
                     ),
+                    if (sale.isUtang)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFF3E0),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: const Color(0xFFFFB74D)),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.credit_score_rounded, size: 11, color: Color(0xFFE65100)),
+                            SizedBox(width: 3),
+                            Text(
+                              'Utang / Credit',
+                              style: TextStyle(
+                                color: Color(0xFFE65100),
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     if (sale.paymentMethod == 'online' || (sale.referenceNumber != null && sale.referenceNumber!.isNotEmpty))
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
@@ -1068,7 +1106,7 @@ class _SaleCard extends StatelessWidget {
               Text(
                 '₱${sale.total.toStringAsFixed(2)}',
                 style: TextStyle(
-                  color: HomeColors.accentText,
+                  color: sale.isUtang ? const Color(0xFFE65100) : HomeColors.accentText,
                   fontSize: 16.5,
                   fontWeight: FontWeight.w900,
                   letterSpacing: -0.3,

@@ -117,22 +117,22 @@ class _SalesAnalyticsScreenState extends State<SalesAnalyticsScreen> {
         final now = DateTime.now();
 
         // Calculations
-        final todaySales = sales.where((s) => isSameDay(s.date, now)).toList();
+        final todaySales = sales.where((s) => isSameDay(s.date, now) && !s.isUtang).toList();
         final todaysRevenue = todaySales.fold(0.0, (sum, s) => sum + s.total);
 
-        final thisWeekSales = sales.where((s) => now.difference(s.date).inDays <= 7).toList();
+        final thisWeekSales = sales.where((s) => now.difference(s.date).inDays <= 7 && !s.isUtang).toList();
         final thisWeekRevenue = thisWeekSales.fold(0.0, (sum, s) => sum + s.total);
 
-        final thisMonthSales = sales.where((s) => now.difference(s.date).inDays <= 30).toList();
+        final thisMonthSales = sales.where((s) => now.difference(s.date).inDays <= 30 && !s.isUtang).toList();
         final thisMonthRevenue = thisMonthSales.fold(0.0, (sum, s) => sum + s.total);
 
-        final allTimeRevenue = sales.fold(0.0, (sum, s) => sum + s.total);
+        final allTimeRevenue = sales.where((s) => !s.isUtang).fold(0.0, (sum, s) => sum + s.total);
 
         // Daily breakdown for the past 7 days (Bar chart data)
         final last7Days = List.generate(7, (i) {
           final day = DateTime(now.year, now.month, now.day).subtract(Duration(days: 6 - i));
           final dayTotal = sales
-              .where((s) => isSameDay(s.date, day))
+              .where((s) => isSameDay(s.date, day) && !s.isUtang)
               .fold(0.0, (sum, s) => sum + s.total);
           return {'day': DateFormat('E').format(day), 'date': day, 'total': dayTotal};
         });
@@ -145,10 +145,10 @@ class _SalesAnalyticsScreenState extends State<SalesAnalyticsScreen> {
 
         final filteredSales = _selectedPeriodIndex == 0
             ? thisWeekSales
-            : (_selectedPeriodIndex == 1 ? thisMonthSales : sales);
+            : (_selectedPeriodIndex == 1 ? thisMonthSales : sales.where((s) => !s.isUtang).toList());
 
-        final cashSales = filteredSales.where((s) => s.paymentMethod != 'online').toList();
-        final onlineSales = filteredSales.where((s) => s.paymentMethod == 'online').toList();
+        final cashSales = filteredSales.where((s) => s.paymentMethod != 'online' && !s.isUtang).toList();
+        final onlineSales = filteredSales.where((s) => s.paymentMethod == 'online' && !s.isUtang).toList();
         final cashRevenue = cashSales.fold(0.0, (sum, s) => sum + s.total);
         final onlineRevenue = onlineSales.fold(0.0, (sum, s) => sum + s.total);
         final totalPeriodRevenue = cashRevenue + onlineRevenue;

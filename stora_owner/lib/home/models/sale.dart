@@ -53,6 +53,14 @@ class Sale {
       id.startsWith('ORD-') ||
       channel == 'online_order';
 
+  /// Whether this transaction was charged as credit/utang (receivable, not collected cash).
+  bool get isUtang =>
+      (paymentMethod?.toLowerCase() == 'utang') ||
+      (paymentMethod?.toLowerCase() == 'credit');
+
+  /// Whether this transaction has been collected in cash or online payments.
+  bool get isCollected => !isUtang;
+
   String get displayCustomerName {
     if (customerName != null && customerName!.trim().isNotEmpty) {
       return customerName!.trim();
