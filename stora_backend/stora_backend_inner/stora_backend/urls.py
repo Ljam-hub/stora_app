@@ -22,16 +22,16 @@ logger = logging.getLogger(__name__)
 
 GITHUB_REPO = "Ljam-hub/stora_app"
 DEFAULT_RELEASE_TAG = "v1.2.0"
-DEFAULT_CUSTOMER_SIZE = "20.3 MB"
-DEFAULT_OWNER_SIZE = "29.9 MB"
+DEFAULT_CUSTOMER_SIZE = "20.4 MB"
+DEFAULT_OWNER_SIZE = "30.0 MB"
 DEFAULT_CUSTOMER_ARM32_SIZE = "18.3 MB"
-DEFAULT_OWNER_ARM32_SIZE = "26.3 MB"
+DEFAULT_OWNER_ARM32_SIZE = "26.4 MB"
 DEFAULT_CUSTOMER_URL = f"https://github.com/{GITHUB_REPO}/releases/latest/download/Stora-Customer.apk"
 DEFAULT_OWNER_URL = f"https://github.com/{GITHUB_REPO}/releases/latest/download/Stora.apk"
 DEFAULT_CUSTOMER_ARM32_URL = f"https://github.com/{GITHUB_REPO}/releases/latest/download/Stora-Customer-arm32.apk"
 DEFAULT_OWNER_ARM32_URL = f"https://github.com/{GITHUB_REPO}/releases/latest/download/Stora-arm32.apk"
-CACHE_KEY = "stora_github_release_info_v120_g"
-LAST_KNOWN_KEY = "stora_github_release_last_known_v120_g"
+CACHE_KEY = "stora_github_release_info_v120_h"
+LAST_KNOWN_KEY = "stora_github_release_last_known_v120_h"
 CACHE_TIMEOUT = 300  # 5 minutes
 
 
