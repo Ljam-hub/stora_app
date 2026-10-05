@@ -4,7 +4,7 @@
 **Date:** September 30, 2026  
 **Artifacts:** 
 - `Stora-Customer.apk` (20.4 MB)
-- `Stora.apk` (30.0 MB)
+- `Stora.apk` (30.3 MB)
 
 ---
 
