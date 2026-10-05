@@ -13,6 +13,7 @@ import '../stores/category_store.dart';
 import '../stores/chat_store.dart';
 import '../stores/inventory_store.dart';
 import '../stores/orders_store.dart';
+import '../stores/owner_notes_store.dart';
 import '../stores/sales_store.dart';
 import '../stores/store_status_store.dart';
 import '../theme/home_colors.dart';
@@ -57,6 +58,7 @@ class _StoraShellState extends State<StoraShell> with WidgetsBindingObserver {
       ChatStore.instance.fetchConversations(isSilent: true);
       InventoryStore.instance.loadProducts(isSilent: true);
       StoreStatusStore.instance.fetchStatus();
+      OwnerNotesStore.instance.load();
       OrdersStore.instance.startPolling();
       ChatStore.instance.startPolling();
     } else if (state == AppLifecycleState.paused) {
@@ -92,6 +94,7 @@ class _StoraShellState extends State<StoraShell> with WidgetsBindingObserver {
       if (!mounted) return;
       // Stagger secondary data & background polling so the main thread stays completely responsive
       CategoryStore.instance.loadCategories();
+      OwnerNotesStore.instance.load();
       ChatStore.instance.fetchConversations();
       OrdersStore.instance.startPolling();
       ChatStore.instance.startPolling();

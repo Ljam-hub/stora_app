@@ -208,7 +208,9 @@ class _PosScreenState extends State<PosScreen> {
                     unitPrice: i.product.price,
                   ))
               .toList(),
-          notes: 'POS Sale #$shortId',
+          notes: paymentResult.notes.isNotEmpty
+              ? '${paymentResult.notes} (POS Sale #$shortId)'
+              : 'POS Sale #$shortId',
         );
       }
       cart.clear();

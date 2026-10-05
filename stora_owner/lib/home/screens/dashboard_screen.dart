@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import '../../auth/auth_store.dart';
 import '../../stora_login/stora_login.dart';
 import '../../data/stores/account_status_store.dart';
 import '../stores/inventory_store.dart';
 import '../stores/orders_store.dart';
+import '../stores/owner_notes_store.dart';
 import '../stores/sales_store.dart';
 import '../theme/home_colors.dart';
 import '../theme/theme_mode_controller.dart';
@@ -12,6 +15,7 @@ import '../../subscription/subscription_screen.dart';
 import 'add_edit_product_screen.dart';
 import 'alerts_screen.dart';
 import 'business_insights_screen.dart';
+import 'owner_notes_screen.dart';
 import 'pending_orders_screen.dart';
 import 'pos_screen.dart';
 import 'profile_screen.dart';
@@ -52,6 +56,7 @@ class DashboardScreen extends StatelessWidget {
         OrdersStore.instance,
         StoreStatusStore.instance,
         ThemeModeController.instance,
+        OwnerNotesStore.instance,
       ]),
       builder: (context, _) {
         final store = InventoryStore.instance;
@@ -72,6 +77,7 @@ class DashboardScreen extends StatelessWidget {
                 AccountStatusStore.instance.fetchStatus(),
                 StoreStatusStore.instance.fetchStatus(),
                 UtangStore.instance.load(),
+                OwnerNotesStore.instance.load(),
               ]);
             },
             child: SingleChildScrollView(
@@ -191,6 +197,13 @@ class DashboardScreen extends StatelessWidget {
                   delay: const Duration(milliseconds: 150),
                   child: _UtangSummaryCard(
                     onTap: () => DashboardScreen.safeNavigate(context, const UtangLedgerScreen()),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                FadeSlideIn(
+                  delay: const Duration(milliseconds: 160),
+                  child: _OwnerNotesCard(
+                    onTap: () => DashboardScreen.safeNavigate(context, const OwnerNotesScreen()),
                   ),
                 ),
                 const SizedBox(height: 14),
@@ -914,6 +927,314 @@ class _UtangSummaryCard extends StatelessWidget {
                     ),
                   ],
                 ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _OwnerNotesCard extends StatelessWidget {
+  final VoidCallback onTap;
+  const _OwnerNotesCard({required this.onTap});
+
+  String _formatReminderTime(DateTime dt) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final target = DateTime(dt.year, dt.month, dt.day);
+    final timeStr = DateFormat('h:mm a').format(dt);
+    if (target == today) return 'Today at $timeStr';
+    if (target == today.add(const Duration(days: 1))) return 'Tomorrow at $timeStr';
+    return '${DateFormat('MMM d').format(dt)} at $timeStr';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: OwnerNotesStore.instance,
+      builder: (context, _) {
+        final store = OwnerNotesStore.instance;
+        final activeNotes = store.activeNotes;
+        final remindersDue = store.remindersOverdue.length;
+        final remindersToday = store.remindersToday.length;
+
+        final hasUrgent = remindersDue > 0;
+        final hasToday = remindersToday > 0;
+
+        return InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: HomeColors.cardBackground,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: hasUrgent
+                    ? AppColors.error.withValues(alpha: 0.5)
+                    : hasToday
+                        ? const Color(0xFFF59E0B).withValues(alpha: 0.5)
+                        : AppColors.purpleLight.withValues(alpha: 0.35),
+                width: hasUrgent || hasToday ? 1.5 : 1,
+              ),
+              boxShadow: HomeColors.cardShadow,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header row
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        gradient: HomeColors.purpleGradient,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.sticky_note_2_rounded, color: Colors.white, size: 18),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Text(
+                                'Owner Notes & Reminders',
+                                style: TextStyle(
+                                  color: HomeColors.textPrimary,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              if (hasUrgent)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.error.withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    '$remindersDue Overdue',
+                                    style: const TextStyle(
+                                      color: AppColors.error,
+                                      fontSize: 9.5,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                )
+                              else if (hasToday)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFF59E0B).withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    '$remindersToday Today',
+                                    style: const TextStyle(
+                                      color: Color(0xFFF59E0B),
+                                      fontSize: 9.5,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                )
+                              else if (activeNotes.isNotEmpty)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.purpleLight.withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    '${activeNotes.length} active',
+                                    style: const TextStyle(
+                                      color: AppColors.purpleLight,
+                                      fontSize: 9.5,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                          Text(
+                            'Store memos, to-dos & supplier reminders',
+                            style: TextStyle(color: HomeColors.textSecondary, fontSize: 11),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Quick + Add Note button
+                    IconButton(
+                      tooltip: 'Quick Add Note',
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      icon: Container(
+                        padding: const EdgeInsets.all(5),
+                        decoration: BoxDecoration(
+                          color: AppColors.purpleLight.withValues(alpha: 0.12),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.add_rounded, color: AppColors.purpleLight, size: 18),
+                      ),
+                      onPressed: () {
+                        OwnerNotesScreen.showAddEditNoteSheet(context);
+                      },
+                    ),
+                    const SizedBox(width: 6),
+                    Icon(Icons.chevron_right_rounded, color: HomeColors.textSecondary, size: 20),
+                  ],
+                ),
+
+                const SizedBox(height: 12),
+
+                // Note items preview or empty state
+                if (activeNotes.isEmpty) ...[
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+                    decoration: BoxDecoration(
+                      color: HomeColors.cardElevated,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: HomeColors.cardBorder.withValues(alpha: 0.5)),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.note_alt_outlined, color: HomeColors.textMuted, size: 18),
+                        const SizedBox(width: 8),
+                        Text(
+                          'No notes right now · Tap + to add reminder',
+                          style: TextStyle(color: HomeColors.textSecondary, fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
+                ] else ...[
+                  ...activeNotes.take(3).map((note) {
+                    final isDue = note.isReminderDue;
+                    final isToday = note.isReminderToday;
+
+                    Color rColor = AppColors.purpleLight;
+                    if (isDue) {
+                      rColor = AppColors.error;
+                    } else if (isToday) {
+                      rColor = const Color(0xFFF59E0B);
+                    }
+
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: HomeColors.cardElevated,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: note.isPinned
+                              ? AppColors.purpleLight.withValues(alpha: 0.4)
+                              : HomeColors.cardBorder.withValues(alpha: 0.6),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          InkWell(
+                            onTap: () {
+                              HapticFeedback.lightImpact();
+                              store.toggleComplete(note.id);
+                            },
+                            borderRadius: BorderRadius.circular(4),
+                            child: Container(
+                              width: 18,
+                              height: 18,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(4),
+                                border: Border.all(color: HomeColors.textMuted, width: 1.5),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          if (note.isPinned) ...[
+                            Icon(Icons.push_pin_rounded, color: AppColors.purpleLight, size: 13),
+                            const SizedBox(width: 4),
+                          ],
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  note.title,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: HomeColors.textPrimary,
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                if (note.reminderDateTime != null) ...[
+                                  const SizedBox(height: 2),
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        isDue ? Icons.alarm_on_rounded : Icons.alarm_rounded,
+                                        size: 11,
+                                        color: rColor,
+                                      ),
+                                      const SizedBox(width: 3),
+                                      Text(
+                                        isDue
+                                            ? 'Overdue: ${_formatReminderTime(note.reminderDateTime!)}'
+                                            : _formatReminderTime(note.reminderDateTime!),
+                                        style: TextStyle(
+                                          color: rColor,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                            decoration: BoxDecoration(
+                              color: note.categoryColor.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(5),
+                            ),
+                            child: Text(
+                              note.category,
+                              style: TextStyle(
+                                color: note.categoryColor,
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                  if (activeNotes.length > 3)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Center(
+                        child: Text(
+                          'View all ${activeNotes.length} notes →',
+                          style: const TextStyle(
+                            color: AppColors.purpleLight,
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
               ],
             ),
           ),

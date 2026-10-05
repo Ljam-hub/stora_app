@@ -1327,9 +1327,9 @@ class _CashPaymentDialogState extends State<CashPaymentDialog> {
                 const SizedBox(height: 16),
               ],
 
-              // Owner Note / Memo (Available in both modes)
+              // Sale / Receipt Note (Optional)
               Text(
-                'OWNER NOTE / MEMO (OPTIONAL)',
+                'SALE / RECEIPT NOTE (OPTIONAL)',
                 style: TextStyle(
                   color: HomeColors.textMuted,
                   fontSize: 11,
@@ -1345,12 +1345,12 @@ class _CashPaymentDialogState extends State<CashPaymentDialog> {
                 textInputAction: TextInputAction.done,
                 style: TextStyle(color: HomeColors.textPrimary, fontSize: 13.5),
                 decoration: InputDecoration(
-                  hintText: 'e.g. Cash out fee ₱10, Senior discount, Regular customer',
+                  hintText: 'e.g. Senior discount, Wholesale, Suki promo, Cash out fee ₱10',
                   hintStyle: TextStyle(
                     color: HomeColors.textMuted,
                     fontSize: 12,
                   ),
-                  prefixIcon: Icon(Icons.note_alt_outlined, color: HomeColors.textMuted, size: 20),
+                  prefixIcon: Icon(Icons.receipt_long_rounded, color: HomeColors.textMuted, size: 20),
                   filled: true,
                   fillColor: HomeColors.cardElevated,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),

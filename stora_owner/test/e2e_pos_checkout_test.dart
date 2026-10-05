@@ -92,6 +92,9 @@ void main() {
           cashTendered,
           changeAmount,
           customerName,
+          notes,
+          paymentMethod,
+          referenceNumber,
         }) async {
           return Sale(
             id: 'sale-999',

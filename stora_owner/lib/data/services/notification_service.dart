@@ -5,6 +5,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:timezone/timezone.dart' as tz;
 import '../api/api_client.dart';
 import '../stores/account_status_store.dart';
 import '../../home/stores/orders_store.dart';
@@ -51,6 +52,18 @@ class OwnerNotificationService {
     showBadge: true,
   );
 
+  /// Android notification channel for owner notes and personal reminders.
+  static const AndroidNotificationChannel _notesChannel =
+      AndroidNotificationChannel(
+    'stora_owner_notes',
+    'Owner Notes & Reminders',
+    description: 'Scheduled reminders for owner notes and store tasks',
+    importance: Importance.high,
+    playSound: true,
+    enableVibration: true,
+    showBadge: true,
+  );
+
   Future<void> init() async {
     if (_initialized) return;
 
@@ -75,6 +88,7 @@ class OwnerNotificationService {
       if (androidPlugin != null) {
         await androidPlugin.createNotificationChannel(_orderChannel);
         await androidPlugin.createNotificationChannel(_utangChannel);
+        await androidPlugin.createNotificationChannel(_notesChannel);
         // Explicitly request notification permission for Android 13+ (API 33+)
         await androidPlugin.requestNotificationsPermission();
       }
@@ -392,6 +406,73 @@ class OwnerNotificationService {
     } catch (e) {
       debugPrint('checkAndNotifyUtang error: $e');
       return 0;
+    }
+  }
+
+  int _noteIdToNotificationId(String noteId) =>
+      (noteId.hashCode & 0x7FFFFFFF);
+
+  /// Schedules or immediately displays a notification for an owner note reminder.
+  Future<void> scheduleNoteReminder({
+    required String noteId,
+    required String title,
+    String? content,
+    required DateTime reminderDateTime,
+  }) async {
+    try {
+      final notifId = _noteIdToNotificationId(noteId);
+      final androidDetails = AndroidNotificationDetails(
+        _notesChannel.id,
+        _notesChannel.name,
+        channelDescription: _notesChannel.description,
+        importance: Importance.high,
+        priority: Priority.high,
+        playSound: true,
+        enableVibration: true,
+        icon: '@drawable/ic_notification',
+        color: const Color(0xFF8B5CF6),
+        styleInformation: BigTextStyleInformation(
+          content != null && content.isNotEmpty ? content : 'Reminder from your store notes',
+          contentTitle: '⏰ $title',
+          summaryText: 'Owner Reminder',
+        ),
+      );
+
+      final now = DateTime.now();
+      if (reminderDateTime.isAfter(now)) {
+        final tzScheduled = tz.TZDateTime.from(reminderDateTime, tz.local);
+        await _localNotifications.zonedSchedule(
+          notifId,
+          '⏰ Reminder: $title',
+          content != null && content.isNotEmpty ? content : 'Scheduled store reminder',
+          tzScheduled,
+          NotificationDetails(android: androidDetails),
+          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+          uiLocalNotificationDateInterpretation:
+              UILocalNotificationDateInterpretation.absoluteTime,
+          payload: 'note:$noteId',
+        );
+      } else {
+        await _localNotifications.show(
+          notifId,
+          '⏰ Reminder: $title',
+          content != null && content.isNotEmpty ? content : 'Scheduled store reminder',
+          NotificationDetails(android: androidDetails),
+          payload: 'note:$noteId',
+        );
+      }
+    } catch (e) {
+      debugPrint('scheduleNoteReminder error: $e');
+    }
+  }
+
+  /// Cancels a scheduled note reminder notification.
+  Future<void> cancelNoteReminder(String noteId) async {
+    try {
+      final notifId = _noteIdToNotificationId(noteId);
+      await _localNotifications.cancel(notifId);
+    } catch (e) {
+      debugPrint('cancelNoteReminder error: $e');
     }
   }
 
