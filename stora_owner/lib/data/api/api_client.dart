@@ -6,6 +6,7 @@ import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 
 import '../db/stora_database.dart';
+import '../../home/models/payment_account.dart';
 import 'api_config.dart';
 
 class ApiException implements Exception {
@@ -734,6 +735,8 @@ class ApiClient {
     String? paymentQrFilename,
     bool clearQrCode = false,
     bool acceptGcashPayments = true,
+    bool showSingleAccount = false,
+    List<PaymentAccount>? paymentAccounts,
   }) async {
     if (paymentQrBytes != null && paymentQrBytes.isNotEmpty) {
       final uri = _uri('/stores/my-location/');
@@ -748,6 +751,10 @@ class ApiClient {
         req.fields['payment_phone_number'] = paymentPhoneNumber.trim();
         req.fields['payment_account_name'] = paymentAccountName.trim();
         req.fields['accept_gcash_payments'] = acceptGcashPayments.toString();
+        req.fields['show_single_account'] = showSingleAccount.toString();
+        if (paymentAccounts != null) {
+          req.fields['payment_accounts'] = jsonEncode(paymentAccounts.map((a) => a.toJson()).toList());
+        }
         req.files.add(
           http.MultipartFile.fromBytes(
             'payment_qr_code',
@@ -783,6 +790,9 @@ class ApiClient {
         'payment_phone_number': paymentPhoneNumber.trim(),
         'payment_account_name': paymentAccountName.trim(),
         'accept_gcash_payments': acceptGcashPayments,
+        'show_single_account': showSingleAccount,
+        if (paymentAccounts != null)
+          'payment_accounts': paymentAccounts.map((a) => a.toJson()).toList(),
       };
       if (clearQrCode) {
         body['payment_qr_code'] = null;

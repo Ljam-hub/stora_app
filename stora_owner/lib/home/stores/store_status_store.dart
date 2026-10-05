@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../data/api/api_client.dart';
 import '../../data/api/api_config.dart';
+import '../models/payment_account.dart';
 
 class StoreStatusStore extends ChangeNotifier {
   StoreStatusStore._();
@@ -16,6 +17,8 @@ class StoreStatusStore extends ChangeNotifier {
   String _paymentAccountName = '';
   String? _paymentQrUrl;
   bool _acceptGcashPayments = true;
+  bool _showSingleAccount = false;
+  List<PaymentAccount> _paymentAccounts = [];
 
   bool get isOpen => _isOpen;
   bool get isLoaded => _isLoaded;
@@ -28,6 +31,8 @@ class StoreStatusStore extends ChangeNotifier {
   String? get paymentQrUrl => _paymentQrUrl;
   bool get acceptGcashPayments => _acceptGcashPayments;
   bool get acceptOnlinePayments => _acceptGcashPayments;
+  bool get showSingleAccount => _showSingleAccount;
+  List<PaymentAccount> get paymentAccounts => List.unmodifiable(_paymentAccounts);
 
   bool get hasValidLocation {
     if (!_isLoaded) return true;
@@ -66,6 +71,25 @@ class StoreStatusStore extends ChangeNotifier {
       final rawQr = (data['payment_qr_url'] ?? data['payment_qr_code'])?.toString();
       _paymentQrUrl = (rawQr != null && rawQr.isNotEmpty) ? ApiConfig.resolveMediaUrl(rawQr) : null;
       _acceptGcashPayments = _parseBool(data['accept_gcash_payments'], true);
+      _showSingleAccount = _parseBool(data['show_single_account'], false);
+
+      final rawAccounts = data['payment_accounts'];
+      if (rawAccounts is List && rawAccounts.isNotEmpty) {
+        _paymentAccounts = rawAccounts
+            .map((e) => PaymentAccount.fromJson(Map<String, dynamic>.from(e as Map)))
+            .toList();
+      } else if (_paymentPhoneNumber.isNotEmpty || (_paymentQrUrl != null && _paymentQrUrl!.isNotEmpty)) {
+        // Backward compat: wrap single payment into a PaymentAccount
+        _paymentAccounts = [
+          PaymentAccount(
+            label: 'GCash',
+            accountName: _paymentAccountName,
+            accountNumber: _paymentPhoneNumber,
+            qrCodeUrl: _paymentQrUrl,
+            isPrimary: true,
+          ),
+        ];
+      }
       _isLoaded = true;
       notifyListeners();
     } catch (_) {
@@ -107,6 +131,20 @@ class StoreStatusStore extends ChangeNotifier {
     notifyListeners();
   }
 
+  void updatePaymentAccounts(List<PaymentAccount> accounts, {bool? showSingleAccount}) {
+    _paymentAccounts = accounts;
+    if (showSingleAccount != null) {
+      _showSingleAccount = showSingleAccount;
+    }
+    if (accounts.isNotEmpty) {
+      final primary = accounts.firstWhere((a) => a.isPrimary, orElse: () => accounts.first);
+      _paymentPhoneNumber = primary.accountNumber;
+      _paymentAccountName = primary.accountName;
+      _paymentQrUrl = primary.qrCodeUrl;
+    }
+    notifyListeners();
+  }
+
   void updatePaymentDetails({
     required String paymentPhoneNumber,
     required String paymentAccountName,
@@ -138,6 +176,8 @@ class StoreStatusStore extends ChangeNotifier {
     _paymentAccountName = '';
     _paymentQrUrl = null;
     _acceptGcashPayments = true;
+    _showSingleAccount = false;
+    _paymentAccounts = [];
     notifyListeners();
   }
 }

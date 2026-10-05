@@ -1,5 +1,37 @@
 import '../config/api_config.dart';
 
+class StorePaymentAccount {
+  final String? id;
+  final String label;
+  final String accountName;
+  final String accountNumber;
+  final String? qrCodeUrl;
+  final bool isPrimary;
+  final bool isActive;
+
+  const StorePaymentAccount({
+    this.id,
+    this.label = '',
+    this.accountName = '',
+    this.accountNumber = '',
+    this.qrCodeUrl,
+    this.isPrimary = false,
+    this.isActive = true,
+  });
+
+  factory StorePaymentAccount.fromJson(Map<String, dynamic> json) {
+    return StorePaymentAccount(
+      id: json['id']?.toString(),
+      label: json['label']?.toString() ?? '',
+      accountName: json['account_name']?.toString() ?? '',
+      accountNumber: json['account_number']?.toString() ?? '',
+      isPrimary: json['is_primary'] == true || json['is_primary'] == 1 || json['is_primary'] == 'true',
+      isActive: json['is_active'] != false && json['is_active'] != 0 && json['is_active'] != 'false',
+      qrCodeUrl: ApiConfig.resolveMediaUrl(json['qr_code_url']?.toString()),
+    );
+  }
+}
+
 class StoreModel {
   final int id;
   final String businessName;
@@ -15,6 +47,8 @@ class StoreModel {
   final String paymentAccountName;
   final String? paymentQrUrl;
   final bool acceptGcashPayments;
+  final bool showSingleAccount;
+  final List<StorePaymentAccount> paymentAccounts;
 
   StoreModel({
     required this.id,
@@ -31,6 +65,8 @@ class StoreModel {
     this.paymentAccountName = '',
     this.paymentQrUrl,
     this.acceptGcashPayments = true,
+    this.showSingleAccount = false,
+    this.paymentAccounts = const [],
   });
 
   String get displayName {
@@ -51,6 +87,34 @@ class StoreModel {
   }
 
   factory StoreModel.fromJson(Map<String, dynamic> json) {
+    List<StorePaymentAccount> accounts = [];
+    if (json['payment_accounts'] != null && json['payment_accounts'] is List) {
+      accounts = (json['payment_accounts'] as List)
+          .map((e) => StorePaymentAccount.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } else {
+      // Fallback
+      final phone = (json['payment_phone_number'] as String?) ?? '';
+      final name = (json['payment_account_name'] as String?) ?? '';
+      final qr = ApiConfig.resolveMediaUrl((json['payment_qr_url'] ?? json['payment_qr_code']) as String?);
+      if (phone.isNotEmpty || qr != null) {
+        accounts.add(StorePaymentAccount(
+          label: 'GCash',
+          accountName: name,
+          accountNumber: phone,
+          qrCodeUrl: qr,
+          isPrimary: true,
+          isActive: true,
+        ));
+      }
+    }
+
+    final rawShowSingle = json['show_single_account'];
+    final showSingle = rawShowSingle == true ||
+        rawShowSingle == 1 ||
+        rawShowSingle == 'true' ||
+        rawShowSingle == '1';
+
     return StoreModel(
       id: json['id'] is int ? json['id'] as int : (int.tryParse(json['id']?.toString() ?? '0') ?? 0),
       businessName: (json['business_name'] as String?) ?? '',
@@ -82,6 +146,8 @@ class StoreModel {
               json['accept_gcash_payments'] == '0'
           ? false
           : true,
+      showSingleAccount: showSingle,
+      paymentAccounts: accounts,
     );
   }
 

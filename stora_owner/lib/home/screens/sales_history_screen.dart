@@ -77,6 +77,14 @@ class SalesHistoryScreen extends StatefulWidget {
 class _SalesHistoryScreenState extends State<SalesHistoryScreen> {
   String _selectedFilterKey = 'all'; // 'all', 'today', 'month_YYYY_MM'
   String _sortOrder = 'newest'; // 'newest', 'oldest'
+  String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -141,6 +149,18 @@ class _SalesHistoryScreenState extends State<SalesHistoryScreen> {
       result.sort((a, b) => a.date.compareTo(b.date));
     } else {
       result.sort((a, b) => b.date.compareTo(a.date));
+    }
+
+    if (_searchQuery.trim().isNotEmpty) {
+      final query = _searchQuery.trim().toLowerCase();
+      result = result.where((s) {
+        final refMatches = s.referenceNumber?.toLowerCase().contains(query) ?? false;
+        final nameMatches = s.customerName?.toLowerCase().contains(query) ?? false;
+        final notesMatches = s.notes?.toLowerCase().contains(query) ?? false;
+        final paymentMethodMatches = s.paymentMethod?.toLowerCase().contains(query) ?? false;
+        final itemMatches = s.items.any((item) => item.product.name.toLowerCase().contains(query));
+        return refMatches || nameMatches || notesMatches || paymentMethodMatches || itemMatches;
+      }).toList();
     }
 
     return result;
@@ -243,6 +263,46 @@ class _SalesHistoryScreenState extends State<SalesHistoryScreen> {
                     ],
                   ),
                 ),
+
+                // Search Bar for Reference #, Customer, Notes, Products
+                if (allSales.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
+                    child: TextField(
+                      controller: _searchController,
+                      onChanged: (val) => setState(() => _searchQuery = val),
+                      style: TextStyle(color: HomeColors.textPrimary, fontSize: 13.5),
+                      decoration: InputDecoration(
+                        hintText: 'Search by Ref #, customer, note, product...',
+                        hintStyle: TextStyle(color: HomeColors.textMuted, fontSize: 12.5),
+                        prefixIcon: Icon(Icons.search_rounded, color: HomeColors.textMuted, size: 19),
+                        suffixIcon: _searchQuery.isNotEmpty
+                            ? IconButton(
+                                icon: Icon(Icons.clear_rounded, color: HomeColors.textMuted, size: 18),
+                                onPressed: () {
+                                  _searchController.clear();
+                                  setState(() => _searchQuery = '');
+                                },
+                              )
+                            : null,
+                        filled: true,
+                        fillColor: HomeColors.cardBackground,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: HomeColors.cardBorder),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: HomeColors.cardBorder),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: Color(0xFF2196F3), width: 1.5),
+                        ),
+                      ),
+                    ),
+                  ),
 
                 // Main Content with Refresh
                 Expanded(
@@ -353,9 +413,11 @@ class _SalesHistoryScreenState extends State<SalesHistoryScreen> {
                                   ),
                                   const SizedBox(height: 16),
                                   Text(
-                                    allSales.isEmpty
-                                        ? 'No sales recorded yet'
-                                        : 'No sales for ${_getFilterLabel(availableMonths)}',
+                                    _searchQuery.isNotEmpty
+                                        ? 'No sales matching "$_searchQuery"'
+                                        : (allSales.isEmpty
+                                            ? 'No sales recorded yet'
+                                            : 'No sales for ${_getFilterLabel(availableMonths)}'),
                                     textAlign: TextAlign.center,
                                     style: TextStyle(
                                       color: HomeColors.textPrimary,
@@ -365,13 +427,29 @@ class _SalesHistoryScreenState extends State<SalesHistoryScreen> {
                                   ),
                                   const SizedBox(height: 6),
                                   Text(
-                                    allSales.isEmpty
-                                        ? 'Complete a sale from POS to see it here.'
-                                        : 'Try choosing another month or switch back to All Time.',
+                                    _searchQuery.isNotEmpty
+                                        ? 'Check the reference number or spelling and try again.'
+                                        : (allSales.isEmpty
+                                            ? 'Complete a sale from POS to see it here.'
+                                            : 'Try choosing another month or switch back to All Time.'),
                                     textAlign: TextAlign.center,
                                     style: TextStyle(color: HomeColors.textSecondary, fontSize: 13),
                                   ),
-                                  if (allSales.isNotEmpty && _selectedFilterKey != 'all') ...[
+                                  if (_searchQuery.isNotEmpty) ...[
+                                    const SizedBox(height: 16),
+                                    OutlinedButton(
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: const Color(0xFF2196F3),
+                                        side: const BorderSide(color: Color(0xFF2196F3)),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                      ),
+                                      onPressed: () {
+                                        _searchController.clear();
+                                        setState(() => _searchQuery = '');
+                                      },
+                                      child: const Text('Clear Search'),
+                                    ),
+                                  ] else if (allSales.isNotEmpty && _selectedFilterKey != 'all') ...[
                                     const SizedBox(height: 16),
                                     OutlinedButton(
                                       style: OutlinedButton.styleFrom(
@@ -957,6 +1035,32 @@ class _SaleCard extends StatelessWidget {
                         ),
                       ),
                     ),
+                    if (sale.paymentMethod == 'online' || (sale.referenceNumber != null && sale.referenceNumber!.isNotEmpty))
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE3F2FD),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: const Color(0xFF90CAF9)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.smartphone_rounded, size: 11, color: Color(0xFF1976D2)),
+                            const SizedBox(width: 3),
+                            Text(
+                              sale.referenceNumber != null && sale.referenceNumber!.isNotEmpty
+                                  ? 'Ref: ${sale.referenceNumber}'
+                                  : 'Online',
+                              style: const TextStyle(
+                                color: Color(0xFF1976D2),
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -1099,6 +1203,35 @@ class _SaleCard extends StatelessWidget {
                   ],
                 ),
               )),
+          if (sale.notes != null && sale.notes!.trim().isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: HomeColors.cardElevated,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: HomeColors.cardBorder),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.edit_note_rounded, size: 15, color: HomeColors.textMuted),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'Note: ${sale.notes!}',
+                      style: TextStyle(
+                        color: HomeColors.textSecondary,
+                        fontSize: 11,
+                        fontStyle: FontStyle.italic,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );

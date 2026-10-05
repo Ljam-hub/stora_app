@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../screens/barcode_scanner_screen.dart';
+import '../stores/store_status_store.dart';
 import '../theme/home_colors.dart';
+import 'payment_qr_modal.dart';
 
 class CashPaymentResult {
   final double tendered;
@@ -12,6 +15,9 @@ class CashPaymentResult {
   final String penaltyFrequency;
   final double penaltyRate;
   final int gracePeriodDays;
+  final String paymentMethod; // 'cash' or 'online'
+  final String referenceNumber;
+  final String notes;
 
   const CashPaymentResult({
     required this.tendered,
@@ -23,6 +29,9 @@ class CashPaymentResult {
     this.penaltyFrequency = 'none',
     this.penaltyRate = 0.0,
     this.gracePeriodDays = 0,
+    this.paymentMethod = 'cash',
+    this.referenceNumber = '',
+    this.notes = '',
   });
 }
 
@@ -58,8 +67,11 @@ class CashPaymentDialog extends StatefulWidget {
 class _CashPaymentDialogState extends State<CashPaymentDialog> {
   late final TextEditingController _controller;
   late final TextEditingController _customerNameController;
+  late final TextEditingController _referenceController;
+  late final TextEditingController _notesController;
   double _tendered = 0.0;
   bool _isSubmitted = false;
+  bool _isOnlinePayment = false;
 
   @override
   void initState() {
@@ -70,12 +82,16 @@ class _CashPaymentDialogState extends State<CashPaymentDialog> {
       text: widget.totalAmount.toStringAsFixed(2),
     );
     _customerNameController = TextEditingController();
+    _referenceController = TextEditingController();
+    _notesController = TextEditingController();
   }
 
   @override
   void dispose() {
     _controller.dispose();
     _customerNameController.dispose();
+    _referenceController.dispose();
+    _notesController.dispose();
     super.dispose();
   }
 
@@ -131,18 +147,193 @@ class _CashPaymentDialogState extends State<CashPaymentDialog> {
     return sorted;
   }
 
+  Widget _buildStoreQrActionCard(BuildContext context) {
+    final status = StoreStatusStore.instance;
+    final accounts = status.paymentAccounts;
+    final hasAccounts = accounts.isNotEmpty ||
+        status.paymentPhoneNumber.isNotEmpty ||
+        (status.paymentQrUrl != null && status.paymentQrUrl!.isNotEmpty);
+
+    final labels = accounts.isNotEmpty
+        ? accounts.map((a) => a.label.trim()).where((l) => l.isNotEmpty).toList()
+        : ['GCash / Online'];
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: () {
+          HapticFeedback.lightImpact();
+          showPaymentQrModal(context);
+        },
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                const Color(0xFF2563EB).withValues(alpha: 0.12),
+                const Color(0xFF06B6D4).withValues(alpha: 0.08),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: const Color(0xFF2563EB).withValues(alpha: 0.35),
+              width: 1.2,
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF2563EB), Color(0xFF06B6D4)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF2563EB).withValues(alpha: 0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: const Icon(Icons.qr_code_2_rounded, color: Colors.white, size: 24),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            'Show Store Payment QR',
+                            style: TextStyle(
+                              color: HomeColors.textPrimary,
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -0.2,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                              color: const Color(0xFF10B981).withValues(alpha: 0.4),
+                              width: 0.8,
+                            ),
+                          ),
+                          child: const Text(
+                            'READY',
+                            style: TextStyle(
+                              color: Color(0xFF10B981),
+                              fontSize: 8.5,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      hasAccounts
+                          ? 'Customer can scan phone now (${labels.take(3).join(', ')})'
+                          : 'Tap to view or setup store payment QR',
+                      style: TextStyle(
+                        color: HomeColors.textSecondary,
+                        fontSize: 11,
+                        height: 1.25,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF2563EB),
+                  borderRadius: BorderRadius.circular(10),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF2563EB).withValues(alpha: 0.3),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.fullscreen_rounded, color: Colors.white, size: 15),
+                    SizedBox(width: 4),
+                    Text(
+                      'Show',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   void _confirmPayment() {
     if (_isSubmitted) return;
+    final name = _customerNameController.text.trim();
+    final customerDisplayName = name.isNotEmpty ? name : 'Walk-in Customer';
+    final notes = _notesController.text.trim();
+
+    if (_isOnlinePayment) {
+      _isSubmitted = true;
+      final ref = _referenceController.text.trim();
+      Navigator.of(context).pop(
+        CashPaymentResult(
+          tendered: widget.totalAmount,
+          change: 0.0,
+          customerName: customerDisplayName,
+          paymentMethod: 'online',
+          referenceNumber: ref,
+          notes: notes,
+        ),
+      );
+      return;
+    }
+
     final change = _tendered - widget.totalAmount;
     if (change < -0.001) return;
     _isSubmitted = true;
 
-    final name = _customerNameController.text.trim();
     Navigator.of(context).pop(
       CashPaymentResult(
         tendered: _tendered,
         change: change < 0 ? 0.0 : change,
-        customerName: name.isNotEmpty ? name : 'Walk-in Customer',
+        customerName: customerDisplayName,
+        paymentMethod: 'cash',
+        referenceNumber: '',
+        notes: notes,
       ),
     );
   }
@@ -230,6 +421,7 @@ class _CashPaymentDialogState extends State<CashPaymentDialog> {
   }
 
   void _chargeToUtang() async {
+    if (_isSubmitted) return;
     final currentName = _customerNameController.text.trim();
     final nameCtrl = TextEditingController(text: currentName.isEmpty ? '' : currentName);
     final phoneCtrl = TextEditingController();
@@ -574,6 +766,8 @@ class _CashPaymentDialogState extends State<CashPaymentDialog> {
     penaltyCtrl.dispose();
 
     if (confirmed == true && mounted) {
+      if (_isSubmitted) return;
+      _isSubmitted = true;
       Navigator.of(context).pop(
         CashPaymentResult(
           tendered: 0.0,
@@ -585,6 +779,9 @@ class _CashPaymentDialogState extends State<CashPaymentDialog> {
           penaltyFrequency: selectedFrequency,
           penaltyRate: rate < 0 ? 0.0 : rate,
           gracePeriodDays: selectedGraceDays,
+          paymentMethod: 'cash',
+          referenceNumber: '',
+          notes: _notesController.text.trim(),
         ),
       );
     }
@@ -640,18 +837,18 @@ class _CashPaymentDialogState extends State<CashPaymentDialog> {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: HomeColors.primary.withValues(alpha: 0.15),
+                          color: (_isOnlinePayment ? const Color(0xFF2196F3) : HomeColors.primary).withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: const Icon(
-                          Icons.payments_rounded,
-                          color: HomeColors.primary,
+                        child: Icon(
+                          _isOnlinePayment ? Icons.qr_code_scanner_rounded : Icons.payments_rounded,
+                          color: _isOnlinePayment ? const Color(0xFF2196F3) : HomeColors.primary,
                           size: 20,
                         ),
                       ),
                       const SizedBox(width: 10),
                       Text(
-                        'Cash Payment',
+                        _isOnlinePayment ? 'Online Payment' : 'Cash Payment',
                         style: TextStyle(
                           color: HomeColors.textPrimary,
                           fontSize: 18,
@@ -666,7 +863,111 @@ class _CashPaymentDialogState extends State<CashPaymentDialog> {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
+
+              // Payment Method Selector Tabs
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: HomeColors.cardElevated,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: HomeColors.cardBorder),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () {
+                          HapticFeedback.selectionClick();
+                          setState(() => _isOnlinePayment = false);
+                        },
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 160),
+                          padding: const EdgeInsets.symmetric(vertical: 9),
+                          decoration: BoxDecoration(
+                            color: !_isOnlinePayment ? HomeColors.primary : Colors.transparent,
+                            borderRadius: BorderRadius.circular(10),
+                            boxShadow: !_isOnlinePayment
+                                ? [
+                                    BoxShadow(
+                                      color: HomeColors.primary.withValues(alpha: 0.3),
+                                      blurRadius: 6,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ]
+                                : null,
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.payments_rounded,
+                                size: 16,
+                                color: !_isOnlinePayment ? Colors.white : HomeColors.textSecondary,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Cash',
+                                style: TextStyle(
+                                  color: !_isOnlinePayment ? Colors.white : HomeColors.textSecondary,
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () {
+                          HapticFeedback.selectionClick();
+                          setState(() => _isOnlinePayment = true);
+                        },
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 160),
+                          padding: const EdgeInsets.symmetric(vertical: 9),
+                          decoration: BoxDecoration(
+                            color: _isOnlinePayment ? const Color(0xFF2196F3) : Colors.transparent,
+                            borderRadius: BorderRadius.circular(10),
+                            boxShadow: _isOnlinePayment
+                                ? [
+                                    BoxShadow(
+                                      color: const Color(0xFF2196F3).withValues(alpha: 0.3),
+                                      blurRadius: 6,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ]
+                                : null,
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.smartphone_rounded,
+                                size: 16,
+                                color: _isOnlinePayment ? Colors.white : HomeColors.textSecondary,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Online / E-Wallet',
+                                style: TextStyle(
+                                  color: _isOnlinePayment ? Colors.white : HomeColors.textSecondary,
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 14),
 
               // Total Due Card
               Container(
@@ -674,7 +975,11 @@ class _CashPaymentDialogState extends State<CashPaymentDialog> {
                 decoration: BoxDecoration(
                   color: HomeColors.cardElevated,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: HomeColors.cardBorder),
+                  border: Border.all(
+                    color: _isOnlinePayment
+                        ? const Color(0xFF2196F3).withValues(alpha: 0.3)
+                        : HomeColors.cardBorder,
+                  ),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -691,7 +996,7 @@ class _CashPaymentDialogState extends State<CashPaymentDialog> {
                     Text(
                       '₱${total.toStringAsFixed(2)}',
                       style: TextStyle(
-                        color: HomeColors.textPrimary,
+                        color: _isOnlinePayment ? const Color(0xFF64B5F6) : HomeColors.textPrimary,
                         fontSize: 24,
                         fontWeight: FontWeight.w900,
                       ),
@@ -699,11 +1004,11 @@ class _CashPaymentDialogState extends State<CashPaymentDialog> {
                   ],
                 ),
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: 16),
 
-              // Customer Name Label & Input (Optional)
+              // Customer Name / Sender Label & Input (Optional)
               Text(
-                'CUSTOMER NAME (OPTIONAL)',
+                _isOnlinePayment ? 'SENDER / CUSTOMER NAME (OPTIONAL)' : 'CUSTOMER NAME (OPTIONAL)',
                 style: TextStyle(
                   color: HomeColors.textMuted,
                   fontSize: 11,
@@ -711,96 +1016,320 @@ class _CashPaymentDialogState extends State<CashPaymentDialog> {
                   letterSpacing: 0.6,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
               TextField(
                 controller: _customerNameController,
                 textCapitalization: TextCapitalization.words,
                 textInputAction: TextInputAction.next,
                 style: TextStyle(
                   color: HomeColors.textPrimary,
-                  fontSize: 15,
+                  fontSize: 14.5,
                   fontWeight: FontWeight.w700,
                 ),
                 decoration: InputDecoration(
-                  hintText: 'Walk-in Customer',
+                  hintText: _isOnlinePayment ? 'e.g. Maria Santos (Sender)' : 'Walk-in Customer',
                   hintStyle: TextStyle(
                     color: HomeColors.textMuted,
-                    fontSize: 14,
+                    fontSize: 13,
                     fontWeight: FontWeight.normal,
                   ),
                   prefixIcon: Icon(Icons.person_outline_rounded, color: HomeColors.textMuted, size: 20),
                   filled: true,
                   fillColor: HomeColors.cardElevated,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
                     borderSide: BorderSide(color: HomeColors.cardBorder),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(color: HomeColors.primary, width: 1.5),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Cash Tendered Label & Input
-              Text(
-                'CASH TENDERED',
-                style: TextStyle(
-                  color: HomeColors.textMuted,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.6,
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _controller,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                textInputAction: TextInputAction.done,
-                onSubmitted: (_) => _confirmPayment(),
-                onChanged: _onTenderedChanged,
-                autofocus: false,
-                style: TextStyle(
-                  color: HomeColors.textPrimary,
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                ),
-                decoration: InputDecoration(
-                  prefixText: '₱ ',
-                  prefixStyle: TextStyle(
-                    color: HomeColors.primary,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w800,
-                  ),
-                  suffixIcon: _controller.text.isNotEmpty
-                      ? IconButton(
-                          icon: Icon(Icons.clear, color: HomeColors.textMuted, size: 18),
-                          onPressed: () {
-                            _controller.clear();
-                            _onTenderedChanged('0');
-                          },
-                        )
-                      : null,
-                  filled: true,
-                  fillColor: HomeColors.cardElevated,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide(color: HomeColors.cardBorder),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(color: HomeColors.primary, width: 2),
+                    borderSide: BorderSide(
+                      color: _isOnlinePayment ? const Color(0xFF2196F3) : HomeColors.primary,
+                      width: 1.5,
+                    ),
                   ),
                 ),
               ),
               const SizedBox(height: 14),
 
-              // Quick Denomination Shortcuts
+              // Online Payment Specific Section (Store QR & Reference Number)
+              if (_isOnlinePayment) ...[
+                _buildStoreQrActionCard(context),
+                const SizedBox(height: 14),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'REFERENCE NUMBER (SENDER REF #)',
+                      style: TextStyle(
+                        color: HomeColors.textMuted,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.6,
+                      ),
+                    ),
+                    Text(
+                      'GCash / Maya',
+                      style: TextStyle(
+                        color: const Color(0xFF2196F3),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: _referenceController,
+                  textInputAction: TextInputAction.next,
+                  style: TextStyle(
+                    color: HomeColors.textPrimary,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: 'e.g. 1029 3847 5612',
+                    hintStyle: TextStyle(
+                      color: HomeColors.textMuted,
+                      fontSize: 13,
+                      fontWeight: FontWeight.normal,
+                    ),
+                    prefixIcon: const Icon(Icons.receipt_rounded, color: Color(0xFF2196F3), size: 20),
+                    suffixIcon: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.qr_code_scanner_rounded, size: 20, color: Color(0xFF2196F3)),
+                          tooltip: 'Scan QR / Barcode',
+                          onPressed: () async {
+                            final scanned = await Navigator.push<String>(
+                              context,
+                              MaterialPageRoute(builder: (_) => const BarcodeScannerScreen()),
+                            );
+                            if (scanned != null && scanned.trim().isNotEmpty && mounted) {
+                              setState(() => _referenceController.text = scanned.trim());
+                            }
+                          },
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.content_paste_rounded, size: 18),
+                          tooltip: 'Paste Reference Number',
+                          onPressed: () async {
+                            final data = await Clipboard.getData('text/plain');
+                            if (data?.text != null && mounted) {
+                              setState(() => _referenceController.text = data!.text!.trim());
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                    filled: true,
+                    fillColor: HomeColors.cardElevated,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide(color: HomeColors.cardBorder),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(color: Color(0xFF2196F3), width: 1.5),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF2196F3).withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFF2196F3).withValues(alpha: 0.25)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.verified_outlined, color: Color(0xFF2196F3), size: 18),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Payment will be recorded as settled via online transfer (₱${total.toStringAsFixed(2)}).',
+                          style: TextStyle(
+                            color: HomeColors.textPrimary,
+                            fontSize: 12,
+                            height: 1.3,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
+              ],
+
+              // Cash Payment Specific Section (Tendered, Shortcuts, Sukli)
+              if (!_isOnlinePayment) ...[
+                // Cash Tendered Label & Input
+                Text(
+                  'CASH TENDERED',
+                  style: TextStyle(
+                    color: HomeColors.textMuted,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.6,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _controller,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  textInputAction: TextInputAction.done,
+                  onSubmitted: (_) => _confirmPayment(),
+                  onChanged: _onTenderedChanged,
+                  autofocus: false,
+                  style: TextStyle(
+                    color: HomeColors.textPrimary,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                  ),
+                  decoration: InputDecoration(
+                    prefixText: '₱ ',
+                    prefixStyle: TextStyle(
+                      color: HomeColors.primary,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                    ),
+                    suffixIcon: _controller.text.isNotEmpty
+                        ? IconButton(
+                            icon: Icon(Icons.clear, color: HomeColors.textMuted, size: 18),
+                            onPressed: () {
+                              _controller.clear();
+                              _onTenderedChanged('0');
+                            },
+                          )
+                        : null,
+                    filled: true,
+                    fillColor: HomeColors.cardElevated,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide(color: HomeColors.cardBorder),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(color: HomeColors.primary, width: 2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+
+                // Quick Denomination Shortcuts
+                Text(
+                  'QUICK CASH SHORTCUTS',
+                  style: TextStyle(
+                    color: HomeColors.textMuted,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.6,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: quickOptions.map((opt) {
+                    final isExact = (opt - total).abs() < 0.001;
+                    final isSelected = (_tendered - opt).abs() < 0.001;
+                    final label = isExact ? 'Exact (₱${opt.toStringAsFixed(2)})' : '₱${opt.toStringAsFixed(0)}';
+
+                    return InkWell(
+                      onTap: () => _selectAmount(opt),
+                      borderRadius: BorderRadius.circular(12),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 150),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? HomeColors.primary
+                              : (isExact
+                                  ? HomeColors.primary.withValues(alpha: 0.15)
+                                  : HomeColors.cardElevated),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: isSelected
+                                ? HomeColors.primary
+                                : (isExact
+                                    ? HomeColors.primary.withValues(alpha: 0.5)
+                                    : HomeColors.cardBorder),
+                            width: isSelected || isExact ? 1.5 : 1,
+                          ),
+                        ),
+                        child: Text(
+                          label,
+                          style: TextStyle(
+                            color: isSelected
+                                ? Colors.white
+                                : (isExact ? HomeColors.primary : HomeColors.textPrimary),
+                            fontWeight: isSelected || isExact ? FontWeight.w800 : FontWeight.w600,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 18),
+
+                // Change (Sukli) or Lacking Box
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  decoration: BoxDecoration(
+                    color: isSufficient ? HomeColors.successBg : HomeColors.dangerBg,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: isSufficient
+                          ? HomeColors.successText.withValues(alpha: 0.5)
+                          : HomeColors.dangerText.withValues(alpha: 0.5),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            isSufficient ? Icons.check_circle_outline_rounded : Icons.info_outline_rounded,
+                            color: isSufficient ? HomeColors.successText : HomeColors.dangerText,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            isSufficient ? 'CHANGE (SUKLI)' : 'AMOUNT LACKING',
+                            style: TextStyle(
+                              color: isSufficient ? HomeColors.successText : HomeColors.dangerText,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 12,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Text(
+                        isSufficient
+                            ? '₱${change.toStringAsFixed(2)}'
+                            : '-₱${(-change).toStringAsFixed(2)}',
+                        style: TextStyle(
+                          color: isSufficient ? HomeColors.successText : HomeColors.dangerText,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 18,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+
+              // Owner Note / Memo (Available in both modes)
               Text(
-                'QUICK CASH SHORTCUTS',
+                'OWNER NOTE / MEMO (OPTIONAL)',
                 style: TextStyle(
                   color: HomeColors.textMuted,
                   fontSize: 11,
@@ -808,98 +1337,76 @@ class _CashPaymentDialogState extends State<CashPaymentDialog> {
                   letterSpacing: 0.6,
                 ),
               ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: quickOptions.map((opt) {
-                  final isExact = (opt - total).abs() < 0.001;
-                  final isSelected = (_tendered - opt).abs() < 0.001;
-                  final label = isExact ? 'Exact (₱${opt.toStringAsFixed(2)})' : '₱${opt.toStringAsFixed(0)}';
-
-                  return InkWell(
-                    onTap: () => _selectAmount(opt),
-                    borderRadius: BorderRadius.circular(12),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 150),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? HomeColors.primary
-                            : (isExact
-                                ? HomeColors.primary.withValues(alpha: 0.15)
-                                : HomeColors.cardElevated),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: isSelected
-                              ? HomeColors.primary
-                              : (isExact
-                                  ? HomeColors.primary.withValues(alpha: 0.5)
-                                  : HomeColors.cardBorder),
-                          width: isSelected || isExact ? 1.5 : 1,
-                        ),
-                      ),
-                      child: Text(
-                        label,
-                        style: TextStyle(
-                          color: isSelected
-                              ? Colors.white
-                              : (isExact ? HomeColors.primary : HomeColors.textPrimary),
-                          fontWeight: isSelected || isExact ? FontWeight.w800 : FontWeight.w600,
-                          fontSize: 13,
-                        ),
-                      ),
+              const SizedBox(height: 6),
+              TextField(
+                controller: _notesController,
+                maxLines: 2,
+                minLines: 1,
+                textInputAction: TextInputAction.done,
+                style: TextStyle(color: HomeColors.textPrimary, fontSize: 13.5),
+                decoration: InputDecoration(
+                  hintText: 'e.g. Cash out fee ₱10, Senior discount, Regular customer',
+                  hintStyle: TextStyle(
+                    color: HomeColors.textMuted,
+                    fontSize: 12,
+                  ),
+                  prefixIcon: Icon(Icons.note_alt_outlined, color: HomeColors.textMuted, size: 20),
+                  filled: true,
+                  fillColor: HomeColors.cardElevated,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide(color: HomeColors.cardBorder),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide(
+                      color: _isOnlinePayment ? const Color(0xFF2196F3) : HomeColors.primary,
+                      width: 1.5,
                     ),
-                  );
-                }).toList(),
-              ),
-              const SizedBox(height: 18),
-
-              // Change (Sukli) or Lacking Box
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                decoration: BoxDecoration(
-                  color: isSufficient ? HomeColors.successBg : HomeColors.dangerBg,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: isSufficient
-                        ? HomeColors.successText.withValues(alpha: 0.5)
-                        : HomeColors.dangerText.withValues(alpha: 0.5),
                   ),
                 ),
+              ),
+              const SizedBox(height: 8),
+              // Preset Note Chips
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      children: [
-                        Icon(
-                          isSufficient ? Icons.check_circle_outline_rounded : Icons.info_outline_rounded,
-                          color: isSufficient ? HomeColors.successText : HomeColors.dangerText,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          isSufficient ? 'CHANGE (SUKLI)' : 'AMOUNT LACKING',
+                    'Senior Discount',
+                    'Employee Purchase',
+                    'Wholesale',
+                    'Cash Out',
+                    'GCash Send',
+                    'Maya Transfer',
+                  ].map((preset) {
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 6),
+                      child: ActionChip(
+                        label: Text(
+                          preset,
                           style: TextStyle(
-                            color: isSufficient ? HomeColors.successText : HomeColors.dangerText,
-                            fontWeight: FontWeight.w800,
-                            fontSize: 12,
-                            letterSpacing: 0.5,
+                            color: HomeColors.textSecondary,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
-                      ],
-                    ),
-                    Text(
-                      isSufficient
-                          ? '₱${change.toStringAsFixed(2)}'
-                          : '-₱${(-change).toStringAsFixed(2)}',
-                      style: TextStyle(
-                        color: isSufficient ? HomeColors.successText : HomeColors.dangerText,
-                        fontWeight: FontWeight.w900,
-                        fontSize: 18,
+                        backgroundColor: HomeColors.cardElevated,
+                        side: BorderSide(color: HomeColors.cardBorder),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        onPressed: () {
+                          HapticFeedback.selectionClick();
+                          final current = _notesController.text.trim();
+                          if (current.isEmpty) {
+                            _notesController.text = preset;
+                          } else if (!current.contains(preset)) {
+                            _notesController.text = '$current • $preset';
+                          }
+                        },
                       ),
-                    ),
-                  ],
+                    );
+                  }).toList(),
                 ),
               ),
               const SizedBox(height: 20),
@@ -907,9 +1414,11 @@ class _CashPaymentDialogState extends State<CashPaymentDialog> {
               // Complete Sale Button
               ElevatedButton(
                 key: const Key('confirm_payment_button'),
-                onPressed: isSufficient ? _confirmPayment : null,
+                onPressed: _isOnlinePayment
+                    ? _confirmPayment
+                    : (isSufficient ? _confirmPayment : null),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: HomeColors.primary,
+                  backgroundColor: _isOnlinePayment ? const Color(0xFF2196F3) : HomeColors.primary,
                   foregroundColor: Colors.white,
                   disabledBackgroundColor: HomeColors.cardBorder,
                   disabledForegroundColor: HomeColors.textMuted,
@@ -917,15 +1426,20 @@ class _CashPaymentDialogState extends State<CashPaymentDialog> {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  elevation: isSufficient ? 2 : 0,
+                  elevation: (_isOnlinePayment || isSufficient) ? 2 : 0,
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.receipt_long_rounded, size: 20),
+                    Icon(
+                      _isOnlinePayment ? Icons.check_circle_rounded : Icons.receipt_long_rounded,
+                      size: 20,
+                    ),
                     const SizedBox(width: 8),
                     Text(
-                      isSufficient ? 'Complete Sale & Receipt' : 'Enter Sufficient Cash',
+                      _isOnlinePayment
+                          ? 'Complete Online Sale'
+                          : (isSufficient ? 'Complete Sale & Receipt' : 'Enter Sufficient Cash'),
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
@@ -934,26 +1448,28 @@ class _CashPaymentDialogState extends State<CashPaymentDialog> {
                   ],
                 ),
               ),
-              const SizedBox(height: 10),
-              OutlinedButton.icon(
-                onPressed: _chargeToUtang,
-                icon: const Icon(Icons.menu_book_rounded, size: 18, color: Colors.amber),
-                label: const Text(
-                  'Charge to Utang / Credit (Listahan)',
-                  style: TextStyle(
-                    color: Colors.amber,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
+              if (!_isOnlinePayment) ...[
+                const SizedBox(height: 10),
+                OutlinedButton.icon(
+                  onPressed: _chargeToUtang,
+                  icon: const Icon(Icons.menu_book_rounded, size: 18, color: Colors.amber),
+                  label: const Text(
+                    'Charge to Utang / Credit (Listahan)',
+                    style: TextStyle(
+                      color: Colors.amber,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: Colors.amber.withValues(alpha: 0.6)),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
                   ),
                 ),
-                style: OutlinedButton.styleFrom(
-                  side: BorderSide(color: Colors.amber.withValues(alpha: 0.6)),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
-              ),
+              ],
             ],
           ),
         ),

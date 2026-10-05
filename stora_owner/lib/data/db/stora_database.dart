@@ -50,7 +50,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -74,6 +74,11 @@ class AppDatabase extends _$AppDatabase {
         // the column even though raw SQL in AuthDao referenced it.
         await _safeAddColumn('auth_sessions', 'is_email_verified', 'INTEGER NOT NULL DEFAULT 0');
       }
+      if (from < 5) {
+        await m.addColumn(sales, sales.notes);
+        await m.addColumn(sales, sales.paymentMethod);
+        await m.addColumn(sales, sales.referenceNumber);
+      }
     },
     beforeOpen: (details) async {
       // Defensive safety net: ensure every column exists regardless of the
@@ -88,6 +93,9 @@ class AppDatabase extends _$AppDatabase {
       await _safeAddColumn('sales', 'order_id', 'INTEGER');
       await _safeAddColumn('sales', 'channel', 'TEXT');
       await _safeAddColumn('products', 'bio', "TEXT NOT NULL DEFAULT ''");
+      await _safeAddColumn('sales', 'notes', 'TEXT');
+      await _safeAddColumn('sales', 'payment_method', 'TEXT');
+      await _safeAddColumn('sales', 'reference_number', 'TEXT');
     },
   );
 

@@ -41,6 +41,9 @@ class SalesDao {
         receiptNumber: sale.receiptNumber,
         orderId: effectiveOrderId,
         channel: effectiveChannel,
+        notes: sale.notes,
+        paymentMethod: sale.paymentMethod,
+        referenceNumber: sale.referenceNumber,
         items: lines
             .map(
               (line) => CartItem(
@@ -106,6 +109,9 @@ class SalesDao {
         receiptNumber: Value(sale.receiptNumber),
         orderId: Value(sale.orderId),
         channel: Value(sale.channel),
+        notes: Value(sale.notes),
+        paymentMethod: Value(sale.paymentMethod),
+        referenceNumber: Value(sale.referenceNumber),
       ),
     );
     for (final item in sale.items) {

@@ -1444,6 +1444,8 @@ def list_stores(request):
             "payment_account_name": loc.payment_account_name if loc else "",
             "payment_qr_url": payment_qr_url,
             "accept_gcash_payments": loc.accept_gcash_payments if loc else True,
+            "payment_accounts": getattr(loc, "payment_accounts", []) if loc else [],
+            "show_single_account": getattr(loc, "show_single_account", False) if loc else False,
             "distance_km": distance_km,
             "is_open": is_open,
             "role": owner.role,

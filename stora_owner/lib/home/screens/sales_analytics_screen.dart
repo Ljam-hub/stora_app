@@ -147,6 +147,14 @@ class _SalesAnalyticsScreenState extends State<SalesAnalyticsScreen> {
             ? thisWeekSales
             : (_selectedPeriodIndex == 1 ? thisMonthSales : sales);
 
+        final cashSales = filteredSales.where((s) => s.paymentMethod != 'online').toList();
+        final onlineSales = filteredSales.where((s) => s.paymentMethod == 'online').toList();
+        final cashRevenue = cashSales.fold(0.0, (sum, s) => sum + s.total);
+        final onlineRevenue = onlineSales.fold(0.0, (sum, s) => sum + s.total);
+        final totalPeriodRevenue = cashRevenue + onlineRevenue;
+        final cashPct = totalPeriodRevenue > 0 ? ((cashRevenue / totalPeriodRevenue) * 100).toStringAsFixed(0) : '0';
+        final onlinePct = totalPeriodRevenue > 0 ? ((onlineRevenue / totalPeriodRevenue) * 100).toStringAsFixed(0) : '0';
+
         for (final sale in filteredSales) {
           for (final item in sale.items) {
             productQtyMap[item.product.name] = (productQtyMap[item.product.name] ?? 0) + item.quantity;
@@ -323,6 +331,205 @@ class _SalesAnalyticsScreenState extends State<SalesAnalyticsScreen> {
                               );
                             }).toList(),
                           ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // Payment Method Breakdown (Cash vs Online)
+                  Container(
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      color: HomeColors.cardBackground,
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: HomeColors.cardBorder),
+                      boxShadow: HomeColors.cardShadow,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF6366F1).withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: const Icon(Icons.pie_chart_rounded, size: 18, color: Color(0xFF6366F1)),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Payment Breakdown',
+                                  style: TextStyle(
+                                    color: HomeColors.textPrimary,
+                                    fontSize: 14.5,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: HomeColors.cardElevated,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: HomeColors.cardBorder),
+                              ),
+                              child: Text(
+                                _selectedPeriodIndex == 0 ? '7 Days' : (_selectedPeriodIndex == 1 ? '30 Days' : 'All Time'),
+                                style: TextStyle(color: HomeColors.textSecondary, fontSize: 11, fontWeight: FontWeight.w600),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Proportional Stacked Bar
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: SizedBox(
+                            height: 12,
+                            child: totalPeriodRevenue > 0
+                                ? Row(
+                                    children: [
+                                      if (cashRevenue > 0)
+                                        Expanded(
+                                          flex: (cashRevenue * 100).round(),
+                                          child: Container(color: const Color(0xFF10B981)),
+                                        ),
+                                      if (onlineRevenue > 0)
+                                        Expanded(
+                                          flex: (onlineRevenue * 100).round(),
+                                          child: Container(color: const Color(0xFF2563EB)),
+                                        ),
+                                    ],
+                                  )
+                                : Container(color: HomeColors.cardBorder),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Cash & Online Metrics Row
+                        Row(
+                          children: [
+                            // Cash Card
+                            Expanded(
+                              child: Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF10B981).withValues(alpha: 0.08),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.25)),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Container(
+                                          width: 8,
+                                          height: 8,
+                                          decoration: const BoxDecoration(
+                                            color: Color(0xFF10B981),
+                                            shape: BoxShape.circle,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          'Cash on Hand',
+                                          style: TextStyle(
+                                            color: HomeColors.textSecondary,
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      '₱${cashRevenue.toStringAsFixed(2)}',
+                                      style: TextStyle(
+                                        color: HomeColors.textPrimary,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      '${cashSales.length} sales ($cashPct%)',
+                                      style: const TextStyle(
+                                        color: Color(0xFF10B981),
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            // Online Card
+                            Expanded(
+                              child: Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF2563EB).withValues(alpha: 0.08),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: const Color(0xFF2563EB).withValues(alpha: 0.25)),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Container(
+                                          width: 8,
+                                          height: 8,
+                                          decoration: const BoxDecoration(
+                                            color: Color(0xFF2563EB),
+                                            shape: BoxShape.circle,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          'Online / E-Wallet',
+                                          style: TextStyle(
+                                            color: HomeColors.textSecondary,
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      '₱${onlineRevenue.toStringAsFixed(2)}',
+                                      style: TextStyle(
+                                        color: HomeColors.textPrimary,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      '${onlineSales.length} sales ($onlinePct%)',
+                                      style: const TextStyle(
+                                        color: Color(0xFF2563EB),
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),

@@ -20,6 +20,7 @@ import '../widgets/category_filter_row.dart';
 import '../widgets/product_image_widget.dart';
 import '../widgets/receipt_dialog.dart';
 import '../widgets/stock_step_button.dart';
+import '../widgets/payment_qr_modal.dart';
 
 // ---------------------------------------------------------------------
 // POS / Sales — search-or-scan + virtual cart + checkout. Search
@@ -166,16 +167,17 @@ class _PosScreenState extends State<PosScreen> {
       return;
     }
 
+    setState(() => _isCheckingOut = true);
     final total = cart.total;
     final paymentResult = await CashPaymentDialog.show(
       context,
       totalAmount: total,
     );
     if (paymentResult == null) {
+      if (mounted) setState(() => _isCheckingOut = false);
       return;
     }
 
-    setState(() => _isCheckingOut = true);
     final items = List<CartItem>.from(cart.items);
     Sale? recordedSale;
     try {
@@ -185,6 +187,9 @@ class _PosScreenState extends State<PosScreen> {
         cashTendered: paymentResult.tendered,
         changeAmount: paymentResult.change,
         customerName: paymentResult.customerName,
+        notes: paymentResult.notes.isNotEmpty ? paymentResult.notes : null,
+        paymentMethod: paymentResult.paymentMethod,
+        referenceNumber: paymentResult.referenceNumber.isNotEmpty ? paymentResult.referenceNumber : null,
       );
       if (paymentResult.isUtang) {
         final shortId = recordedSale.id.length > 8 ? recordedSale.id.substring(0, 8) : recordedSale.id;
@@ -274,7 +279,15 @@ class _PosScreenState extends State<PosScreen> {
                           textAlign: TextAlign.center,
                           style: TextStyle(color: HomeColors.textPrimary, fontSize: 18, fontWeight: FontWeight.w700)),
                     ),
-                    const SizedBox(width: 40),
+                    IconButton(
+                      icon: const Icon(Icons.qr_code_2_rounded, color: Color(0xFF60A5FA), size: 22),
+                      tooltip: 'Show Payment QR',
+                      style: IconButton.styleFrom(
+                        backgroundColor: HomeColors.cardBackground,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      onPressed: () => showPaymentQrModal(context),
+                    ),
                   ],
                 ),
               ),
@@ -316,6 +329,11 @@ class _PosScreenState extends State<PosScreen> {
                           icon: const Icon(Icons.qr_code_scanner_rounded, color: AppColors.purpleLight, size: 20),
                           tooltip: 'Scan Barcode',
                           onPressed: _onScan,
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.qr_code_2_rounded, color: Color(0xFF60A5FA), size: 22),
+                          tooltip: 'Store Payment QR',
+                          onPressed: () => showPaymentQrModal(context),
                         ),
                       ],
                     ),
@@ -394,8 +412,44 @@ class _PosScreenState extends State<PosScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Virtual Cart',
-                      style: TextStyle(color: AppColors.label, fontSize: 13, fontWeight: FontWeight.w700)),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text('Virtual Cart',
+                          style: TextStyle(color: AppColors.label, fontSize: 13, fontWeight: FontWeight.w700)),
+                      const SizedBox(width: 8),
+                      InkWell(
+                        borderRadius: BorderRadius.circular(8),
+                        onTap: () => showPaymentQrModal(context),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF60A5FA).withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: const Color(0xFF60A5FA).withValues(alpha: 0.3),
+                              width: 0.8,
+                            ),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.qr_code_2_rounded, size: 12, color: Color(0xFF60A5FA)),
+                              SizedBox(width: 4),
+                              Text(
+                                'Payment QR',
+                                style: TextStyle(
+                                  color: Color(0xFF60A5FA),
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                   if (cart.items.isNotEmpty)
                     GestureDetector(
                       onTap: () => confirmClearCart(context),

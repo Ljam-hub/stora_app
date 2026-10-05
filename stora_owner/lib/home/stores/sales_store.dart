@@ -53,6 +53,9 @@ class SalesStore extends ChangeNotifier {
     double? cashTendered,
     double? changeAmount,
     String? customerName,
+    String? notes,
+    String? paymentMethod,
+    String? referenceNumber,
   })? mockRecordSaleHandler;
 
   Future<Sale> recordSale(
@@ -61,6 +64,9 @@ class SalesStore extends ChangeNotifier {
     double? cashTendered,
     double? changeAmount,
     String? customerName,
+    String? notes,
+    String? paymentMethod,
+    String? referenceNumber,
   }) async {
     if (mockRecordSaleHandler != null) {
       final sale = await mockRecordSaleHandler!(
@@ -69,6 +75,9 @@ class SalesStore extends ChangeNotifier {
         cashTendered: cashTendered,
         changeAmount: changeAmount,
         customerName: customerName,
+        notes: notes,
+        paymentMethod: paymentMethod,
+        referenceNumber: referenceNumber,
       );
       _sales.add(sale);
       for (final item in items) {
@@ -92,6 +101,9 @@ class SalesStore extends ChangeNotifier {
           cashTendered: cashTendered,
           changeAmount: changeAmount,
           customerName: customerName,
+          notes: notes,
+          paymentMethod: paymentMethod,
+          referenceNumber: referenceNumber,
         );
       } finally {
         _recording = false;
@@ -103,6 +115,9 @@ class SalesStore extends ChangeNotifier {
     try {
       apiData = await _api.createSale({
         'customer_name': customerName ?? 'Walk-in Customer',
+        if (notes != null && notes.isNotEmpty) 'notes': notes,
+        if (paymentMethod != null && paymentMethod.isNotEmpty) 'payment_method': paymentMethod,
+        if (referenceNumber != null && referenceNumber.isNotEmpty) 'reference_number': referenceNumber,
         'items': items
             .map(
               (item) => {
@@ -126,6 +141,9 @@ class SalesStore extends ChangeNotifier {
           cashTendered: cashTendered,
           changeAmount: changeAmount,
           customerName: created.customerName ?? customerName ?? 'Walk-in Customer',
+          notes: created.notes ?? notes,
+          paymentMethod: created.paymentMethod ?? paymentMethod,
+          referenceNumber: created.referenceNumber ?? referenceNumber,
         );
         _sales.add(withCashDetails);
         await _db.salesDao.upsertSale(withCashDetails);
@@ -145,6 +163,9 @@ class SalesStore extends ChangeNotifier {
         cashTendered: cashTendered,
         changeAmount: changeAmount,
         customerName: customerName,
+        notes: notes,
+        paymentMethod: paymentMethod,
+        referenceNumber: referenceNumber,
       );
     }
     _recording = false;
@@ -158,6 +179,9 @@ class SalesStore extends ChangeNotifier {
     double? cashTendered,
     double? changeAmount,
     String? customerName,
+    String? notes,
+    String? paymentMethod,
+    String? referenceNumber,
   }) async {
     final timestamp = DateTime.now().microsecondsSinceEpoch;
     final shortId = (timestamp % 1000000).toString().padLeft(6, '0');
@@ -171,6 +195,9 @@ class SalesStore extends ChangeNotifier {
       customerName: customerName ?? 'Walk-in Customer',
       receiptNumber: 'POS-OFF-$shortId',
       channel: 'in_store',
+      notes: notes,
+      paymentMethod: paymentMethod,
+      referenceNumber: referenceNumber,
     );
     _sales.add(local);
     await _db.salesDao.upsertSale(local);
@@ -181,6 +208,9 @@ class SalesStore extends ChangeNotifier {
       'customer_name': customerName ?? 'Walk-in Customer',
       'cash_tendered': cashTendered,
       'change_amount': changeAmount,
+      if (notes != null && notes.isNotEmpty) 'notes': notes,
+      if (paymentMethod != null && paymentMethod.isNotEmpty) 'payment_method': paymentMethod,
+      if (referenceNumber != null && referenceNumber.isNotEmpty) 'reference_number': referenceNumber,
       'items': items
           .map(
             (item) => {

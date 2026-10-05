@@ -147,6 +147,31 @@ class _ReceiptDialogState extends State<ReceiptDialog> {
                         ],
                       ],
                     ),
+                    if (sale.notes != null && sale.notes!.trim().isNotEmpty) ...[
+                      const SizedBox(height: 5),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFF9C4).withValues(alpha: 0.6),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: const Color(0xFFFFE082)),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Icon(Icons.edit_note_rounded, size: 14, color: Color(0xFFE65100)),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                'Note: ${sale.notes!}',
+                                style: const TextStyle(color: Color(0xFF4E342E), fontSize: 10.5, fontStyle: FontStyle.italic),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                     const Divider(color: Colors.black26, thickness: 1, height: 20),
 
                     // Items
@@ -236,7 +261,54 @@ class _ReceiptDialogState extends State<ReceiptDialog> {
                             style: const TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.w900)),
                       ],
                     ),
-                    if (sale.cashTendered != null) ...[
+                    if (sale.paymentMethod == 'online' || (sale.referenceNumber != null && sale.referenceNumber!.isNotEmpty)) ...[
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE3F2FD),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: const Color(0xFF90CAF9)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text('Payment Method', style: TextStyle(color: Colors.black54, fontSize: 11)),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF1E88E5),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: const Text('Online Payment',
+                                      style: TextStyle(color: Colors.white, fontSize: 9.5, fontWeight: FontWeight.bold)),
+                                ),
+                              ],
+                            ),
+                            if (sale.referenceNumber != null && sale.referenceNumber!.isNotEmpty) ...[
+                              const SizedBox(height: 4),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text('Reference #', style: TextStyle(color: Colors.black54, fontSize: 11)),
+                                  Text(
+                                    sale.referenceNumber!,
+                                    style: const TextStyle(
+                                      color: Color(0xFF1565C0),
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ] else if (sale.cashTendered != null) ...[
                       const SizedBox(height: 6),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,

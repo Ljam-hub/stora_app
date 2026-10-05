@@ -1,5 +1,6 @@
 from decimal import Decimal
 import base64
+import json
 import uuid
 
 from django.contrib.auth import authenticate, get_user_model
@@ -958,6 +959,8 @@ class FCMTokenSerializer(serializers.Serializer):
 class StoreLocationSerializer(serializers.ModelSerializer):
     payment_qr_code = serializers.ImageField(required=False, allow_null=True)
     payment_qr_url = serializers.SerializerMethodField()
+    payment_accounts = serializers.JSONField(required=False)
+    show_single_account = serializers.BooleanField(required=False)
 
     class Meta:
         model = StoreLocation
@@ -971,11 +974,26 @@ class StoreLocationSerializer(serializers.ModelSerializer):
             "payment_qr_code",
             "payment_qr_url",
             "accept_gcash_payments",
+            "payment_accounts",
+            "show_single_account",
             "is_visible",
             "is_open",
             "updated_at",
         )
         read_only_fields = ("id", "updated_at", "payment_qr_url")
+
+    def to_internal_value(self, data):
+        data = data.copy() if hasattr(data, "copy") else dict(data)
+        pa = data.get("payment_accounts")
+        if isinstance(pa, str):
+            try:
+                data["payment_accounts"] = json.loads(pa)
+            except Exception:
+                pass
+        ssa = data.get("show_single_account")
+        if isinstance(ssa, str):
+            data["show_single_account"] = ssa.lower() in ("true", "1")
+        return super().to_internal_value(data)
 
     def get_payment_qr_url(self, obj):
         if not obj.payment_qr_code:

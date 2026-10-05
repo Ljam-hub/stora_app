@@ -11,6 +11,9 @@ class Sales extends Table {
   TextColumn get receiptNumber => text().nullable()();
   IntColumn get orderId => integer().nullable()();
   TextColumn get channel => text().nullable()();
+  TextColumn get notes => text().nullable()();
+  TextColumn get paymentMethod => text().nullable()();
+  TextColumn get referenceNumber => text().nullable()();
 
   @override
   Set<Column<Object>> get primaryKey => {id};

@@ -7,6 +7,7 @@ import '../../providers/catalog_provider.dart';
 import '../../providers/order_provider.dart';
 import '../../services/location_service.dart';
 import '../../theme/app_theme.dart';
+import '../../models/store_model.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../widgets/gradient_button.dart';
 
@@ -171,7 +172,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       );
 
       final bool canAcceptGcash = store.acceptGcashPayments &&
-          (store.paymentPhoneNumber.isNotEmpty || store.paymentQrUrl != null);
+          (store.paymentAccounts.isNotEmpty ||
+           store.paymentPhoneNumber.isNotEmpty ||
+           store.paymentQrUrl != null);
       final String paymentMethodToUse = canAcceptGcash ? _selectedPaymentMethod : 'cash';
 
       final order = await orderProvider.placeOrder(
@@ -291,6 +294,92 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     );
   }
 
+  IconData _getPaymentIcon(String label) {
+    final lower = label.toLowerCase();
+    if (lower.contains('gcash') || lower.contains('maya') || lower.contains('wallet')) {
+      return Icons.account_balance_wallet_rounded;
+    } else if (lower.contains('bank') ||
+        lower.contains('bpi') ||
+        lower.contains('bdo') ||
+        lower.contains('union') ||
+        lower.contains('landbank') ||
+        lower.contains('metro')) {
+      return Icons.account_balance_rounded;
+    }
+    return Icons.payment_rounded;
+  }
+
+  void _showQrDialog(BuildContext context, String title, String qrUrl) {
+    showDialog(
+      context: context,
+      builder: (_) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 16),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 12),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.network(
+                      qrUrl,
+                      fit: BoxFit.contain,
+                      width: 280,
+                      height: 280,
+                      loadingBuilder: (context, child, progress) {
+                        if (progress == null) return child;
+                        return const SizedBox(
+                          width: 280,
+                          height: 280,
+                          child: Center(
+                            child: CircularProgressIndicator(color: AppColors.primary),
+                          ),
+                        );
+                      },
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        width: 280,
+                        height: 280,
+                        color: Colors.grey[100],
+                        child: const Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.broken_image_rounded, size: 40, color: Colors.grey),
+                              SizedBox(height: 8),
+                              Text('Unable to load QR image', style: TextStyle(color: Colors.black54, fontSize: 12)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextButton.icon(
+              onPressed: () => Navigator.pop(context),
+              icon: const Icon(Icons.close_rounded, color: Colors.white),
+              label: const Text('Close', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     context.watch<CustomerThemeController>();
@@ -302,6 +391,25 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             (catalog.selectedStore?.id == storeOwnerId ? catalog.selectedStore : null))
         : null;
     final isStoreClosed = currentStore != null && !currentStore.isOpen;
+    final rawAccounts = currentStore != null
+        ? (currentStore.paymentAccounts.isNotEmpty
+            ? currentStore.paymentAccounts
+            : [
+                if (currentStore.paymentPhoneNumber.isNotEmpty || currentStore.paymentQrUrl != null)
+                  StorePaymentAccount(
+                    label: 'GCash',
+                    accountName: currentStore.paymentAccountName,
+                    accountNumber: currentStore.paymentPhoneNumber,
+                    qrCodeUrl: currentStore.paymentQrUrl,
+                    isPrimary: true,
+                    isActive: true,
+                  ),
+              ])
+        : const <StorePaymentAccount>[];
+    final activeAccounts = rawAccounts.where((a) => a.isActive).toList();
+    final paymentAccounts = (currentStore != null && currentStore.showSingleAccount && activeAccounts.isNotEmpty)
+        ? [activeAccounts.firstWhere((a) => a.isPrimary, orElse: () => activeAccounts.first)]
+        : activeAccounts;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -442,7 +550,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 // Option 2: GCash / Online Payment
                 if (currentStore != null &&
                     currentStore.acceptGcashPayments &&
-                    (currentStore.paymentPhoneNumber.isNotEmpty || currentStore.paymentQrUrl != null)) ...[
+                    paymentAccounts.isNotEmpty) ...[
                   GestureDetector(
                     onTap: () {
                       HapticFeedback.selectionClick();
@@ -508,7 +616,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  'Scan QR or transfer online after store acceptance.',
+                                  paymentAccounts.length == 1
+                                      ? 'Pay via ${paymentAccounts.first.label.isNotEmpty ? paymentAccounts.first.label : 'Online'} • Transfer after acceptance'
+                                      : 'Scan QR or transfer online (${paymentAccounts.map((a) => a.label).where((l) => l.isNotEmpty).join(", ")})',
                                   style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
                                 ),
                               ],
@@ -567,221 +677,176 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 10),
-                    Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: AppColors.cardBackground,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: AppColors.cardBorder),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              const Icon(Icons.qr_code_scanner_rounded, color: AppColors.primary, size: 18),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Store Payment Details',
-                                style: TextStyle(
-                                  color: AppColors.textPrimary,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 10),
-                          if (currentStore.paymentPhoneNumber.isNotEmpty) ...[
+                    for (final acc in paymentAccounts) ...[
+                      const SizedBox(height: 10),
+                      Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: AppColors.cardBackground,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: AppColors.cardBorder),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                Row(
                                   children: [
+                                    Icon(_getPaymentIcon(acc.label), color: AppColors.primary, size: 18),
+                                    const SizedBox(width: 8),
                                     Text(
-                                      currentStore.paymentAccountName.isNotEmpty ? currentStore.paymentAccountName : 'Payment Mobile Number',
-                                      style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
-                                    ),
-                                    Text(
-                                      currentStore.paymentPhoneNumber,
+                                      acc.label.isNotEmpty ? acc.label : 'Online Payment',
                                       style: TextStyle(
                                         color: AppColors.textPrimary,
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.w800,
-                                        letterSpacing: 0.5,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
                                       ),
                                     ),
+                                    if (paymentAccounts.length > 1 && acc.isPrimary) ...[
+                                      const SizedBox(width: 6),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFF59E0B).withValues(alpha: 0.15),
+                                          borderRadius: BorderRadius.circular(4),
+                                          border: Border.all(color: const Color(0xFFF59E0B), width: 0.8),
+                                        ),
+                                        child: const Text(
+                                          'PRIMARY',
+                                          style: TextStyle(
+                                            color: Color(0xFFD97706),
+                                            fontSize: 9,
+                                            fontWeight: FontWeight.w800,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ],
                                 ),
-                                OutlinedButton.icon(
-                                  onPressed: () {
-                                    Clipboard.setData(ClipboardData(text: currentStore.paymentPhoneNumber));
-                                    HapticFeedback.lightImpact();
-                                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Row(
-                                          children: [
-                                            Icon(Icons.check_circle_rounded, color: AppColors.success, size: 16),
-                                            SizedBox(width: 8),
-                                            Text('Payment number copied to clipboard!'),
-                                          ],
-                                        ),
-                                        duration: Duration(milliseconds: 1500),
-                                        behavior: SnackBarBehavior.floating,
-                                      ),
-                                    );
-                                  },
-                                  icon: const Icon(Icons.copy_rounded, size: 14),
-                                  label: const Text('Copy'),
-                                  style: OutlinedButton.styleFrom(
-                                    foregroundColor: AppColors.primary,
-                                    side: const BorderSide(color: AppColors.primary),
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                          if (currentStore.paymentQrUrl != null) ...[
-                            const SizedBox(height: 10),
-                            GestureDetector(
-                              onTap: () {
-                                showDialog(
-                                  context: context,
-                                  builder: (_) => Dialog(
-                                    backgroundColor: Colors.transparent,
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Container(
-                                          padding: const EdgeInsets.all(16),
-                                          decoration: BoxDecoration(
-                                            color: Colors.white,
-                                            borderRadius: BorderRadius.circular(16),
-                                          ),
-                                          child: Column(
+                                if (acc.accountNumber.isNotEmpty)
+                                  OutlinedButton.icon(
+                                    onPressed: () {
+                                      Clipboard.setData(ClipboardData(text: acc.accountNumber));
+                                      HapticFeedback.lightImpact();
+                                      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Row(
                                             children: [
-                                              Text(
-                                                'Scan to Pay (${currentStore.displayName})',
-                                                style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 16),
-                                              ),
-                                              const SizedBox(height: 12),
-                                              ClipRRect(
-                                                borderRadius: BorderRadius.circular(8),
-                                                child: Image.network(
-                                                  currentStore.paymentQrUrl!,
-                                                  fit: BoxFit.contain,
-                                                  width: 280,
-                                                  height: 280,
-                                                  loadingBuilder: (context, child, progress) {
-                                                    if (progress == null) return child;
-                                                    return const SizedBox(
-                                                      width: 280,
-                                                      height: 280,
-                                                      child: Center(
-                                                        child: CircularProgressIndicator(color: AppColors.primary),
-                                                      ),
-                                                    );
-                                                  },
-                                                  errorBuilder: (context, error, stackTrace) => Container(
-                                                    width: 280,
-                                                    height: 280,
-                                                    color: Colors.grey[100],
-                                                    child: const Center(
-                                                      child: Column(
-                                                        mainAxisSize: MainAxisSize.min,
-                                                        children: [
-                                                          Icon(Icons.broken_image_rounded, size: 40, color: Colors.grey),
-                                                          SizedBox(height: 8),
-                                                          Text('Unable to load QR image', style: TextStyle(color: Colors.black54, fontSize: 12)),
-                                                        ],
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
+                                              const Icon(Icons.check_circle_rounded, color: AppColors.success, size: 16),
+                                              const SizedBox(width: 8),
+                                              Text('${acc.label.isNotEmpty ? acc.label : 'Account'} number copied!'),
                                             ],
                                           ),
+                                          duration: const Duration(milliseconds: 1500),
+                                          behavior: SnackBarBehavior.floating,
                                         ),
-                                        const SizedBox(height: 12),
-                                        TextButton.icon(
-                                          onPressed: () => Navigator.pop(context),
-                                          icon: const Icon(Icons.close_rounded, color: Colors.white),
-                                          label: const Text('Close', style: TextStyle(color: Colors.white)),
-                                        ),
-                                      ],
+                                      );
+                                    },
+                                    icon: const Icon(Icons.copy_rounded, size: 14),
+                                    label: const Text('Copy'),
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: AppColors.primary,
+                                      side: const BorderSide(color: AppColors.primary),
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                                     ),
                                   ),
-                                );
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.all(10),
-                                decoration: BoxDecoration(
-                                  color: AppColors.cardElevated,
-                                  borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(color: AppColors.cardBorder),
+                              ],
+                            ),
+                            if (acc.accountName.isNotEmpty || acc.accountNumber.isNotEmpty) ...[
+                              const SizedBox(height: 8),
+                              if (acc.accountName.isNotEmpty)
+                                Text(
+                                  'Account: ${acc.accountName}',
+                                  style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
                                 ),
-                                child: Row(
-                                  children: [
-                                    ClipRRect(
-                                      borderRadius: BorderRadius.circular(6),
-                                      child: Image.network(
-                                        currentStore.paymentQrUrl!,
-                                        width: 48,
-                                        height: 48,
-                                        fit: BoxFit.cover,
-                                        loadingBuilder: (context, child, progress) {
-                                          if (progress == null) return child;
-                                          return Container(
+                              if (acc.accountNumber.isNotEmpty)
+                                Text(
+                                  acc.accountNumber,
+                                  style: TextStyle(
+                                    color: AppColors.textPrimary,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                            ],
+                            if (acc.qrCodeUrl != null && acc.qrCodeUrl!.isNotEmpty) ...[
+                              const SizedBox(height: 10),
+                              GestureDetector(
+                                onTap: () => _showQrDialog(
+                                  context,
+                                  'Scan to Pay (${acc.label.isNotEmpty ? acc.label : currentStore.displayName})',
+                                  acc.qrCodeUrl!,
+                                ),
+                                child: Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.cardElevated,
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(color: AppColors.cardBorder),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.circular(6),
+                                        child: Image.network(
+                                          acc.qrCodeUrl!,
+                                          width: 48,
+                                          height: 48,
+                                          fit: BoxFit.cover,
+                                          loadingBuilder: (context, child, progress) {
+                                            if (progress == null) return child;
+                                            return Container(
+                                              width: 48,
+                                              height: 48,
+                                              color: AppColors.cardBorder.withValues(alpha: 0.3),
+                                              child: const Center(
+                                                child: SizedBox(
+                                                  width: 16,
+                                                  height: 16,
+                                                  child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                          errorBuilder: (context, error, stackTrace) => Container(
                                             width: 48,
                                             height: 48,
                                             color: AppColors.cardBorder.withValues(alpha: 0.3),
-                                            child: const Center(
-                                              child: SizedBox(
-                                                width: 16,
-                                                height: 16,
-                                                child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                        errorBuilder: (context, error, stackTrace) => Container(
-                                          width: 48,
-                                          height: 48,
-                                          color: AppColors.cardBorder.withValues(alpha: 0.3),
-                                          child: const Icon(Icons.qr_code_2_rounded, size: 24, color: AppColors.primary),
+                                            child: const Icon(Icons.qr_code_2_rounded, size: 24, color: AppColors.primary),
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            'Payment QR Code Available',
-                                            style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold, fontSize: 13),
-                                          ),
-                                          Text(
-                                            'Tap to enlarge and scan QR',
-                                            style: TextStyle(color: AppColors.textSecondary, fontSize: 11),
-                                          ),
-                                        ],
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              '${acc.label.isNotEmpty ? acc.label : 'Payment'} QR Code',
+                                              style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold, fontSize: 13),
+                                            ),
+                                            Text(
+                                              'Tap to enlarge and scan QR',
+                                              style: TextStyle(color: AppColors.textSecondary, fontSize: 11),
+                                            ),
+                                          ],
+                                        ),
                                       ),
-                                    ),
-                                    const Icon(Icons.fullscreen_rounded, color: AppColors.primary, size: 22),
-                                  ],
+                                      const Icon(Icons.fullscreen_rounded, color: AppColors.primary, size: 22),
+                                    ],
+                                  ),
                                 ),
                               ),
-                            ),
+                            ],
                           ],
-                        ],
+                        ),
                       ),
-                    ),
+                    ],
                   ],
                 ] else ...[
                   Container(

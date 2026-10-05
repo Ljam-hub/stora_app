@@ -18,9 +18,6 @@ import 'profile_screen.dart';
 import 'sales_analytics_screen.dart';
 import 'sales_history_screen.dart';
 import 'set_store_location_screen.dart';
-import 'store_payment_screen.dart';
-import 'package:flutter/services.dart';
-import '../../data/api/api_config.dart';
 import '../stores/chat_store.dart';
 import '../stores/store_status_store.dart';
 import '../stores/utang_store.dart';
@@ -28,6 +25,7 @@ import 'utang_ledger_screen.dart';
 import '../shell/stora_shell.dart';
 import '../widgets/fade_slide_in.dart';
 import '../widgets/notification_badge.dart';
+import '../widgets/payment_qr_modal.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -1539,13 +1537,7 @@ class _MissingLocationBanner extends StatelessWidget {
 }
 
 void _showPaymentQrDialog(BuildContext context) {
-  HapticFeedback.lightImpact();
-  showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
-    builder: (ctx) => const _PaymentQrModalSheet(),
-  );
+  showPaymentQrModal(context);
 }
 
 class _WalkInPaymentQrCard extends StatelessWidget {
@@ -1556,7 +1548,21 @@ class _WalkInPaymentQrCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final status = StoreStatusStore.instance;
-    final hasQr = status.paymentQrUrl != null && status.paymentQrUrl!.isNotEmpty;
+    final accounts = status.paymentAccounts;
+    final hasAnyQr = accounts.any((a) => a.hasQr) || (status.paymentQrUrl != null && status.paymentQrUrl!.isNotEmpty);
+    final hasAccounts = accounts.isNotEmpty || status.paymentPhoneNumber.isNotEmpty;
+    final isReady = hasAnyQr || hasAccounts;
+
+    final List<String> badgeLabels;
+    if (accounts.isNotEmpty) {
+      badgeLabels = accounts
+          .map((a) => a.label.trim())
+          .where((l) => l.isNotEmpty)
+          .take(3)
+          .toList();
+    } else {
+      badgeLabels = ['Online Payment', 'Bank Apps'];
+    }
 
     return GestureDetector(
       onTap: onTap,
@@ -1624,21 +1630,21 @@ class _WalkInPaymentQrCard extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
-                          color: hasQr
+                          color: isReady
                               ? const Color(0xFF10B981).withValues(alpha: 0.15)
                               : const Color(0xFFF59E0B).withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(6),
                           border: Border.all(
-                            color: hasQr
+                            color: isReady
                                 ? const Color(0xFF10B981).withValues(alpha: 0.4)
                                 : const Color(0xFFF59E0B).withValues(alpha: 0.4),
                             width: 0.8,
                           ),
                         ),
                         child: Text(
-                          hasQr ? 'READY' : 'SETUP',
+                          isReady ? 'READY' : 'SETUP',
                           style: TextStyle(
-                            color: hasQr ? const Color(0xFF10B981) : const Color(0xFFF59E0B),
+                            color: isReady ? const Color(0xFF10B981) : const Color(0xFFF59E0B),
                             fontSize: 9,
                             fontWeight: FontWeight.w800,
                           ),
@@ -1648,8 +1654,10 @@ class _WalkInPaymentQrCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 3),
                   Text(
-                    hasQr
-                        ? 'Show QR to walk-in shoppers'
+                    isReady
+                        ? (accounts.length > 1
+                            ? '${accounts.length} payment methods available'
+                            : 'Show QR to walk-in shoppers')
                         : 'Tap to setup QR for walk-in shoppers',
                     style: TextStyle(
                       color: HomeColors.textSecondary,
@@ -1663,11 +1671,18 @@ class _WalkInPaymentQrCard extends StatelessWidget {
                     alignment: Alignment.centerLeft,
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
-                      children: const [
-                        _PaymentMiniBadge('Online Payment', Color(0xFF007DFE)),
-                        SizedBox(width: 5),
-                        _PaymentMiniBadge('Bank Apps', Color(0xFF6366F1)),
-                      ],
+                      children: badgeLabels.map((l) {
+                        final lower = l.toLowerCase();
+                        final color = lower.contains('gcash')
+                            ? const Color(0xFF007DFE)
+                            : lower.contains('maya')
+                                ? const Color(0xFF10B981)
+                                : const Color(0xFF6366F1);
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 5),
+                          child: _PaymentMiniBadge(l, color),
+                        );
+                      }).toList(),
                     ),
                   ),
                 ],
@@ -1704,365 +1719,7 @@ class _WalkInPaymentQrCard extends StatelessWidget {
   }
 }
 
-class _PaymentQrModalSheet extends StatelessWidget {
-  const _PaymentQrModalSheet();
 
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: Listenable.merge([StoreStatusStore.instance, ThemeModeController.instance]),
-      builder: (context, _) {
-        final status = StoreStatusStore.instance;
-        final hasQr = status.paymentQrUrl != null && status.paymentQrUrl!.isNotEmpty;
-        final phone = status.paymentPhoneNumber;
-        final name = status.paymentAccountName;
-        final businessName = (AuthStore.instance.businessName != null && AuthStore.instance.businessName!.trim().isNotEmpty)
-            ? AuthStore.instance.businessName!.trim()
-            : 'Our Store';
-
-        return Container(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.88,
-          ),
-          decoration: BoxDecoration(
-            color: HomeColors.cardBackground,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-            border: Border.all(color: HomeColors.cardBorder, width: 1.5),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.3),
-                blurRadius: 20,
-                offset: const Offset(0, -4),
-              ),
-            ],
-          ),
-          padding: EdgeInsets.fromLTRB(20, 12, 20, 24 + MediaQuery.of(context).padding.bottom),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Drag Handle
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    margin: const EdgeInsets.only(bottom: 16),
-                    decoration: BoxDecoration(
-                      color: HomeColors.cardBorder,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-
-                // Header
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF60A5FA).withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(Icons.qr_code_2_rounded, color: Color(0xFF60A5FA), size: 24),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Scan to Pay (Walk-in)',
-                            style: TextStyle(
-                              color: HomeColors.textPrimary,
-                              fontSize: 14.5,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: -0.2,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 5),
-                          FittedBox(
-                            fit: BoxFit.scaleDown,
-                            alignment: Alignment.centerLeft,
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: const [
-                                _PaymentMiniBadge('Online Payment', Color(0xFF007DFE)),
-                                SizedBox(width: 5),
-                                _PaymentMiniBadge('Bank Apps', Color(0xFF6366F1)),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    IconButton(
-                      icon: Icon(Icons.close_rounded, color: HomeColors.textSecondary),
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-
-                if (hasQr) ...[
-                  // QR Image Presentation Box
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.12),
-                          blurRadius: 16,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      children: [
-                        Text(
-                          businessName,
-                          style: const TextStyle(
-                            color: Color(0xFF1E293B),
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800,
-                          ),
-                          textAlign: TextAlign.center,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        if (name.isNotEmpty) ...[
-                          const SizedBox(height: 2),
-                          Text(
-                            'Account: $name',
-                            style: const TextStyle(
-                              color: Color(0xFF64748B),
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                        const SizedBox(height: 14),
-                        // The actual QR code image
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: Container(
-                            constraints: const BoxConstraints(
-                              maxWidth: 240,
-                              maxHeight: 240,
-                            ),
-                            child: Image.network(
-                              ApiConfig.resolveMediaUrl(status.paymentQrUrl) ?? status.paymentQrUrl!,
-                              fit: BoxFit.contain,
-                              loadingBuilder: (context, child, loadingProgress) {
-                                if (loadingProgress == null) return child;
-                                return Container(
-                                  height: 200,
-                                  width: 200,
-                                  alignment: Alignment.center,
-                                  child: const CircularProgressIndicator(
-                                    color: Color(0xFF2563EB),
-                                    strokeWidth: 2.5,
-                                  ),
-                                );
-                              },
-                              errorBuilder: (context, error, stackTrace) => Container(
-                                height: 180,
-                                alignment: Alignment.center,
-                                child: const Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(Icons.broken_image_rounded, color: Colors.grey, size: 48),
-                                    SizedBox(height: 8),
-                                    Text(
-                                      'Failed to display QR image',
-                                      style: TextStyle(color: Colors.grey, fontSize: 12),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF1F5F9),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Text(
-                            'Show QR to walk-in shoppers',
-                            style: TextStyle(
-                              color: Color(0xFF475569),
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // Phone Number Copy Box
-                  if (phone.isNotEmpty) ...[
-                    const SizedBox(height: 14),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: HomeColors.cardElevated,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: HomeColors.cardBorder),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.phone_android_rounded, color: Color(0xFF60A5FA), size: 18),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Payment Mobile Number',
-                                  style: TextStyle(color: HomeColors.textSecondary, fontSize: 11),
-                                ),
-                                Text(
-                                  phone,
-                                  style: TextStyle(
-                                    color: HomeColors.textPrimary,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w700,
-                                    letterSpacing: 0.5,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          InkWell(
-                            borderRadius: BorderRadius.circular(8),
-                            onTap: () {
-                              Clipboard.setData(ClipboardData(text: phone));
-                              HapticFeedback.lightImpact();
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Payment number copied to clipboard!'),
-                                  duration: Duration(seconds: 2),
-                                  behavior: SnackBarBehavior.floating,
-                                ),
-                              );
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF60A5FA).withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: const Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(Icons.copy_rounded, color: Color(0xFF60A5FA), size: 14),
-                                  SizedBox(width: 4),
-                                  Text(
-                                    'Copy',
-                                    style: TextStyle(
-                                      color: Color(0xFF60A5FA),
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-
-                  const SizedBox(height: 14),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      TextButton.icon(
-                        onPressed: () {
-                          Navigator.of(context).pop();
-                          DashboardScreen.safeNavigate(context, const StorePaymentScreen());
-                        },
-                        icon: const Icon(Icons.edit_rounded, size: 16),
-                        label: const Text('Update / Change QR Code', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600)),
-                      ),
-                    ],
-                  ),
-                ] else ...[
-                  // Empty State: No QR uploaded
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
-                    decoration: BoxDecoration(
-                      color: HomeColors.cardElevated,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: HomeColors.cardBorder),
-                    ),
-                    child: Column(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF60A5FA).withValues(alpha: 0.15),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(Icons.qr_code_scanner_rounded, color: Color(0xFF60A5FA), size: 48),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'No Payment QR Uploaded Yet',
-                          style: TextStyle(
-                            color: HomeColors.textPrimary,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          'Upload your store\'s payment QR code so walk-in customers can scan and pay directly on your phone.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: HomeColors.textSecondary,
-                            fontSize: 13,
-                            height: 1.4,
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        ElevatedButton.icon(
-                          onPressed: () {
-                            Navigator.of(context).pop();
-                            DashboardScreen.safeNavigate(context, const StorePaymentScreen());
-                          },
-                          icon: const Icon(Icons.upload_file_rounded, size: 18),
-                          label: const Text('Upload Payment QR Now', style: TextStyle(fontWeight: FontWeight.w700)),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
 
 class _PaymentMiniBadge extends StatelessWidget {
   final String label;

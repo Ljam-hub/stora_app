@@ -15,6 +15,10 @@ class Sale {
   final String? receiptNumber;
   final int? orderId;
   final String? channel;
+  
+  final String? notes;
+  final String? paymentMethod;
+  final String? referenceNumber;
 
   Sale({
     required this.id,
@@ -27,6 +31,9 @@ class Sale {
     this.receiptNumber,
     this.orderId,
     this.channel,
+    this.notes,
+    this.paymentMethod,
+    this.referenceNumber,
   });
 
   int? get displayOrderId {
@@ -79,6 +86,9 @@ class Sale {
     String? receiptNumber,
     int? orderId,
     String? channel,
+    String? notes,
+    String? paymentMethod,
+    String? referenceNumber,
   }) {
     return Sale(
       id: id ?? this.id,
@@ -91,6 +101,9 @@ class Sale {
       receiptNumber: receiptNumber ?? this.receiptNumber,
       orderId: orderId ?? this.orderId,
       channel: channel ?? this.channel,
+      notes: notes ?? this.notes,
+      paymentMethod: paymentMethod ?? this.paymentMethod,
+      referenceNumber: referenceNumber ?? this.referenceNumber,
     );
   }
 
@@ -189,6 +202,9 @@ class Sale {
       receiptNumber: rawReceiptNumber,
       orderId: orderId,
       channel: effectiveChannel,
+      notes: json['notes']?.toString(),
+      paymentMethod: json['payment_method']?.toString(),
+      referenceNumber: json['reference_number']?.toString(),
     );
   }
 
@@ -202,6 +218,9 @@ class Sale {
       if (receiptNumber != null) 'receipt_number': receiptNumber,
       if (orderId != null) 'order_id': orderId,
       if (channel != null) 'channel': channel,
+      if (notes != null) 'notes': notes,
+      if (paymentMethod != null) 'payment_method': paymentMethod,
+      if (referenceNumber != null) 'reference_number': referenceNumber,
       'items': items
           .map((item) => <String, dynamic>{
                 'product': int.tryParse(item.product.id) ?? item.product.id,

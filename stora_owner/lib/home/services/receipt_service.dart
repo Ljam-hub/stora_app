@@ -76,6 +76,13 @@ class ReceiptService {
                 'Type: ${sale.isOnlineOrder ? "Online Order" : "In-Store / Walk-in"}',
                 style: const pw.TextStyle(fontSize: 6, color: PdfColors.grey700),
               ),
+              if (sale.notes != null && sale.notes!.trim().isNotEmpty) ...[
+                pw.SizedBox(height: 2),
+                pw.Text(
+                  'Note: ${sale.notes!}',
+                  style: pw.TextStyle(fontSize: 6.5, fontStyle: pw.FontStyle.italic),
+                ),
+              ],
               pw.SizedBox(height: 4),
               pw.Divider(thickness: 0.5, borderStyle: pw.BorderStyle.dashed),
 
@@ -195,7 +202,26 @@ class ReceiptService {
                   ),
                 ],
               ),
-              if (sale.cashTendered != null) ...[
+              if (sale.paymentMethod == 'online' || (sale.referenceNumber != null && sale.referenceNumber!.isNotEmpty)) ...[
+                pw.SizedBox(height: 2),
+                pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Text('PAYMENT METHOD:', style: const pw.TextStyle(fontSize: 7)),
+                    pw.Text('ONLINE PAYMENT', style: pw.TextStyle(fontSize: 7, fontWeight: pw.FontWeight.bold)),
+                  ],
+                ),
+                if (sale.referenceNumber != null && sale.referenceNumber!.isNotEmpty) ...[
+                  pw.SizedBox(height: 1),
+                  pw.Row(
+                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                    children: [
+                      pw.Text('REF #:', style: const pw.TextStyle(fontSize: 7)),
+                      pw.Text(sale.referenceNumber!, style: pw.TextStyle(fontSize: 7, fontWeight: pw.FontWeight.bold)),
+                    ],
+                  ),
+                ],
+              ] else if (sale.cashTendered != null) ...[
                 pw.SizedBox(height: 2),
                 pw.Row(
                   mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,

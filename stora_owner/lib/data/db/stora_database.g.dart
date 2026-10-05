@@ -867,6 +867,37 @@ class $SalesTable extends Sales with TableInfo<$SalesTable, SaleRow> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
+  @override
+  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
+    'notes',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _paymentMethodMeta = const VerificationMeta(
+    'paymentMethod',
+  );
+  @override
+  late final GeneratedColumn<String> paymentMethod = GeneratedColumn<String>(
+    'payment_method',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _referenceNumberMeta = const VerificationMeta(
+    'referenceNumber',
+  );
+  @override
+  late final GeneratedColumn<String> referenceNumber = GeneratedColumn<String>(
+    'reference_number',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -878,6 +909,9 @@ class $SalesTable extends Sales with TableInfo<$SalesTable, SaleRow> {
     receiptNumber,
     orderId,
     channel,
+    notes,
+    paymentMethod,
+    referenceNumber,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -960,6 +994,30 @@ class $SalesTable extends Sales with TableInfo<$SalesTable, SaleRow> {
         channel.isAcceptableOrUnknown(data['channel']!, _channelMeta),
       );
     }
+    if (data.containsKey('notes')) {
+      context.handle(
+        _notesMeta,
+        notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
+      );
+    }
+    if (data.containsKey('payment_method')) {
+      context.handle(
+        _paymentMethodMeta,
+        paymentMethod.isAcceptableOrUnknown(
+          data['payment_method']!,
+          _paymentMethodMeta,
+        ),
+      );
+    }
+    if (data.containsKey('reference_number')) {
+      context.handle(
+        _referenceNumberMeta,
+        referenceNumber.isAcceptableOrUnknown(
+          data['reference_number']!,
+          _referenceNumberMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -1005,6 +1063,18 @@ class $SalesTable extends Sales with TableInfo<$SalesTable, SaleRow> {
         DriftSqlType.string,
         data['${effectivePrefix}channel'],
       ),
+      notes: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}notes'],
+      ),
+      paymentMethod: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}payment_method'],
+      ),
+      referenceNumber: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}reference_number'],
+      ),
     );
   }
 
@@ -1024,6 +1094,9 @@ class SaleRow extends DataClass implements Insertable<SaleRow> {
   final String? receiptNumber;
   final int? orderId;
   final String? channel;
+  final String? notes;
+  final String? paymentMethod;
+  final String? referenceNumber;
   const SaleRow({
     required this.id,
     required this.date,
@@ -1034,6 +1107,9 @@ class SaleRow extends DataClass implements Insertable<SaleRow> {
     this.receiptNumber,
     this.orderId,
     this.channel,
+    this.notes,
+    this.paymentMethod,
+    this.referenceNumber,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1058,6 +1134,15 @@ class SaleRow extends DataClass implements Insertable<SaleRow> {
     }
     if (!nullToAbsent || channel != null) {
       map['channel'] = Variable<String>(channel);
+    }
+    if (!nullToAbsent || notes != null) {
+      map['notes'] = Variable<String>(notes);
+    }
+    if (!nullToAbsent || paymentMethod != null) {
+      map['payment_method'] = Variable<String>(paymentMethod);
+    }
+    if (!nullToAbsent || referenceNumber != null) {
+      map['reference_number'] = Variable<String>(referenceNumber);
     }
     return map;
   }
@@ -1085,6 +1170,15 @@ class SaleRow extends DataClass implements Insertable<SaleRow> {
       channel: channel == null && nullToAbsent
           ? const Value.absent()
           : Value(channel),
+      notes: notes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(notes),
+      paymentMethod: paymentMethod == null && nullToAbsent
+          ? const Value.absent()
+          : Value(paymentMethod),
+      referenceNumber: referenceNumber == null && nullToAbsent
+          ? const Value.absent()
+          : Value(referenceNumber),
     );
   }
 
@@ -1103,6 +1197,9 @@ class SaleRow extends DataClass implements Insertable<SaleRow> {
       receiptNumber: serializer.fromJson<String?>(json['receiptNumber']),
       orderId: serializer.fromJson<int?>(json['orderId']),
       channel: serializer.fromJson<String?>(json['channel']),
+      notes: serializer.fromJson<String?>(json['notes']),
+      paymentMethod: serializer.fromJson<String?>(json['paymentMethod']),
+      referenceNumber: serializer.fromJson<String?>(json['referenceNumber']),
     );
   }
   @override
@@ -1118,6 +1215,9 @@ class SaleRow extends DataClass implements Insertable<SaleRow> {
       'receiptNumber': serializer.toJson<String?>(receiptNumber),
       'orderId': serializer.toJson<int?>(orderId),
       'channel': serializer.toJson<String?>(channel),
+      'notes': serializer.toJson<String?>(notes),
+      'paymentMethod': serializer.toJson<String?>(paymentMethod),
+      'referenceNumber': serializer.toJson<String?>(referenceNumber),
     };
   }
 
@@ -1131,6 +1231,9 @@ class SaleRow extends DataClass implements Insertable<SaleRow> {
     Value<String?> receiptNumber = const Value.absent(),
     Value<int?> orderId = const Value.absent(),
     Value<String?> channel = const Value.absent(),
+    Value<String?> notes = const Value.absent(),
+    Value<String?> paymentMethod = const Value.absent(),
+    Value<String?> referenceNumber = const Value.absent(),
   }) => SaleRow(
     id: id ?? this.id,
     date: date ?? this.date,
@@ -1143,6 +1246,9 @@ class SaleRow extends DataClass implements Insertable<SaleRow> {
         : this.receiptNumber,
     orderId: orderId.present ? orderId.value : this.orderId,
     channel: channel.present ? channel.value : this.channel,
+    notes: notes.present ? notes.value : this.notes,
+    paymentMethod: paymentMethod.present ? paymentMethod.value : this.paymentMethod,
+    referenceNumber: referenceNumber.present ? referenceNumber.value : this.referenceNumber,
   );
   SaleRow copyWithCompanion(SalesCompanion data) {
     return SaleRow(
@@ -1163,6 +1269,9 @@ class SaleRow extends DataClass implements Insertable<SaleRow> {
           : this.receiptNumber,
       orderId: data.orderId.present ? data.orderId.value : this.orderId,
       channel: data.channel.present ? data.channel.value : this.channel,
+      notes: data.notes.present ? data.notes.value : this.notes,
+      paymentMethod: data.paymentMethod.present ? data.paymentMethod.value : this.paymentMethod,
+      referenceNumber: data.referenceNumber.present ? data.referenceNumber.value : this.referenceNumber,
     );
   }
 
@@ -1177,7 +1286,10 @@ class SaleRow extends DataClass implements Insertable<SaleRow> {
           ..write('customerName: $customerName, ')
           ..write('receiptNumber: $receiptNumber, ')
           ..write('orderId: $orderId, ')
-          ..write('channel: $channel')
+          ..write('channel: $channel, ')
+          ..write('notes: $notes, ')
+          ..write('paymentMethod: $paymentMethod, ')
+          ..write('referenceNumber: $referenceNumber')
           ..write(')'))
         .toString();
   }
@@ -1193,6 +1305,9 @@ class SaleRow extends DataClass implements Insertable<SaleRow> {
     receiptNumber,
     orderId,
     channel,
+    notes,
+    paymentMethod,
+    referenceNumber,
   );
   @override
   bool operator ==(Object other) =>
@@ -1206,7 +1321,10 @@ class SaleRow extends DataClass implements Insertable<SaleRow> {
           other.customerName == this.customerName &&
           other.receiptNumber == this.receiptNumber &&
           other.orderId == this.orderId &&
-          other.channel == this.channel);
+          other.channel == this.channel &&
+          other.notes == this.notes &&
+          other.paymentMethod == this.paymentMethod &&
+          other.referenceNumber == this.referenceNumber);
 }
 
 class SalesCompanion extends UpdateCompanion<SaleRow> {
@@ -1219,6 +1337,9 @@ class SalesCompanion extends UpdateCompanion<SaleRow> {
   final Value<String?> receiptNumber;
   final Value<int?> orderId;
   final Value<String?> channel;
+  final Value<String?> notes;
+  final Value<String?> paymentMethod;
+  final Value<String?> referenceNumber;
   final Value<int> rowid;
   const SalesCompanion({
     this.id = const Value.absent(),
@@ -1230,6 +1351,9 @@ class SalesCompanion extends UpdateCompanion<SaleRow> {
     this.receiptNumber = const Value.absent(),
     this.orderId = const Value.absent(),
     this.channel = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.paymentMethod = const Value.absent(),
+    this.referenceNumber = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   SalesCompanion.insert({
@@ -1242,6 +1366,9 @@ class SalesCompanion extends UpdateCompanion<SaleRow> {
     this.receiptNumber = const Value.absent(),
     this.orderId = const Value.absent(),
     this.channel = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.paymentMethod = const Value.absent(),
+    this.referenceNumber = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        date = Value(date),
@@ -1256,6 +1383,9 @@ class SalesCompanion extends UpdateCompanion<SaleRow> {
     Expression<String>? receiptNumber,
     Expression<int>? orderId,
     Expression<String>? channel,
+    Expression<String>? notes,
+    Expression<String>? paymentMethod,
+    Expression<String>? referenceNumber,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -1268,6 +1398,9 @@ class SalesCompanion extends UpdateCompanion<SaleRow> {
       if (receiptNumber != null) 'receipt_number': receiptNumber,
       if (orderId != null) 'order_id': orderId,
       if (channel != null) 'channel': channel,
+      if (notes != null) 'notes': notes,
+      if (paymentMethod != null) 'payment_method': paymentMethod,
+      if (referenceNumber != null) 'reference_number': referenceNumber,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1282,6 +1415,9 @@ class SalesCompanion extends UpdateCompanion<SaleRow> {
     Value<String?>? receiptNumber,
     Value<int?>? orderId,
     Value<String?>? channel,
+    Value<String?>? notes,
+    Value<String?>? paymentMethod,
+    Value<String?>? referenceNumber,
     Value<int>? rowid,
   }) {
     return SalesCompanion(
@@ -1294,6 +1430,9 @@ class SalesCompanion extends UpdateCompanion<SaleRow> {
       receiptNumber: receiptNumber ?? this.receiptNumber,
       orderId: orderId ?? this.orderId,
       channel: channel ?? this.channel,
+      notes: notes ?? this.notes,
+      paymentMethod: paymentMethod ?? this.paymentMethod,
+      referenceNumber: referenceNumber ?? this.referenceNumber,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1328,6 +1467,15 @@ class SalesCompanion extends UpdateCompanion<SaleRow> {
     if (channel.present) {
       map['channel'] = Variable<String>(channel.value);
     }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
+    }
+    if (paymentMethod.present) {
+      map['payment_method'] = Variable<String>(paymentMethod.value);
+    }
+    if (referenceNumber.present) {
+      map['reference_number'] = Variable<String>(referenceNumber.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1346,6 +1494,9 @@ class SalesCompanion extends UpdateCompanion<SaleRow> {
           ..write('receiptNumber: $receiptNumber, ')
           ..write('orderId: $orderId, ')
           ..write('channel: $channel, ')
+          ..write('notes: $notes, ')
+          ..write('paymentMethod: $paymentMethod, ')
+          ..write('referenceNumber: $referenceNumber, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
