@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import '../../auth/auth_store.dart';
 import '../models/sale.dart';
 import '../services/receipt_service.dart';
+import '../stores/utang_store.dart';
 import '../theme/home_colors.dart';
 import '../utils/date_utils.dart';
 
@@ -263,29 +264,83 @@ class _ReceiptDialogState extends State<ReceiptDialog> {
                     ),
                     if (sale.isUtang) ...[
                       const SizedBox(height: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFFF3E0),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: const Color(0xFFFFB74D)),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text('Payment Status', style: TextStyle(color: Colors.black54, fontSize: 11)),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFE65100),
-                                borderRadius: BorderRadius.circular(4),
+                      Builder(builder: (context) {
+                        final record = UtangStore.instance.getRecordForSale(sale);
+                        final isPaid = record?.isFullyPaid ?? false;
+                        final paidAmt = record?.amountPaid ?? 0.0;
+                        final balance = record?.balance ?? sale.total;
+                        final bg = isPaid
+                            ? const Color(0xFFE8F5E9)
+                            : (paidAmt > 0 ? const Color(0xFFFFF8E1) : const Color(0xFFFFF3E0));
+                        final border = isPaid
+                            ? const Color(0xFF81C784)
+                            : (paidAmt > 0 ? const Color(0xFFFFD54F) : const Color(0xFFFFB74D));
+                        final badgeBg = isPaid
+                            ? const Color(0xFF2E7D32)
+                            : (paidAmt > 0 ? const Color(0xFFF57F17) : const Color(0xFFE65100));
+                        final label = isPaid
+                            ? 'Utang · Fully Paid'
+                            : (paidAmt > 0 ? 'Utang · Partially Paid' : 'Charged to Utang / Credit');
+
+                        return Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: bg,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: border),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text('Payment Status', style: TextStyle(color: Colors.black54, fontSize: 11)),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: badgeBg,
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(label,
+                                        style: const TextStyle(color: Colors.white, fontSize: 9.5, fontWeight: FontWeight.bold)),
+                                  ),
+                                ],
                               ),
-                              child: const Text('Charged to Utang / Credit',
-                                  style: TextStyle(color: Colors.white, fontSize: 9.5, fontWeight: FontWeight.bold)),
-                            ),
-                          ],
-                        ),
-                      ),
+                              if (paidAmt > 0 && !isPaid) ...[
+                                const SizedBox(height: 4),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    const Text('Amount Paid So Far', style: TextStyle(color: Colors.black54, fontSize: 10.5)),
+                                    Text('₱${paidAmt.toStringAsFixed(2)}',
+                                        style: const TextStyle(color: Color(0xFF2E7D32), fontSize: 11, fontWeight: FontWeight.bold)),
+                                  ],
+                                ),
+                                const SizedBox(height: 2),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    const Text('Remaining Balance', style: TextStyle(color: Colors.black54, fontSize: 10.5)),
+                                    Text('₱${balance.toStringAsFixed(2)}',
+                                        style: const TextStyle(color: Color(0xFFC62828), fontSize: 11, fontWeight: FontWeight.bold)),
+                                  ],
+                                ),
+                              ] else if (isPaid && record != null && record.payments.isNotEmpty) ...[
+                                const SizedBox(height: 4),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    const Text('Settled on', style: TextStyle(color: Colors.black54, fontSize: 10.5)),
+                                    Text(formatDateTime(record.payments.last.paidAt),
+                                        style: const TextStyle(color: Colors.black87, fontSize: 10.5, fontWeight: FontWeight.w600)),
+                                  ],
+                                ),
+                              ],
+                            ],
+                          ),
+                        );
+                      }),
                     ] else if (sale.paymentMethod == 'online' || (sale.referenceNumber != null && sale.referenceNumber!.isNotEmpty)) ...[
                       const SizedBox(height: 8),
                       Container(

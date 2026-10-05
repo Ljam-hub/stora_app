@@ -202,7 +202,58 @@ class ReceiptService {
                   ),
                 ],
               ),
-              if (sale.paymentMethod == 'online' || (sale.referenceNumber != null && sale.referenceNumber!.isNotEmpty)) ...[
+              if (sale.isUtang) ...[
+                pw.SizedBox(height: 2),
+                () {
+                  final record = UtangStore.instance.getRecordForSale(sale);
+                  final isPaid = record?.isFullyPaid ?? false;
+                  final paidAmt = record?.amountPaid ?? 0.0;
+                  final balance = record?.balance ?? sale.total;
+                  final label = isPaid
+                      ? 'UTANG - FULLY PAID'
+                      : (paidAmt > 0 ? 'UTANG - PARTIALLY PAID' : 'CHARGED TO UTANG');
+                  return pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Row(
+                        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                        children: [
+                          pw.Text('PAYMENT STATUS:', style: const pw.TextStyle(fontSize: 7)),
+                          pw.Text(label, style: pw.TextStyle(fontSize: 7, fontWeight: pw.FontWeight.bold)),
+                        ],
+                      ),
+                      if (paidAmt > 0 && !isPaid) ...[
+                        pw.SizedBox(height: 1),
+                        pw.Row(
+                          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                          children: [
+                            pw.Text('PAID SO FAR:', style: const pw.TextStyle(fontSize: 7)),
+                            pw.Text('PHP ${paidAmt.toStringAsFixed(2)}', style: pw.TextStyle(fontSize: 7, fontWeight: pw.FontWeight.bold)),
+                          ],
+                        ),
+                        pw.SizedBox(height: 1),
+                        pw.Row(
+                          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                          children: [
+                            pw.Text('REMAINING BAL:', style: const pw.TextStyle(fontSize: 7)),
+                            pw.Text('PHP ${balance.toStringAsFixed(2)}', style: pw.TextStyle(fontSize: 7, fontWeight: pw.FontWeight.bold)),
+                          ],
+                        ),
+                      ] else if (isPaid && record != null && record.payments.isNotEmpty) ...[
+                        pw.SizedBox(height: 1),
+                        pw.Row(
+                          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                          children: [
+                            pw.Text('SETTLED ON:', style: const pw.TextStyle(fontSize: 7)),
+                            pw.Text(DateFormat('MMM dd, yyyy').format(toManila(record.payments.last.paidAt)),
+                                style: const pw.TextStyle(fontSize: 7)),
+                          ],
+                        ),
+                      ],
+                    ],
+                  );
+                }(),
+              ] else if (sale.paymentMethod == 'online' || (sale.referenceNumber != null && sale.referenceNumber!.isNotEmpty)) ...[
                 pw.SizedBox(height: 2),
                 pw.Row(
                   mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,

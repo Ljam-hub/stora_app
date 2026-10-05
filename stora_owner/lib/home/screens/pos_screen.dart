@@ -201,6 +201,7 @@ class _PosScreenState extends State<PosScreen> {
           penaltyFrequency: paymentResult.penaltyFrequency,
           penaltyRate: paymentResult.penaltyRate,
           gracePeriodDays: paymentResult.gracePeriodDays,
+          saleId: recordedSale.id,
           items: items
               .map((i) => UtangItem(
                     productName: i.product.name,

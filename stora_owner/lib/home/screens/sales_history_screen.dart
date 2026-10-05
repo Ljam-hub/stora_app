@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import '../../stora_login/stora_login.dart';
 import '../models/sale.dart';
 import '../stores/sales_store.dart';
+import '../stores/utang_store.dart';
 import '../theme/home_colors.dart';
 import '../utils/date_utils.dart';
 import '../widgets/receipt_dialog.dart';
+import '../widgets/utang_payment_receipt_dialog.dart';
 
 // ---------------------------------------------------------------------
 // Sales history — opened by tapping "Today's Total Earnings" on the
@@ -67,6 +69,24 @@ const _shortMonthNames = [
   'Dec',
 ];
 
+sealed class SalesHistoryEntry {
+  DateTime get date;
+}
+
+class SaleHistoryItem extends SalesHistoryEntry {
+  final Sale sale;
+  SaleHistoryItem(this.sale);
+  @override
+  DateTime get date => sale.date;
+}
+
+class UtangPaymentHistoryItem extends SalesHistoryEntry {
+  final UtangPaymentWithRecord paymentWithRecord;
+  UtangPaymentHistoryItem(this.paymentWithRecord);
+  @override
+  DateTime get date => paymentWithRecord.payment.paidAt;
+}
+
 class SalesHistoryScreen extends StatefulWidget {
   const SalesHistoryScreen({super.key});
 
@@ -89,13 +109,14 @@ class _SalesHistoryScreenState extends State<SalesHistoryScreen> {
   @override
   void initState() {
     super.initState();
-    // Automatically load latest sales when opening history so walk-ins & online orders appear immediately
+    // Automatically load latest sales & utang when opening history so entries appear immediately
     WidgetsBinding.instance.addPostFrameCallback((_) {
       SalesStore.instance.loadSales();
+      UtangStore.instance.load();
     });
   }
 
-  List<DateTime> _getAvailableMonths(List<Sale> allSales) {
+  List<DateTime> _getAvailableMonths(List<Sale> allSales, List<UtangPaymentWithRecord> allPayments) {
     final nowManila = toManila(DateTime.now());
     final currentMonth = DateTime(nowManila.year, nowManila.month);
     final monthSet = <String>{'${currentMonth.year}_${currentMonth.month}'};
@@ -109,21 +130,34 @@ class _SalesHistoryScreenState extends State<SalesHistoryScreen> {
         months.add(DateTime(sDate.year, sDate.month));
       }
     }
+    for (final p in allPayments) {
+      final pDate = toManila(p.payment.paidAt);
+      final key = '${pDate.year}_${pDate.month}';
+      if (!monthSet.contains(key)) {
+        monthSet.add(key);
+        months.add(DateTime(pDate.year, pDate.month));
+      }
+    }
     months.sort((a, b) => b.compareTo(a));
     return months;
   }
 
-  List<Sale> _getFilteredSales(List<Sale> allSales) {
-    List<Sale> result;
+  List<SalesHistoryEntry> _getFilteredEntries(List<Sale> allSales, List<UtangPaymentWithRecord> allPayments) {
+    final entries = <SalesHistoryEntry>[
+      ...allSales.map((s) => SaleHistoryItem(s)),
+      ...allPayments.map((p) => UtangPaymentHistoryItem(p)),
+    ];
+
+    List<SalesHistoryEntry> result;
     if (_selectedFilterKey == 'all') {
-      result = List<Sale>.from(allSales);
+      result = List<SalesHistoryEntry>.from(entries);
     } else if (_selectedFilterKey == 'today') {
       final nowManila = toManila(DateTime.now());
-      result = allSales.where((s) {
-        final sDate = toManila(s.date);
-        return sDate.year == nowManila.year &&
-            sDate.month == nowManila.month &&
-            sDate.day == nowManila.day;
+      result = entries.where((e) {
+        final eDate = toManila(e.date);
+        return eDate.year == nowManila.year &&
+            eDate.month == nowManila.month &&
+            eDate.day == nowManila.day;
       }).toList();
     } else if (_selectedFilterKey.startsWith('month_')) {
       final parts = _selectedFilterKey.split('_');
@@ -131,18 +165,18 @@ class _SalesHistoryScreenState extends State<SalesHistoryScreen> {
         final year = int.tryParse(parts[1]);
         final month = int.tryParse(parts[2]);
         if (year != null && month != null) {
-          result = allSales.where((s) {
-            final sDate = toManila(s.date);
-            return sDate.year == year && sDate.month == month;
+          result = entries.where((e) {
+            final eDate = toManila(e.date);
+            return eDate.year == year && eDate.month == month;
           }).toList();
         } else {
-          result = List<Sale>.from(allSales);
+          result = List<SalesHistoryEntry>.from(entries);
         }
       } else {
-        result = List<Sale>.from(allSales);
+        result = List<SalesHistoryEntry>.from(entries);
       }
     } else {
-      result = List<Sale>.from(allSales);
+      result = List<SalesHistoryEntry>.from(entries);
     }
 
     if (_sortOrder == 'oldest') {
@@ -153,13 +187,25 @@ class _SalesHistoryScreenState extends State<SalesHistoryScreen> {
 
     if (_searchQuery.trim().isNotEmpty) {
       final query = _searchQuery.trim().toLowerCase();
-      result = result.where((s) {
-        final refMatches = s.referenceNumber?.toLowerCase().contains(query) ?? false;
-        final nameMatches = s.customerName?.toLowerCase().contains(query) ?? false;
-        final notesMatches = s.notes?.toLowerCase().contains(query) ?? false;
-        final paymentMethodMatches = s.paymentMethod?.toLowerCase().contains(query) ?? false;
-        final itemMatches = s.items.any((item) => item.product.name.toLowerCase().contains(query));
-        return refMatches || nameMatches || notesMatches || paymentMethodMatches || itemMatches;
+      result = result.where((e) {
+        if (e is SaleHistoryItem) {
+          final s = e.sale;
+          final refMatches = s.referenceNumber?.toLowerCase().contains(query) ?? false;
+          final nameMatches = s.customerName?.toLowerCase().contains(query) ?? false;
+          final notesMatches = s.notes?.toLowerCase().contains(query) ?? false;
+          final paymentMethodMatches = s.paymentMethod?.toLowerCase().contains(query) ?? false;
+          final itemMatches = s.items.any((item) => item.product.name.toLowerCase().contains(query));
+          return refMatches || nameMatches || notesMatches || paymentMethodMatches || itemMatches;
+        } else if (e is UtangPaymentHistoryItem) {
+          final p = e.paymentWithRecord.payment;
+          final r = e.paymentWithRecord.record;
+          final nameMatches = r.customerName.toLowerCase().contains(query);
+          final phoneMatches = r.customerPhone.toLowerCase().contains(query);
+          final noteMatches = p.note?.toLowerCase().contains(query) ?? false;
+          final termMatches = 'bayad utang'.contains(query) || 'debt payment'.contains(query) || 'utang'.contains(query);
+          return nameMatches || phoneMatches || noteMatches || termMatches;
+        }
+        return false;
       }).toList();
     }
 
@@ -209,11 +255,13 @@ class _SalesHistoryScreenState extends State<SalesHistoryScreen> {
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: SalesStore.instance,
+      animation: Listenable.merge([SalesStore.instance, UtangStore.instance]),
       builder: (context, _) {
         final allSales = SalesStore.instance.sales; // newest first
-        final availableMonths = _getAvailableMonths(allSales);
-        final filteredSales = _getFilteredSales(allSales);
+        final allPayments = UtangStore.instance.allPayments;
+        final availableMonths = _getAvailableMonths(allSales, allPayments);
+        final filteredEntries = _getFilteredEntries(allSales, allPayments);
+        final allEntriesCount = allSales.length + allPayments.length;
         final nowManila = toManila(DateTime.now());
         final currentMonthKey = 'month_${nowManila.year}_${nowManila.month}';
 
@@ -264,8 +312,8 @@ class _SalesHistoryScreenState extends State<SalesHistoryScreen> {
                   ),
                 ),
 
-                // Search Bar for Reference #, Customer, Notes, Products
-                if (allSales.isNotEmpty)
+                // Search Bar for Reference #, Customer, Notes, Products, Debt Payments
+                if (allEntriesCount > 0)
                   Padding(
                     padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
                     child: TextField(
@@ -309,16 +357,21 @@ class _SalesHistoryScreenState extends State<SalesHistoryScreen> {
                   child: RefreshIndicator(
                     color: AppColors.purpleLight,
                     backgroundColor: HomeColors.cardBackground,
-                    onRefresh: () => SalesStore.instance.loadSales(),
+                    onRefresh: () async {
+                      await Future.wait([
+                        SalesStore.instance.loadSales(),
+                        UtangStore.instance.load(),
+                      ]);
+                    },
                     child: ListView.builder(
                       physics: const AlwaysScrollableScrollPhysics(),
                       padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
-                      itemCount: 4 + (filteredSales.isEmpty ? 1 : filteredSales.length),
+                      itemCount: 4 + (filteredEntries.isEmpty ? 1 : filteredEntries.length),
                       itemBuilder: (context, index) {
                         if (index == 0) {
                           return _HistorySummaryCard(
-                            filteredSales: filteredSales,
-                            allSales: allSales,
+                            filteredEntries: filteredEntries,
+                            allEntriesCount: allEntriesCount,
                             revenueTitle: _getRevenueTitle(),
                             currentFilterLabel: _getFilterLabel(availableMonths),
                             selectedFilterKey: _selectedFilterKey,
@@ -334,7 +387,7 @@ class _SalesHistoryScreenState extends State<SalesHistoryScreen> {
                             child: Row(
                               children: [
                                 _FilterChip(
-                                  label: 'All Time (${allSales.length})',
+                                  label: 'All Time ($allEntriesCount)',
                                   isSelected: _selectedFilterKey == 'all',
                                   onTap: () => setState(() => _selectedFilterKey = 'all'),
                                 ),
@@ -370,7 +423,7 @@ class _SalesHistoryScreenState extends State<SalesHistoryScreen> {
                               crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
                                 Text(
-                                  '${filteredSales.length} ${filteredSales.length == 1 ? 'sale' : 'sales'}',
+                                  '${filteredEntries.length} ${filteredEntries.length == 1 ? 'transaction' : 'transactions'}',
                                   style: TextStyle(
                                     color: HomeColors.textSecondary,
                                     fontSize: 13,
@@ -386,7 +439,7 @@ class _SalesHistoryScreenState extends State<SalesHistoryScreen> {
                           );
                         }
 
-                        if (filteredSales.isEmpty) {
+                        if (filteredEntries.isEmpty) {
                           return Container(
                             padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 20),
                             decoration: BoxDecoration(
@@ -414,10 +467,10 @@ class _SalesHistoryScreenState extends State<SalesHistoryScreen> {
                                   const SizedBox(height: 16),
                                   Text(
                                     _searchQuery.isNotEmpty
-                                        ? 'No sales matching "$_searchQuery"'
-                                        : (allSales.isEmpty
-                                            ? 'No sales recorded yet'
-                                            : 'No sales for ${_getFilterLabel(availableMonths)}'),
+                                        ? 'No transactions matching "$_searchQuery"'
+                                        : (allEntriesCount == 0
+                                            ? 'No sales or debt collections recorded yet'
+                                            : 'No transactions for ${_getFilterLabel(availableMonths)}'),
                                     textAlign: TextAlign.center,
                                     style: TextStyle(
                                       color: HomeColors.textPrimary,
@@ -429,8 +482,8 @@ class _SalesHistoryScreenState extends State<SalesHistoryScreen> {
                                   Text(
                                     _searchQuery.isNotEmpty
                                         ? 'Check the reference number or spelling and try again.'
-                                        : (allSales.isEmpty
-                                            ? 'Complete a sale from POS to see it here.'
+                                        : (allEntriesCount == 0
+                                            ? 'Complete a sale from POS or record a debt payment in Utang Ledger.'
                                             : 'Try choosing another month or switch back to All Time.'),
                                     textAlign: TextAlign.center,
                                     style: TextStyle(color: HomeColors.textSecondary, fontSize: 13),
@@ -449,7 +502,7 @@ class _SalesHistoryScreenState extends State<SalesHistoryScreen> {
                                       },
                                       child: const Text('Clear Search'),
                                     ),
-                                  ] else if (allSales.isNotEmpty && _selectedFilterKey != 'all') ...[
+                                  ] else if (allEntriesCount > 0 && _selectedFilterKey != 'all') ...[
                                     const SizedBox(height: 16),
                                     OutlinedButton(
                                       style: OutlinedButton.styleFrom(
@@ -467,11 +520,19 @@ class _SalesHistoryScreenState extends State<SalesHistoryScreen> {
                           );
                         }
                         
-                        final s = filteredSales[index - 4];
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: _SaleCard(sale: s),
-                        );
+                        final entry = filteredEntries[index - 4];
+                        if (entry is SaleHistoryItem) {
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: _SaleCard(sale: entry.sale),
+                          );
+                        } else if (entry is UtangPaymentHistoryItem) {
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: _UtangPaymentHistoryCard(paymentWithRecord: entry.paymentWithRecord),
+                          );
+                        }
+                        return const SizedBox.shrink();
                       },
                     ),
                   ),
@@ -489,8 +550,8 @@ class _SalesHistoryScreenState extends State<SalesHistoryScreen> {
 // Summary Card with Embedded Month/Period Selector
 // ---------------------------------------------------------------------
 class _HistorySummaryCard extends StatelessWidget {
-  final List<Sale> filteredSales;
-  final List<Sale> allSales;
+  final List<SalesHistoryEntry> filteredEntries;
+  final int allEntriesCount;
   final String revenueTitle;
   final String currentFilterLabel;
   final String selectedFilterKey;
@@ -499,8 +560,8 @@ class _HistorySummaryCard extends StatelessWidget {
   final ValueChanged<String> onFilterSelected;
 
   const _HistorySummaryCard({
-    required this.filteredSales,
-    required this.allSales,
+    required this.filteredEntries,
+    required this.allEntriesCount,
     required this.revenueTitle,
     required this.currentFilterLabel,
     required this.selectedFilterKey,
@@ -511,9 +572,23 @@ class _HistorySummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final total = filteredSales.where((s) => !s.isUtang).fold(0.0, (sum, s) => sum + s.total);
-    final utangTotal = filteredSales.where((s) => s.isUtang).fold(0.0, (sum, s) => sum + s.total);
-    final collectedCount = filteredSales.where((s) => !s.isUtang).length;
+    double total = 0.0;
+    double utangCreditTotal = 0.0;
+    int collectedCount = 0;
+
+    for (final e in filteredEntries) {
+      if (e is SaleHistoryItem) {
+        if (!e.sale.isUtang) {
+          total += e.sale.total;
+          collectedCount++;
+        } else {
+          utangCreditTotal += e.sale.total;
+        }
+      } else if (e is UtangPaymentHistoryItem) {
+        total += e.paymentWithRecord.payment.amount;
+        collectedCount++;
+      }
+    }
 
     return Container(
       padding: const EdgeInsets.all(18),
@@ -597,7 +672,7 @@ class _HistorySummaryCard extends StatelessWidget {
                         ),
                         const SizedBox(width: 10),
                         Text(
-                          'All Time (${allSales.length})',
+                          'All Time ($allEntriesCount)',
                           style: TextStyle(
                             color: selectedFilterKey == 'all' ? AppColors.purpleLight : HomeColors.textPrimary,
                             fontWeight: selectedFilterKey == 'all' ? FontWeight.w800 : FontWeight.w500,
@@ -680,11 +755,11 @@ class _HistorySummaryCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                    if (utangTotal > 0)
+                    if (utangCreditTotal > 0)
                       Padding(
                         padding: const EdgeInsets.only(top: 2),
                         child: Text(
-                          '+ ₱${utangTotal.toStringAsFixed(2)} in Utang / Credit',
+                          '+ ₱${utangCreditTotal.toStringAsFixed(2)} in Utang / Credit',
                           style: const TextStyle(
                             color: Color(0xFFE65100),
                             fontSize: 10.5,
@@ -1049,30 +1124,85 @@ class _SaleCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                    if (sale.isUtang)
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFFF3E0),
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: const Color(0xFFFFB74D)),
-                        ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.credit_score_rounded, size: 11, color: Color(0xFFE65100)),
-                            SizedBox(width: 3),
-                            Text(
-                              'Utang / Credit',
-                              style: TextStyle(
-                                color: Color(0xFFE65100),
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
+                    if (sale.isUtang) ...[
+                      Builder(
+                        builder: (context) {
+                          final utangRecord = UtangStore.instance.getRecordForSale(sale);
+                          if (utangRecord != null && utangRecord.isFullyPaid) {
+                            return Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFE8F5E9),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(color: const Color(0xFF81C784)),
                               ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.check_circle_outline_rounded, size: 11, color: Color(0xFF2E7D32)),
+                                  SizedBox(width: 3),
+                                  Text(
+                                    'Utang · Fully Paid',
+                                    style: TextStyle(
+                                      color: Color(0xFF2E7D32),
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          } else if (utangRecord != null && utangRecord.amountPaid > 0) {
+                            return Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFFF8E1),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(color: const Color(0xFFFFD54F)),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.timelapse_rounded, size: 11, color: Color(0xFFF57F17)),
+                                  const SizedBox(width: 3),
+                                  Text(
+                                    'Utang · Paid ₱${utangRecord.amountPaid.toStringAsFixed(0)}/₱${utangRecord.totalAmount.toStringAsFixed(0)}',
+                                    style: const TextStyle(
+                                      color: Color(0xFFF57F17),
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }
+                          return Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFF3E0),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(color: const Color(0xFFFFB74D)),
                             ),
-                          ],
-                        ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.credit_score_rounded, size: 11, color: Color(0xFFE65100)),
+                                SizedBox(width: 3),
+                                Text(
+                                  'Utang · Unpaid',
+                                  style: TextStyle(
+                                    color: Color(0xFFE65100),
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
                       ),
+                    ],
                     if (sale.paymentMethod == 'online' || (sale.referenceNumber != null && sale.referenceNumber!.isNotEmpty))
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
@@ -1103,14 +1233,22 @@ class _SaleCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              Text(
-                '₱${sale.total.toStringAsFixed(2)}',
-                style: TextStyle(
-                  color: sale.isUtang ? const Color(0xFFE65100) : HomeColors.accentText,
-                  fontSize: 16.5,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: -0.3,
-                ),
+              Builder(
+                builder: (context) {
+                  final utangRecord = sale.isUtang ? UtangStore.instance.getRecordForSale(sale) : null;
+                  final isFullyPaidUtang = utangRecord?.isFullyPaid ?? false;
+                  return Text(
+                    '₱${sale.total.toStringAsFixed(2)}',
+                    style: TextStyle(
+                      color: sale.isUtang
+                          ? (isFullyPaidUtang ? const Color(0xFF2E7D32) : const Color(0xFFE65100))
+                          : HomeColors.accentText,
+                      fontSize: 16.5,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -0.3,
+                    ),
+                  );
+                },
               ),
             ],
           ),
@@ -1257,6 +1395,216 @@ class _SaleCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       'Note: ${sale.notes!}',
+                      style: TextStyle(
+                        color: HomeColors.textSecondary,
+                        fontSize: 11,
+                        fontStyle: FontStyle.italic,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------
+// Utang Payment History Card (Debt Collection with Receipt)
+// ---------------------------------------------------------------------
+class _UtangPaymentHistoryCard extends StatelessWidget {
+  final UtangPaymentWithRecord paymentWithRecord;
+  const _UtangPaymentHistoryCard({required this.paymentWithRecord});
+
+  @override
+  Widget build(BuildContext context) {
+    final payment = paymentWithRecord.payment;
+    final record = paymentWithRecord.record;
+    final isSettled = record.isFullyPaid;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: HomeColors.cardBackground,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: const Color(0xFF81C784).withValues(alpha: 0.45),
+        ),
+        boxShadow: HomeColors.cardShadow,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Row 1: Date & Collection Tag on left, Amount on right
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 6,
+                  runSpacing: 4,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+                      decoration: BoxDecoration(
+                        color: HomeColors.cardElevated,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: HomeColors.cardBorder),
+                      ),
+                      child: Text(
+                        formatDateTime(payment.paidAt),
+                        style: TextStyle(
+                          color: HomeColors.textSecondary,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE8F5E9),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: const Color(0xFF81C784)),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.payments_rounded, size: 11, color: Color(0xFF2E7D32)),
+                          SizedBox(width: 3),
+                          Text(
+                            'Bayad Utang · Debt Collection',
+                            style: TextStyle(
+                              color: Color(0xFF2E7D32),
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                '+₱${payment.amount.toStringAsFixed(2)}',
+                style: const TextStyle(
+                  color: Color(0xFF2E7D32),
+                  fontSize: 16.5,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -0.3,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+
+          // Row 2: Customer Name & Bal on left, Receipt button on right
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.person_outline_rounded, size: 14, color: HomeColors.textSecondary),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            record.customerName,
+                            style: TextStyle(
+                              color: HomeColors.textPrimary,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      isSettled
+                          ? 'Debt fully settled (₱0.00 bal)'
+                          : 'Remaining debt: ₱${record.balance.toStringAsFixed(2)} (Total was ₱${record.totalAmount.toStringAsFixed(2)})',
+                      style: TextStyle(
+                        color: isSettled ? const Color(0xFF2E7D32) : HomeColors.textSecondary,
+                        fontSize: 11,
+                        fontWeight: isSettled ? FontWeight.w700 : FontWeight.w500,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              InkWell(
+                onTap: () {
+                  final prevBal = record.balance + payment.amount;
+                  UtangPaymentReceiptDialog.show(
+                    context,
+                    record: record,
+                    payment: payment,
+                    previousBalance: prevBal,
+                  );
+                },
+                borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE8F5E9),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFF81C784).withValues(alpha: 0.5)),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.receipt_long_rounded, size: 14, color: Color(0xFF2E7D32)),
+                      SizedBox(width: 4),
+                      Text(
+                        'Receipt',
+                        style: TextStyle(
+                          color: Color(0xFF2E7D32),
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          if (payment.note != null && payment.note!.trim().isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: HomeColors.cardElevated,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: HomeColors.cardBorder),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.edit_note_rounded, size: 15, color: HomeColors.textMuted),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'Payment note: ${payment.note!}',
                       style: TextStyle(
                         color: HomeColors.textSecondary,
                         fontSize: 11,

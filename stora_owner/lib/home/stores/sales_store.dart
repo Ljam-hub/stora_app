@@ -7,12 +7,15 @@ import '../../data/db/stora_database.dart';
 import '../models/cart_item.dart';
 import '../models/sale.dart';
 import '../stores/inventory_store.dart';
+import '../stores/utang_store.dart';
 import '../utils/date_utils.dart';
 
 /// Sales history — every completed checkout is recorded here so the
 /// dashboard's "Today's Total Earnings" is a real, computed number.
 class SalesStore extends ChangeNotifier {
-  SalesStore._internal();
+  SalesStore._internal() {
+    UtangStore.instance.addListener(notifyListeners);
+  }
   static final SalesStore instance = SalesStore._internal();
 
   final _db = AppDatabase.instance;
@@ -277,18 +280,40 @@ class SalesStore extends ChangeNotifier {
   List<Sale> get todaysCollectedSales =>
       todaysSales.where((s) => !s.isUtang).toList();
 
-  /// Total collected earnings today (excludes unpaid Utang/Credit).
-  double get todaysTotal =>
+  /// Cash & online product sales collected today.
+  double get todaysSalesCollected =>
       todaysCollectedSales.fold(0.0, (sum, s) => sum + s.total);
 
-  int get todaysSalesCount => todaysCollectedSales.length;
+  /// Utang debt payments collected today in cash/online from debtors.
+  double get todaysUtangPaymentsCollected =>
+      UtangStore.instance.todaysPaymentsCollected;
+
+  /// Count of Utang debt payments collected today.
+  int get todaysUtangPaymentsCount =>
+      UtangStore.instance.todaysPaymentsCount;
+
+  /// Total collected earnings today (product sales + utang debt collections).
+  double get todaysTotal =>
+      todaysSalesCollected + todaysUtangPaymentsCollected;
+
+  /// Total number of money transactions collected today (sales + debt collections).
+  int get todaysSalesCount =>
+      todaysCollectedSales.length + todaysUtangPaymentsCount;
 
   double get todaysAverage =>
       todaysSalesCount == 0 ? 0 : todaysTotal / todaysSalesCount;
 
-  /// All-time collected revenue (excludes unpaid Utang).
-  double get allTimeTotal =>
-      _sales.where((s) => !s.isUtang).fold(0.0, (sum, s) => sum + s.total);
+  /// All-time collected revenue (collected sales + utang debt collections).
+  double get allTimeTotal {
+    final salesSum = _sales.where((s) => !s.isUtang).fold(0.0, (sum, s) => sum + s.total);
+    double utangSum = 0.0;
+    for (final r in UtangStore.instance.records) {
+      for (final p in r.payments) {
+        utangSum += p.amount;
+      }
+    }
+    return salesSum + utangSum;
+  }
 
   /// Total Utang charged today (unpaid credit receivable).
   double get todaysUtangTotal =>
@@ -296,9 +321,11 @@ class SalesStore extends ChangeNotifier {
 
   String get changeBadge {
     final yesterday = DateTime.now().subtract(const Duration(days: 1));
-    final yTotal = _sales
+    final ySales = _sales
         .where((s) => isSameDay(s.date, yesterday) && !s.isUtang)
         .fold(0.0, (sum, s) => sum + s.total);
+    final yUtang = UtangStore.instance.paymentsCollectedOnDay(yesterday);
+    final yTotal = ySales + yUtang;
     if (yTotal == 0) {
       return todaysTotal > 0 ? '↗ +100%' : '0%';
     }

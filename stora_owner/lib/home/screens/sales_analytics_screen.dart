@@ -5,6 +5,7 @@ import '../../stora_login/stora_login.dart';
 import '../../subscription/subscription_screen.dart';
 import '../stores/inventory_store.dart';
 import '../stores/sales_store.dart';
+import '../stores/utang_store.dart';
 import '../theme/home_colors.dart';
 import '../theme/theme_mode_controller.dart';
 import '../utils/date_utils.dart';
@@ -24,6 +25,7 @@ class _SalesAnalyticsScreenState extends State<SalesAnalyticsScreen> {
     return AnimatedBuilder(
       animation: Listenable.merge([
         SalesStore.instance,
+        UtangStore.instance,
         InventoryStore.instance,
         AccountStatusStore.instance,
         ThemeModeController.instance,
@@ -114,26 +116,39 @@ class _SalesAnalyticsScreenState extends State<SalesAnalyticsScreen> {
           );
         }
         final sales = SalesStore.instance.sales;
+        final allUtangPayments = UtangStore.instance.allPayments;
         final now = DateTime.now();
 
         // Calculations
         final todaySales = sales.where((s) => isSameDay(s.date, now) && !s.isUtang).toList();
-        final todaysRevenue = todaySales.fold(0.0, (sum, s) => sum + s.total);
+        final todaysUtangCollected = UtangStore.instance.todaysPaymentsCollected;
+        final todaysRevenue = todaySales.fold(0.0, (sum, s) => sum + s.total) + todaysUtangCollected;
+        final todaysTransactionsCount = todaySales.length + UtangStore.instance.todaysPaymentsCount;
 
         final thisWeekSales = sales.where((s) => now.difference(s.date).inDays <= 7 && !s.isUtang).toList();
-        final thisWeekRevenue = thisWeekSales.fold(0.0, (sum, s) => sum + s.total);
+        final thisWeekUtangPayments = allUtangPayments.where((p) => now.difference(p.payment.paidAt).inDays <= 7).toList();
+        final thisWeekUtangCollected = thisWeekUtangPayments.fold(0.0, (sum, p) => sum + p.payment.amount);
+        final thisWeekRevenue = thisWeekSales.fold(0.0, (sum, s) => sum + s.total) + thisWeekUtangCollected;
+        final thisWeekTransactionsCount = thisWeekSales.length + thisWeekUtangPayments.length;
 
         final thisMonthSales = sales.where((s) => now.difference(s.date).inDays <= 30 && !s.isUtang).toList();
-        final thisMonthRevenue = thisMonthSales.fold(0.0, (sum, s) => sum + s.total);
+        final thisMonthUtangPayments = allUtangPayments.where((p) => now.difference(p.payment.paidAt).inDays <= 30).toList();
+        final thisMonthUtangCollected = thisMonthUtangPayments.fold(0.0, (sum, p) => sum + p.payment.amount);
+        final thisMonthRevenue = thisMonthSales.fold(0.0, (sum, s) => sum + s.total) + thisMonthUtangCollected;
+        final thisMonthTransactionsCount = thisMonthSales.length + thisMonthUtangPayments.length;
 
-        final allTimeRevenue = sales.where((s) => !s.isUtang).fold(0.0, (sum, s) => sum + s.total);
+        final allTimeUtangCollected = allUtangPayments.fold(0.0, (sum, p) => sum + p.payment.amount);
+        final allTimeRevenue = sales.where((s) => !s.isUtang).fold(0.0, (sum, s) => sum + s.total) + allTimeUtangCollected;
+        final allTimeTransactionsCount = sales.where((s) => !s.isUtang).length + allUtangPayments.length;
 
         // Daily breakdown for the past 7 days (Bar chart data)
         final last7Days = List.generate(7, (i) {
           final day = DateTime(now.year, now.month, now.day).subtract(Duration(days: 6 - i));
-          final dayTotal = sales
+          final daySalesTotal = sales
               .where((s) => isSameDay(s.date, day) && !s.isUtang)
               .fold(0.0, (sum, s) => sum + s.total);
+          final dayUtangTotal = UtangStore.instance.paymentsCollectedOnDay(day);
+          final dayTotal = daySalesTotal + dayUtangTotal;
           return {'day': DateFormat('E').format(day), 'date': day, 'total': dayTotal};
         });
 
@@ -147,9 +162,13 @@ class _SalesAnalyticsScreenState extends State<SalesAnalyticsScreen> {
             ? thisWeekSales
             : (_selectedPeriodIndex == 1 ? thisMonthSales : sales.where((s) => !s.isUtang).toList());
 
+        final periodUtangPayments = _selectedPeriodIndex == 0
+            ? thisWeekUtangCollected
+            : (_selectedPeriodIndex == 1 ? thisMonthUtangCollected : allTimeUtangCollected);
+
         final cashSales = filteredSales.where((s) => s.paymentMethod != 'online' && !s.isUtang).toList();
         final onlineSales = filteredSales.where((s) => s.paymentMethod == 'online' && !s.isUtang).toList();
-        final cashRevenue = cashSales.fold(0.0, (sum, s) => sum + s.total);
+        final cashRevenue = cashSales.fold(0.0, (sum, s) => sum + s.total) + periodUtangPayments;
         final onlineRevenue = onlineSales.fold(0.0, (sum, s) => sum + s.total);
         final totalPeriodRevenue = cashRevenue + onlineRevenue;
         final cashPct = totalPeriodRevenue > 0 ? ((cashRevenue / totalPeriodRevenue) * 100).toStringAsFixed(0) : '0';
@@ -205,7 +224,7 @@ class _SalesAnalyticsScreenState extends State<SalesAnalyticsScreen> {
                         child: _MetricCard(
                           title: "Today's Sales",
                           amount: '₱${todaysRevenue.toStringAsFixed(2)}',
-                          subtitle: '${todaySales.length} orders today',
+                          subtitle: '$todaysTransactionsCount transactions today',
                           icon: Icons.today_rounded,
                           accentColor: HomeColors.accentText,
                         ),
@@ -215,7 +234,7 @@ class _SalesAnalyticsScreenState extends State<SalesAnalyticsScreen> {
                         child: _MetricCard(
                           title: '7-Day Revenue',
                           amount: '₱${thisWeekRevenue.toStringAsFixed(2)}',
-                          subtitle: '${thisWeekSales.length} orders',
+                          subtitle: '$thisWeekTransactionsCount transactions',
                           icon: Icons.calendar_view_week_rounded,
                           accentColor: HomeColors.chartGreen,
                         ),
@@ -231,7 +250,7 @@ class _SalesAnalyticsScreenState extends State<SalesAnalyticsScreen> {
                         child: _MetricCard(
                           title: '30-Day Revenue',
                           amount: '₱${thisMonthRevenue.toStringAsFixed(2)}',
-                          subtitle: '${thisMonthSales.length} orders',
+                          subtitle: '$thisMonthTransactionsCount transactions',
                           icon: Icons.calendar_month_rounded,
                           accentColor: HomeColors.chartBlue,
                         ),
@@ -241,7 +260,7 @@ class _SalesAnalyticsScreenState extends State<SalesAnalyticsScreen> {
                         child: _MetricCard(
                           title: 'All-Time Total',
                           amount: '₱${allTimeRevenue.toStringAsFixed(2)}',
-                          subtitle: '${sales.length} total orders',
+                          subtitle: '$allTimeTransactionsCount total transactions',
                           icon: Icons.all_inclusive_rounded,
                           accentColor: HomeColors.chartYellow,
                         ),

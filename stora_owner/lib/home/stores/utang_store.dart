@@ -5,6 +5,8 @@ import 'package:path_provider/path_provider.dart';
 
 import '../../data/api/api_client.dart';
 import '../../data/services/notification_service.dart';
+import '../models/sale.dart';
+import '../utils/date_utils.dart';
 
 /// Safely parses a JSON value that may be a [num] or a [String] (e.g. DRF
 /// DecimalField serializes decimals as strings like "350.00").
@@ -71,6 +73,7 @@ class UtangPayment {
 
 class UtangRecord {
   final String id;
+  final String? saleId;
   final String customerName;
   final String customerPhone;
   final double totalAmount;
@@ -87,6 +90,7 @@ class UtangRecord {
 
   UtangRecord({
     required this.id,
+    this.saleId,
     required this.customerName,
     required this.customerPhone,
     required this.totalAmount,
@@ -252,6 +256,7 @@ class UtangRecord {
 
   Map<String, dynamic> toJson() => {
         'id': id,
+        if (saleId != null) 'sale_id': saleId,
         'customer_name': customerName,
         'customer_phone': customerPhone,
         'total_amount': totalAmount,
@@ -278,6 +283,7 @@ class UtangRecord {
 
     return UtangRecord(
       id: json['id']?.toString() ?? '',
+      saleId: json['sale_id']?.toString(),
       customerName: json['customer_name'] as String? ?? 'Walk-in Customer',
       customerPhone: json['customer_phone'] as String? ?? '',
       totalAmount: _parseDouble(json['total_amount']),
@@ -302,6 +308,7 @@ class UtangRecord {
 
   UtangRecord copyWith({
     String? id,
+    String? saleId,
     String? customerName,
     String? customerPhone,
     double? totalAmount,
@@ -323,6 +330,7 @@ class UtangRecord {
 
     return UtangRecord(
       id: id ?? this.id,
+      saleId: saleId ?? this.saleId,
       customerName: customerName ?? this.customerName,
       customerPhone: customerPhone ?? this.customerPhone,
       totalAmount: totalAmount ?? this.totalAmount,
@@ -514,6 +522,7 @@ class UtangStore extends ChangeNotifier {
     String penaltyFrequency = 'none',
     double? dailyPenalty,
     int gracePeriodDays = 0,
+    String? saleId,
     List<UtangItem> items = const [],
     String notes = '',
   }) async {
@@ -527,6 +536,7 @@ class UtangStore extends ChangeNotifier {
 
     var record = UtangRecord(
       id: tempId,
+      saleId: saleId,
       customerName: customerName.trim().isEmpty ? 'Walk-in Customer' : customerName.trim(),
       customerPhone: customerPhone.trim(),
       totalAmount: totalAmount,
@@ -728,9 +738,81 @@ class UtangStore extends ChangeNotifier {
     return OwnerNotificationService.instance.checkAndNotifyUtang(_records, currentDate);
   }
 
+  /// Find the UtangRecord corresponding to a given Sale (if any).
+  UtangRecord? getRecordForSale(Sale sale) {
+    if (sale.id.isNotEmpty) {
+      for (final r in _records) {
+        if (r.saleId != null && r.saleId == sale.id) return r;
+      }
+    }
+    final shortId = sale.id.length > 8 ? sale.id.substring(0, 8) : sale.id;
+    for (final r in _records) {
+      if (r.notes.contains('POS Sale #$shortId') || r.notes.contains('POS Sale #${sale.id}')) {
+        return r;
+      }
+    }
+    // Fallback: match by customer name and total amount created within 24 hours
+    for (final r in _records) {
+      if (r.customerName.trim().toLowerCase() == sale.displayCustomerName.trim().toLowerCase() &&
+          (r.totalAmount - sale.total).abs() < 0.01 &&
+          (r.createdAt.difference(sale.date).inHours.abs() < 24)) {
+        return r;
+      }
+    }
+    return null;
+  }
+
+  /// Total Utang debt payments collected on a specific calendar day.
+  double paymentsCollectedOnDay(DateTime day) {
+    double sum = 0.0;
+    for (final r in _records) {
+      for (final p in r.payments) {
+        if (isSameDay(p.paidAt, day)) {
+          sum += p.amount;
+        }
+      }
+    }
+    return sum;
+  }
+
+  /// Total Utang debt payments collected today.
+  double get todaysPaymentsCollected => paymentsCollectedOnDay(DateTime.now());
+
+  /// Number of Utang debt payments collected today.
+  int get todaysPaymentsCount {
+    final now = DateTime.now();
+    int count = 0;
+    for (final r in _records) {
+      for (final p in r.payments) {
+        if (isSameDay(p.paidAt, now)) {
+          count++;
+        }
+      }
+    }
+    return count;
+  }
+
+  /// All debt payments across all records paired with their parent record.
+  List<UtangPaymentWithRecord> get allPayments {
+    final list = <UtangPaymentWithRecord>[];
+    for (final r in _records) {
+      for (final p in r.payments) {
+        list.add(UtangPaymentWithRecord(payment: p, record: r));
+      }
+    }
+    list.sort((a, b) => b.payment.paidAt.compareTo(a.payment.paidAt));
+    return list;
+  }
+
   void reset() {
     _records.clear();
     _initialized = false;
     notifyListeners();
   }
+}
+
+class UtangPaymentWithRecord {
+  final UtangPayment payment;
+  final UtangRecord record;
+  const UtangPaymentWithRecord({required this.payment, required this.record});
 }

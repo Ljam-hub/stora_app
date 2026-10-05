@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:stora/data/services/utang_reminder_helper.dart';
+import 'package:stora/home/models/sale.dart';
 import 'package:stora/home/services/receipt_service.dart';
 import 'package:stora/home/stores/utang_store.dart';
 import 'package:stora/home/widgets/utang_payment_receipt_dialog.dart';
@@ -391,4 +392,83 @@ void main() {
       expect(find.byKey(const Key('utang_receipt_done_button')), findsOneWidget);
     });
   });
+
+  group('Utang-Sales History Link & Queries Tests', () {
+    test('UtangRecord serializes and deserializes saleId', () {
+      final record = UtangRecord(
+        id: 'u-1',
+        saleId: 'sale-999',
+        customerName: 'Juan Dela Cruz',
+        customerPhone: '09171234567',
+        totalAmount: 500.0,
+        createdAt: DateTime(2026, 10, 1),
+        dueDate: DateTime(2026, 10, 15),
+      );
+
+      final json = record.toJson();
+      expect(json['sale_id'], equals('sale-999'));
+
+      final fromJson = UtangRecord.fromJson(json);
+      expect(fromJson.saleId, equals('sale-999'));
+    });
+
+    test('getRecordForSale matches by saleId and note', () {
+      final record1 = UtangRecord(
+        id: 'u-101',
+        saleId: 'pos-sale-abc12345',
+        customerName: 'Kardo Dalisay',
+        customerPhone: '09170000000',
+        totalAmount: 250.0,
+        createdAt: DateTime.now(),
+        dueDate: DateTime.now().add(const Duration(days: 7)),
+      );
+
+      final sale = Sale(
+        id: 'pos-sale-abc12345',
+        date: DateTime.now(),
+        total: 250.0,
+        paymentMethod: 'utang',
+        customerName: 'Kardo Dalisay',
+        items: const [],
+      );
+
+      // Testing logic directly on UtangStore instance records
+      UtangStore.instance.setRecordsForTesting([record1]);
+
+      final match = UtangStore.instance.getRecordForSale(sale);
+      expect(match, isNotNull);
+      expect(match!.id, equals('u-101'));
+      expect(match.customerName, equals('Kardo Dalisay'));
+    });
+
+    test('paymentsCollectedOnDay sums payments made on that day', () {
+      final targetDay = DateTime(2026, 10, 5, 10, 0);
+      final otherDay = DateTime(2026, 10, 4, 15, 0);
+
+      final record = UtangRecord(
+        id: 'u-202',
+        customerName: 'Aling Nena',
+        customerPhone: '09180000000',
+        totalAmount: 1000.0,
+        createdAt: DateTime(2026, 10, 1),
+        dueDate: DateTime(2026, 10, 15),
+        payments: [
+          UtangPayment(id: 'p-1', amount: 200.0, paidAt: targetDay),
+          UtangPayment(id: 'p-2', amount: 150.0, paidAt: targetDay.add(const Duration(hours: 2))),
+          UtangPayment(id: 'p-3', amount: 300.0, paidAt: otherDay),
+        ],
+      );
+
+      UtangStore.instance.setRecordsForTesting([record]);
+
+      final sumOnTargetDay = UtangStore.instance.paymentsCollectedOnDay(targetDay);
+      expect(sumOnTargetDay, equals(350.0));
+
+      final allPayments = UtangStore.instance.allPayments;
+      expect(allPayments.length, equals(3));
+      // allPayments should be sorted newest first
+      expect(allPayments.first.payment.amount, equals(150.0));
+    });
+  });
 }
+
