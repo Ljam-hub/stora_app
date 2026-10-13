@@ -194,12 +194,214 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                     ),
+                    const SizedBox(height: 20),
+                    InkWell(
+                      onTap: () => _showCyberSecurityNotice(context),
+                      borderRadius: BorderRadius.circular(12),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.shield_outlined, size: 14, color: AppColors.purpleLight.withValues(alpha: 0.85)),
+                            const SizedBox(width: 6),
+                            const Text(
+                              'Data Privacy & Cyber Security Compliant',
+                              style: TextStyle(
+                                color: AppColors.label,
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '(RA 10173 · RA 10175)',
+                              style: TextStyle(
+                                color: AppColors.purpleLight.withValues(alpha: 0.85),
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  void _showCyberSecurityNotice(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => DraggableScrollableSheet(
+        initialChildSize: 0.78,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        builder: (_, scrollController) => Container(
+          decoration: const BoxDecoration(
+            color: AppColors.background,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            border: Border(top: BorderSide(color: AppColors.fieldBorder)),
+          ),
+          child: Column(
+            children: [
+              Container(
+                margin: const EdgeInsets.only(top: 12, bottom: 8),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.label.withValues(alpha: 0.4),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Expanded(
+                child: ListView(
+                  controller: scrollController,
+                  padding: const EdgeInsets.fromLTRB(22, 12, 22, 28),
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(Icons.shield_outlined, color: AppColors.primaryLight, size: 24),
+                        ),
+                        const SizedBox(width: 14),
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Cyber Security & Data Privacy',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              Text(
+                                'Philippine Legal Framework & Protections',
+                                style: TextStyle(
+                                  color: AppColors.label,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 18),
+                    _buildLegalCard(
+                      icon: Icons.shield_outlined,
+                      title: 'Republic Act No. 10175',
+                      subtitle: 'Cybercrime Prevention Act of 2012',
+                      description:
+                          'STORA strictly safeguards store owners and customers against unauthorized access, computer data tampering, digital identity theft, and fraudulent transactions. All platform communication is secured with TLS encryption, and security infractions are prosecuted under Philippine cyber law.',
+                    ),
+                    const SizedBox(height: 12),
+                    _buildLegalCard(
+                      icon: Icons.privacy_tip_outlined,
+                      title: 'Republic Act No. 10173',
+                      subtitle: 'Data Privacy Act of 2012 (DPA)',
+                      description:
+                          'Your retail transaction records, utang ledgers, contact numbers, and payment details are strictly confidential. Stora enforces end-to-end data isolation: administrative panels automatically mask personal identifiable information (PII), customer chats and verification codes are completely shielded, and payment QR codes remain tamper-proof.',
+                    ),
+                    const SizedBox(height: 12),
+                    _buildLegalCard(
+                      icon: Icons.lock_outline_rounded,
+                      title: 'Zero Exploitation Guarantee',
+                      subtitle: 'Privacy & Security By Design',
+                      description:
+                          '• Customer peer chats are strictly private and shielded from platform oversight.\n'
+                          '• Email verification codes bypass public view to eliminate intercept attacks.\n'
+                          '• Store locations and customer phones are encrypted with authenticated AES.\n'
+                          '• Store owners retain full ownership to export or delete their data anytime.',
+                    ),
+                    const SizedBox(height: 20),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      ),
+                      onPressed: () => Navigator.pop(ctx),
+                      child: const Text('Understood & Acknowledged', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLegalCard({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required String description,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.fieldBackground,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.fieldBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 18, color: AppColors.primaryLight),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13.5,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 2),
+          Text(
+            subtitle,
+            style: const TextStyle(
+              color: AppColors.primaryLight,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            description,
+            style: const TextStyle(
+              color: AppColors.label,
+              fontSize: 11.5,
+              height: 1.45,
+            ),
+          ),
+        ],
       ),
     );
   }
