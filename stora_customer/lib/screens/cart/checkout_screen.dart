@@ -13,8 +13,13 @@ import '../../widgets/gradient_button.dart';
 
 class CheckoutScreen extends StatefulWidget {
   final VoidCallback? onOrderPlaced;
+  final int? targetStoreId;
 
-  const CheckoutScreen({super.key, this.onOrderPlaced});
+  const CheckoutScreen({
+    super.key,
+    this.onOrderPlaced,
+    this.targetStoreId,
+  });
 
   @override
   State<CheckoutScreen> createState() => _CheckoutScreenState();
@@ -119,7 +124,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     final orderProvider = context.read<OrderProvider>();
     final auth = context.read<AuthProvider>();
 
-    final storeOwnerId = cart.storeId;
+    final storeOwnerId = widget.targetStoreId ?? cart.storeId;
     if (storeOwnerId == null) {
       setState(() => _isSubmitting = false);
       ScaffoldMessenger.of(context).showSnackBar(
@@ -177,6 +182,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
            store.paymentQrUrl != null);
       final String paymentMethodToUse = canAcceptGcash ? _selectedPaymentMethod : 'cash';
 
+      final orderItems = widget.targetStoreId != null
+          ? cart.toOrderItemsFor(storeOwnerId)
+          : cart.toOrderItems();
+
       final order = await orderProvider.placeOrder(
         ownerId: storeOwnerId,
         customerName: _nameController.text.trim(),
@@ -184,10 +193,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         customerAddress: _addressController.text.trim(),
         notes: _notesController.text.trim(),
         paymentMethod: paymentMethodToUse,
-        items: cart.toOrderItems(),
+        items: orderItems,
       );
 
-      cart.clear();
+      if (widget.targetStoreId != null) {
+        cart.clearStore(widget.targetStoreId!);
+      } else {
+        cart.clear();
+      }
 
       if (mounted) {
         setState(() => _isSubmitting = false);
@@ -385,7 +398,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     context.watch<CustomerThemeController>();
     final cart = context.watch<CartProvider>();
     final catalog = context.watch<CatalogProvider>();
-    final storeOwnerId = cart.storeId;
+    final storeOwnerId = widget.targetStoreId ?? cart.storeId;
     final currentStore = storeOwnerId != null
         ? (catalog.stores.where((s) => s.id == storeOwnerId).firstOrNull ??
             (catalog.selectedStore?.id == storeOwnerId ? catalog.selectedStore : null))
@@ -397,7 +410,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             : [
                 if (currentStore.paymentPhoneNumber.isNotEmpty || currentStore.paymentQrUrl != null)
                   StorePaymentAccount(
-                    label: 'GCash',
+                    label: 'Payment / E-Wallet',
                     accountName: currentStore.paymentAccountName,
                     accountNumber: currentStore.paymentPhoneNumber,
                     qrCodeUrl: currentStore.paymentQrUrl,
@@ -410,6 +423,16 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     final paymentAccounts = (currentStore != null && currentStore.showSingleAccount && activeAccounts.isNotEmpty)
         ? [activeAccounts.firstWhere((a) => a.isPrimary, orElse: () => activeAccounts.first)]
         : activeAccounts;
+
+    final displayStoreName = widget.targetStoreId != null
+        ? cart.storeNameFor(storeOwnerId ?? 0)
+        : (cart.storeName ?? currentStore?.businessName);
+    final displayItems = widget.targetStoreId != null && storeOwnerId != null
+        ? cart.itemsForStore(storeOwnerId)
+        : cart.items;
+    final displayTotal = widget.targetStoreId != null && storeOwnerId != null
+        ? cart.formattedTotalFor(storeOwnerId)
+        : cart.formattedTotal;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -434,7 +457,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // Store Header Card
-                if (cart.storeName != null && cart.storeName!.isNotEmpty) ...[
+                if (displayStoreName != null && displayStoreName.isNotEmpty) ...[
                   Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
@@ -455,7 +478,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                 style: TextStyle(color: AppColors.textMuted, fontSize: 11),
                               ),
                               Text(
-                                cart.storeName!,
+                                displayStoreName,
                                 style: TextStyle(
                                   color: AppColors.textPrimary,
                                   fontWeight: FontWeight.bold,
@@ -1034,7 +1057,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         ),
                       ),
                       const SizedBox(height: 12),
-                      ...cart.items.map(
+                      ...displayItems.map(
                         (i) => Padding(
                           padding: const EdgeInsets.symmetric(vertical: 4),
                           child: Row(
@@ -1070,7 +1093,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                             ),
                           ),
                           Text(
-                            cart.formattedTotal,
+                            displayTotal,
                             style: const TextStyle(
                               color: AppColors.primary,
                               fontSize: 18,
@@ -1112,10 +1135,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   key: const Key('checkout_place_order_button'),
                   text: isStoreClosed
                       ? 'Store is Currently Closed'
-                      : 'Place Order (${cart.formattedTotal})',
+                      : 'Place Order ($displayTotal)',
                   icon: isStoreClosed ? Icons.lock_outline : Icons.send_rounded,
                   isLoading: _isSubmitting,
-                  onPressed: (_isSubmitting || isStoreClosed || cart.isEmpty) ? null : _handlePlaceOrder,
+                  onPressed: (_isSubmitting || isStoreClosed || displayItems.isEmpty) ? null : _handlePlaceOrder,
                 ),
                 const SizedBox(height: 20),
               ],

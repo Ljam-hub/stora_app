@@ -16,17 +16,16 @@ class OrderStatusStepper extends StatelessWidget {
     final isReady = status == 'ready';
     final isCompleted = status == 'completed';
 
-    // Step calculation:
+    // Step calculation (4 steps matching backend flow):
     // Step 0: Placed
-    // Step 1: Confirmed / Accepted / Counter / Declined
-    // Step 2: Preparing
-    // Step 3: Ready for Pickup
-    // Step 4: Completed
+    // Step 1: Accepted (Preparing) / Counter / Declined
+    // Step 2: Ready for Pickup
+    // Step 3: Completed
     int currentStep = 0;
     if (isCompleted) {
-      currentStep = 4;
-    } else if (isReady) {
       currentStep = 3;
+    } else if (isReady) {
+      currentStep = 2;
     } else if (isAccepted) {
       currentStep = 1;
     } else if (isCounter) {
@@ -99,7 +98,7 @@ class OrderStatusStepper extends StatelessWidget {
                     : (isCounter ? Icons.swap_horiz_rounded : Icons.storefront_rounded),
                 title: isDeclined
                     ? 'Declined'
-                    : (isCounter ? 'Counter' : 'Accepted'),
+                    : (isCounter ? 'Counter' : 'Preparing'),
                 isActive: currentStep >= 1,
                 isCompleted: currentStep >= 2,
                 color: isDeclined ? AppColors.danger : (isCounter ? AppColors.primary : AppColors.success),
@@ -114,11 +113,11 @@ class OrderStatusStepper extends StatelessWidget {
                 ),
               ),
               _StepNode(
-                icon: Icons.shopping_bag_rounded,
-                title: 'Preparing',
+                icon: Icons.inventory_2_rounded,
+                title: 'Ready',
                 isActive: currentStep >= 2,
                 isCompleted: currentStep >= 3,
-                color: AppColors.primary,
+                color: const Color(0xFF00E676),
               ),
               Expanded(
                 child: Container(
@@ -130,10 +129,10 @@ class OrderStatusStepper extends StatelessWidget {
                 ),
               ),
               _StepNode(
-                icon: isCompleted ? Icons.verified_rounded : Icons.done_all_rounded,
-                title: isCompleted ? 'Completed' : 'Ready',
+                icon: Icons.verified_rounded,
+                title: 'Completed',
                 isActive: currentStep >= 3,
-                isCompleted: currentStep >= 4,
+                isCompleted: isCompleted,
                 color: const Color(0xFF00E676),
               ),
             ],

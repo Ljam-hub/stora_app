@@ -361,19 +361,11 @@
         {% endif %}
       </div>
     </div>
-  </div>
-
-  <a href="{% url 'admin:support_chat' %}" class="stora-support-status">
-    <span class="stora-support-status__dot" aria-hidden="true"></span>
-    Support
-    <span id="stora-admin-global-badge" class="stora-header-badge" style="display: {% if stora_unread_support_count > 0 %}inline-flex{% else %}none{% endif %}; background: #EF4444; color: #FFF; font-size: 10px; font-weight: 800; border-radius: 10px; padding: 1px 6px; line-height: 1.2; box-shadow: 0 0 8px rgba(239, 68, 68, 0.6);">{{ stora_unread_support_count|default:"0" }}</span>
-  </a>
   {% endif %}
   <span class="stora-api-status">
     <span class="stora-api-status__dot" aria-hidden="true"></span>
     API Online
   </span>
-  <a href="/api/health/" target="_blank" class="stora-header-link">Health Check <span aria-hidden="true">↗</span></a>
   <a href="/" target="_blank" class="stora-header-link">Backend Portal <span aria-hidden="true">↗</span></a>
 </div>
 

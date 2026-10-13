@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:intl/intl.dart';
 import '../../auth/auth_store.dart';
 import '../../stora_login/stora_login.dart';
 import '../../data/stores/account_status_store.dart';
@@ -17,7 +15,6 @@ import 'alerts_screen.dart';
 import 'business_insights_screen.dart';
 import 'owner_notes_screen.dart';
 import 'pending_orders_screen.dart';
-import 'pos_screen.dart';
 import 'profile_screen.dart';
 import 'sales_analytics_screen.dart';
 import 'sales_history_screen.dart';
@@ -151,10 +148,6 @@ class DashboardScreen extends StatelessWidget {
                         child: const Icon(Icons.qr_code_2_rounded, color: AppColors.purpleLight, size: 20),
                       ),
                     ),
-                    IconButton(
-                      onPressed: () => DashboardScreen.safeNavigate(context, const ProfileScreen()),
-                      icon: Icon(Icons.settings_outlined, color: HomeColors.textSecondary, size: 22),
-                    ),
                   ],
                 ),
                 const SizedBox(height: 14),
@@ -193,266 +186,16 @@ class DashboardScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 14),
+                const FadeSlideIn(
+                  delay: Duration(milliseconds: 125),
+                  child: _SalesGrowthHubCard(),
+                ),
+                const SizedBox(height: 14),
                 FadeSlideIn(
                   delay: const Duration(milliseconds: 150),
-                  child: _UtangSummaryCard(
-                    onTap: () => DashboardScreen.safeNavigate(context, const UtangLedgerScreen()),
-                  ),
-                ),
-                const SizedBox(height: 14),
-                FadeSlideIn(
-                  delay: const Duration(milliseconds: 160),
-                  child: _OwnerNotesCard(
-                    onTap: () => DashboardScreen.safeNavigate(context, const OwnerNotesScreen()),
-                  ),
-                ),
-                const SizedBox(height: 14),
-                FadeSlideIn(
-                  delay: const Duration(milliseconds: 175),
-                  child: _WalkInPaymentQrCard(
-                    onTap: () => _showPaymentQrDialog(context),
-                  ),
-                ),
-                const SizedBox(height: 14),
-                // Business Insights & Map Row
-                FadeSlideIn(
-                  delay: const Duration(milliseconds: 200),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () {
-                            if (!AccountStatusStore.instance.isPremium) {
-                              _showPremiumFeatureDialog(context, featureName: 'Business Insights');
-                              return;
-                            }
-                            DashboardScreen.safeNavigate(context, const BusinessInsightsScreen());
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                            decoration: BoxDecoration(
-                              color: HomeColors.cardBackground,
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: AppColors.purpleLight.withValues(alpha: 0.4), width: 1),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppColors.purple.withValues(alpha: 0.18),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 3),
-                                ),
-                              ],
-                            ),
-                            child: Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    gradient: HomeColors.purpleGradient,
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  child: const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 16),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          Flexible(
-                                            child: FittedBox(
-                                              fit: BoxFit.scaleDown,
-                                              alignment: Alignment.centerLeft,
-                                              child: Text(
-                                                'Business Insights',
-                                                maxLines: 1,
-                                                style: TextStyle(
-                                                  color: HomeColors.textPrimary,
-                                                  fontSize: 12.5,
-                                                  fontWeight: FontWeight.w700,
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                          if (!AccountStatusStore.instance.isPremium) ...[
-                                            const SizedBox(width: 4),
-                                            Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 4.5, vertical: 1.5),
-                                              decoration: BoxDecoration(
-                                                color: Colors.amber.withValues(alpha: 0.18),
-                                                borderRadius: BorderRadius.circular(6),
-                                                border: Border.all(color: Colors.amber.withValues(alpha: 0.4), width: 0.8),
-                                              ),
-                                              child: const Row(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  Icon(Icons.lock_rounded, color: Colors.amber, size: 9),
-                                                  SizedBox(width: 2),
-                                                  Text(
-                                                    'PRO',
-                                                    style: TextStyle(color: Colors.amber, fontSize: 8.5, fontWeight: FontWeight.w900),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          ],
-                                        ],
-                                      ),
-                                      Text('Smart store tips',
-                                          style: TextStyle(color: HomeColors.textSecondary, fontSize: 11)),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () => DashboardScreen.safeNavigate(context, const SetStoreLocationScreen()),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                            decoration: BoxDecoration(
-                              color: HomeColors.cardBackground,
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: HomeColors.cardBorder),
-                            ),
-                            child: Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF38BDF8).withValues(alpha: 0.15),
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  child: const Icon(Icons.location_on_rounded, color: Color(0xFF38BDF8), size: 16),
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text('Store Map',
-                                          style: TextStyle(color: HomeColors.textPrimary, fontSize: 13, fontWeight: FontWeight.w700)),
-                                      Text('Pin your location',
-                                          style: TextStyle(color: HomeColors.textSecondary, fontSize: 11)),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 10),
-                // Analytics Shortcut Bar
-                FadeSlideIn(
-                  delay: const Duration(milliseconds: 300),
-                  child: GestureDetector(
-                    onTap: () {
-                      if (!AccountStatusStore.instance.isPremium) {
-                        _showPremiumFeatureDialog(context, featureName: 'Sales Analytics & Reports');
-                        return;
-                      }
-                      DashboardScreen.safeNavigate(context, const SalesAnalyticsScreen());
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      decoration: BoxDecoration(
-                        color: HomeColors.cardBackground,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: HomeColors.cardBorder),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(6),
-                            decoration: BoxDecoration(
-                              color: AppColors.purple.withValues(alpha: 0.18),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: const Icon(Icons.insights_rounded, color: AppColors.purpleLight, size: 18),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Text('Sales Analytics & Reports',
-                                        style: TextStyle(color: HomeColors.textPrimary, fontSize: 13, fontWeight: FontWeight.w700)),
-                                    if (!AccountStatusStore.instance.isPremium) ...[
-                                      const SizedBox(width: 6),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                                        decoration: BoxDecoration(
-                                          color: Colors.amber.withValues(alpha: 0.18),
-                                          borderRadius: BorderRadius.circular(6),
-                                          border: Border.all(color: Colors.amber.withValues(alpha: 0.4), width: 0.8),
-                                        ),
-                                        child: const Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Icon(Icons.lock_rounded, color: Colors.amber, size: 9),
-                                            SizedBox(width: 2),
-                                            Text(
-                                              'PRO',
-                                              style: TextStyle(color: Colors.amber, fontSize: 8.5, fontWeight: FontWeight.w900),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ],
-                                ),
-                                Text('View 7-day revenue charts & top sellers',
-                                    style: TextStyle(color: HomeColors.textSecondary, fontSize: 11)),
-                              ],
-                            ),
-                          ),
-                          Icon(Icons.chevron_right_rounded, color: HomeColors.textSecondary, size: 20),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 14),
-
-                FadeSlideIn(
-                  delay: const Duration(milliseconds: 400),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: _StatCard(
-                          title: 'In stock',
-                          icon: Icons.inventory_2_rounded,
-                          badge: 'Healthy',
-                          badgeColor: HomeColors.successText,
-                          badgeBg: HomeColors.successBg,
-                          value: '${store.totalStock}',
-                          onTap: () => StoraShell.switchToTab(context, 4, alertsFilter: AlertsFilter.inStock),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _StatCard(
-                          title: 'Low stock',
-                          icon: Icons.local_fire_department_rounded,
-                          badge: 'Action',
-                          badgeColor: AppColors.error,
-                          badgeBg: HomeColors.dangerBg,
-                          value: '$lowStockCount',
-                          valueColor: lowStockCount > 0 ? AppColors.error : HomeColors.textPrimary,
-                          onTap: () => StoraShell.switchToTab(context, 4, alertsFilter: AlertsFilter.lowStock),
-                        ),
-                      ),
-                    ],
+                  child: _QuickUtilityGrid(
+                    totalStock: store.totalStock,
+                    lowStockCount: lowStockCount,
                   ),
                 ),
                 if (!AccountStatusStore.instance.isPremium) ...[
@@ -469,53 +212,38 @@ class DashboardScreen extends StatelessWidget {
                 const SizedBox(height: 22),
                 FadeSlideIn(
                   delay: const Duration(milliseconds: 600),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Container(
-                          height: 52,
-                          decoration: BoxDecoration(
-                            gradient: HomeColors.purpleGradient,
-                            borderRadius: BorderRadius.circular(14),
-                            boxShadow: HomeColors.glowShadow(AppColors.purple, opacity: 0.3),
-                          ),
-                          child: ElevatedButton.icon(
-                            onPressed: () => DashboardScreen.safeNavigate(context, const PosScreen(isStandalone: true)),
-                            icon: const Icon(Icons.point_of_sale_rounded, color: Colors.white, size: 20),
-                            label: const FittedBox(
-                              fit: BoxFit.scaleDown,
-                              child: Text('New Sale',
-                                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14)),
+                  child: Container(
+                    height: 52,
+                    decoration: BoxDecoration(
+                      gradient: HomeColors.purpleGradient,
+                      borderRadius: BorderRadius.circular(14),
+                      boxShadow: HomeColors.glowShadow(AppColors.purple, opacity: 0.3),
+                    ),
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        if (!AccountStatusStore.instance.canAddProduct) {
+                          DashboardScreen.safeNavigate(
+                            context,
+                            SubscriptionScreen(
+                              productsUsed: AccountStatusStore.instance.productCount,
+                              productsLimit: AccountStatusStore.instance.productLimit,
                             ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.transparent,
-                              shadowColor: Colors.transparent,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                            ),
-                          ),
-                        ),
+                          );
+                        } else {
+                          DashboardScreen.safeNavigate(context, const AddEditProductScreen());
+                        }
+                      },
+                      icon: const Icon(Icons.add_circle_outline_rounded, color: Colors.white, size: 20),
+                      label: const Text(
+                        'Add Product',
+                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _OutlinedAction(
-                          label: 'Add Product',
-                          icon: Icons.add_circle_outline_rounded,
-                          onPressed: () {
-                            if (!AccountStatusStore.instance.canAddProduct) {
-                              DashboardScreen.safeNavigate(
-                                context,
-                                SubscriptionScreen(
-                                  productsUsed: AccountStatusStore.instance.productCount,
-                                  productsLimit: AccountStatusStore.instance.productLimit,
-                                ),
-                              );
-                            } else {
-                              DashboardScreen.safeNavigate(context, const AddEditProductScreen());
-                            }
-                          },
-                        ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        shadowColor: Colors.transparent,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                       ),
-                    ],
+                    ),
                   ),
                 ),
               ],
@@ -524,6 +252,202 @@ class DashboardScreen extends StatelessWidget {
         ),
       );
     },
+    );
+  }
+}
+
+class _SalesGrowthHubCard extends StatelessWidget {
+  const _SalesGrowthHubCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final isPremium = AccountStatusStore.instance.isPremium;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: HomeColors.cardBackground,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: HomeColors.cardBorder,
+          width: 1,
+        ),
+        boxShadow: HomeColors.cardShadow,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFF6B00).withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.trending_up_rounded,
+                    color: Color(0xFFFF6B00),
+                    size: 16,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  'SALES & BUSINESS GROWTH',
+                  style: TextStyle(
+                    color: HomeColors.textSecondary,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.1,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Divider(height: 1, color: HomeColors.cardBorder.withValues(alpha: 0.6)),
+
+          // 1. Sales History
+          _HubItem(
+            icon: Icons.receipt_long_rounded,
+            iconColor: const Color(0xFFFF6B00),
+            title: 'Sales History',
+            subtitle: 'View past sales, cash flow & receipts',
+            onTap: () => DashboardScreen.safeNavigate(context, const SalesHistoryScreen()),
+          ),
+
+          Divider(height: 1, indent: 56, endIndent: 16, color: HomeColors.cardBorder.withValues(alpha: 0.5)),
+
+          // 2. Business Insights
+          _HubItem(
+            icon: Icons.auto_awesome_rounded,
+            iconColor: AppColors.purpleLight,
+            title: 'Business Insights',
+            subtitle: 'Fast-moving items & reorder tips',
+            onTap: () {
+              if (!isPremium) {
+                _showPremiumFeatureDialog(context, featureName: 'Business Insights');
+                return;
+              }
+              DashboardScreen.safeNavigate(context, const BusinessInsightsScreen());
+            },
+          ),
+
+          Divider(height: 1, indent: 56, endIndent: 16, color: HomeColors.cardBorder.withValues(alpha: 0.5)),
+
+          // 3. Sales Analytics (PRO)
+          _HubItem(
+            icon: Icons.insights_rounded,
+            iconColor: const Color(0xFF38BDF8),
+            title: 'Sales Analytics',
+            subtitle: 'Visual charts, peak hours & profit',
+            badge: isPremium ? null : 'PRO',
+            onTap: () {
+              if (!isPremium) {
+                _showPremiumFeatureDialog(context, featureName: 'Sales Analytics & Reports');
+                return;
+              }
+              DashboardScreen.safeNavigate(context, const SalesAnalyticsScreen());
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HubItem extends StatelessWidget {
+  final IconData icon;
+  final Color iconColor;
+  final String title;
+  final String subtitle;
+  final String? badge;
+  final VoidCallback onTap;
+
+  const _HubItem({
+    required this.icon,
+    required this.iconColor,
+    required this.title,
+    required this.subtitle,
+    this.badge,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: iconColor.withValues(alpha: 0.14),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: iconColor, size: 18),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        title,
+                        style: TextStyle(
+                          color: HomeColors.textPrimary,
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      if (badge != null) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                          decoration: BoxDecoration(
+                            color: Colors.amber.withValues(alpha: 0.18),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: Colors.amber.withValues(alpha: 0.4), width: 0.8),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.lock_rounded, color: Colors.amber, size: 8.5),
+                              const SizedBox(width: 2),
+                              Text(
+                                badge!,
+                                style: const TextStyle(
+                                  color: Colors.amber,
+                                  fontSize: 8.5,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      color: HomeColors.textSecondary,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right_rounded, color: HomeColors.textSecondary.withValues(alpha: 0.6), size: 20),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -730,538 +654,154 @@ class _EarningsCard extends StatelessWidget {
   }
 }
 
-class _UtangSummaryCard extends StatelessWidget {
-  final VoidCallback onTap;
-  const _UtangSummaryCard({required this.onTap});
+class _QuickUtilityGrid extends StatelessWidget {
+  final int totalStock;
+  final int lowStockCount;
+
+  const _QuickUtilityGrid({
+    required this.totalStock,
+    required this.lowStockCount,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: UtangStore.instance,
+    return ListenableBuilder(
+      listenable: Listenable.merge([UtangStore.instance, OwnerNotesStore.instance]),
       builder: (context, _) {
-        final store = UtangStore.instance;
-        final total = store.totalOutstanding;
-        final activeCount = store.activeRecords.length;
-        final debtorsCount = store.totalActiveDebtors;
-        final overdueCount = store.overdueRecords.length;
-        final dueSoonCount = store.dueTodayOrSoonRecords.length;
+        final utang = UtangStore.instance;
+        final notes = OwnerNotesStore.instance;
 
-        final hasOverdue = overdueCount > 0;
-        final hasDueSoon = dueSoonCount > 0;
+        // Utang data
+        final utangTotal = utang.totalOutstanding;
+        final utangDebtors = utang.totalActiveDebtors;
+        final utangOverdue = utang.overdueRecords.length;
 
-        return InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(20),
-          child: Container(
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: HomeColors.cardBackground,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: hasOverdue
-                    ? AppColors.error.withValues(alpha: 0.5)
-                    : hasDueSoon
-                        ? Colors.amber.withValues(alpha: 0.5)
-                        : Colors.amber.withValues(alpha: 0.3),
-                width: hasOverdue || hasDueSoon ? 1.5 : 1,
-              ),
-              boxShadow: HomeColors.cardShadow,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+        // Notes data
+        final activeNotesCount = notes.activeNotes.length;
+        final remindersDue = notes.remindersOverdue.length;
+        final remindersToday = notes.remindersToday.length;
+
+        return Column(
+          children: [
+            Row(
               children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.amber.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(Icons.menu_book_rounded, color: Colors.amber, size: 18),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Flexible(
-                                child: FittedBox(
-                                  fit: BoxFit.scaleDown,
-                                  alignment: Alignment.centerLeft,
-                                  child: Text(
-                                    'Customer Utang / Credit',
-                                    style: TextStyle(
-                                      color: HomeColors.textPrimary,
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
-                                decoration: BoxDecoration(
-                                  color: Colors.amber.withValues(alpha: 0.15),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: const Text(
-                                  'LISTAHAN',
-                                  style: TextStyle(
-                                    color: Colors.amber,
-                                    fontSize: 8.5,
-                                    fontWeight: FontWeight.w900,
-                                    letterSpacing: 0.4,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          Text(
-                            activeCount == 0
-                                ? 'All balances settled'
-                                : '$activeCount active loan${activeCount > 1 ? 's' : ''} · $debtorsCount customer${debtorsCount > 1 ? 's' : ''}',
-                            style: TextStyle(color: HomeColors.textSecondary, fontSize: 11),
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (hasOverdue)
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
-                        decoration: BoxDecoration(
-                          color: AppColors.error.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: AppColors.error.withValues(alpha: 0.6)),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.warning_amber_rounded, color: AppColors.error, size: 12),
-                            const SizedBox(width: 3),
-                            Text(
-                              '$overdueCount Overdue',
-                              style: const TextStyle(
-                                color: AppColors.error,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      )
-                    else if (hasDueSoon)
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
-                        decoration: BoxDecoration(
-                          color: Colors.amber.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.amber.withValues(alpha: 0.6)),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.access_time_rounded, color: Colors.amber, size: 12),
-                            const SizedBox(width: 3),
-                            Text(
-                              '$dueSoonCount Due Soon',
-                              style: const TextStyle(
-                                color: Colors.amber,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Total Collectible',
-                          style: TextStyle(color: HomeColors.textSecondary, fontSize: 11),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          '₱${total.toStringAsFixed(2)}',
-                          style: TextStyle(
-                            color: total > 0 ? Colors.amber : HomeColors.textPrimary,
-                            fontSize: 22,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: -0.5,
-                          ),
-                        ),
-                      ],
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                      decoration: BoxDecoration(
-                        color: HomeColors.cardElevated,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: HomeColors.cardBorder),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            'View Listahan',
-                            style: TextStyle(
-                              color: HomeColors.textPrimary,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          Icon(Icons.chevron_right_rounded, color: HomeColors.textSecondary, size: 16),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _OwnerNotesCard extends StatelessWidget {
-  final VoidCallback onTap;
-  const _OwnerNotesCard({required this.onTap});
-
-  String _formatReminderTime(DateTime dt) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final target = DateTime(dt.year, dt.month, dt.day);
-    final timeStr = DateFormat('h:mm a').format(dt);
-    if (target == today) return 'Today at $timeStr';
-    if (target == today.add(const Duration(days: 1))) return 'Tomorrow at $timeStr';
-    return '${DateFormat('MMM d').format(dt)} at $timeStr';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: OwnerNotesStore.instance,
-      builder: (context, _) {
-        final store = OwnerNotesStore.instance;
-        final activeNotes = store.activeNotes;
-        final remindersDue = store.remindersOverdue.length;
-        final remindersToday = store.remindersToday.length;
-
-        final hasUrgent = remindersDue > 0;
-        final hasToday = remindersToday > 0;
-
-        return InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(20),
-          child: Container(
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: HomeColors.cardBackground,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: hasUrgent
-                    ? AppColors.error.withValues(alpha: 0.5)
-                    : hasToday
-                        ? const Color(0xFFF59E0B).withValues(alpha: 0.5)
-                        : AppColors.purpleLight.withValues(alpha: 0.35),
-                width: hasUrgent || hasToday ? 1.5 : 1,
-              ),
-              boxShadow: HomeColors.cardShadow,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header row
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        gradient: HomeColors.purpleGradient,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(Icons.sticky_note_2_rounded, color: Colors.white, size: 18),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Text(
-                                'Owner Notes & Reminders',
-                                style: TextStyle(
-                                  color: HomeColors.textPrimary,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              if (hasUrgent)
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.error.withValues(alpha: 0.15),
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: Text(
-                                    '$remindersDue Overdue',
-                                    style: const TextStyle(
-                                      color: AppColors.error,
-                                      fontSize: 9.5,
-                                      fontWeight: FontWeight.w800,
-                                    ),
-                                  ),
-                                )
-                              else if (hasToday)
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFF59E0B).withValues(alpha: 0.15),
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: Text(
-                                    '$remindersToday Today',
-                                    style: const TextStyle(
-                                      color: Color(0xFFF59E0B),
-                                      fontSize: 9.5,
-                                      fontWeight: FontWeight.w800,
-                                    ),
-                                  ),
-                                )
-                              else if (activeNotes.isNotEmpty)
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.purpleLight.withValues(alpha: 0.15),
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: Text(
-                                    '${activeNotes.length} active',
-                                    style: const TextStyle(
-                                      color: AppColors.purpleLight,
-                                      fontSize: 9.5,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                          Text(
-                            'Store memos, to-dos & supplier reminders',
-                            style: TextStyle(color: HomeColors.textSecondary, fontSize: 11),
-                          ),
-                        ],
-                      ),
-                    ),
-                    // Quick + Add Note button
-                    IconButton(
-                      tooltip: 'Quick Add Note',
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                      icon: Container(
-                        padding: const EdgeInsets.all(5),
-                        decoration: BoxDecoration(
-                          color: AppColors.purpleLight.withValues(alpha: 0.12),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(Icons.add_rounded, color: AppColors.purpleLight, size: 18),
-                      ),
-                      onPressed: () {
-                        OwnerNotesScreen.showAddEditNoteSheet(context);
-                      },
-                    ),
-                    const SizedBox(width: 6),
-                    Icon(Icons.chevron_right_rounded, color: HomeColors.textSecondary, size: 20),
-                  ],
-                ),
-
-                const SizedBox(height: 12),
-
-                // Note items preview or empty state
-                if (activeNotes.isEmpty) ...[
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
-                    decoration: BoxDecoration(
-                      color: HomeColors.cardElevated,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: HomeColors.cardBorder.withValues(alpha: 0.5)),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.note_alt_outlined, color: HomeColors.textMuted, size: 18),
-                        const SizedBox(width: 8),
-                        Text(
-                          'No notes right now · Tap + to add reminder',
-                          style: TextStyle(color: HomeColors.textSecondary, fontSize: 12),
-                        ),
-                      ],
-                    ),
+                // Top-Left: Utang Ledger
+                Expanded(
+                  child: _MiniUtilityTile(
+                    icon: Icons.menu_book_rounded,
+                    iconColor: Colors.amber,
+                    title: 'Utang Ledger',
+                    value: '₱${utangTotal.toStringAsFixed(0)}',
+                    valueColor: utangTotal > 0 ? Colors.amber : HomeColors.textPrimary,
+                    subtitle: utangOverdue > 0
+                        ? '$utangOverdue overdue'
+                        : utangDebtors > 0
+                            ? '$utangDebtors debtor${utangDebtors > 1 ? 's' : ''}'
+                            : 'All settled',
+                    subtitleColor: utangOverdue > 0 ? AppColors.error : HomeColors.textMuted,
+                    badge: utangOverdue > 0 ? 'ALERT' : null,
+                    badgeColor: AppColors.error,
+                    badgeBg: AppColors.error.withValues(alpha: 0.15),
+                    onTap: () => DashboardScreen.safeNavigate(context, const UtangLedgerScreen()),
                   ),
-                ] else ...[
-                  ...activeNotes.take(3).map((note) {
-                    final isDue = note.isReminderDue;
-                    final isToday = note.isReminderToday;
-
-                    Color rColor = AppColors.purpleLight;
-                    if (isDue) {
-                      rColor = AppColors.error;
-                    } else if (isToday) {
-                      rColor = const Color(0xFFF59E0B);
-                    }
-
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: HomeColors.cardElevated,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: note.isPinned
-                              ? AppColors.purpleLight.withValues(alpha: 0.4)
-                              : HomeColors.cardBorder.withValues(alpha: 0.6),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          InkWell(
-                            onTap: () {
-                              HapticFeedback.lightImpact();
-                              store.toggleComplete(note.id);
-                            },
-                            borderRadius: BorderRadius.circular(4),
-                            child: Container(
-                              width: 18,
-                              height: 18,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(4),
-                                border: Border.all(color: HomeColors.textMuted, width: 1.5),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          if (note.isPinned) ...[
-                            Icon(Icons.push_pin_rounded, color: AppColors.purpleLight, size: 13),
-                            const SizedBox(width: 4),
-                          ],
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  note.title,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    color: HomeColors.textPrimary,
-                                    fontSize: 12.5,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                if (note.reminderDateTime != null) ...[
-                                  const SizedBox(height: 2),
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        isDue ? Icons.alarm_on_rounded : Icons.alarm_rounded,
-                                        size: 11,
-                                        color: rColor,
-                                      ),
-                                      const SizedBox(width: 3),
-                                      Text(
-                                        isDue
-                                            ? 'Overdue: ${_formatReminderTime(note.reminderDateTime!)}'
-                                            : _formatReminderTime(note.reminderDateTime!),
-                                        style: TextStyle(
-                                          color: rColor,
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
-                            decoration: BoxDecoration(
-                              color: note.categoryColor.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(5),
-                            ),
-                            child: Text(
-                              note.category,
-                              style: TextStyle(
-                                color: note.categoryColor,
-                                fontSize: 9.5,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }),
-                  if (activeNotes.length > 3)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 2),
-                      child: Center(
-                        child: Text(
-                          'View all ${activeNotes.length} notes →',
-                          style: const TextStyle(
-                            color: AppColors.purpleLight,
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
+                ),
+                const SizedBox(width: 12),
+                // Top-Right: Owner Notes
+                Expanded(
+                  child: _MiniUtilityTile(
+                    icon: Icons.sticky_note_2_rounded,
+                    iconColor: AppColors.purpleLight,
+                    title: 'Owner Notes',
+                    value: '$activeNotesCount',
+                    valueColor: HomeColors.textPrimary,
+                    subtitle: remindersDue > 0
+                        ? '$remindersDue due now'
+                        : remindersToday > 0
+                            ? '$remindersToday due today'
+                            : activeNotesCount == 0
+                                ? 'Tap to add'
+                                : 'Active memos',
+                    subtitleColor: remindersDue > 0
+                        ? AppColors.error
+                        : remindersToday > 0
+                            ? const Color(0xFFF59E0B)
+                            : HomeColors.textMuted,
+                    badge: remindersDue > 0 ? 'DUE' : null,
+                    badgeColor: AppColors.error,
+                    badgeBg: AppColors.error.withValues(alpha: 0.15),
+                    onTap: () => DashboardScreen.safeNavigate(context, const OwnerNotesScreen()),
+                  ),
+                ),
               ],
             ),
-          ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                // Bottom-Left: In-Stock Health
+                Expanded(
+                  child: _MiniUtilityTile(
+                    icon: Icons.inventory_2_rounded,
+                    iconColor: const Color(0xFF38BDF8),
+                    title: 'In Stock',
+                    value: '$totalStock',
+                    subtitle: 'Catalog items',
+                    badge: 'Healthy',
+                    badgeColor: HomeColors.successText,
+                    badgeBg: HomeColors.successBg,
+                    onTap: () => StoraShell.switchToTab(context, 1),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                // Bottom-Right: Low Stock Alert
+                Expanded(
+                  child: _MiniUtilityTile(
+                    icon: Icons.local_fire_department_rounded,
+                    iconColor: lowStockCount > 0 ? AppColors.error : const Color(0xFFFF6B00),
+                    title: 'Low Stock',
+                    value: '$lowStockCount',
+                    valueColor: lowStockCount > 0 ? AppColors.error : HomeColors.textPrimary,
+                    subtitle: lowStockCount > 0 ? 'Needs reorder' : 'All stocked up',
+                    subtitleColor: lowStockCount > 0 ? AppColors.error : HomeColors.textMuted,
+                    badge: lowStockCount > 0 ? 'Action' : null,
+                    badgeColor: AppColors.error,
+                    badgeBg: HomeColors.dangerBg,
+                    onTap: () => StoraShell.switchToTab(context, 4, alertsFilter: AlertsFilter.lowStock),
+                  ),
+                ),
+              ],
+            ),
+          ],
         );
       },
     );
   }
 }
 
-class _StatCard extends StatelessWidget {
-  final String title;
+class _MiniUtilityTile extends StatelessWidget {
   final IconData icon;
-  final String badge;
-  final Color badgeColor;
-  final Color badgeBg;
+  final Color iconColor;
+  final String title;
   final String value;
   final Color? valueColor;
-  final VoidCallback? onTap;
-  const _StatCard({
-    required this.title,
+  final String subtitle;
+  final Color? subtitleColor;
+  final String? badge;
+  final Color? badgeColor;
+  final Color? badgeBg;
+  final VoidCallback onTap;
+
+  const _MiniUtilityTile({
     required this.icon,
-    required this.badge,
-    required this.badgeColor,
-    required this.badgeBg,
+    required this.iconColor,
+    required this.title,
     required this.value,
     this.valueColor,
-    this.onTap,
+    required this.subtitle,
+    this.subtitleColor,
+    this.badge,
+    this.badgeColor,
+    this.badgeBg,
+    required this.onTap,
   });
 
   @override
@@ -1270,64 +810,88 @@ class _StatCard extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         child: Container(
-          padding: const EdgeInsets.all(18),
+          padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: HomeColors.cardBackground,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(color: HomeColors.cardBorder.withValues(alpha: 0.8)),
             boxShadow: HomeColors.cardShadow,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(7),
+                    padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
-                      color: badgeBg,
-                      borderRadius: BorderRadius.circular(10),
+                      color: iconColor.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Icon(icon, size: 16, color: badgeColor),
+                    child: Icon(icon, size: 16, color: iconColor),
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: badgeBg,
-                      borderRadius: BorderRadius.circular(20),
+                  if (badge != null)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                      decoration: BoxDecoration(
+                        color: badgeBg ?? iconColor.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        badge!,
+                        style: TextStyle(
+                          color: badgeColor ?? iconColor,
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    )
+                  else
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      color: HomeColors.textSecondary.withValues(alpha: 0.4),
+                      size: 16,
                     ),
-                    child: Text(
-                      badge,
-                      style: TextStyle(color: badgeColor, fontSize: 11, fontWeight: FontWeight.w700),
-                    ),
-                  ),
                 ],
               ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(color: HomeColors.textSecondary, fontSize: 13, fontWeight: FontWeight.w600),
-                    ),
-                  ),
-                  if (onTap != null)
-                    Icon(Icons.chevron_right_rounded, color: HomeColors.textSecondary.withValues(alpha: 0.5), size: 16),
-                ],
-              ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 10),
               FittedBox(
                 fit: BoxFit.scaleDown,
                 alignment: Alignment.centerLeft,
                 child: Text(
                   value,
-                  style: TextStyle(color: valueColor ?? HomeColors.textPrimary, fontSize: 26, fontWeight: FontWeight.w900, letterSpacing: -0.5),
+                  style: TextStyle(
+                    color: valueColor ?? HomeColors.textPrimary,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -0.4,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: HomeColors.textSecondary,
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                subtitle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: subtitleColor ?? HomeColors.textMuted,
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ],
@@ -1337,6 +901,7 @@ class _StatCard extends StatelessWidget {
     );
   }
 }
+
 
 class _FreePlanCard extends StatelessWidget {
   final int current;
@@ -1425,33 +990,6 @@ class _FreePlanCard extends StatelessWidget {
             ],
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _OutlinedAction extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final VoidCallback onPressed;
-  const _OutlinedAction({required this.label, required this.icon, required this.onPressed});
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 52,
-      child: OutlinedButton.icon(
-        onPressed: onPressed,
-        icon: Icon(icon, color: HomeColors.accentText, size: 18),
-        label: FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Text(label, style: TextStyle(color: HomeColors.accentText, fontWeight: FontWeight.w700, fontSize: 14)),
-        ),
-        style: OutlinedButton.styleFrom(
-          backgroundColor: HomeColors.cardBackground,
-          side: BorderSide(color: HomeColors.cardBorderLight),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        ),
       ),
     );
   }
@@ -1859,213 +1397,4 @@ class _MissingLocationBanner extends StatelessWidget {
 
 void _showPaymentQrDialog(BuildContext context) {
   showPaymentQrModal(context);
-}
-
-class _WalkInPaymentQrCard extends StatelessWidget {
-  final VoidCallback onTap;
-
-  const _WalkInPaymentQrCard({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final status = StoreStatusStore.instance;
-    final accounts = status.paymentAccounts;
-    final hasAnyQr = accounts.any((a) => a.hasQr) || (status.paymentQrUrl != null && status.paymentQrUrl!.isNotEmpty);
-    final hasAccounts = accounts.isNotEmpty || status.paymentPhoneNumber.isNotEmpty;
-    final isReady = hasAnyQr || hasAccounts;
-
-    final List<String> badgeLabels;
-    if (accounts.isNotEmpty) {
-      badgeLabels = accounts
-          .map((a) => a.label.trim())
-          .where((l) => l.isNotEmpty)
-          .take(3)
-          .toList();
-    } else {
-      badgeLabels = ['Online Payment', 'Bank Apps'];
-    }
-
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: HomeColors.cardBackground,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: const Color(0xFF60A5FA).withValues(alpha: 0.35),
-            width: 1.2,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF3B82F6).withValues(alpha: 0.12),
-              blurRadius: 10,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF2563EB), Color(0xFF06B6D4)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF2563EB).withValues(alpha: 0.3),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: const Icon(Icons.qr_code_2_rounded, color: Colors.white, size: 24),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    children: [
-                      Flexible(
-                        child: Text(
-                          'Payment QR Sign',
-                          style: TextStyle(
-                            color: HomeColors.textPrimary,
-                            fontSize: 13.5,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: -0.2,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: isReady
-                              ? const Color(0xFF10B981).withValues(alpha: 0.15)
-                              : const Color(0xFFF59E0B).withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(
-                            color: isReady
-                                ? const Color(0xFF10B981).withValues(alpha: 0.4)
-                                : const Color(0xFFF59E0B).withValues(alpha: 0.4),
-                            width: 0.8,
-                          ),
-                        ),
-                        child: Text(
-                          isReady ? 'READY' : 'SETUP',
-                          style: TextStyle(
-                            color: isReady ? const Color(0xFF10B981) : const Color(0xFFF59E0B),
-                            fontSize: 9,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    isReady
-                        ? (accounts.length > 1
-                            ? '${accounts.length} payment methods available'
-                            : 'Show QR to walk-in shoppers')
-                        : 'Tap to setup QR for walk-in shoppers',
-                    style: TextStyle(
-                      color: HomeColors.textSecondary,
-                      fontSize: 11.5,
-                      height: 1.25,
-                    ),
-                  ),
-                  const SizedBox(height: 5),
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: Alignment.centerLeft,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: badgeLabels.map((l) {
-                        final lower = l.toLowerCase();
-                        final color = lower.contains('gcash')
-                            ? const Color(0xFF007DFE)
-                            : lower.contains('maya')
-                                ? const Color(0xFF10B981)
-                                : const Color(0xFF6366F1);
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 5),
-                          child: _PaymentMiniBadge(l, color),
-                        );
-                      }).toList(),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-              decoration: BoxDecoration(
-                color: const Color(0xFF60A5FA).withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFF60A5FA).withValues(alpha: 0.3)),
-              ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.fullscreen_rounded, color: Color(0xFF60A5FA), size: 16),
-                  SizedBox(width: 4),
-                  Text(
-                    'Open',
-                    style: TextStyle(
-                      color: Color(0xFF60A5FA),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-
-
-class _PaymentMiniBadge extends StatelessWidget {
-  final String label;
-  final Color color;
-
-  const _PaymentMiniBadge(this.label, this.color);
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 5.5, vertical: 1.5),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: color.withValues(alpha: 0.35), width: 0.8),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: color,
-          fontSize: 9.5,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 0.1,
-        ),
-      ),
-    );
-  }
 }

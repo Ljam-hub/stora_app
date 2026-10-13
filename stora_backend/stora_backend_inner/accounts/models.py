@@ -5,6 +5,7 @@ from django.conf import settings
 from datetime import timedelta
 import secrets
 import uuid
+from api.crypto import EncryptedCharField, EncryptedTextField
 
 
 class User(AbstractUser):
@@ -310,8 +311,8 @@ class StoreLocation(models.Model):
     )
     latitude = models.FloatField(default=14.5995)
     longitude = models.FloatField(default=120.9842)
-    address = models.CharField(max_length=255, blank=True, default="")
-    payment_phone_number = models.CharField(max_length=50, blank=True, default="", help_text="Store's GCash / mobile payment number")
+    address = EncryptedCharField(max_length=255, blank=True, default="")
+    payment_phone_number = EncryptedCharField(max_length=255, blank=True, default="", help_text="Store's GCash / mobile payment number")
     payment_account_name = models.CharField(max_length=150, blank=True, default="", help_text="Store's payment receiver name")
     payment_qr_code = models.ImageField(upload_to="store_qr/", null=True, blank=True, help_text="Custom payment QR code image")
     accept_gcash_payments = models.BooleanField(default=True, help_text="Allow customers to pay via GCash / mobile payment at checkout")

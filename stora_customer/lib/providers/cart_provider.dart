@@ -38,14 +38,7 @@ class CartProvider extends ChangeNotifier {
     if (product.stock <= 0 || quantity <= 0) return false;
     if (product.ownerId == null) return false;
 
-    // Check if adding from different store
-    if (_items.isNotEmpty) {
-      final currentStore = storeId;
-      if (currentStore == null || currentStore != product.ownerId) {
-        // Will need user confirmation if from another store
-        return false;
-      }
-    }
+    // Multi-cart: items from multiple stores can coexist simultaneously
 
     if (_items.containsKey(product.id)) {
       final current = _items[product.id]!;
@@ -65,6 +58,71 @@ class CartProvider extends ChangeNotifier {
     }
     notifyListeners();
     return true;
+  }
+
+  /// Map of items grouped by store ownerId
+  Map<int, List<CartItemModel>> get itemsByStore {
+    final grouped = <int, List<CartItemModel>>{};
+    for (final item in _items.values) {
+      final sId = item.product.ownerId ?? 0;
+      grouped.putIfAbsent(sId, () => []).add(item);
+    }
+    return grouped;
+  }
+
+  /// List of distinct store IDs present in the cart
+  List<int> get storeIds => itemsByStore.keys.toList();
+
+  /// Whether the cart contains items from more than one store
+  bool get hasMultipleStores => storeIds.length > 1;
+
+  /// Items belonging to a specific store
+  List<CartItemModel> itemsForStore(int storeId) {
+    return itemsByStore[storeId] ?? [];
+  }
+
+  /// Store name for a specific storeId
+  String storeNameFor(int storeId) {
+    final storeItems = itemsByStore[storeId];
+    if (storeItems == null || storeItems.isEmpty) return 'Store';
+    final name = storeItems.first.product.storeName;
+    return (name != null && name.trim().isNotEmpty) ? name.trim() : 'Store #$storeId';
+  }
+
+  /// Total amount for a specific store
+  double totalAmountFor(int storeId) {
+    final storeItems = itemsByStore[storeId] ?? [];
+    return storeItems.fold(0.0, (sum, i) => sum + i.subtotal);
+  }
+
+  /// Formatted total for a specific store
+  String formattedTotalFor(int storeId) {
+    return '₱${totalAmountFor(storeId).toStringAsFixed(2)}';
+  }
+
+  /// Total item count for a specific store
+  int itemCountFor(int storeId) {
+    final storeItems = itemsByStore[storeId] ?? [];
+    return storeItems.fold(0, (sum, i) => sum + i.quantity);
+  }
+
+  /// Convert items of a specific store to CustomerOrderItem list for checkout
+  List<CustomerOrderItem> toOrderItemsFor(int storeId) {
+    final storeItems = itemsByStore[storeId] ?? [];
+    return storeItems.map((item) {
+      return CustomerOrderItem(
+        productId: item.product.id,
+        productName: item.product.name,
+        quantity: item.quantity,
+        unitPrice: item.product.price,
+      );
+    }).toList();
+  }
+
+  /// Remove all items belonging to a specific store
+  void clearStore(int storeId) {
+    _items.removeWhere((key, value) => (value.product.ownerId ?? 0) == storeId);
+    notifyListeners();
   }
 
   void updateQuantity(int productId, int newQuantity) {
@@ -134,8 +192,6 @@ class CartProvider extends ChangeNotifier {
   }) {
     if (clearExisting) {
       clear();
-    } else if (_items.isNotEmpty && storeId != order.ownerId) {
-      return -1;
     }
 
     final productMap = <int, ProductModel>{};

@@ -7,7 +7,6 @@ import '../../providers/cart_provider.dart';
 import '../../storage/hidden_products_store.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/navigation_guard.dart';
-import '../../widgets/cross_store_cart_dialog.dart';
 import '../../widgets/gradient_button.dart';
 import '../../widgets/product_image.dart';
 import '../../widgets/product_report_dialog.dart';
@@ -563,18 +562,6 @@ class _ProductDetailSheetState extends State<ProductDetailSheet> {
                                             duration: const Duration(milliseconds: 1500),
                                           ),
                                         );
-                                      } else if (cart.isNotEmpty && cart.storeId != product.ownerId) {
-                                        setState(() => _isActionInProgress = false);
-                                        final navigator = Navigator.of(context);
-                                        final replaced = await showCrossStoreCartDialog(
-                                          context: context,
-                                          cart: cart,
-                                          product: product,
-                                          quantity: _quantity,
-                                        );
-                                        if (replaced && mounted) {
-                                          navigator.pop();
-                                        }
                                       } else {
                                         setState(() => _isActionInProgress = false);
                                         ScaffoldMessenger.of(context).showSnackBar(

@@ -5,6 +5,7 @@ from django.db import models, transaction
 from django.utils import timezone
 from inventory.models import Product
 from sales.models import Sale, SaleItem
+from api.crypto import EncryptedCharField, EncryptedTextField
 
 
 def default_order_expiry():
@@ -47,8 +48,8 @@ class Order(models.Model):
         related_name="customer_orders",
     )
     customer_name = models.CharField(max_length=150, blank=True, default="")
-    customer_phone = models.CharField(max_length=50, blank=True, default="")
-    customer_address = models.TextField(blank=True, default="")
+    customer_phone = EncryptedCharField(max_length=255, blank=True, default="")
+    customer_address = EncryptedTextField(blank=True, default="")
     notes = models.TextField(blank=True, default="")
 
     PAYMENT_METHOD_CASH = "cash"

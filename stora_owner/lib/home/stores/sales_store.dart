@@ -90,8 +90,8 @@ class SalesStore extends ChangeNotifier {
       return sale;
     }
 
-    if (_recording || _isSyncing) {
-      throw ApiException('A sale or sync is currently in progress. Please try again in a moment.');
+    if (_recording) {
+      throw ApiException('A sale is currently being recorded. Please wait.');
     }
     _recording = true;
     Sale sale;
@@ -129,7 +129,7 @@ class SalesStore extends ChangeNotifier {
               },
             )
             .toList(),
-      });
+      }).timeout(const Duration(seconds: 4));
     } on ApiException catch (e) {
       if (e.statusCode != null && e.statusCode! < 500) {
         _recording = false;

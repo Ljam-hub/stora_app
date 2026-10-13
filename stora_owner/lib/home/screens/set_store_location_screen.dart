@@ -9,7 +9,6 @@ import '../../data/api/api_client.dart';
 import '../../stora_login/theme/app_colors.dart';
 import '../stores/store_status_store.dart';
 import '../theme/home_colors.dart';
-import 'store_payment_screen.dart';
 
 class SetStoreLocationScreen extends StatefulWidget {
   const SetStoreLocationScreen({super.key});
@@ -33,45 +32,7 @@ class _SetStoreLocationScreenState extends State<SetStoreLocationScreen> {
   String? _message;
   bool _isError = false;
 
-  // Preset location quick picks in the Philippines for easy testing/setup
-  final List<Map<String, dynamic>> _quickLocations = [
-    {
-      'label': 'Manila (City Center)',
-      'address': 'Rizal Ave, Santa Cruz, Manila, Metro Manila',
-      'lat': 14.5995,
-      'lng': 120.9842,
-    },
-    {
-      'label': 'Quezon City',
-      'address': 'Diliman, Quezon City, Metro Manila',
-      'lat': 14.6538,
-      'lng': 121.0685,
-    },
-    {
-      'label': 'Makati (Poblacion)',
-      'address': 'Poblacion, Makati, Metro Manila',
-      'lat': 14.5647,
-      'lng': 121.0336,
-    },
-    {
-      'label': 'Pasig (Kapitolyo)',
-      'address': 'Kapitolyo, Pasig, Metro Manila',
-      'lat': 14.5746,
-      'lng': 121.0583,
-    },
-    {
-      'label': 'Cebu City',
-      'address': 'Colon St, Cebu City, Cebu',
-      'lat': 10.3157,
-      'lng': 123.8854,
-    },
-    {
-      'label': 'Davao City',
-      'address': 'San Pedro St, Davao City, Davao del Sur',
-      'lat': 7.1907,
-      'lng': 125.4553,
-    },
-  ];
+
 
   @override
   void initState() {
@@ -184,17 +145,6 @@ class _SetStoreLocationScreenState extends State<SetStoreLocationScreen> {
         });
       }
     }
-  }
-
-  void _applyQuickLocation(Map<String, dynamic> loc) {
-    final newPos = LatLng(loc['lat'] as double, loc['lng'] as double);
-    setState(() {
-      _currentMapPosition = newPos;
-      _latController.text = loc['lat'].toString();
-      _lngController.text = loc['lng'].toString();
-      _addressController.text = loc['address'].toString();
-    });
-    _mapController.move(newPos, 15.0);
   }
 
   Future<void> _detectLocation() async {
@@ -652,42 +602,7 @@ class _SetStoreLocationScreenState extends State<SetStoreLocationScreen> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 20),
-
-                  // Quick City Presets
-                  Text(
-                    'QUICK PRESETS (PHILIPPINES)',
-                    style: TextStyle(
-                      color: HomeColors.textSecondary,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 1.1,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  SizedBox(
-                    height: 38,
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: _quickLocations.length,
-                      itemBuilder: (context, index) {
-                        final loc = _quickLocations[index];
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 8.0),
-                          child: ActionChip(
-                            avatar: const Icon(Icons.place_rounded, size: 14, color: AppColors.purpleLight),
-                            label: Text(loc['label'] as String),
-                            backgroundColor: HomeColors.cardBackground,
-                            side: BorderSide(color: HomeColors.cardBorder),
-                            labelStyle: TextStyle(color: HomeColors.textPrimary, fontSize: 12, fontWeight: FontWeight.w600),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                            onPressed: () => _applyQuickLocation(loc),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 22),
+                  const SizedBox(height: 12),
 
                   // Address Input
                   Text(
@@ -855,24 +770,6 @@ class _SetStoreLocationScreenState extends State<SetStoreLocationScreen> {
                         backgroundColor: AppColors.primary,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                         elevation: 0,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    height: 48,
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(builder: (_) => const StorePaymentScreen()),
-                        );
-                      },
-                      icon: const Icon(Icons.qr_code_2_rounded, size: 18),
-                      label: const Text('Configure Payment & QR Code'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: HomeColors.textPrimary,
-                        side: BorderSide(color: HomeColors.cardBorder),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                       ),
                     ),
                   ),

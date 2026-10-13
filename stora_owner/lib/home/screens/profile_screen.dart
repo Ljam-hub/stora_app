@@ -21,6 +21,7 @@ import '../stores/orders_store.dart';
 import '../stores/chat_store.dart';
 import 'owner_chat_screen.dart';
 import 'store_payment_screen.dart';
+import 'set_store_location_screen.dart';
 
 // ---------------------------------------------------------------------
 // Profile — store header (name, owner, plan pill) plus a settings
@@ -868,15 +869,37 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 20),
+
+                  // ── 🏪 1. STORE IDENTITY ────────────
+                  _buildSectionHeader('STORE IDENTITY', Icons.storefront_rounded),
                   _MenuTile(
-                    icon: Icons.lock_outline_rounded,
-                    label: 'Change password',
-                    onTap: () => _showChangePasswordDialog(context),
+                    icon: Icons.location_on_outlined,
+                    label: 'Store Physical Address & Map Pin',
+                    subtitle: 'Set GPS pin visible to customers on map',
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const SetStoreLocationScreen()),
+                      );
+                    },
+                  ),
+
+                  // ── 💳 2. PAYMENTS & BILLING ────────────
+                  _buildSectionHeader('PAYMENTS & BILLING', Icons.payments_outlined),
+                  _MenuTile(
+                    icon: Icons.qr_code_2_rounded,
+                    label: 'Store Payment & QR Code',
+                    subtitle: 'Configure customer e-wallet & payment details',
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const StorePaymentScreen()),
+                      );
+                    },
                   ),
                   _MenuTile(
                     icon: Icons.workspace_premium_outlined,
                     label: 'Subscription Plan',
+                    subtitle: 'Manage Free / Premium tier limits',
                     onTap: () {
                       final proof = account.latestPaymentProof;
                       if (proof != null && (proof.isPending || proof.isRejected)) {
@@ -910,22 +933,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   _MenuTile(
                     icon: Icons.receipt_long_rounded,
                     label: 'Past Subscription Receipts',
+                    subtitle: 'View billing history & payment proofs',
                     onTap: () => PastReceiptsSheet.show(context),
                   ),
-                  _MenuTile(
-                    icon: Icons.qr_code_2_rounded,
-                    label: 'Store Payment & QR Code',
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const StorePaymentScreen()),
-                      );
-                    },
-                  ),
-                  _MenuTile(
-                    icon: Icons.support_agent_rounded,
-                    label: 'Contact STORA Support',
-                    onTap: _openSupportChat,
-                  ),
+
+                  // ── ⚙️ 3. STORE PREFERENCES ────────────
+                  _buildSectionHeader('STORE PREFERENCES', Icons.tune_rounded),
                   // ── Store Online / Offline toggle ────────────
                   AnimatedBuilder(
                     animation: StoreStatusStore.instance,
@@ -1120,6 +1133,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       );
                     },
                   ),
+                  // ── 🛡️ 4. SECURITY & COMPLIANCE ────────────
+                  _buildSectionHeader('SECURITY & COMPLIANCE', Icons.shield_outlined),
+                  _MenuTile(
+                    icon: Icons.lock_outline_rounded,
+                    label: 'Change Password',
+                    subtitle: 'Update account login credentials',
+                    onTap: () => _showChangePasswordDialog(context),
+                  ),
+                  _MenuTile(
+                    icon: Icons.gavel_rounded,
+                    label: 'Cyber Security & Data Privacy',
+                    subtitle: 'RA 10175 & RA 10173 compliance notice',
+                    onTap: () => _showCyberSecurityNotice(context),
+                  ),
+                  _MenuTile(
+                    icon: Icons.support_agent_rounded,
+                    label: 'Contact STORA Support',
+                    subtitle: 'Chat with our platform support team',
+                    onTap: _openSupportChat,
+                  ),
+
+                  // ── 🚪 5. ACCOUNT ────────────
+                  _buildSectionHeader('ACCOUNT', Icons.person_outline_rounded),
                   _MenuTile(
                     icon: Icons.logout_rounded,
                     label: 'Log out',
@@ -1346,14 +1382,211 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
     );
   }
+  Widget _buildSectionHeader(String title, IconData icon) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 18, 4, 10),
+      child: Row(
+        children: [
+          Icon(icon, size: 14, color: HomeColors.textSecondary),
+          const SizedBox(width: 8),
+          Text(
+            title,
+            style: TextStyle(
+              color: HomeColors.textSecondary,
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1.1,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showCyberSecurityNotice(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => DraggableScrollableSheet(
+        initialChildSize: 0.78,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        builder: (_, scrollController) => Container(
+          decoration: BoxDecoration(
+            color: HomeColors.cardBackground,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            border: Border.all(color: HomeColors.cardBorder),
+          ),
+          child: Column(
+            children: [
+              Container(
+                margin: const EdgeInsets.only(top: 12, bottom: 8),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: HomeColors.textSecondary.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Expanded(
+                child: ListView(
+                  controller: scrollController,
+                  padding: const EdgeInsets.fromLTRB(22, 12, 22, 28),
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: AppColors.purple.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(Icons.gavel_rounded, color: AppColors.purpleLight, size: 24),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Cyber Security & Privacy',
+                                style: TextStyle(
+                                  color: HomeColors.textPrimary,
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              Text(
+                                'Philippine Legal Framework & Protections',
+                                style: TextStyle(
+                                  color: HomeColors.textSecondary,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 18),
+                    _buildLegalCard(
+                      icon: Icons.shield_outlined,
+                      title: 'Republic Act No. 10175',
+                      subtitle: 'Cybercrime Prevention Act of 2012',
+                      description:
+                          'STORA strictly safeguards store owners and customers against illegal access, data tampering, digital forgery, identity theft, and fraudulent transactions. All network traffic is encrypted via TLS 1.3, and all security incidents are logged and prosecuted in full compliance with Philippine cyber law.',
+                    ),
+                    const SizedBox(height: 12),
+                    _buildLegalCard(
+                      icon: Icons.privacy_tip_outlined,
+                      title: 'Republic Act No. 10173',
+                      subtitle: 'Data Privacy Act of 2012 (DPA)',
+                      description:
+                          'Your retail transaction records, utang ledgers, phone numbers, and payment details are strictly confidential. Stora enforces end-to-end data isolation: the platform control panel automatically masks personal identifiable information (PII), customer chats and verification codes are completely shielded, and payment QR codes remain tamper-proof.',
+                    ),
+                    const SizedBox(height: 12),
+                    _buildLegalCard(
+                      icon: Icons.lock_outline_rounded,
+                      title: 'Zero Exploitation Guarantee',
+                      subtitle: 'Privacy By Design',
+                      description:
+                          '• Customer peer chats are private and hidden from administrative control panels.\n'
+                          '• Email verification codes bypass public view to prevent intercept attacks.\n'
+                          '• Store locations and payment accounts are encrypted at rest and in transit.\n'
+                          '• Store owners retain full rights to export or delete their store data at any time.',
+                    ),
+                    const SizedBox(height: 20),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      ),
+                      onPressed: () => Navigator.pop(ctx),
+                      child: const Text('Understood & Acknowledged', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLegalCard({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required String description,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: HomeColors.cardElevated,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: HomeColors.cardBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 18, color: AppColors.purpleLight),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    color: HomeColors.textPrimary,
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 2),
+          Text(
+            subtitle,
+            style: TextStyle(
+              color: HomeColors.textSecondary,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            description,
+            style: TextStyle(
+              color: HomeColors.textSecondary,
+              fontSize: 12,
+              height: 1.45,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _MenuTile extends StatelessWidget {
   final IconData icon;
   final String label;
+  final String? subtitle;
   final VoidCallback onTap;
   final bool destructive;
-  const _MenuTile({required this.icon, required this.label, required this.onTap, this.destructive = false});
+
+  const _MenuTile({
+    required this.icon,
+    required this.label,
+    this.subtitle,
+    required this.onTap,
+    this.destructive = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1362,12 +1595,12 @@ class _MenuTile extends StatelessWidget {
     final iconColor = destructive ? AppColors.error : AppColors.purpleLight;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(bottom: 10),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
           decoration: BoxDecoration(
             color: HomeColors.cardBackground,
             borderRadius: BorderRadius.circular(16),
@@ -1386,9 +1619,18 @@ class _MenuTile extends StatelessWidget {
               ),
               const SizedBox(width: 14),
               Expanded(
-                child: Text(label, style: TextStyle(color: color, fontSize: 14, fontWeight: FontWeight.w700)),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(label, style: TextStyle(color: color, fontSize: 13.5, fontWeight: FontWeight.w700)),
+                    if (subtitle != null) ...[
+                      const SizedBox(height: 2),
+                      Text(subtitle!, style: TextStyle(color: HomeColors.textSecondary, fontSize: 11)),
+                    ],
+                  ],
+                ),
               ),
-              if (!destructive) Icon(Icons.chevron_right_rounded, size: 18, color: HomeColors.textSecondary),
+              if (!destructive) Icon(Icons.chevron_right_rounded, size: 18, color: HomeColors.textSecondary.withValues(alpha: 0.6)),
             ],
           ),
         ),

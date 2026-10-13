@@ -22,6 +22,28 @@ from .models import (
 )
 
 
+def mask_email(email):
+    """Mask email for privacy protection in control panel (e.g. j***e@domain.com)."""
+    if not email or "@" not in email:
+        return email or "—"
+    name, domain = email.split("@", 1)
+    if len(name) <= 2:
+        masked_name = name[0] + "*"
+    else:
+        masked_name = name[0] + ("*" * (len(name) - 2)) + name[-1]
+    return f"{masked_name}@{domain}"
+
+
+def mask_phone(phone):
+    """Mask phone number for privacy protection in control panel."""
+    if not phone:
+        return "—"
+    phone_str = str(phone).strip()
+    if len(phone_str) <= 4:
+        return "****"
+    return phone_str[:2] + ("*" * max(1, len(phone_str) - 6)) + phone_str[-4:]
+
+
 @admin.register(User, site=stora_admin_site)
 class UserAdmin(DjangoUserAdmin):
     fieldsets = DjangoUserAdmin.fieldsets + (
@@ -30,7 +52,7 @@ class UserAdmin(DjangoUserAdmin):
         ("Moderation & App Access", {"fields": ("is_blocked", "block_reason")}),
     )
     list_display = (
-        "email",
+        "masked_email_display",
         "owner_customer_name",
         "role_badge",
         "account_status_badge",
@@ -39,10 +61,14 @@ class UserAdmin(DjangoUserAdmin):
         "subscription_expiration",
         "formatted_last_login",
     )
-    list_display_links = ("email", "owner_customer_name")
+    list_display_links = ("masked_email_display", "owner_customer_name")
     search_fields = ("username", "email", "business_name", "first_name", "last_name")
     list_filter = ("role", "is_blocked", "is_email_verified", "is_premium", "is_staff", "is_active")
     actions = ["block_selected_users", "unblock_selected_users"]
+
+    @admin.display(description="Email (Protected)", ordering="email")
+    def masked_email_display(self, obj):
+        return mask_email(obj.email)
 
     @admin.display(description="Verified", boolean=True, ordering="is_email_verified")
     def is_email_verified(self, obj):
@@ -364,7 +390,7 @@ class PaymentProofAdmin(admin.ModelAdmin):
             "Submitted Date",
             "Store Owner / Email",
             "Business Name",
-            "GCash Reference #",
+            "Payment Reference #",
             "Amount (PHP)",
             "Status",
             "Reviewed Date",
@@ -404,10 +430,18 @@ class PaymentProofAdmin(admin.ModelAdmin):
 
 @admin.register(SubscriptionConfig, site=stora_admin_site)
 class SubscriptionConfigAdmin(admin.ModelAdmin):
-    list_display = ("monthly_price", "gcash_number", "gcash_name", "qr_code_display", "updated_at")
+    list_display = ("monthly_price", "payment_number_col", "payment_name_col", "qr_code_display", "updated_at")
     fields = ("monthly_price", "gcash_number", "gcash_name", "qr_code")
 
-    @admin.display(description="GCash QR Code")
+    @admin.display(description="Payment / E-Wallet Number")
+    def payment_number_col(self, obj):
+        return obj.gcash_number or "—"
+
+    @admin.display(description="Account Name")
+    def payment_name_col(self, obj):
+        return obj.gcash_name or "—"
+
+    @admin.display(description="Payment QR Code")
     def qr_code_display(self, obj):
         if obj.qr_code:
             return format_html(
@@ -421,67 +455,22 @@ class SubscriptionConfigAdmin(admin.ModelAdmin):
     def has_add_permission(self, request):
         return not SubscriptionConfig.objects.exists()
 
-@admin.register(StoreLocation, site=stora_admin_site)
-class StoreLocationAdmin(admin.ModelAdmin):
-    list_display = (
-        "business_name_col",
-        "owner",
-        "address",
-        "latitude",
-        "longitude",
-        "is_open",
-        "is_visible",
-        "updated_at",
-    )
-    search_fields = ("owner__email", "owner__business_name", "address")
-    list_select_related = ("owner",)
-    list_filter = ("is_open", "is_visible", "updated_at")
-    fieldsets = (
-        ("Store Identity", {
-            "fields": ("owner", "is_open", "is_visible", "accept_gcash_payments")
-        }),
-        ("Location & Map Coordinates", {
-            "fields": ("address", "latitude", "longitude")
-        }),
-    )
-
-    @admin.display(description="Business Name", ordering="owner__business_name")
-    def business_name_col(self, obj):
-        return obj.owner.business_name or "—"
-
-
-class HasQRCodeFilter(admin.SimpleListFilter):
-    title = "QR Code Uploaded"
-    parameter_name = "has_qr"
-
-    def lookups(self, request, model_admin):
-        return (
-            ("yes", "With QR Code"),
-            ("no", "Without QR Code"),
-        )
-
-    def queryset(self, request, queryset):
-        if self.value() == "yes":
-            return queryset.exclude(payment_qr_code="").exclude(payment_qr_code__isnull=True)
-        if self.value() == "no":
-            return queryset.filter(Q(payment_qr_code="") | Q(payment_qr_code__isnull=True))
-        return queryset
+# StoreLocation is deliberately NOT registered in the admin control panel
+# to protect merchant physical privacy. Mobile store map & discovery APIs remain fully active.
 
 
 @admin.register(StorePaymentMethod, site=stora_admin_site)
 class StorePaymentMethodAdmin(admin.ModelAdmin):
     list_display = (
-        "qr_code_display",
         "business_name_col",
         "owner_email_col",
         "payment_phone_number_col",
         "payment_account_name_col",
-        "gcash_status_badge",
-        "qr_status_badge",
+        "online_payment_status_badge",
         "store_status_badge",
         "updated_at",
     )
-    list_display_links = ("qr_code_display", "business_name_col")
+    list_display_links = ("business_name_col",)
     search_fields = (
         "owner__email",
         "owner__business_name",
@@ -489,15 +478,13 @@ class StorePaymentMethodAdmin(admin.ModelAdmin):
         "payment_account_name",
     )
     list_select_related = ("owner",)
-    list_filter = (HasQRCodeFilter, "accept_gcash_payments", "is_open", "is_visible")
-    readonly_fields = ("qr_code_preview", "updated_at")
+    list_filter = ("accept_gcash_payments", "is_open", "is_visible")
+    readonly_fields = ("updated_at",)
     fields = (
         "owner",
         "accept_gcash_payments",
         "payment_phone_number",
         "payment_account_name",
-        "payment_qr_code",
-        "qr_code_preview",
         "updated_at",
     )
 
@@ -507,10 +494,10 @@ class StorePaymentMethodAdmin(admin.ModelAdmin):
 
     @admin.display(description="Owner Email", ordering="owner__email")
     def owner_email_col(self, obj):
-        return obj.owner.email
+        return mask_email(obj.owner.email)
 
-    @admin.display(description="GCash Checkout", ordering="accept_gcash_payments")
-    def gcash_status_badge(self, obj):
+    @admin.display(description="Online Payment (E-Wallet)", ordering="accept_gcash_payments")
+    def online_payment_status_badge(self, obj):
         if obj.accept_gcash_payments:
             return format_html(
                 '<span style="background: rgba(16, 185, 129, 0.18); color: #34d399; border: 1px solid rgba(52, 211, 153, 0.4); padding: 3px 8px; border-radius: 6px; font-weight: 700; font-size: 11px;">Enabled</span>'
@@ -519,12 +506,12 @@ class StorePaymentMethodAdmin(admin.ModelAdmin):
             '<span style="background: rgba(245, 158, 11, 0.18); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); padding: 3px 8px; border-radius: 6px; font-weight: 700; font-size: 11px;">Paused (Cash Only)</span>'
         )
 
-    @admin.display(description="GCash Number")
+    @admin.display(description="Payment Number")
     def payment_phone_number_col(self, obj):
         if obj.payment_phone_number:
             return format_html(
                 '<span style="font-weight: 700; color: #ffffff; letter-spacing: 0.5px;">{}</span>',
-                obj.payment_phone_number,
+                mask_phone(obj.payment_phone_number),
             )
         return format_html('<span style="color: #f87171; font-style: italic; font-size: 11px;">Not configured</span>')
 
@@ -533,31 +520,6 @@ class StorePaymentMethodAdmin(admin.ModelAdmin):
         if obj.payment_account_name:
             return obj.payment_account_name
         return format_html('<span style="color: #888888; font-style: italic;">—</span>')
-
-    @admin.display(description="QR Code")
-    def qr_code_display(self, obj):
-        if obj.payment_qr_code:
-            try:
-                url = obj.payment_qr_code.url
-                return format_html(
-                    '<a href="{0}" target="_blank" title="Click to view full QR code">'
-                    '<img src="{0}" style="height: 48px; width: 48px; object-fit: contain; border-radius: 6px; border: 1px solid #FF6B00; background: #fff; padding: 2px; box-shadow: 0 2px 6px rgba(0,0,0,0.3);" />'
-                    '</a>',
-                    url,
-                )
-            except Exception:
-                pass
-        return format_html('<span style="color: #f87171; font-style: italic; font-size: 11px;">No QR</span>')
-
-    @admin.display(description="QR Status")
-    def qr_status_badge(self, obj):
-        if obj.payment_qr_code:
-            return format_html(
-                '<span style="background: rgba(16, 185, 129, 0.18); color: #34d399; border: 1px solid rgba(52, 211, 153, 0.4); padding: 3px 8px; border-radius: 6px; font-weight: 700; font-size: 11px;">Active</span>'
-            )
-        return format_html(
-            '<span style="background: rgba(239, 68, 68, 0.18); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); padding: 3px 8px; border-radius: 6px; font-weight: 700; font-size: 11px;">Missing QR</span>'
-        )
 
     @admin.display(description="Store Status")
     def store_status_badge(self, obj):
@@ -568,22 +530,6 @@ class StorePaymentMethodAdmin(admin.ModelAdmin):
         return format_html(
             '<span style="color: #f87171; font-weight: 600; font-size: 12px;">○ Closed</span>'
         )
-
-    @admin.display(description="Current QR Code Preview")
-    def qr_code_preview(self, obj):
-        if obj.payment_qr_code:
-            try:
-                url = obj.payment_qr_code.url
-                return format_html(
-                    '<div style="margin-top: 6px;">'
-                    '<a href="{0}" target="_blank">'
-                    '<img src="{0}" style="max-height: 240px; max-width: 240px; object-fit: contain; border-radius: 10px; border: 2px solid #FF6B00; background: #fff; padding: 6px; box-shadow: 0 4px 14px rgba(0,0,0,0.4);" />'
-                    '</a><br><small style="color: #94a3b8; display: inline-block; margin-top: 4px;">Click image to view full-resolution</small></div>',
-                    url,
-                )
-            except Exception:
-                pass
-        return format_html('<span style="color: #94a3b8; font-style: italic;">No QR code uploaded yet</span>')
 
 
 @admin.register(AIInsight, site=stora_admin_site)
@@ -682,50 +628,11 @@ class AIInsightAdmin(admin.ModelAdmin):
 BusinessInsightAdmin = AIInsightAdmin
 
 
-@admin.register(EmailVerificationCode, site=stora_admin_site)
-class EmailVerificationCodeAdmin(admin.ModelAdmin):
-    list_display = ("user", "owner_customer_name", "code", "created_at", "expires_at", "used", "is_valid_display")
-    search_fields = ("user__email", "user__username", "user__business_name", "code")
-    list_filter = ("used", "created_at")
+# EmailVerificationCode and PendingRegistration are deliberately NOT registered in
+# the admin control panel to protect verification security and user privacy.
+# All registration and verification endpoints (/api/auth/verify-email/, /api/auth/resend-code/)
+# continue to work completely without control panel exposure.
 
-    @admin.display(description="Owner/Customer Name")
-    def owner_customer_name(self, obj):
-        user = obj.user
-        if not user:
-            return "—"
-        if getattr(user, "role", "") == "owner":
-            return user.business_name or f"{user.first_name} {user.last_name}".strip() or user.username
-        elif getattr(user, "role", "") == "customer":
-            return f"{user.first_name} {user.last_name}".strip() or user.business_name or user.username
-        return f"{user.first_name} {user.last_name}".strip() or user.username or "Admin"
-
-    @admin.display(description="Valid?", boolean=True)
-    def is_valid_display(self, obj):
-        return obj.is_valid()
-
-
-@admin.register(PendingRegistration, site=stora_admin_site)
-class PendingRegistrationAdmin(admin.ModelAdmin):
-    list_display = ("email", "role_badge", "owner_customer_name", "code", "created_at", "expires_at", "is_valid_display")
-    search_fields = ("email", "business_name", "first_name", "last_name", "code")
-    list_filter = ("role", "created_at")
-
-    @admin.display(description="Role")
-    def role_badge(self, obj):
-        from django.utils.html import format_html
-        if obj.role == "owner":
-            return format_html('<span class="user-badge user-badge--owner">Store Owner (Pending)</span>')
-        return format_html('<span class="user-badge user-badge--customer">Customer (Pending)</span>')
-
-    @admin.display(description="Owner/Customer Name")
-    def owner_customer_name(self, obj):
-        if obj.role == "owner":
-            return obj.business_name or f"{obj.first_name} {obj.last_name}".strip() or "—"
-        return f"{obj.first_name} {obj.last_name}".strip() or "—"
-
-    @admin.display(description="Valid?", boolean=True)
-    def is_valid_display(self, obj):
-        return obj.is_valid()
 
 
 

@@ -6,7 +6,6 @@ import '../models/product_model.dart';
 import '../providers/cart_provider.dart';
 import '../storage/hidden_products_store.dart';
 import '../theme/app_theme.dart';
-import 'cross_store_cart_dialog.dart';
 import 'product_report_dialog.dart';
 
 class ProductCard extends StatelessWidget {
@@ -366,14 +365,7 @@ class ProductCard extends StatelessWidget {
                                 HapticFeedback.lightImpact();
                                 final cart = context.read<CartProvider>();
                                 final added = cart.addItem(product, 1);
-                                if (!added && cart.isNotEmpty && cart.storeId != product.ownerId) {
-                                  await showCrossStoreCartDialog(
-                                    context: context,
-                                    cart: cart,
-                                    product: product,
-                                    quantity: 1,
-                                  );
-                                } else if (!added) {
+                                if (!added) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
                                       content: Text('Maximum available stock reached.'),

@@ -26,6 +26,7 @@ class CartScreen extends StatefulWidget {
 }
 
 class _CartScreenState extends State<CartScreen> {
+  int? _selectedStoreId;
   bool _isNavigatingToCheckout = false;
   bool _hasAttemptedStoreFetch = false;
 
@@ -85,16 +86,29 @@ class _CartScreenState extends State<CartScreen> {
     final auth = context.watch<AuthProvider>();
     final savedAddress = auth.savedAddress;
 
-    final storeOwnerId = cart.storeId;
-    if (storeOwnerId != null && catalog.stores.isEmpty && !catalog.isLoading && !_hasAttemptedStoreFetch) {
+    final storeIds = cart.storeIds;
+    int? activeStoreId = _selectedStoreId;
+    if (activeStoreId == null || !storeIds.contains(activeStoreId)) {
+      activeStoreId = storeIds.firstOrNull;
+    }
+
+    final effectiveStoreId = activeStoreId ?? cart.storeId;
+    if (effectiveStoreId != null && catalog.stores.isEmpty && !catalog.isLoading && !_hasAttemptedStoreFetch) {
       _hasAttemptedStoreFetch = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         catalog.fetchStores();
       });
     }
-    final currentStore = catalog.stores.where((s) => s.id == storeOwnerId).firstOrNull ??
-        (catalog.selectedStore?.id == storeOwnerId ? catalog.selectedStore : null);
+    final currentStore = catalog.stores.where((s) => s.id == effectiveStoreId).firstOrNull ??
+        (catalog.selectedStore?.id == effectiveStoreId ? catalog.selectedStore : null);
     final isStoreClosed = currentStore != null && !currentStore.isOpen;
+
+    final activeStoreName = activeStoreId != null ? cart.storeNameFor(activeStoreId) : (cart.storeName ?? '');
+    final activeStoreCount = activeStoreId != null ? cart.itemCountFor(activeStoreId) : cart.totalItemCount;
+    final activeStoreTotal = activeStoreId != null ? cart.formattedTotalFor(activeStoreId) : cart.formattedTotal;
+    final displayedItems = (cart.hasMultipleStores && activeStoreId != null)
+        ? cart.itemsForStore(activeStoreId)
+        : cart.items;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -119,13 +133,24 @@ class _CartScreenState extends State<CartScreen> {
                   context: context,
                   builder: (ctx) => AlertDialog(
                     backgroundColor: AppColors.cardBackground,
-                    title: const Text('Clear Cart?'),
-                    content: const Text('Are you sure you want to remove all items from your cart?'),
+                    title: Text(cart.hasMultipleStores ? 'Clear Items?' : 'Clear Cart?'),
+                    content: Text(cart.hasMultipleStores
+                        ? 'Clear items from $activeStoreName or clear all stores?'
+                        : 'Are you sure you want to remove all items from your cart?'),
                     actions: [
                       TextButton(
                         onPressed: () => Navigator.pop(ctx),
                         child: Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
                       ),
+                      if (cart.hasMultipleStores && activeStoreId != null)
+                        TextButton(
+                          onPressed: () {
+                            HapticFeedback.mediumImpact();
+                            cart.clearStore(activeStoreId!);
+                            Navigator.pop(ctx);
+                          },
+                          child: Text('Clear $activeStoreName', style: const TextStyle(color: AppColors.danger)),
+                        ),
                       TextButton(
                         onPressed: () {
                           HapticFeedback.mediumImpact();
@@ -152,8 +177,91 @@ class _CartScreenState extends State<CartScreen> {
             )
           : Column(
               children: [
-                // Store banner
-                if (cart.storeName != null && cart.storeName!.isNotEmpty)
+                // Multi-Store Tabs (Horizontal Store Switcher)
+                if (cart.hasMultipleStores)
+                  Container(
+                    height: 44,
+                    margin: const EdgeInsets.fromLTRB(16, 10, 16, 4),
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: storeIds.length,
+                      separatorBuilder: (_, _) => const SizedBox(width: 8),
+                      itemBuilder: (context, idx) {
+                        final sId = storeIds[idx];
+                        final isSelected = sId == activeStoreId;
+                        final sName = cart.storeNameFor(sId);
+                        final count = cart.itemCountFor(sId);
+                        return InkWell(
+                          onTap: () {
+                            HapticFeedback.selectionClick();
+                            setState(() => _selectedStoreId = sId);
+                          },
+                          borderRadius: BorderRadius.circular(22),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: isSelected ? AppColors.primary : AppColors.cardElevated,
+                              borderRadius: BorderRadius.circular(22),
+                              border: Border.all(
+                                color: isSelected ? AppColors.primary : AppColors.cardBorderLight,
+                                width: isSelected ? 1.5 : 1,
+                              ),
+                              boxShadow: isSelected
+                                  ? [
+                                      BoxShadow(
+                                        color: AppColors.primary.withValues(alpha: 0.3),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ]
+                                  : null,
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.storefront_rounded,
+                                  size: 15,
+                                  color: isSelected ? Colors.white : AppColors.primary,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  sName,
+                                  style: TextStyle(
+                                    color: isSelected ? Colors.white : AppColors.textPrimary,
+                                    fontSize: 12.5,
+                                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                                  decoration: BoxDecoration(
+                                    color: isSelected
+                                        ? Colors.white.withValues(alpha: 0.25)
+                                        : AppColors.primary.withValues(alpha: 0.12),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Text(
+                                    '$count',
+                                    style: TextStyle(
+                                      color: isSelected ? Colors.white : AppColors.primary,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+
+                // Single Store Banner (only when single store)
+                if (!cart.hasMultipleStores && cart.storeName != null && cart.storeName!.isNotEmpty)
                   Container(
                     width: double.infinity,
                     margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
@@ -183,7 +291,7 @@ class _CartScreenState extends State<CartScreen> {
                 Container(
                   margin: EdgeInsets.fromLTRB(
                     16,
-                    (cart.storeName != null && cart.storeName!.isNotEmpty) ? 0 : 8,
+                    (!cart.hasMultipleStores && cart.storeName != null && cart.storeName!.isNotEmpty) ? 0 : 8,
                     16,
                     8,
                   ),
@@ -258,13 +366,40 @@ class _CartScreenState extends State<CartScreen> {
                   ),
                 ),
 
+                // Multi-store active store summary bar
+                if (cart.hasMultipleStores && activeStoreId != null)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Items from $activeStoreName ($activeStoreCount)',
+                          style: TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        Text(
+                          activeStoreTotal,
+                          style: TextStyle(
+                            color: AppColors.textPrimary,
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
                 // Item List
                 Expanded(
                   child: ListView.builder(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    itemCount: cart.items.length,
+                    itemCount: displayedItems.length,
                     itemBuilder: (context, index) {
-                      final item = cart.items[index];
+                      final item = displayedItems[index];
                       return CartItemTile(
                         item: item,
                         onIncrement: () {
@@ -320,11 +455,13 @@ class _CartScreenState extends State<CartScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'Subtotal (${cart.totalItemCount} items)',
-                          style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+                          cart.hasMultipleStores
+                              ? '$activeStoreName Subtotal ($activeStoreCount ${activeStoreCount == 1 ? 'item' : 'items'})'
+                              : 'Subtotal ($activeStoreCount ${activeStoreCount == 1 ? 'item' : 'items'})',
+                          style: TextStyle(color: AppColors.textSecondary, fontSize: 13.5),
                         ),
                         Text(
-                          cart.formattedTotal,
+                          activeStoreTotal,
                           style: TextStyle(
                             color: AppColors.textPrimary,
                             fontSize: 18,
@@ -349,7 +486,7 @@ class _CartScreenState extends State<CartScreen> {
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                'This store is currently closed. Checkout is paused until the store reopens.',
+                                '$activeStoreName is currently closed. Checkout is paused until the store reopens.',
                                 style: TextStyle(color: AppColors.danger, fontSize: 12, fontWeight: FontWeight.w600),
                               ),
                             ),
@@ -358,7 +495,11 @@ class _CartScreenState extends State<CartScreen> {
                       ),
                     GradientButton(
                       key: const Key('cart_checkout_button'),
-                      text: isStoreClosed ? 'Store is Currently Closed' : 'Proceed to Checkout',
+                      text: isStoreClosed
+                          ? 'Store is Currently Closed'
+                          : (cart.hasMultipleStores
+                              ? 'Checkout from $activeStoreName ($activeStoreTotal)'
+                              : 'Proceed to Checkout'),
                       icon: isStoreClosed ? Icons.lock_outline_rounded : Icons.arrow_forward_rounded,
                       isLoading: _isNavigatingToCheckout,
                       onPressed: (isStoreClosed || _isNavigatingToCheckout)
@@ -370,6 +511,7 @@ class _CartScreenState extends State<CartScreen> {
                                 context,
                                 MaterialPageRoute(
                                   builder: (_) => CheckoutScreen(
+                                    targetStoreId: effectiveStoreId,
                                     onOrderPlaced: widget.onOrderPlaced,
                                   ),
                                 ),
@@ -379,6 +521,17 @@ class _CartScreenState extends State<CartScreen> {
                               }
                             },
                     ),
+                    if (cart.hasMultipleStores && storeIds.length > 1) ...[
+                      const SizedBox(height: 10),
+                      Text(
+                        'You also have items in ${storeIds.length - 1} other store${storeIds.length - 1 > 1 ? 's' : ''}. Switch tabs above to check out separately.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: AppColors.textMuted,
+                          fontSize: 11.5,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),

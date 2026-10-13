@@ -160,7 +160,11 @@ class OrdersStore extends ChangeNotifier {
           ..['status'] = 'completed';
       }
 
-      unawaited(fetchOrders(isSilent: true));
+      unawaited(Future.wait([
+        SalesStore.instance.loadSales(),
+        InventoryStore.instance.loadProducts(),
+        fetchOrders(isSilent: true),
+      ]));
     } catch (e) {
       _error = e.toString();
       rethrow;

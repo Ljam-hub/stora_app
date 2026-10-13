@@ -7,28 +7,21 @@ from stora_backend.admin_site import stora_admin_site
 from .models import ChatMessage, BlockedCustomer, UserReport
 
 
-@admin.register(ChatMessage, site=stora_admin_site)
-class ChatMessageAdmin(admin.ModelAdmin):
-    list_display = ("id", "sender", "recipient", "order_link", "message_preview", "has_image", "is_read", "created_at")
-    list_filter = ("is_read", "created_at")
-    search_fields = ("sender__email", "recipient__email", "message")
-    readonly_fields = ("created_at",)
+# ChatMessage is deliberately NOT registered in the admin control panel
+# to protect the privacy and confidentiality of store owners and customers.
+# All chat messaging REST APIs continue to operate normally for mobile users.
 
-    @admin.display(description="Order")
-    def order_link(self, obj):
-        if obj.order_id:
-            return f"Order #{obj.order_id}"
-        return "—"
 
-    @admin.display(description="Message Preview")
-    def message_preview(self, obj):
-        if obj.message:
-            return obj.message[:60] + ("..." if len(obj.message) > 60 else "")
-        return "—"
-
-    @admin.display(description="Photo?", boolean=True)
-    def has_image(self, obj):
-        return bool(obj.image)
+def mask_email(email):
+    """Mask email for privacy protection in control panel (e.g. j***e@domain.com)."""
+    if not email or "@" not in email:
+        return email or "—"
+    name, domain = email.split("@", 1)
+    if len(name) <= 2:
+        masked_name = name[0] + "*"
+    else:
+        masked_name = name[0] + ("*" * (len(name) - 2)) + name[-1]
+    return f"{masked_name}@{domain}"
 
 
 @admin.register(BlockedCustomer, site=stora_admin_site)
@@ -142,7 +135,7 @@ class BlockedCustomerAdmin(admin.ModelAdmin):
             return format_html(
                 '<span style="color: #8bd3ca; font-weight: 700;">🏪 {}</span> <span style="color: #8bd3ca; font-size: 11px;">({})</span>',
                 name,
-                obj.owner.email,
+                mask_email(obj.owner.email),
             )
         return format_html('<span style="color: #9ca3af; font-style: italic;">All Stores (Global)</span>')
 
@@ -153,7 +146,7 @@ class BlockedCustomerAdmin(admin.ModelAdmin):
             return format_html(
                 '<span style="color: #8bd3ca; font-weight: 700;">👤 {}</span> <span style="color: #8bd3ca; font-size: 11px;">({})</span>',
                 name,
-                obj.customer.email,
+                mask_email(obj.customer.email),
             )
         return format_html('<span style="color: #9ca3af; font-style: italic;">All Customers (Global)</span>')
 

@@ -72,9 +72,9 @@ class _StoraShellState extends State<StoraShell> with WidgetsBindingObserver {
     super.initState();
     _screens = const [
       DashboardScreen(),
-      OwnerChatScreen(isTab: true),
       InventoryListScreen(),
       PosScreen(),
+      OwnerChatScreen(isTab: true),
       AlertsScreen(),
     ];
     WidgetsBinding.instance.addObserver(this);
@@ -361,11 +361,17 @@ class _StoraNavBar extends StatelessWidget {
 
   static const _items = [
     _NavItem(Icons.space_dashboard_rounded, 'Home'),
-    _NavItem(Icons.chat_bubble_outline_rounded, 'Chat'),
     _NavItem(Icons.inventory_2_rounded, 'Inventory'),
-    _NavItem(Icons.point_of_sale_rounded, 'Sales'),
+    _NavItem(Icons.point_of_sale_rounded, 'POS'),
+    _NavItem(Icons.chat_bubble_outline_rounded, 'Chat'),
     _NavItem(Icons.notifications_rounded, 'Alerts'),
   ];
+
+  Color _getActiveColor(int index) {
+    if (index == 1) return const Color(0xFF38BDF8); // Inventory: Blue
+    if (index == 2) return const Color(0xFFFF6B00); // POS / Sales: Orange
+    return AppColors.purpleLight;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -419,6 +425,7 @@ class _StoraNavBar extends StatelessWidget {
             children: List.generate(_items.length, (i) {
               final selected = i == currentIndex;
               final item = _items[i];
+              final activeColor = _getActiveColor(i);
               int badgeCount = 0;
               if (item.label == 'Chat') badgeCount = chatUnreadCount;
               if (item.label == 'Alerts') badgeCount = alertsCount;
@@ -441,10 +448,10 @@ class _StoraNavBar extends StatelessWidget {
                     curve: Curves.easeInOut,
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     decoration: BoxDecoration(
-                      color: selected ? AppColors.purple.withValues(alpha: 0.16) : Colors.transparent,
+                      color: selected ? activeColor.withValues(alpha: 0.16) : Colors.transparent,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: selected ? AppColors.purple.withValues(alpha: 0.3) : Colors.transparent,
+                        color: selected ? activeColor.withValues(alpha: 0.3) : Colors.transparent,
                         width: 1,
                       ),
                     ),
@@ -459,7 +466,7 @@ class _StoraNavBar extends StatelessWidget {
                           child: Icon(
                             displayIcon,
                             size: 22,
-                            color: selected ? AppColors.purpleLight : AppColors.label,
+                            color: selected ? activeColor : AppColors.label,
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -467,7 +474,7 @@ class _StoraNavBar extends StatelessWidget {
                           item.label,
                           style: TextStyle(
                             fontSize: 11,
-                            color: selected ? AppColors.purpleLight : AppColors.label,
+                            color: selected ? activeColor : AppColors.label,
                             fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
                             letterSpacing: selected ? 0.2 : 0,
                           ),
