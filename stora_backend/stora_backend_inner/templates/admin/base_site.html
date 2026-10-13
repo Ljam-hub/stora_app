@@ -330,35 +330,6 @@
           <span id="stora-notif-orders-badge" class="stora-notif-item__badge" style="background: rgba(251, 191, 36, 0.2); color: #fbbf24; {% if stora_notifications.pending_orders_count == 0 %}opacity: 0.4;{% endif %}">{{ stora_notifications.pending_orders_count }}</span>
         </a>
 
-        <!-- Support Messages -->
-        <a href="{% url 'admin:support_chat' %}" class="stora-notif-item">
-          <div class="stora-notif-item__icon" style="background: rgba(255, 107, 0, 0.18); color: #FF8F3D;">&#128172;</div>
-          <div class="stora-notif-item__copy">
-            <div class="stora-notif-item__title">Live Support Messages</div>
-            <div class="stora-notif-item__sub" id="stora-notif-support-sub">
-              {% if stora_notifications.unread_support_count > 0 %}
-                <span style="color: #FF8F3D; font-weight: 700;">{{ stora_notifications.unread_support_count }} unread</span> message{{ stora_notifications.unread_support_count|pluralize }}
-              {% else %}
-                All messages read
-              {% endif %}
-            </div>
-          </div>
-          <span id="stora-notif-support-badge" class="stora-notif-item__badge" style="background: rgba(255, 107, 0, 0.2); color: #FF8F3D; {% if stora_notifications.unread_support_count == 0 %}opacity: 0.4;{% endif %}">{{ stora_notifications.unread_support_count }}</span>
-        </a>
-
-        <!-- Password Resets -->
-        {% if stora_notifications.active_reset_requests > 0 %}
-        <a href="/admin/accounts/passwordresettoken/?used__exact=0" class="stora-notif-item">
-          <div class="stora-notif-item__icon" style="background: rgba(56, 189, 248, 0.18); color: #38bdf8;">&#128273;</div>
-          <div class="stora-notif-item__copy">
-            <div class="stora-notif-item__title">Active Password Resets</div>
-            <div class="stora-notif-item__sub">
-              <span style="color: #38bdf8; font-weight: 700;">{{ stora_notifications.active_reset_requests }} active</span> in last hour
-            </div>
-          </div>
-          <span class="stora-notif-item__badge" style="background: rgba(56, 189, 248, 0.2); color: #38bdf8;">{{ stora_notifications.active_reset_requests }}</span>
-        </a>
-        {% endif %}
       </div>
     </div>
   {% endif %}
@@ -424,8 +395,6 @@
           var reportsBadge = document.getElementById('stora-notif-reports-badge');
           var paymentsBadge = document.getElementById('stora-notif-payments-badge');
           var ordersBadge = document.getElementById('stora-notif-orders-badge');
-          var supportBadgeItem = document.getElementById('stora-notif-support-badge');
-
           var total = data.total_action_count || 0;
           if (badge) {
             if (total > 0) {
@@ -435,22 +404,12 @@
               badge.style.display = 'none';
             }
           }
-          if (supportBadge) {
-            var unread = data.unread_support_count || 0;
-            if (unread > 0) {
-              supportBadge.textContent = unread;
-              supportBadge.style.display = 'inline-flex';
-            } else {
-              supportBadge.style.display = 'none';
-            }
-          }
           if (summaryText) {
             summaryText.textContent = total > 0 ? (total + ' item' + (total === 1 ? '' : 's') + ' requiring attention') : 'All caught up • 0 pending tasks';
           }
           if (reportsBadge) reportsBadge.textContent = data.pending_reports_count || 0;
           if (paymentsBadge) paymentsBadge.textContent = data.pending_payments_count || 0;
           if (ordersBadge) ordersBadge.textContent = data.pending_orders_count || 0;
-          if (supportBadgeItem) supportBadgeItem.textContent = data.unread_support_count || 0;
 
           // Alert on new user reports
           if (data.pending_reports_count > prevReports) {

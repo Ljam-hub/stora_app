@@ -44,10 +44,25 @@ def mask_phone(phone):
     return phone_str[:2] + ("*" * max(1, len(phone_str) - 6)) + phone_str[-4:]
 
 
+def mask_person_name(name):
+    """Mask name for privacy protection in control panel."""
+    if not name:
+        return "—"
+    name = str(name).strip()
+    parts = name.split()
+    masked_parts = []
+    for part in parts:
+        if len(part) <= 2:
+            masked_parts.append(part[0] + "*")
+        else:
+            masked_parts.append(part[0] + ("*" * (len(part) - 2)) + part[-1])
+    return " ".join(masked_parts)
+
+
 @admin.register(User, site=stora_admin_site)
 class UserAdmin(DjangoUserAdmin):
     fieldsets = DjangoUserAdmin.fieldsets + (
-        ("Store & Role info", {"fields": ("role", "business_name", "avatar", "fcm_token", "is_email_verified")}),
+        ("Store & Role info", {"fields": ("role", "business_name", "avatar", "is_email_verified")}),
         ("Subscription", {"fields": ("is_premium", "premium_until")}),
         ("Moderation & App Access", {"fields": ("is_blocked", "block_reason")}),
     )
@@ -266,33 +281,9 @@ class UserAdmin(DjangoUserAdmin):
         super().save_model(request, obj, form, change)
 
 
-@admin.register(PasswordResetToken, site=stora_admin_site)
-class PasswordResetTokenAdmin(admin.ModelAdmin):
-    list_display = ("user", "owner_customer_name", "token", "token_status", "created_at", "used")
-    list_filter = ("used", "created_at")
-    list_select_related = ("user",)
-    search_fields = ("user__email", "user__username", "user__business_name", "token")
-    readonly_fields = ("token", "created_at")
-
-    @admin.display(description="Owner/Customer Name")
-    def owner_customer_name(self, obj):
-        user = obj.user
-        if not user:
-            return "—"
-        if getattr(user, "role", "") == "owner":
-            return user.business_name or f"{user.first_name} {user.last_name}".strip() or user.username
-        elif getattr(user, "role", "") == "customer":
-            return f"{user.first_name} {user.last_name}".strip() or user.business_name or user.username
-        return f"{user.first_name} {user.last_name}".strip() or user.username or "Admin"
-
-    @admin.display(description="Status")
-    def token_status(self, obj):
-        if obj.used:
-            return "✅ Used"
-        elif obj.is_valid():
-            return "⏳ Active (Valid for 1 hr)"
-        else:
-            return "❌ Expired"
+# PasswordResetToken is deliberately NOT registered in the admin control panel
+# to prevent staff interception of temporary authentication credentials. Password
+# resets are delivered directly to the user via automated transactional email.
 
 
 @admin.register(PaymentProof, site=stora_admin_site)
@@ -515,10 +506,10 @@ class StorePaymentMethodAdmin(admin.ModelAdmin):
             )
         return format_html('<span style="color: #f87171; font-style: italic; font-size: 11px;">Not configured</span>')
 
-    @admin.display(description="Account Name")
+    @admin.display(description="Account Name (Protected)")
     def payment_account_name_col(self, obj):
         if obj.payment_account_name:
-            return obj.payment_account_name
+            return mask_person_name(obj.payment_account_name)
         return format_html('<span style="color: #888888; font-style: italic;">—</span>')
 
     @admin.display(description="Store Status")

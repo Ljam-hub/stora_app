@@ -834,7 +834,8 @@ def forgot_password_request(request):
                 message=(
                     f"Hello,\n\n"
                     f"We received a request to reset your password for your STORA account ({user.email}).\n\n"
-                    f"Your 6-digit reset code is: {display_code}\n\n"
+                    f"Your 6-digit reset code is: {display_code}\n"
+                    f"Reset token: {token_obj.token}\n\n"
                     f"This code will expire in 1 hour.\n\n"
                     f"If you didn't request this, you can safely ignore this email.\n\n"
                     f"— The STORA Team"

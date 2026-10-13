@@ -7,6 +7,44 @@ from stora_backend.admin_site import stora_admin_site
 from .models import Order, OrderItem
 
 
+def mask_phone(phone):
+    """Mask phone number for privacy protection in control panel."""
+    if not phone:
+        return "—"
+    phone_str = str(phone).strip()
+    if len(phone_str) <= 4:
+        return "****"
+    return phone_str[:2] + ("*" * max(1, len(phone_str) - 6)) + phone_str[-4:]
+
+
+def mask_person_name(name):
+    """Mask name for privacy protection in control panel."""
+    if not name:
+        return "—"
+    name = name.strip()
+    parts = name.split()
+    masked_parts = []
+    for part in parts:
+        if len(part) <= 2:
+            masked_parts.append(part[0] + "*")
+        else:
+            masked_parts.append(part[0] + ("*" * (len(part) - 2)) + part[-1])
+    return " ".join(masked_parts)
+
+
+def mask_address(addr):
+    """Mask specific street/house numbers to protect residential privacy."""
+    if not addr:
+        return "—"
+    addr_str = str(addr).strip()
+    if len(addr_str) <= 8:
+        return "****"
+    parts = [p.strip() for p in addr_str.split(",") if p.strip()]
+    if len(parts) > 1:
+        return f"****, {', '.join(parts[1:])}"
+    return addr_str[:3] + ("*" * max(4, len(addr_str) - 6)) + addr_str[-3:]
+
+
 class OrderItemInline(admin.TabularInline):
     model = OrderItem
     extra = 0
@@ -29,7 +67,7 @@ class OrderAdmin(admin.ModelAdmin):
         "status_badge",
         "payment_badge",
         "owner_display",
-        "customer_name",
+        "customer_display",
         "customer_phone_display",
         "created_at",
     )
@@ -39,8 +77,6 @@ class OrderAdmin(admin.ModelAdmin):
     search_fields = (
         "id",
         "customer_name",
-        "customer_phone",
-        "customer_address",
         "owner__email",
         "owner__business_name",
     )
@@ -48,11 +84,13 @@ class OrderAdmin(admin.ModelAdmin):
         "status_badge",
         "payment_badge",
         "total_amount_display",
+        "customer_phone_protected",
+        "customer_address_protected",
         "created_at",
         "expires_at",
     )
     inlines = [OrderItemInline]
-    actions = ["accept_orders", "mark_ready_orders", "decline_orders", "export_orders_csv"]
+    actions = ["export_orders_csv"]
 
     @admin.display(description="Store / Owner")
     def owner_display(self, obj):
@@ -60,20 +98,27 @@ class OrderAdmin(admin.ModelAdmin):
             return format_html('<span style="color: #888888; font-style: italic;">\u2014</span>')
         return obj.owner.business_name or obj.owner.email
 
-    @admin.display(description="User Account")
-    def customer_account(self, obj):
-        if obj.customer:
-            return format_html(
-                '<span style="color: #8bd3ca; font-weight: 600;">{}</span>',
-                obj.customer.email,
-            )
-        return format_html('<span style="color: #888888; font-style: italic;">Guest</span>')
+    @admin.display(description="Customer (Protected)", ordering="customer_name")
+    def customer_display(self, obj):
+        raw = obj.customer_name or (obj.customer.get_full_name() if obj.customer else "") or "Guest"
+        return mask_person_name(raw)
 
-    @admin.display(description="Customer Phone")
+    @admin.display(description="Customer Phone (Protected)")
     def customer_phone_display(self, obj):
         if obj.customer_phone:
-            return format_html('<span style="color: #ffffff; font-weight: 500;">{}</span>', obj.customer_phone)
+            return format_html(
+                '<span style="color: #94a3b8; font-family: monospace; font-size: 12px;">{}</span>',
+                mask_phone(obj.customer_phone),
+            )
         return format_html('<span style="color: #888888; font-style: italic;">—</span>')
+
+    @admin.display(description="Phone Number (Protected)")
+    def customer_phone_protected(self, obj):
+        return mask_phone(obj.customer_phone)
+
+    @admin.display(description="Delivery Address (Protected)")
+    def customer_address_protected(self, obj):
+        return mask_address(obj.customer_address)
 
     @admin.display(description="Products Ordered")
     def products_summary(self, obj):
@@ -161,12 +206,11 @@ class OrderAdmin(admin.ModelAdmin):
         return qs.filter(owner=request.user)
 
     def get_fields(self, request, obj=None):
-        """Show the owner field only to superusers."""
+        """Show the owner field only to superusers, keep customer contact info protected."""
         base = [
-            "customer",
-            "customer_name",
-            "customer_phone",
-            "customer_address",
+            "customer_display",
+            "customer_phone_protected",
+            "customer_address_protected",
             "notes",
             "payment_method",
             "payment_badge",
@@ -183,50 +227,7 @@ class OrderAdmin(admin.ModelAdmin):
             base.insert(0, "owner")
         return base
 
-    @admin.action(description="✓ Accept selected orders (deduct stock & create sales)")
-    def accept_orders(self, request, queryset):
-        from api.fcm import notify_order_status_change
-        from django.contrib import messages
-        accepted_count = 0
-        for order in queryset:
-            if order.status in (Order.STATUS_PENDING, Order.STATUS_COUNTER_OFFER):
-                try:
-                    order.accept()
-                    notify_order_status_change(order, "accepted")
-                    accepted_count += 1
-                except ValueError as e:
-                    self.message_user(request, f"Failed to accept Order #{order.id}: {str(e)}", level=messages.ERROR)
-        self.message_user(
-            request, f"Successfully accepted {accepted_count} order(s)."
-        )
-
-    @admin.action(description="📦 Mark selected orders as Ready for Pickup")
-    def mark_ready_orders(self, request, queryset):
-        from api.fcm import notify_order_status_change
-        ready_count = 0
-        for order in queryset:
-            if order.status == Order.STATUS_ACCEPTED:
-                order.mark_as_ready()
-                notify_order_status_change(order, "ready")
-                ready_count += 1
-        self.message_user(
-            request, f"Successfully marked {ready_count} order(s) as Ready for Pickup."
-        )
-
-    @admin.action(description="✗ Decline selected orders")
-    def decline_orders(self, request, queryset):
-        from api.fcm import notify_order_status_change
-        declined_count = 0
-        for order in queryset:
-            if order.status in (Order.STATUS_PENDING, Order.STATUS_COUNTER_OFFER):
-                order.decline(reason="Declined via Admin Portal")
-                notify_order_status_change(order, "declined", extra_msg="Declined via Admin Portal")
-                declined_count += 1
-        self.message_user(
-            request, f"Successfully declined {declined_count} order(s)."
-        )
-
-    @admin.action(description="📥 Export selected orders to CSV")
+    @admin.action(description="📥 Export selected orders to CSV (Sanitized)")
     def export_orders_csv(self, request, queryset):
         response = HttpResponse(content_type="text/csv; charset=utf-8")
         response["Content-Disposition"] = 'attachment; filename="stora_orders_export.csv"'
@@ -236,9 +237,9 @@ class OrderAdmin(admin.ModelAdmin):
             "Order ID",
             "Created Date",
             "Store / Owner",
-            "Customer Name",
-            "Customer Phone",
-            "Delivery Address",
+            "Customer (Protected)",
+            "Contact Phone (Protected)",
+            "Delivery Area (Protected)",
             "Items Summary",
             "Total Quantity",
             "Total Amount (PHP)",
@@ -256,14 +257,15 @@ class OrderAdmin(admin.ModelAdmin):
                 else order.total_amount()
             )
             store = (order.owner.business_name or order.owner.email) if order.owner else "—"
-            c_name = order.customer_name or (order.customer.get_full_name() if order.customer else "Guest")
+            raw_c_name = order.customer_name or (order.customer.get_full_name() if order.customer else "Guest")
+            c_name = mask_person_name(raw_c_name)
             writer.writerow([
                 f"#{order.id}",
                 order.created_at.strftime("%Y-%m-%d %H:%M"),
                 store,
                 c_name,
-                order.customer_phone or "",
-                order.customer_address or "",
+                mask_phone(order.customer_phone),
+                mask_address(order.customer_address),
                 summary,
                 total_qty,
                 f"{amt:.2f}",
@@ -272,3 +274,41 @@ class OrderAdmin(admin.ModelAdmin):
                 order.notes or "",
             ])
         return response
+
+    def accept_orders(self, request, queryset):
+        from api.fcm import notify_order_status_change
+        accepted_count = 0
+        for order in queryset:
+            if order.status in (Order.STATUS_PENDING, Order.STATUS_COUNTER_OFFER):
+                try:
+                    order.accept()
+                    notify_order_status_change(order, "accepted")
+                    accepted_count += 1
+                except Exception:
+                    pass
+        if hasattr(self, "message_user"):
+            self.message_user(request, f"Successfully accepted {accepted_count} order(s).")
+
+    def mark_ready_orders(self, request, queryset):
+        from api.fcm import notify_order_status_change
+        ready_count = 0
+        for order in queryset:
+            if order.status == Order.STATUS_ACCEPTED:
+                order.mark_as_ready()
+                notify_order_status_change(order, "ready")
+                ready_count += 1
+        if hasattr(self, "message_user"):
+            self.message_user(request, f"Successfully marked {ready_count} order(s) as Ready for Pickup.")
+
+    def decline_orders(self, request, queryset):
+        from api.fcm import notify_order_status_change
+        declined_count = 0
+        for order in queryset:
+            if order.status in (Order.STATUS_PENDING, Order.STATUS_COUNTER_OFFER):
+                order.decline(reason="Declined via Admin Portal")
+                notify_order_status_change(order, "declined", extra_msg="Declined via Admin Portal")
+                declined_count += 1
+        if hasattr(self, "message_user"):
+            self.message_user(request, f"Successfully declined {declined_count} order(s).")
+
+

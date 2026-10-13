@@ -154,7 +154,8 @@ class RegisterSerializer(serializers.Serializer):
     role = serializers.ChoiceField(choices=(("owner", "Store Owner"), ("customer", "Customer")), default="owner")
 
     def validate(self, attrs):
-        email = canonicalize_email(attrs["email"])
+        raw_email = (attrs.get("email") or "").strip().lower()
+        email = canonicalize_email(raw_email)
         attrs["email"] = email
         role = attrs.get("role", "owner")
 
@@ -177,7 +178,9 @@ class RegisterSerializer(serializers.Serializer):
                 other_role = "Customer" if pending.role == "customer" else "Store Owner"
                 app_target = "Store Owner" if role == "owner" else "Customer"
                 raise serializers.ValidationError({"email": f"This email has a pending {other_role} registration and cannot be used in the {app_target} app."})
-            # If same role, allow re-registration to refresh the verification code and credentials cleanly
+            if raw_email != pending.email:
+                raise serializers.ValidationError({"email": "A registration with this email already exists."})
+            # If same exact email, allow re-registration to refresh the verification code and credentials cleanly
 
         return attrs
 

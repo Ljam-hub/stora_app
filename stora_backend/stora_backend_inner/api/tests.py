@@ -1473,24 +1473,11 @@ class SupportCenterAndChatSerializerTests(APITestCase):
         self.assertIsNone(data2["sender_avatar_url"])
 
     def test_support_chat_view_and_avatar_api(self):
-        from django.test import RequestFactory
         from stora_backend.admin_site import stora_admin_site
-
-        rf = RequestFactory()
-        req = rf.get("/admin/support/")
-        req.user = self.admin
-        res = stora_admin_site.support_chat_view(req)
-        self.assertEqual(res.status_code, 200)
-
-        req2 = rf.get("/admin/support/api/avatar/")
-        req2.user = self.admin
-        res2 = stora_admin_site.support_avatar_api(req2)
-        self.assertEqual(res2.status_code, 200)
-
-        req3 = rf.get("/admin/support/api/conversations/")
-        req3.user = self.admin
-        res3 = stora_admin_site.support_conversations_api(req3)
-        self.assertEqual(res3.status_code, 200)
+        # Support chat views and conversation APIs are deliberately excluded from
+        # the control panel to protect merchant and customer confidentiality.
+        self.assertFalse(hasattr(stora_admin_site, "support_chat_view"))
+        self.assertFalse(hasattr(stora_admin_site, "support_conversations_api"))
 
 
 class BugFixesAuditTestCase(APITestCase):
