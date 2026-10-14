@@ -365,19 +365,15 @@ class CustomerCreditTests(TestCase):
         )
 
         self.client.force_login(admin_user)
-        # Admin changelist
+        # Admin changelist: CustomerCredit is intentionally not registered in admin for debtor privacy
         changelist_resp = self.client.get("/admin/sales/customercredit/")
-        self.assertEqual(changelist_resp.status_code, status.HTTP_200_OK)
-        content = changelist_resp.content.decode("utf-8")
-        self.assertIn("Pedro Overdue", content)
-        self.assertIn("OVERDUE", content)
+        self.assertEqual(changelist_resp.status_code, status.HTTP_404_NOT_FOUND)
 
-        # Admin dashboard
+        # Admin dashboard: Utang metrics are omitted for privacy
         index_resp = self.client.get("/admin/")
         self.assertEqual(index_resp.status_code, status.HTTP_200_OK)
         index_content = index_resp.content.decode("utf-8")
-        self.assertIn("Store Credit / Utang", index_content)
-        self.assertIn("Overdue Customer Loans", index_content)
+        self.assertNotIn("Overdue Customer Loans", index_content)
 
     def test_credit_patch_and_filtering(self):
         self.client.force_authenticate(user=self.owner)

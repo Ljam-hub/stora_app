@@ -48,7 +48,7 @@ class _CartScreenState extends State<CartScreen> {
             Text('Locating your current address...'),
           ],
         ),
-        duration: Duration(seconds: 4),
+        duration: Duration(milliseconds: 1500),
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -72,7 +72,7 @@ class _CartScreenState extends State<CartScreen> {
           content: Text(result.errorMessage ?? 'Unable to detect location. Please check GPS permissions.'),
           backgroundColor: AppColors.danger,
           behavior: SnackBarBehavior.floating,
-          duration: const Duration(milliseconds: 2000),
+          duration: const Duration(milliseconds: 1500),
         ),
       );
     }
@@ -427,7 +427,7 @@ class _CartScreenState extends State<CartScreen> {
                                   cart.addItem(removedProduct, removedQty);
                                 },
                               ),
-                              duration: const Duration(milliseconds: 2000),
+                              duration: const Duration(milliseconds: 1500),
                               behavior: SnackBarBehavior.floating,
                             ),
                           );

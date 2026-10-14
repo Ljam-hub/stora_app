@@ -8,6 +8,7 @@ import '../../providers/order_provider.dart';
 import '../../services/location_service.dart';
 import '../../theme/app_theme.dart';
 import '../../models/store_model.dart';
+import '../../widgets/blocking_loading_dialog.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../widgets/gradient_button.dart';
 
@@ -131,6 +132,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         const SnackBar(
           content: Text('Cannot place order: Store information missing.'),
           backgroundColor: AppColors.danger,
+          duration: Duration(milliseconds: 1500),
         ),
       );
       return;
@@ -153,6 +155,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         const SnackBar(
           content: Text('Cannot place order: Store information could not be retrieved.'),
           backgroundColor: AppColors.danger,
+          duration: Duration(milliseconds: 1500),
         ),
       );
       return;
@@ -164,6 +167,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         const SnackBar(
           content: Text('Cannot place order: This store is currently closed.'),
           backgroundColor: AppColors.danger,
+          duration: Duration(milliseconds: 1500),
         ),
       );
       return;
@@ -175,6 +179,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         phone: _phoneController.text.trim(),
         address: _addressController.text.trim(),
       );
+      if (!mounted) return;
 
       final bool canAcceptGcash = store.acceptGcashPayments &&
           (store.paymentAccounts.isNotEmpty ||
@@ -186,14 +191,18 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           ? cart.toOrderItemsFor(storeOwnerId)
           : cart.toOrderItems();
 
-      final order = await orderProvider.placeOrder(
-        ownerId: storeOwnerId,
-        customerName: _nameController.text.trim(),
-        customerPhone: _phoneController.text.trim(),
-        customerAddress: _addressController.text.trim(),
-        notes: _notesController.text.trim(),
-        paymentMethod: paymentMethodToUse,
-        items: orderItems,
+      final order = await showCustomerBlockingLoadingDialog(
+        context: context,
+        message: 'Placing your order...',
+        task: () => orderProvider.placeOrder(
+          ownerId: storeOwnerId,
+          customerName: _nameController.text.trim(),
+          customerPhone: _phoneController.text.trim(),
+          customerAddress: _addressController.text.trim(),
+          notes: _notesController.text.trim(),
+          paymentMethod: paymentMethodToUse,
+          items: orderItems,
+        ),
       );
 
       if (widget.targetStoreId != null) {
@@ -213,6 +222,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           SnackBar(
             content: Text(e.toString().replaceAll('Exception: ', '')),
             backgroundColor: AppColors.danger,
+            duration: const Duration(milliseconds: 1500),
           ),
         );
       }

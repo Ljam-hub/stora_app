@@ -268,7 +268,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               messenger.showSnackBar(
                 const SnackBar(
                   content: Text('Detecting current GPS location...'),
-                  duration: Duration(seconds: 3),
+                  duration: Duration(milliseconds: 1500),
                   behavior: SnackBarBehavior.floating,
                 ),
               );

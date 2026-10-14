@@ -9,6 +9,7 @@ import '../screens/chat/customer_chat_screen.dart';
 import '../services/api_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/navigation_guard.dart';
+import 'blocking_loading_dialog.dart';
 import 'customer_report_dialog.dart';
 import 'customer_receipt_dialog.dart';
 import 'notification_badge.dart';
@@ -151,7 +152,11 @@ class _OrderCardState extends State<OrderCard> with NavigationGuard<OrderCard> {
     final orderProvider = context.read<OrderProvider>();
 
     try {
-      await orderProvider.respondToCounterOffer(order.id, accept: accept);
+      await showCustomerBlockingLoadingDialog(
+        context: context,
+        message: accept ? 'Accepting counter-offer...' : 'Declining counter-offer...',
+        task: () => orderProvider.respondToCounterOffer(order.id, accept: accept),
+      );
       messenger.showSnackBar(
         SnackBar(
           content: Text(accept ? 'Counter-offer accepted! Store notified.' : 'Counter-offer declined.'),
@@ -164,6 +169,7 @@ class _OrderCardState extends State<OrderCard> with NavigationGuard<OrderCard> {
         SnackBar(
           content: Text('Failed: ${e.toString().replaceAll('Exception: ', '')}'),
           backgroundColor: AppColors.danger,
+          duration: const Duration(milliseconds: 1500),
         ),
       );
     }
@@ -211,7 +217,11 @@ class _OrderCardState extends State<OrderCard> with NavigationGuard<OrderCard> {
     final orderProvider = context.read<OrderProvider>();
 
     try {
-      await orderProvider.deleteOrder(order.id);
+      await showCustomerBlockingLoadingDialog(
+        context: context,
+        message: 'Deleting order #${order.id}...',
+        task: () => orderProvider.deleteOrder(order.id),
+      );
       messenger.showSnackBar(
         SnackBar(
           content: Text('Order #${order.id} deleted.'),
@@ -224,7 +234,7 @@ class _OrderCardState extends State<OrderCard> with NavigationGuard<OrderCard> {
         SnackBar(
           content: Text('Failed to delete: ${e.toString().replaceAll('Exception: ', '')}'),
           backgroundColor: AppColors.danger,
-          duration: const Duration(milliseconds: 2000),
+          duration: const Duration(milliseconds: 1500),
         ),
       );
     }
@@ -268,7 +278,11 @@ class _OrderCardState extends State<OrderCard> with NavigationGuard<OrderCard> {
     final orderProvider = context.read<OrderProvider>();
 
     try {
-      await orderProvider.cancelOrder(order.id);
+      await showCustomerBlockingLoadingDialog(
+        context: context,
+        message: 'Cancelling order #${order.id}...',
+        task: () => orderProvider.cancelOrder(order.id),
+      );
       messenger.showSnackBar(
         const SnackBar(
           content: Text('Order cancelled successfully.'),
@@ -281,7 +295,7 @@ class _OrderCardState extends State<OrderCard> with NavigationGuard<OrderCard> {
         SnackBar(
           content: Text('Failed to cancel: ${e.toString().replaceAll('Exception: ', '')}'),
           backgroundColor: AppColors.danger,
-          duration: const Duration(milliseconds: 2000),
+          duration: const Duration(milliseconds: 1500),
         ),
       );
     }

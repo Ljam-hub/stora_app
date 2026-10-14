@@ -438,7 +438,10 @@ class _ReceiptDialogState extends State<ReceiptDialog> {
                                 await ReceiptService.instance.shareReceipt(sale, businessName: businessName);
                               } catch (e) {
                                 if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Sharing error: $e')));
+                                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                    content: Text('Sharing error: $e'),
+                                    duration: const Duration(milliseconds: 1500),
+                                  ));
                                 }
                               } finally {
                                 if (mounted) setState(() => _isProcessing = false);
@@ -466,7 +469,10 @@ class _ReceiptDialogState extends State<ReceiptDialog> {
                                 await ReceiptService.instance.printReceipt(sale, businessName: businessName);
                               } catch (e) {
                                 if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Print error: $e')));
+                                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                    content: Text('Print error: $e'),
+                                    duration: const Duration(milliseconds: 1500),
+                                  ));
                                 }
                               } finally {
                                 if (mounted) setState(() => _isProcessing = false);

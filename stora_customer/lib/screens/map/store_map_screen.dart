@@ -193,7 +193,7 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
     messenger.hideCurrentSnackBar();
     messenger.showSnackBar(
       const SnackBar(
-        duration: Duration(seconds: 2),
+        duration: Duration(milliseconds: 1500),
         behavior: SnackBarBehavior.floating,
         content: Row(
           children: [
@@ -236,7 +236,7 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
         _fetchStores();
         messenger.showSnackBar(
           const SnackBar(
-            duration: Duration(seconds: 2),
+            duration: Duration(milliseconds: 1500),
             behavior: SnackBarBehavior.floating,
             backgroundColor: AppColors.success,
             content: Text('Centered to your location!'),
@@ -245,7 +245,7 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
       } else {
         messenger.showSnackBar(
           SnackBar(
-            duration: const Duration(seconds: 4),
+            duration: const Duration(milliseconds: 1500),
             behavior: SnackBarBehavior.floating,
             backgroundColor: AppColors.danger,
             content: Text(errorMessage ?? 'Could not determine your location. Please enable GPS.'),
@@ -878,7 +878,7 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
                       SnackBar(
                         content: const Text('Refreshing nearby stores...', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
                         backgroundColor: AppColors.primary,
-                        duration: const Duration(seconds: 1),
+                        duration: const Duration(milliseconds: 1500),
                         behavior: SnackBarBehavior.floating,
                       ),
                     );
@@ -913,7 +913,7 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                             content: Text('Route unrouted/hidden'),
-                            duration: Duration(seconds: 1),
+                            duration: Duration(milliseconds: 1500),
                             behavior: SnackBarBehavior.floating,
                           ),
                         );

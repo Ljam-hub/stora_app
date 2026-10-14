@@ -278,7 +278,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text('Press back again to exit'),
-                  duration: Duration(seconds: 2),
+                  duration: Duration(milliseconds: 1500),
                   behavior: SnackBarBehavior.floating,
                 ),
               );

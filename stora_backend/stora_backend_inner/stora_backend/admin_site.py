@@ -29,8 +29,6 @@ class StoraAdminSite(AdminSite):
     def get_admin_notifications_summary(self, request=None):
         from accounts.models import PaymentProof, User
         from api.models import UserReport
-        from inventory.models import Product
-        from orders.models import Order
 
         user = getattr(request, "user", None) if request else None
         is_admin = bool(
@@ -40,34 +38,23 @@ class StoraAdminSite(AdminSite):
         if is_admin:
             pending_reports = UserReport.objects.filter(status=UserReport.STATUS_PENDING).count()
             pending_payments = PaymentProof.objects.filter(status=PaymentProof.STATUS_PENDING).count()
-            pending_orders = Order.objects.filter(status=Order.STATUS_PENDING).count()
-            out_of_stock = Product.objects.filter(stock=0).count()
-        elif user and user.is_authenticated:
-            pending_reports = 0
-            pending_payments = 0
-            pending_orders = Order.objects.filter(owner=user, status=Order.STATUS_PENDING).count()
-            out_of_stock = Product.objects.filter(owner=user, stock=0).count()
         else:
             pending_reports = 0
             pending_payments = 0
-            pending_orders = 0
-            out_of_stock = 0
 
-        total_action = pending_reports + pending_payments + pending_orders
+        total_action = pending_reports + pending_payments
 
         return {
             "pending_reports_count": pending_reports,
             "pending_payments_count": pending_payments,
-            "pending_orders_count": pending_orders,
             "unread_support_count": 0,
             "active_reset_requests": 0,
-            "out_of_stock_count": out_of_stock,
             "overdue_credit_count": 0,
             "total_action_count": total_action,
         }
 
     def index(self, request, extra_context=None):
-        from accounts.models import PaymentProof
+        from accounts.models import PaymentProof, User
         from inventory.models import Product
         from sales.models import Sale
 
@@ -77,8 +64,6 @@ class StoraAdminSite(AdminSite):
         is_admin_user = bool(user.is_superuser or getattr(user, "role", None) == "admin")
 
         if is_admin_user:
-            todays_sales = Sale.objects.filter(created_at__date=today)
-            products = Product.objects.all()
             total_sub_revenue = (
                 PaymentProof.objects.filter(status=PaymentProof.STATUS_APPROVED).aggregate(total=Sum("amount"))["total"]
                 or 0
@@ -92,31 +77,23 @@ class StoraAdminSite(AdminSite):
                 or 0
             )
             total_platform_gmv = Sale.objects.aggregate(total=Sum("total"))["total"] or 0
+            store_count = User.objects.filter(role=User.ROLE_OWNER).count()
+            customer_count = User.objects.filter(role=User.ROLE_CUSTOMER).count()
+            product_count = Product.objects.count()
         else:
-            todays_sales = Sale.objects.filter(owner=user, created_at__date=today)
-            products = Product.objects.filter(owner=user)
-            total_sub_revenue = (
-                PaymentProof.objects.filter(user=user, status=PaymentProof.STATUS_APPROVED).aggregate(
-                    total=Sum("amount")
-                )["total"]
-                or 0
-            )
+            total_sub_revenue = 0
             month_sub_revenue = 0
-            total_platform_gmv = Sale.objects.filter(owner=user).aggregate(total=Sum("total"))["total"] or 0
+            total_platform_gmv = 0
+            store_count = 0
+            customer_count = 0
+            product_count = Product.objects.filter(owner=user).count()
 
         extra_context = extra_context or {}
         extra_context["stora_notifications"] = notifs
         extra_context["stora_unread_support_count"] = 0
         extra_context["stora_stats"] = {
-            "todays_total": todays_sales.aggregate(total=Sum("total"))["total"] or 0,
-            "todays_count": todays_sales.count(),
-            "total_stock": products.aggregate(total=Sum("stock"))["total"] or 0,
-            "low_stock_count": products.filter(stock__lt=5).count(),
-            "product_count": products.count(),
-            "out_of_stock_count": notifs["out_of_stock_count"],
             "pending_reports_count": notifs["pending_reports_count"],
             "pending_requests": notifs["pending_payments_count"],
-            "pending_orders_count": notifs["pending_orders_count"],
             "unread_support_count": 0,
             "active_reset_requests": 0,
             "overdue_credit_count": 0,
@@ -126,6 +103,9 @@ class StoraAdminSite(AdminSite):
             "total_sub_revenue": total_sub_revenue,
             "month_sub_revenue": month_sub_revenue,
             "total_platform_gmv": total_platform_gmv,
+            "store_count": store_count,
+            "customer_count": customer_count,
+            "product_count": product_count,
             "is_platform_admin": is_admin_user,
         }
         return super().index(request, extra_context)

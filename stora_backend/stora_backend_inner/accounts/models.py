@@ -67,7 +67,12 @@ class User(AbstractUser):
     def is_premium_active(self):
         if self.role == self.ROLE_ADMIN:
             return True
-        return bool(self.is_premium and self.premium_until and timezone.now() < self.premium_until)
+        if not self.is_premium:
+            return False
+        # Continuous/lifetime premium accounts without an explicit expiry timestamp
+        if self.premium_until is None:
+            return True
+        return timezone.now() < self.premium_until
 
     @property
     def has_full_access(self):
@@ -79,8 +84,10 @@ class User(AbstractUser):
     def days_left(self):
         if self.role != self.ROLE_OWNER:
             return 0
-        if self.is_premium_active and self.premium_until:
-            return max(0, (self.premium_until - timezone.now()).days)
+        if self.is_premium_active:
+            if self.premium_until:
+                return max(0, (self.premium_until - timezone.now()).days)
+            return 365
         elif self.is_trial_active and self.trial_ends_at:
             return max(0, (self.trial_ends_at - timezone.now()).days)
         return 0
@@ -90,6 +97,8 @@ class User(AbstractUser):
             self.role = self.ROLE_ADMIN
         elif self.role == self.ROLE_ADMIN:
             self.is_staff = True
+        if self.is_premium and not self.premium_until:
+            self.premium_until = timezone.now() + timedelta(days=31)
         super().save(*args, **kwargs)
 
     def get_display_name(self):

@@ -95,7 +95,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> with Widget
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Reset token auto-pasted from clipboard'),
-            duration: Duration(seconds: 2),
+            duration: Duration(milliseconds: 1500),
           ),
         );
       }
@@ -115,7 +115,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> with Widget
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Reset token pasted from clipboard'),
-            duration: Duration(seconds: 2),
+            duration: Duration(milliseconds: 1500),
           ),
         );
       } else if (text.isNotEmpty) {

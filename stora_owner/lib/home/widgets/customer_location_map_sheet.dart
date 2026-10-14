@@ -324,7 +324,10 @@ class _CustomerLocationMapSheetState extends State<CustomerLocationMapSheet> {
       if (mounted) {
         ScaffoldMessenger.of(context).clearSnackBars();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not open map navigation or web browser.')),
+          const SnackBar(
+            content: Text('Could not open map navigation or web browser.'),
+            duration: Duration(milliseconds: 1500),
+          ),
         );
       }
     } finally {
@@ -376,7 +379,10 @@ class _CustomerLocationMapSheetState extends State<CustomerLocationMapSheet> {
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not open phone dialer.')),
+          const SnackBar(
+            content: Text('Could not open phone dialer.'),
+            duration: Duration(milliseconds: 1500),
+          ),
         );
       }
     }
@@ -758,7 +764,10 @@ class _CustomerLocationMapSheetState extends State<CustomerLocationMapSheet> {
                         onPressed: () {
                           Clipboard.setData(ClipboardData(text: widget.customerAddress));
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Address copied to clipboard')),
+                            const SnackBar(
+                              content: Text('Address copied to clipboard'),
+                              duration: Duration(milliseconds: 1500),
+                            ),
                           );
                         },
                       ),

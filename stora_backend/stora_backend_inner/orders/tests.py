@@ -297,7 +297,7 @@ class OrderAPITests(TestCase):
         resp = client.get("/admin/orders/order/")
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, "COUNTER")
-        self.assertContains(resp, "Guest")
+        self.assertContains(resp, "G***t B***r")
 
 
 

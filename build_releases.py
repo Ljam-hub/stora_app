@@ -24,6 +24,7 @@ def main():
         cust_apk_dir,
         owner_flutter_apk_dir,
         owner_apk_dir,
+        repo_root,
     )
 
     for d in all_target_dirs:
@@ -148,12 +149,12 @@ def main():
 
     distribute_app(
         "Customer", cust_output_dir,
-        (cust_flutter_apk_dir, cust_apk_dir, root_apk_dir, apk_dir),
+        (cust_flutter_apk_dir, cust_apk_dir, root_apk_dir, apk_dir, repo_root),
         ["Stora-Customer"],
     )
     distribute_app(
         "Owner", owner_output_dir,
-        (owner_flutter_apk_dir, owner_apk_dir, root_apk_dir, apk_dir),
+        (owner_flutter_apk_dir, owner_apk_dir, root_apk_dir, apk_dir, repo_root),
         ["Stora"],
     )
 

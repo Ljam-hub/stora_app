@@ -497,7 +497,7 @@ class _PaymentQrModalSheetState extends State<PaymentQrModalSheet> {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   content: Text('$label number copied to clipboard!'),
-                                  duration: const Duration(seconds: 2),
+                                  duration: const Duration(milliseconds: 1500),
                                   behavior: SnackBarBehavior.floating,
                                 ),
                               );

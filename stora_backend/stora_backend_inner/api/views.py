@@ -633,7 +633,7 @@ def account_status(request):
     limit = None if user.is_premium_active else free_limit
     trial_ends = user.trial_ends_at
     if user.is_premium_active:
-        days_left = (user.premium_until - timezone.now()).days if user.premium_until else 0
+        days_left = (user.premium_until - timezone.now()).days if user.premium_until else 365
         can_add = True
     elif user.is_trial_active:
         days_left = (trial_ends - timezone.now()).days if trial_ends else 0

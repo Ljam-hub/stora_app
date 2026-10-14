@@ -1,0 +1,81 @@
+DEPARTMENT OF INFORMATION AND COMMUNICATIONS TECHNOLOGY (DICT)
+PHILIPPINE STARTUP CHALLENGE XI (PSC XI)
+OFFICIAL CONCEPT NOTE
+STORA: Smart Inventory & Subscription Platform
+Proponent: Team Stora | Target Sector: MSME Digitalization & FinTech | Year: 2026
+I. SUMMARY
+Stora is an offline-resilient, mobile-first inventory and sales-tracking application engineered specifically for micro and small enterprise (MSME) owners in the Philippines—such as neighborhood sari-sari stores, wet market vendors, and home-based online sellers—who currently manage daily stock using paper notebooks, memory, or complex spreadsheets. Functioning as an ultra-lightweight point-of-sale (POS) and inventory tracker, Stora enables store owners to register stock, scan product barcodes using their smartphone camera, automatically log cash and digital sales, and receive real-time low-stock alerts without requiring expensive dedicated hardware or terminals.
+Stora follows a highly accessible freemium subscription model: micro-merchants enjoy a Free Forever Plan for up to 20 items with offline capabilities, accompanied by an initial 14-day Free Trial of the Unlimited Premium Tier upon registration. Once a business outgrows the 20-item tier, the owner upgrades for a flat ₱100/month subscription paid through GCash, verified via an admin approval workflow in the early stage and scaling toward automated payment gateway processing. Stora's core value is zero-friction digital transformation for entrepreneurs who cannot afford complex, enterprise POS systems.
+II. BACKGROUND OF THE PROBLEM
+Micro, Small, and Medium Enterprises (MSMEs) account for 99.5% of all business establishments in the Philippines and generate over 65% of total employment (DTI, 2023). Over 90% of these are micro-enterprises, led by approximately 1.3 million neighborhood sari-sari stores. Despite their vital socio-economic importance, the vast majority continue to operate through manual, paper-based methods ('talaan') or mental memory due to critical systemic barriers:
+Frequent Stockouts & Lost Revenue: Without real-time inventory tracking, store owners do not notice stock depletion until customers ask for items that are already out of stock, causing preventable daily revenue loss.
+Manual Reckoning Discrepancies & Pilferage: Paper notebooks are prone to miscalculations, water damage, and unrecorded sales, obscuring true profit margins and making periodic stock audits nearly impossible.
+Inaccessible Enterprise POS Systems: Commercial POS platforms (e.g., Utak, StoreHub, Mosaic) cost between ₱15,000 to ₱40,000 in upfront hardware and charge ₱1,000 to ₱3,000 in monthly fees—virtually all requiring credit cards that micro-entrepreneurs do not possess.
+Credit Invisibility: Without verified digital transaction histories, micro-retailers cannot prove business viability to banks, leaving them vulnerable to informal, high-interest lenders ('5-6').
+III. PROPOSED STARTUP SOLUTION
+Stora provides an integrated mobile software solution consisting of a cross-platform Flutter mobile application paired with a centralized Django REST administrative backend:
+Smartphone Barcode Scanning: Eliminates manual typing by utilizing the mobile device's camera to scan UPC/EAN retail barcodes instantly.
+Offline-First Architecture (Drift/SQLite): Guarantees that sales recording, cart checkout, and inventory browsing function reliably during power outages or mobile data disruptions, automatically syncing to the cloud when reconnected.
+Automatic Stock Deduction & Alerts: Deducts stock in real time upon sale completion and triggers visual and push notifications when quantities breach reorder thresholds.
+GCash-Native Payment Onboarding: Allows store owners to pay their ₱100/month subscription directly via GCash QR code, uploading screenshot proofs for rapid admin approval without credit card friction.
+Store Location & Customer Discoverability: Includes store geolocations, allowing local community buyers to discover nearby open stores and view item availability.
+Sustainable Development Goals (SDGs): Stora directly advances SDG 8 (Decent Work and Economic Growth) by improving micro-enterprise productivity and profitability, and SDG 9 (Industry, Innovation, and Infrastructure) by fostering digital financial inclusion for underserved MSMEs.
+IV. OBJECTIVES
+1. Digitize Grassroots Retail Operations: Provide an intuitive, zero-learning-curve mobile app enabling micro-retailers to catalog products and begin tracking sales in under 10 minutes.
+2. Mitigate Stockouts and Shrinkage: Reduce stock calculation discrepancies and lost sales by at least 80% among participating pilot stores within 30 days of active use.
+3. Establish a Cashless Grassroots Subscription Model: Validate an affordable ₱100/month GCash-based subscription model, achieving a 15% to 20% free-to-paid conversion rate among pilot MSMEs.
+4. Deploy a Scalable Backend & Verification System: Build an auditable admin infrastructure capable of managing subscriptions, verifying payments, and transitioning smoothly into automated payment gateways (e.g., PayMongo).
+V. TARGET MARKET & BENEFICIARIES
+The primary beneficiaries are micro, small, and medium enterprise owners in the Philippines. The market sizing is structured as follows:
+Total Addressable Market (TAM): ~1,300,000+ registered and informal sari-sari stores, wet market vendors, and micro-retailers nationwide.
+Serviceable Addressable Market (SAM): ~450,000 smartphone-equipped, GCash-active micro-retailers in urban and peri-urban commercial centers.
+Serviceable Obtainable Market (SOM): 2,500 paying store subscribers within 18 to 24 months across initial pilot deployment zones (NCR, Region IV-A, and Metro Cebu).
+Secondary beneficiaries include local neighborhood customers who benefit from reliable goods availability and transparent pricing, as well as regional wholesalers who can eventually access aggregated, anonymized demand data.
+VI. VALUE PROPOSITION
+Stora is positioned uniquely against existing retail management options:
+VII. BUSINESS MODEL
+Stora employs a value-based freemium SaaS model designed for frictionless onboarding:
+Free Forever Tier (₱0/mo): Supports up to 20 inventory items, offline cash sales recording, camera barcode scanning, and basic daily sales totals. Designed to eliminate adoption hesitation.
+14-Day Full Premium Trial: New store owners receive 14 days of 20 items inventory and real-time alerts upon registration to experience full product value.
+Premium Subscription Tier (₱100/mo or ₱1,000/yr): Unlocks unlimited inventory items, automated push notifications for low stock, sales trends, CSV/PDF bookkeeping exports, and store locator visibility.
+Revenue Milestones: 100 stores = ₱10,000 MRR (Pilot validation); 1,000 stores = ₱100,000 MRR (₱1.2M ARR); 3,000 stores = ₱300,000 MRR (₱3.6M ARR at operational self-sufficiency).
+VIII. MARKET ANALYSIS
+The Philippine retail market is uniquely primed for Stora due to two macroeconomic catalysts: first, widespread digital wallet penetration with over 94 million registered GCash accounts and the national standardization of QR Ph by the Bangko Sentral ng Pilipinas (BSP); and second, the DTI E-Commerce Roadmap 2024-2028 mandating grassroots merchant digitization. Micro-entrepreneurs who previously lacked formal bank accounts now use smartphones and e-wallets daily. By meeting merchants on their existing devices and payment methods, Stora eliminates the friction that caused past enterprise software initiatives to fail.
+IX. OPERATIONS PLAN
+The technical development and pilot validation span an 8-week agile development cycle followed by a 4-month live community pilot:
+Sprint 1 (Weeks 1–2): UI/UX wireframes & design system, Django REST scaffold, JWT authentication, PostgreSQL database schema, and Drift/SQLite mobile local storage initialization.
+Sprint 2 (Weeks 3–4): Product and category CRUD, integrated mobile camera barcode scanning engine, 20-item tier restriction enforcement, and cloud sync logic.
+Sprint 3 (Weeks 5–6): POS cart checkout, automatic stock decrement, Firebase Cloud Messaging (FCM) low-stock alerts, and GCash QR payment submission screen.
+Sprint 4 (Weeks 7–8): Custom Django admin verification dashboard, offline sync stress testing, performance optimization on entry-level Android devices, and APK production deployment.
+Months 3–6 (Live Pilot): Onboarding of 100 pilot sari-sari stores across 3 partner barangays, weekly merchant support, feedback clinics, and automated payment gateway sandbox integration.
+6-Person Team Roles: Project Manager (Agile oversight & DICT liaison); UI/UX Designer (Accessible merchant interfaces); Mobile Developer (Flutter & camera/scanner); Backend Developer (Django REST & database); QA Tester 1 (Device & offline stress testing); QA Tester 2 (API security, latency & DPA compliance).
+X. FINANCIAL REQUIREMENT & ITEMISED BUDGET
+To execute the 8-week MVP engineering sprint and sustain a 4-month live community pilot with 100 micro-retailers, Team Stora requires a total grant/seed funding of ₱175,000.00 PHP covering a 6-month operational runway:
+XI. CONCLUSION & IMPACT
+Stora eliminates the friction that has historically excluded Filipino micro-retailers from the digital economy. By combining an offline-resilient Flutter architecture, mobile camera barcode scanning, and an accessible ₱100/month GCash subscription, Stora provides sari-sari store owners with enterprise-level inventory control at a price they can easily sustain. With the support of the Philippine Startup Challenge XI, Team Stora will deliver a field-validated digital tool that safeguards grassroots retail livelihoods, strengthens community commerce, and fosters lasting inclusive economic development.
+Feature / Dimension | Paper Notebook (Talaan) | Commercial POS (Utak/StoreHub) | STORA Mobile App
+Upfront Hardware Cost | ₱50 (Notebook) | ₱15,000 – ₱40,000 (Hardware) | ₱0 (Existing Smartphone)
+Monthly Subscription | ₱0 | ₱1,000 – ₱3,000 / month | ₱100 / month flat
+Payment Requirement | N/A | Credit Card / Bank Deposit | GCash Native (No Card Needed)
+Barcode Scanning | None | External USB/BT Scanner | Integrated Smartphone Camera
+Offline Capability | Fully Manual | Requires Internet / Drops | Full Local Storage + Cloud Sync
+Setup Complexity | Immediate | Days of Training | Under 10 Minutes
+Category | Line Item & Description | Unit Cost | Qty / Duration | Total (PHP) | Alloc %
+1. Cloud & Infra | Cloud Backend Service (Render/DigitalOcean API) | ₱850 / mo | 6 months | ₱5,100.00 | 2.9%
+1. Cloud & Infra | Managed Production Database (PostgreSQL) | ₱850 / mo | 6 months | ₱5,100.00 | 2.9%
+1. Cloud & Infra | Cloud Media Storage (Cloudinary / S3) | ₱600 / mo | 6 months | ₱3,600.00 | 2.1%
+1. Cloud & Infra | Custom Domain & SSL (stora.ph / stora.app) | ₱1,800 / yr | 1 year | ₱1,800.00 | 1.0%
+1. Cloud & Infra | Google Play Developer Registration | ₱1,500 one-time | 1 account | ₱1,500.00 | 0.9%
+1. Cloud & Infra | SMS & Verification Credits (Semaphore/Twilio) | ₱0.50 / SMS | 2,000 credits | ₱1,000.00 | 0.6%
+2. R&D & Eng. | Dev Connectivity & Lab Allowance (6 pax × 2 mos) | ₱2,500 / mo / pax | 12 person-mos | ₱30,000.00 | 17.1%
+2. R&D & Eng. | Benchmark Android Test Devices (Entry-level) | ₱4,500 / unit | 2 units | ₱9,000.00 | 5.1%
+2. R&D & Eng. | Team Collaboration & UI Tools (Figma/Postman) | ₱1,500 / mo | 3 months | ₱4,500.00 | 2.6%
+3. Pilot & Validation | Direct Field Visits & Community Outreach | ₱5,000 / mo | 4 months | ₱20,000.00 | 11.4%
+3. Pilot & Validation | Merchant Starter Kits (Laminated QR Standees) | ₱120 / kit | 100 stores | ₱12,000.00 | 6.9%
+3. Pilot & Validation | Early Adopter Pilot Incentive (Load Subsidy) | ₱150 / store | 100 stores | ₱15,000.00 | 8.6%
+3. Pilot & Validation | Community FGDs & Feedback Clinics (4 sessions) | ₱2,500 / session | 4 sessions | ₱10,000.00 | 5.7%
+4. Payment & Legal | Payment Gateway Sandbox & Onboarding Reserve | ₱8,000 one-time | 1 setup | ₱8,000.00 | 4.6%
+4. Payment & Legal | DTI / Barangay / NPC Data Privacy Compliance | ₱6,500 one-time | Lump sum | ₱6,500.00 | 3.7%
+4. Payment & Legal | Hyperlocal Social Media Ads (Merchant groups) | ₱4,000 / mo | 4 months | ₱16,000.00 | 9.1%
+5. Contingency | Operational & Cloud Scale Buffer (15%) | Lump sum | 6 months | ₱25,900.00 | 14.8%
+TOTAL | TOTAL FINANCIAL REQUIREMENT |  | 6-Month Runway | ₱175,000.00 | 100.0%

@@ -1021,7 +1021,7 @@ class _OwnerChatThreadScreenState extends State<OwnerChatThreadScreen> with Widg
                           ],
                         ),
                         backgroundColor: Color(0xFF1E142F),
-                        duration: Duration(seconds: 2),
+                        duration: Duration(milliseconds: 1500),
                       ),
                     );
                   },
@@ -1102,7 +1102,7 @@ class _OwnerChatThreadScreenState extends State<OwnerChatThreadScreen> with Widg
                               content: Text(isMe ? 'Message unsent' : 'Message deleted',
                                   style: const TextStyle(color: Colors.white)),
                               backgroundColor: HomeColors.cardElevated,
-                              duration: const Duration(seconds: 2),
+                              duration: const Duration(milliseconds: 1500),
                             ),
                           );
                         }

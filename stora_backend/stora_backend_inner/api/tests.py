@@ -560,6 +560,37 @@ class RoleAndSubscriptionPermissionsTests(APITestCase):
         self.assertEqual(len(mail.outbox), 1)
         self.assertIn(str(token_obj.token), mail.outbox[0].body)
 
+    def test_old_account_premium_access(self):
+        old_owner = User.objects.create_user(
+            username="old_owner@gmail.com",
+            email="old_owner@gmail.com",
+            password="testpassword123",
+            role=User.ROLE_OWNER,
+            business_name="Old Store",
+            is_email_verified=True,
+            is_premium=True,
+        )
+        # Account was created 60 days ago (trial expired 46 days ago)
+        old_owner.date_joined = timezone.now() - timedelta(days=60)
+        old_owner.save(update_fields=["date_joined"])
+        self.assertFalse(old_owner.is_trial_active)
+        self.assertTrue(old_owner.is_premium_active)
+        self.assertTrue(old_owner.has_full_access)
+
+        self._auth(old_owner)
+        res = self.client.get("/api/account/status/")
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue(res.data["is_premium"])
+        self.assertTrue(res.data["can_add_product"])
+
+    def test_control_panel_privacy_metrics(self):
+        from stora_backend.admin_site import stora_admin_site
+        summary = stora_admin_site.get_admin_notifications_summary()
+        self.assertNotIn("pending_orders_count", summary)
+        self.assertNotIn("out_of_stock_count", summary)
+        self.assertIn("pending_reports_count", summary)
+        self.assertIn("pending_payments_count", summary)
+
 
 class EmailVerificationTests(APITestCase):
     def test_registration_with_gmail_sends_verification_code(self):
@@ -1686,8 +1717,9 @@ class AdminNotificationsAndBlockedUserTests(APITestCase):
 
         self.assertGreaterEqual(data["pending_reports_count"], 1)
         self.assertGreaterEqual(data["pending_payments_count"], 1)
-        self.assertGreaterEqual(data["pending_orders_count"], 1)
-        self.assertGreaterEqual(data["total_action_count"], 3)
+        # Pending orders and low stock are excluded from control panel for owner & customer privacy
+        self.assertNotIn("pending_orders_count", data)
+        self.assertGreaterEqual(data["total_action_count"], 2)
 
     def test_blocked_user_flexible_fields_and_validation(self):
         from api.models import BlockedCustomer

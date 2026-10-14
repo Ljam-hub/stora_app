@@ -10,6 +10,7 @@ import '../models/cart_item.dart';
 import '../models/product.dart';
 import '../models/sale.dart';
 import '../utils/date_utils.dart';
+import '../widgets/blocking_loading_dialog.dart';
 import '../widgets/customer_location_map_sheet.dart';
 import '../widgets/notification_badge.dart';
 import '../widgets/receipt_dialog.dart';
@@ -388,7 +389,7 @@ class _OrderCardState extends State<_OrderCard> {
           borderRadius: BorderRadius.circular(14),
           side: BorderSide(color: borderColor, width: 1.2),
         ),
-        duration: const Duration(seconds: 4),
+        duration: const Duration(milliseconds: 1500),
         content: Row(
           children: [
             Container(
@@ -426,7 +427,11 @@ class _OrderCardState extends State<_OrderCard> {
     HapticFeedback.mediumImpact();
     setState(() => _isProcessing = true);
     try {
-      await OrdersStore.instance.acceptOrder(orderId);
+      await showOwnerBlockingLoadingDialog(
+        context: context,
+        message: 'Accepting order #$orderId...',
+        task: () => OrdersStore.instance.acceptOrder(orderId),
+      );
       if (mounted) {
         _showFeedback(
           'Order #$orderId accepted! Stock deducted and recorded in sales.',
@@ -448,7 +453,11 @@ class _OrderCardState extends State<_OrderCard> {
     HapticFeedback.mediumImpact();
     setState(() => _isProcessing = true);
     try {
-      await OrdersStore.instance.markOrderReady(orderId);
+      await showOwnerBlockingLoadingDialog(
+        context: context,
+        message: 'Marking order #$orderId ready for pickup...',
+        task: () => OrdersStore.instance.markOrderReady(orderId),
+      );
       if (mounted) {
         _showFeedback(
           'Order #$orderId marked as ready! Customer notified for pickup.',
@@ -470,7 +479,11 @@ class _OrderCardState extends State<_OrderCard> {
     HapticFeedback.mediumImpact();
     setState(() => _isProcessing = true);
     try {
-      await OrdersStore.instance.completeOrder(orderId);
+      await showOwnerBlockingLoadingDialog(
+        context: context,
+        message: 'Completing order #$orderId...',
+        task: () => OrdersStore.instance.completeOrder(orderId),
+      );
       if (mounted) {
         _showFeedback(
           'Order #$orderId marked as completed! Customer notified.',
@@ -556,7 +569,11 @@ class _OrderCardState extends State<_OrderCard> {
                 Navigator.of(ctx).pop();
                 setState(() => _isProcessing = true);
                 try {
-                  await OrdersStore.instance.declineOrder(orderId, reason: reason);
+                  await showOwnerBlockingLoadingDialog(
+                    context: context,
+                    message: 'Declining order #$orderId...',
+                    task: () => OrdersStore.instance.declineOrder(orderId, reason: reason),
+                  );
                   if (mounted) {
                     _showFeedback(
                       'Order #$orderId declined.',
@@ -651,6 +668,7 @@ class _OrderCardState extends State<_OrderCard> {
                   const SnackBar(
                     content: Text('Please enter notes explaining the counter-offer.'),
                     behavior: SnackBarBehavior.floating,
+                    duration: Duration(milliseconds: 1500),
                   ),
                 );
                 return;
@@ -662,6 +680,7 @@ class _OrderCardState extends State<_OrderCard> {
                   const SnackBar(
                     content: Text('Adjusted total must be greater than zero.'),
                     behavior: SnackBarBehavior.floating,
+                    duration: Duration(milliseconds: 1500),
                   ),
                 );
                 return;
@@ -671,10 +690,14 @@ class _OrderCardState extends State<_OrderCard> {
               Navigator.of(ctx).pop();
               setState(() => _isProcessing = true);
               try {
-                await OrdersStore.instance.counterOrder(
-                  orderId,
-                  notes: notes,
-                  counterPrice: price,
+                await showOwnerBlockingLoadingDialog(
+                  context: context,
+                  message: 'Sending counter-offer for order #$orderId...',
+                  task: () => OrdersStore.instance.counterOrder(
+                    orderId,
+                    notes: notes,
+                    counterPrice: price,
+                  ),
                 );
                 if (mounted) {
                   _showFeedback(

@@ -497,7 +497,7 @@ Future<void> showProductReportDialog({
                                         messenger.hideCurrentSnackBar();
                                         messenger.showSnackBar(
                                           SnackBar(
-                                            duration: const Duration(seconds: 5),
+                                            duration: const Duration(milliseconds: 1500),
                                             behavior: SnackBarBehavior.floating,
                                             content: Row(
                                               children: [

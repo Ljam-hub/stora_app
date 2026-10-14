@@ -181,8 +181,8 @@ def notify_order_status_change(order, action: str, extra_msg: str = ""):
     elif action == "accepted":
         # Notify customer
         if order.customer and getattr(order.customer, "fcm_token", None):
-            title = f"Order #{order.id} Accepted! 🎉"
-            body = f"Your order #{order.id} has been accepted by {order.owner.business_name or 'the store'}."
+            title = f"Order #{order.id} Accepted (Preparing)! 🎉"
+            body = f"Your order #{order.id} has been accepted and is now being prepared by {order.owner.business_name or 'the store'}."
             data_payload["title"] = title
             data_payload["body"] = body
             data_payload["channel_id"] = "stora_customer_orders"

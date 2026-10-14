@@ -220,7 +220,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> with WidgetsBin
                           ],
                         ),
                         backgroundColor: AppColors.cardBackground,
-                        duration: const Duration(seconds: 2),
+                        duration: const Duration(milliseconds: 1500),
                       ),
                     );
                   },
@@ -294,7 +294,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> with WidgetsBin
                             SnackBar(
                               content: const Text('Message unsent', style: TextStyle(color: Colors.white)),
                               backgroundColor: AppColors.cardElevated,
-                              duration: const Duration(seconds: 2),
+                              duration: const Duration(milliseconds: 1500),
                             ),
                           );
                         }
@@ -372,7 +372,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> with WidgetsBin
                             SnackBar(
                               content: const Text('Message removed for you', style: TextStyle(color: Colors.white)),
                               backgroundColor: AppColors.cardElevated,
-                              duration: const Duration(seconds: 2),
+                              duration: const Duration(milliseconds: 1500),
                             ),
                           );
                         }

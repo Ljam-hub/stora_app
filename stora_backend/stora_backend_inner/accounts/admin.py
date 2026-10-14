@@ -157,9 +157,13 @@ class UserAdmin(DjangoUserAdmin):
             )
         if obj.is_premium_active:
             days = obj.days_left
+            if obj.premium_until:
+                return format_html(
+                    '<span class="user-badge user-badge--premium">Premium ({}d)</span>',
+                    days,
+                )
             return format_html(
-                '<span class="user-badge user-badge--premium">Premium ({}d)</span>',
-                days,
+                '<span class="user-badge user-badge--premium">Premium (Active)</span>'
             )
         elif obj.is_trial_active:
             days = obj.days_left
@@ -213,7 +217,20 @@ class UserAdmin(DjangoUserAdmin):
         # Non-superusers can't change their username/email from admin
         return ("username", "email")
 
-    actions = ["deactivate_users_and_close_stores", "activate_users_and_open_stores"]
+    actions = ["deactivate_users_and_close_stores", "activate_users_and_open_stores", "grant_premium_31_days"]
+
+    @admin.action(description="Grant 31 Days Premium to selected users")
+    def grant_premium_31_days(self, request, queryset):
+        from datetime import timedelta
+        count = 0
+        now = timezone.now()
+        for user in queryset:
+            user.is_premium = True
+            base = user.premium_until if (user.premium_until and user.premium_until > now) else now
+            user.premium_until = base + timedelta(days=31)
+            user.save(update_fields=["is_premium", "premium_until"])
+            count += 1
+        self.message_user(request, f"Granted 31 days premium to {count} user(s).")
 
     @admin.action(description="Deactivate selected accounts (Hides store & products from customers)")
     def deactivate_users_and_close_stores(self, request, queryset):
@@ -243,6 +260,15 @@ class UserAdmin(DjangoUserAdmin):
                 user.location.save(update_fields=["is_visible"])
             count += 1
         self.message_user(request, f"{count} account(s) activated successfully.")
+
+    def save_model(self, request, obj, form, change):
+        from datetime import timedelta
+        if obj.is_premium:
+            now = timezone.now()
+            if not obj.premium_until or obj.premium_until <= now:
+                # If admin checks is_premium or user had expired date, grant 31 days
+                obj.premium_until = now + timedelta(days=31)
+        super().save_model(request, obj, form, change)
 
     def delete_model(self, request, obj):
         from django.db import transaction

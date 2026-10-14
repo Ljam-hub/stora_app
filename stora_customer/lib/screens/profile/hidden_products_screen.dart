@@ -302,7 +302,7 @@ class HiddenProductsScreen extends StatelessWidget {
                       messenger.hideCurrentSnackBar();
                       messenger.showSnackBar(
                         SnackBar(
-                          duration: const Duration(seconds: 4),
+                          duration: const Duration(milliseconds: 1500),
                           behavior: SnackBarBehavior.floating,
                           content: Text('Restored "$name" to your feed.'),
                           action: SnackBarAction(

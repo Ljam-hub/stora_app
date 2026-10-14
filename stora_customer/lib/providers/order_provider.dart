@@ -253,7 +253,7 @@ class OrderProvider extends ChangeNotifier {
         if (o.status == 'accepted') {
           _seenFilters.remove('accepted');
           NotificationService.instance.showNotification(
-            title: '👨‍🍳 Order #${o.id} Accepted!',
+            title: '👨‍🍳 Order #${o.id} Accepted (Preparing)! 🎉',
             body: 'The store is now preparing your items! We will notify you when it is ready.',
             payload: o.id.toString(),
           );

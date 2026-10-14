@@ -282,15 +282,7 @@ class _PosScreenState extends State<PosScreen> {
                           textAlign: TextAlign.center,
                           style: TextStyle(color: HomeColors.textPrimary, fontSize: 18, fontWeight: FontWeight.w700)),
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.qr_code_2_rounded, color: Color(0xFF60A5FA), size: 22),
-                      tooltip: 'Show Payment QR',
-                      style: IconButton.styleFrom(
-                        backgroundColor: HomeColors.cardBackground,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      onPressed: () => showPaymentQrModal(context),
-                    ),
+                    const SizedBox(width: 48),
                   ],
                 ),
               ),
