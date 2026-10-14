@@ -10,7 +10,6 @@ import '../theme/home_colors.dart';
 import '../theme/theme_mode_controller.dart';
 import '../utils/date_utils.dart';
 import '../../subscription/subscription_screen.dart';
-import 'add_edit_product_screen.dart';
 import 'alerts_screen.dart';
 import 'business_insights_screen.dart';
 import 'owner_notes_screen.dart';
@@ -209,43 +208,6 @@ class DashboardScreen extends StatelessWidget {
                     ),
                   ),
                 ],
-                const SizedBox(height: 22),
-                FadeSlideIn(
-                  delay: const Duration(milliseconds: 600),
-                  child: Container(
-                    height: 52,
-                    decoration: BoxDecoration(
-                      gradient: HomeColors.purpleGradient,
-                      borderRadius: BorderRadius.circular(14),
-                      boxShadow: HomeColors.glowShadow(AppColors.purple, opacity: 0.3),
-                    ),
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        if (!AccountStatusStore.instance.canAddProduct) {
-                          DashboardScreen.safeNavigate(
-                            context,
-                            SubscriptionScreen(
-                              productsUsed: AccountStatusStore.instance.productCount,
-                              productsLimit: AccountStatusStore.instance.productLimit,
-                            ),
-                          );
-                        } else {
-                          DashboardScreen.safeNavigate(context, const AddEditProductScreen());
-                        }
-                      },
-                      icon: const Icon(Icons.add_circle_outline_rounded, color: Colors.white, size: 20),
-                      label: const Text(
-                        'Add Product',
-                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.transparent,
-                        shadowColor: Colors.transparent,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                      ),
-                    ),
-                  ),
-                ),
               ],
             ),
           ),
@@ -261,97 +223,110 @@ class _SalesGrowthHubCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isPremium = AccountStatusStore.instance.isPremium;
+    return AnimatedBuilder(
+      animation: AccountStatusStore.instance,
+      builder: (context, _) {
+        final isPremium = AccountStatusStore.instance.isPremium;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: HomeColors.cardBackground,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: HomeColors.cardBorder,
-          width: 1,
-        ),
-        boxShadow: HomeColors.cardShadow,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFF6B00).withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(
-                    Icons.trending_up_rounded,
-                    color: Color(0xFFFF6B00),
-                    size: 16,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Text(
-                  'SALES & BUSINESS GROWTH',
-                  style: TextStyle(
-                    color: HomeColors.textSecondary,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 1.1,
-                  ),
-                ),
-              ],
+        return Container(
+          decoration: BoxDecoration(
+            color: HomeColors.cardBackground,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: HomeColors.cardBorder,
+              width: 1,
             ),
+            boxShadow: HomeColors.cardShadow,
           ),
-          Divider(height: 1, color: HomeColors.cardBorder.withValues(alpha: 0.6)),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFF6B00).withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.trending_up_rounded,
+                        color: Color(0xFFFF6B00),
+                        size: 16,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      'SALES & BUSINESS GROWTH',
+                      style: TextStyle(
+                        color: HomeColors.textSecondary,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1.1,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Divider(height: 1, color: HomeColors.cardBorder.withValues(alpha: 0.6)),
 
-          // 1. Sales History
-          _HubItem(
-            icon: Icons.receipt_long_rounded,
-            iconColor: const Color(0xFFFF6B00),
-            title: 'Sales History',
-            subtitle: 'View past sales, cash flow & receipts',
-            onTap: () => DashboardScreen.safeNavigate(context, const SalesHistoryScreen()),
+              // 1. Sales History
+              _HubItem(
+                icon: Icons.receipt_long_rounded,
+                iconColor: const Color(0xFFFF6B00),
+                title: 'Sales History',
+                subtitle: 'View past sales, cash flow & receipts',
+                onTap: () => DashboardScreen.safeNavigate(context, const SalesHistoryScreen()),
+              ),
+
+              Divider(height: 1, indent: 56, endIndent: 16, color: HomeColors.cardBorder.withValues(alpha: 0.5)),
+
+              // 2. Business Insights
+              _HubItem(
+                icon: Icons.auto_awesome_rounded,
+                iconColor: AppColors.purpleLight,
+                title: 'Business Insights',
+                subtitle: 'Fast-moving items & reorder tips',
+                onTap: () async {
+                  if (!AccountStatusStore.instance.isPremium) {
+                    await AccountStatusStore.instance.fetchStatus();
+                  }
+                  if (!context.mounted) return;
+                  if (!AccountStatusStore.instance.isPremium) {
+                    _showPremiumFeatureDialog(context, featureName: 'Business Insights');
+                    return;
+                  }
+                  DashboardScreen.safeNavigate(context, const BusinessInsightsScreen());
+                },
+              ),
+
+              Divider(height: 1, indent: 56, endIndent: 16, color: HomeColors.cardBorder.withValues(alpha: 0.5)),
+
+              // 3. Sales Analytics (PRO)
+              _HubItem(
+                icon: Icons.insights_rounded,
+                iconColor: const Color(0xFF38BDF8),
+                title: 'Sales Analytics',
+                subtitle: 'Visual charts, peak hours & profit',
+                badge: isPremium ? null : 'PRO',
+                onTap: () async {
+                  if (!AccountStatusStore.instance.isPremium) {
+                    await AccountStatusStore.instance.fetchStatus();
+                  }
+                  if (!context.mounted) return;
+                  if (!AccountStatusStore.instance.isPremium) {
+                    _showPremiumFeatureDialog(context, featureName: 'Sales Analytics & Reports');
+                    return;
+                  }
+                  DashboardScreen.safeNavigate(context, const SalesAnalyticsScreen());
+                },
+              ),
+            ],
           ),
-
-          Divider(height: 1, indent: 56, endIndent: 16, color: HomeColors.cardBorder.withValues(alpha: 0.5)),
-
-          // 2. Business Insights
-          _HubItem(
-            icon: Icons.auto_awesome_rounded,
-            iconColor: AppColors.purpleLight,
-            title: 'Business Insights',
-            subtitle: 'Fast-moving items & reorder tips',
-            onTap: () {
-              if (!isPremium) {
-                _showPremiumFeatureDialog(context, featureName: 'Business Insights');
-                return;
-              }
-              DashboardScreen.safeNavigate(context, const BusinessInsightsScreen());
-            },
-          ),
-
-          Divider(height: 1, indent: 56, endIndent: 16, color: HomeColors.cardBorder.withValues(alpha: 0.5)),
-
-          // 3. Sales Analytics (PRO)
-          _HubItem(
-            icon: Icons.insights_rounded,
-            iconColor: const Color(0xFF38BDF8),
-            title: 'Sales Analytics',
-            subtitle: 'Visual charts, peak hours & profit',
-            badge: isPremium ? null : 'PRO',
-            onTap: () {
-              if (!isPremium) {
-                _showPremiumFeatureDialog(context, featureName: 'Sales Analytics & Reports');
-                return;
-              }
-              DashboardScreen.safeNavigate(context, const SalesAnalyticsScreen());
-            },
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

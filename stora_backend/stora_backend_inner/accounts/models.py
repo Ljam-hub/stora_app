@@ -97,8 +97,9 @@ class User(AbstractUser):
             self.role = self.ROLE_ADMIN
         elif self.role == self.ROLE_ADMIN:
             self.is_staff = True
-        if self.is_premium and not self.premium_until:
-            self.premium_until = timezone.now() + timedelta(days=31)
+        if self.is_premium:
+            if not self.premium_until or self.premium_until <= timezone.now():
+                self.premium_until = timezone.now() + timedelta(days=31)
         super().save(*args, **kwargs)
 
     def get_display_name(self):

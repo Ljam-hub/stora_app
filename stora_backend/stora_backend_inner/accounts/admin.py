@@ -79,7 +79,7 @@ class UserAdmin(DjangoUserAdmin):
     list_display_links = ("masked_email_display", "owner_customer_name")
     search_fields = ("username", "email", "business_name", "first_name", "last_name")
     list_filter = ("role", "is_blocked", "is_email_verified", "is_premium", "is_staff", "is_active")
-    actions = ["block_selected_users", "unblock_selected_users"]
+    actions = ["block_selected_users", "unblock_selected_users", "grant_premium_selected"]
 
     @admin.display(description="Email (Protected)", ordering="email")
     def masked_email_display(self, obj):
@@ -124,6 +124,23 @@ class UserAdmin(DjangoUserAdmin):
             u.unblock_user()
             count += 1
         self.message_user(request, f"{count} user(s) have been unblocked and granted app access.")
+
+    @admin.action(description="Grant 31 Days Premium to selected owners")
+    def grant_premium_selected(self, request, queryset):
+        count = 0
+        now = timezone.now()
+        for u in queryset.filter(role="owner"):
+            u.is_premium = True
+            base = u.premium_until if (u.premium_until and u.premium_until > now) else now
+            u.premium_until = base + timedelta(days=31)
+            u.save(update_fields=["is_premium", "premium_until"])
+            count += 1
+        self.message_user(request, f"Granted 31 days Premium access to {count} store owner(s).")
+
+    def save_model(self, request, obj, form, change):
+        if obj.is_premium and (not obj.premium_until or obj.premium_until <= timezone.now()):
+            obj.premium_until = timezone.now() + timedelta(days=31)
+        super().save_model(request, obj, form, change)
 
     @admin.display(description="Owner/Customer Name", ordering="business_name")
     def owner_customer_name(self, obj):

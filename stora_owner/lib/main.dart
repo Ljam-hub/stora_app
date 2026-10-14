@@ -76,6 +76,9 @@ class MyApp extends StatelessWidget {
               elevation: 1,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             ),
+            snackBarTheme: const SnackBarThemeData(
+              behavior: SnackBarBehavior.floating,
+            ),
             useMaterial3: true,
             fontFamily: GoogleFonts.inter().fontFamily,
           ),
@@ -90,6 +93,9 @@ class MyApp extends StatelessWidget {
               color: const Color(0xFF1E1E1E),
               elevation: 1,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            ),
+            snackBarTheme: const SnackBarThemeData(
+              behavior: SnackBarBehavior.floating,
             ),
             useMaterial3: true,
             fontFamily: GoogleFonts.inter().fontFamily,

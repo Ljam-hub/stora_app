@@ -346,9 +346,9 @@ class _OrderCardState extends State<_OrderCard> {
       case 'completed':
         return 'COMPLETED';
       case 'ready':
-        return 'READY FOR PICKUP';
+        return 'READY';
       case 'accepted':
-        return 'ACCEPTED (PREPARING)';
+        return 'PREPARING';
       case 'declined':
         return declineReason?.toLowerCase().contains('customer') == true ? 'CANCELLED' : 'DECLINED';
       case 'auto_declined':
@@ -356,7 +356,7 @@ class _OrderCardState extends State<_OrderCard> {
       case 'counter_offer':
         return 'COUNTERED';
       default:
-        return 'PENDING REVIEW';
+        return 'PENDING';
     }
   }
 
@@ -763,20 +763,21 @@ class _OrderCardState extends State<_OrderCard> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Wrap(
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        spacing: 6,
-                        runSpacing: 3,
+                      Row(
                         children: [
-                          Text(
-                            'Order #$orderId',
-                            style: TextStyle(
-                              color: HomeColors.textPrimary,
-                              fontSize: 15,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: -0.2,
+                          Flexible(
+                            child: Text(
+                              'Order #$orderId',
+                              style: TextStyle(
+                                color: HomeColors.textPrimary,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: -0.2,
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
+                          const SizedBox(width: 6),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
                             decoration: BoxDecoration(

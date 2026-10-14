@@ -21,6 +21,14 @@ class _SalesAnalyticsScreenState extends State<SalesAnalyticsScreen> {
   int _selectedPeriodIndex = 0; // 0: 7 Days, 1: 30 Days, 2: All Time
 
   @override
+  void initState() {
+    super.initState();
+    if (!AccountStatusStore.instance.isPremium) {
+      AccountStatusStore.instance.fetchStatus();
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: Listenable.merge([

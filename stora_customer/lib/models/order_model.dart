@@ -124,7 +124,7 @@ class CustomerOrder {
       case 'ready':
         return 'Ready for Pickup';
       case 'accepted':
-        return 'Accepted (Preparing)';
+        return 'Preparing';
       case 'declined':
         return 'Declined';
       case 'auto_declined':

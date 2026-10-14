@@ -28,10 +28,19 @@ class _BusinessInsightsScreenState extends State<BusinessInsightsScreen> {
   @override
   void initState() {
     super.initState();
-    if (AccountStatusStore.instance.isPremium) {
-      _loadInsights();
-    } else {
-      _isLoading = false;
+    _initScreen();
+  }
+
+  Future<void> _initScreen() async {
+    if (!AccountStatusStore.instance.isPremium) {
+      await AccountStatusStore.instance.fetchStatus();
+    }
+    if (mounted) {
+      if (AccountStatusStore.instance.isPremium) {
+        _loadInsights();
+      } else {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
