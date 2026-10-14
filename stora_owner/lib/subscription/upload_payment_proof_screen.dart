@@ -727,7 +727,7 @@ class _UploadPaymentProofScreenState extends State<UploadPaymentProofScreen> {
                 onTap: _picking ? null : _pickScreenshot,
                 child: Container(
                   width: double.infinity,
-                  height: 140,
+                  height: _screenshotBytes != null ? 280 : 140,
                   decoration: BoxDecoration(
                     color: HomeColors.cardElevated,
                     borderRadius: BorderRadius.circular(14),
@@ -740,7 +740,7 @@ class _UploadPaymentProofScreenState extends State<UploadPaymentProofScreen> {
                     image: _screenshotBytes != null
                         ? DecorationImage(
                             image: MemoryImage(_screenshotBytes!),
-                            fit: BoxFit.cover,
+                            fit: BoxFit.contain,
                           )
                         : null,
                   ),

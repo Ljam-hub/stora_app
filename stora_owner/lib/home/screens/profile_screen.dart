@@ -592,16 +592,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 children: [
                   Row(
                     children: [
-                      IconButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        icon: Icon(Icons.chevron_left, color: HomeColors.textPrimary),
-                        style: IconButton.styleFrom(
-                          backgroundColor: HomeColors.cardBackground,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                      ),
+                      if (Navigator.of(context).canPop())
+                        IconButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          icon: Icon(Icons.chevron_left, color: HomeColors.textPrimary),
+                          style: IconButton.styleFrom(
+                            backgroundColor: HomeColors.cardBackground,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                        )
+                      else
+                        const SizedBox(width: 40),
                       Expanded(
-                        child: Text('Profile',
+                        child: Text('Settings',
                             textAlign: TextAlign.center,
                             style: TextStyle(color: HomeColors.textPrimary, fontSize: 18, fontWeight: FontWeight.w700)),
                       ),
@@ -1152,16 +1155,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   // ── 🚪 5. ACCOUNT ────────────
                   _buildSectionHeader('ACCOUNT', Icons.person_outline_rounded),
                   _MenuTile(
-                    icon: Icons.logout_rounded,
-                    label: 'Log out',
-                    destructive: false,
-                    onTap: () => _confirmLogout(context),
-                  ),
-                  _MenuTile(
                     icon: Icons.delete_forever_rounded,
                     label: 'Delete Account',
                     destructive: true,
                     onTap: () => _confirmDeleteAccount(context),
+                  ),
+                  _MenuTile(
+                    icon: Icons.logout_rounded,
+                    label: 'Log out',
+                    destructive: false,
+                    onTap: () => _confirmLogout(context),
                   ),
                 ],
               ),

@@ -170,7 +170,8 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
                                   },
                                 ),
                               IconButton(
-                                icon: const Icon(Icons.qr_code_scanner_rounded, color: AppColors.purpleLight),
+                                icon: const Icon(Icons.barcode_reader, color: AppColors.purpleLight, size: 20),
+                                tooltip: 'Scan Barcode',
                                 onPressed: _onScan,
                               ),
                               const SizedBox(width: 4),

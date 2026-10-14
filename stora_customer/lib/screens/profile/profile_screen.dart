@@ -1304,17 +1304,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
             const SizedBox(height: 28),
 
-            // Logout Button
-            GradientButton(
-              text: 'Log Out',
-              icon: Icons.logout_rounded,
-              gradient: const LinearGradient(
-                colors: [Color(0xFFE53935), Color(0xFFC62828)],
-              ),
-              onPressed: _handleLogout,
-            ),
-            const SizedBox(height: 14),
-
             // Delete Account Button
             SizedBox(
               width: double.infinity,
@@ -1328,6 +1317,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                 ),
               ),
+            ),
+            const SizedBox(height: 14),
+
+            // Logout Button
+            GradientButton(
+              text: 'Log Out',
+              icon: Icons.logout_rounded,
+              gradient: const LinearGradient(
+                colors: [Color(0xFFE53935), Color(0xFFC62828)],
+              ),
+              onPressed: _handleLogout,
             ),
             const SizedBox(height: 24),
           ],

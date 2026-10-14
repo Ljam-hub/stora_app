@@ -207,20 +207,11 @@ class _LoginScreenState extends State<LoginScreen> {
                             Icon(Icons.shield_outlined, size: 14, color: AppColors.purpleLight.withValues(alpha: 0.85)),
                             const SizedBox(width: 6),
                             const Text(
-                              'Data Privacy & Cyber Security Compliant',
+                              'Data Privacy & Security',
                               style: TextStyle(
                                 color: AppColors.label,
                                 fontSize: 11.5,
                                 fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              '(RA 10173 · RA 10175)',
-                              style: TextStyle(
-                                color: AppColors.purpleLight.withValues(alpha: 0.85),
-                                fontSize: 10.5,
-                                fontWeight: FontWeight.w700,
                               ),
                             ),
                           ],

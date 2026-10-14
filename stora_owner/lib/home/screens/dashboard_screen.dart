@@ -14,7 +14,6 @@ import 'alerts_screen.dart';
 import 'business_insights_screen.dart';
 import 'owner_notes_screen.dart';
 import 'pending_orders_screen.dart';
-import 'profile_screen.dart';
 import 'sales_analytics_screen.dart';
 import 'sales_history_screen.dart';
 import 'set_store_location_screen.dart';
@@ -90,23 +89,19 @@ class DashboardScreen extends StatelessWidget {
                         shape: BoxShape.circle,
                         gradient: HomeColors.purpleGradient,
                       ),
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(20),
-                        onTap: () => DashboardScreen.safeNavigate(context, const ProfileScreen()),
-                        child: Builder(
-                          builder: (_) {
-                            final avatar = AuthStore.instance.avatarUrl;
-                            final hasAvatar = avatar != null && avatar.isNotEmpty;
-                            return CircleAvatar(
-                              radius: 20,
-                              backgroundColor: HomeColors.cardElevated,
-                              backgroundImage: hasAvatar ? NetworkImage(avatar) : null,
-                              child: !hasAvatar
-                                  ? const Icon(Icons.storefront_rounded, color: AppColors.purpleLight, size: 20)
-                                  : null,
-                            );
-                          },
-                        ),
+                      child: Builder(
+                        builder: (_) {
+                          final avatar = AuthStore.instance.avatarUrl;
+                          final hasAvatar = avatar != null && avatar.isNotEmpty;
+                          return CircleAvatar(
+                            radius: 20,
+                            backgroundColor: HomeColors.cardElevated,
+                            backgroundImage: hasAvatar ? NetworkImage(avatar) : null,
+                            child: !hasAvatar
+                                ? const Icon(Icons.storefront_rounded, color: AppColors.purpleLight, size: 20)
+                                : null,
+                          );
+                        },
                       ),
                     ),
                     const SizedBox(width: 12),

@@ -9,6 +9,7 @@ import '../screens/inventory_list_screen.dart';
 import '../screens/owner_chat_screen.dart';
 import '../screens/pending_orders_screen.dart';
 import '../screens/pos_screen.dart';
+import '../screens/profile_screen.dart';
 import '../stores/category_store.dart';
 import '../stores/chat_store.dart';
 import '../stores/inventory_store.dart';
@@ -21,7 +22,7 @@ import '../theme/theme_mode_controller.dart';
 import '../widgets/notification_badge.dart';
 import '../widgets/offline_banner.dart';
 
-/// App shell — bottom nav with 5 tabs including Chat. "Add / Edit product" and "Sales
+/// App shell — bottom nav with 6 tabs including Settings. "Add / Edit product" and "Sales
 /// history" are pushed on top rather than being tabs, since they're
 /// flows, not destinations.
 class StoraShell extends StatefulWidget {
@@ -76,6 +77,7 @@ class _StoraShellState extends State<StoraShell> with WidgetsBindingObserver {
       PosScreen(),
       OwnerChatScreen(isTab: true),
       AlertsScreen(),
+      ProfileScreen(),
     ];
     WidgetsBinding.instance.addObserver(this);
     AccountStatusStore.instance.addListener(_checkPriceChange);
@@ -365,6 +367,7 @@ class _StoraNavBar extends StatelessWidget {
     _NavItem(Icons.point_of_sale_rounded, 'POS'),
     _NavItem(Icons.chat_bubble_outline_rounded, 'Chat'),
     _NavItem(Icons.notifications_rounded, 'Alerts'),
+    _NavItem(Icons.settings_rounded, 'Settings'),
   ];
 
   Color _getActiveColor(int index) {
@@ -470,13 +473,16 @@ class _StoraNavBar extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 4),
-                        Text(
-                          item.label,
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: selected ? activeColor : AppColors.label,
-                            fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
-                            letterSpacing: selected ? 0.2 : 0,
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            item.label,
+                            style: TextStyle(
+                              fontSize: 10.5,
+                              color: selected ? activeColor : AppColors.label,
+                              fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
+                              letterSpacing: selected ? 0.2 : 0,
+                            ),
                           ),
                         ),
                       ],
