@@ -321,14 +321,9 @@ class _PosScreenState extends State<PosScreen> {
                         else
                           const Icon(Icons.search, color: AppColors.label, size: 18),
                         IconButton(
-                          icon: const Icon(Icons.qr_code_scanner_rounded, color: AppColors.purpleLight, size: 20),
+                          icon: const Icon(Icons.barcode_reader, color: AppColors.purpleLight, size: 20),
                           tooltip: 'Scan Barcode',
                           onPressed: _onScan,
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.qr_code_2_rounded, color: Color(0xFF60A5FA), size: 22),
-                          tooltip: 'Store Payment QR',
-                          onPressed: () => showPaymentQrModal(context),
                         ),
                       ],
                     ),
