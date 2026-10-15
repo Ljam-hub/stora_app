@@ -184,7 +184,7 @@ void main() {
         await pumpUntilFound(tester, find.text('My Shopping Cart'));
 
         expect(find.text('My Shopping Cart'), findsOneWidget);
-        expect(find.text('Subtotal (1 items)'), findsOneWidget);
+        expect(find.textContaining('Subtotal (1 item'), findsOneWidget);
         expect(find.byKey(const Key('cart_checkout_button')), findsOneWidget);
         await pumpSteps(tester, steps: 4);
 

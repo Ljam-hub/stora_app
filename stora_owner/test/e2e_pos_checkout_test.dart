@@ -133,14 +133,14 @@ void main() {
         await tester.tap(find.byKey(const Key('loginSubmitButton')));
 
         // Wait until navigation transitions to StoraShell
-        await pumpUntilFound(tester, find.byKey(const Key('nav_tab_sales')));
+        await pumpUntilFound(tester, find.byKey(const Key('nav_tab_pos')));
         orders.stopPolling();
         chat.stopPolling();
 
         // 3. Navigate to POS / Sales Tab
-        final salesTab = find.byKey(const Key('nav_tab_sales'));
-        expect(salesTab, findsOneWidget);
-        await tester.tap(salesTab);
+        final posTab = find.byKey(const Key('nav_tab_pos'));
+        expect(posTab, findsOneWidget);
+        await tester.tap(posTab);
         await pumpUntilFound(tester, find.text('Virtual Cart'));
 
         // Verify POS Screen and Product Card

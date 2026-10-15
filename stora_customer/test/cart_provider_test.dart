@@ -94,7 +94,7 @@ void main() {
       expect(cart.isEmpty, isTrue);
     });
 
-    test('Cross-store conflict prevents adding item from another store', () {
+    test('Multi-store cart supports items from different stores', () {
       final prodStore1 = ProductModel(
         id: 105,
         name: 'Store 1 Item',
@@ -111,11 +111,13 @@ void main() {
       );
 
       expect(cart.addItem(prodStore1, 1), isTrue);
-      expect(cart.addItem(prodStore2, 1), isFalse); // Conflict
-      expect(cart.items.length, 1);
+      expect(cart.addItem(prodStore2, 1), isTrue); // Multi-store supported
+      expect(cart.items.length, 2);
+      expect(cart.hasMultipleStores, isTrue);
+      expect(cart.storeIds, containsAll([1, 2]));
     });
 
-    test('addOrderItems handles cross-store conflict and clearExisting', () {
+    test('addOrderItems appends items or clears when clearExisting is true', () {
       final prodStore1 = ProductModel(
         id: 107,
         name: 'Store 1 Item',
@@ -140,8 +142,9 @@ void main() {
         ],
       );
 
-      // Without clearing, should return -1
-      expect(cart.addOrderItems(orderFromStore2, clearExisting: false), -1);
+      // Without clearing, adds to multi-store cart
+      expect(cart.addOrderItems(orderFromStore2, clearExisting: false), 1);
+      expect(cart.storeIds, containsAll([1, 2]));
 
       // With clearing, replaces and adds
       final count = cart.addOrderItems(orderFromStore2, clearExisting: true);
