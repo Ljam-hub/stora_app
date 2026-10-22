@@ -1,7 +1,28 @@
-# STORA Presentation: Slide-by-Slide Speaker Notes
+# STORA Presentation: Slide-by-Slide Speaker Notes & Technical Glossary
 **Deck:** Group 4 Topics 13–16: *Draw it, then prove it*  
 **Application:** STORA (Smart POS & Micro-Commerce Platform)  
 **Target Audience:** SIA Evaluators, Technical Panel, and Defense Committee
+
+---
+
+## 📖 Master Glossary: Technical Terms, Full Words & Their Purpose
+
+| Term | Full Words / Expansion | Concrete Purpose in STORA |
+| :--- | :--- | :--- |
+| **UML** | **Unified Modeling Language** | A standardized visual modeling language used to create visual blueprints of system use cases, sequences, and class structures so developers and evaluators share the same mental model without ambiguity. |
+| **C4 Model** | **Context, Containers, Components, Code** | A 4-level architectural zoom framework (created by Simon Brown) that organizes software diagrams like Google Maps, allowing high-level stakeholders to see Context (Level 1) and engineers to see Containers (Level 2). |
+| **ADR** | **Architecture Decision Record** | A concise, 1-page immutable document capturing a major technical choice (e.g. PostgreSQL vs NoSQL), its problem context, and trade-offs so the team's rationale is preserved forever in version control. |
+| **UAT** | **User Acceptance Testing** | The final pre-release testing phase where real end-users (5 real sari-sari merchants and 5 neighborhood shoppers) perform real tasks to verify that the app is genuinely usable in everyday life. |
+| **RA 10173** | **Republic Act No. 10173 (Data Privacy Act of 2012)** | The Philippine data privacy law governing data collection, transparency, purpose limitation, and user consent, ensuring STORA participants' rights are respected during usability testing and account usage. |
+| **a11y** | **Accessibility** (*"a"* + 11 letters + *"y"*) | Designing software so everyone—including elderly sari-sari owners, people with low vision, motor difficulties, color blindness, or those operating in direct noon tropical glare—can use the app effortlessly. |
+| **WCAG** | **Web Content Accessibility Guidelines** | The international benchmark (W3C) establishing testable accessibility standards (e.g. 4.5:1 minimum text contrast, 44×44dp minimum touch target dimensions). |
+| **ERD** | **Entity-Relationship Diagram** | A structural visual diagram modeling database tables (entities), columns, and relational foreign keys, ensuring data integrity before writing code. |
+| **ACID** | **Atomicity, Consistency, Isolation, Durability** | The four essential database transaction guarantees in PostgreSQL that prevent financial data corruption in STORA's community debt (*utang*) ledger. |
+| **POS** | **Point of Sale** | The retail checkout terminal interface where store owners scan items via camera, calculate change (*sukli*), record payments, and deduct inventory. |
+| **API / REST** | **Representational State Transfer Application Programming Interface** | A standardized, stateless HTTP communication protocol allowing Flutter mobile apps to query and send data to the Django server using JSON payloads. |
+| **JWT** | **JSON Web Token** | A cryptographically signed token enabling stateless user authentication between the mobile device and backend server without database lookups on every request. |
+| **FCM** | **Firebase Cloud Messaging** | Google's cloud push notification service that delivers real-time order alerts and stock status updates to customer and owner devices. |
+| **SIA** | **Systems Integration and Architecture** | The overarching software engineering discipline focusing on how multiple software components, databases, cloud infrastructure, and human workflows integrate into a coherent, defensible whole. |
 
 ---
 
