@@ -132,3 +132,18 @@ sequenceDiagram
 1. **Strict Separation of Concerns**: Views do not make raw SQL queries or execute untracked HTTP requests; all mutations flow through the respective Controllers.
 2. **First-Class MVC Aliases**: The Flutter codebases expose dedicated `lib/controllers/` modules, allowing seamless integration with traditional MVC naming conventions while maintaining full compatibility with Flutter `Provider` and `ChangeNotifier` state architectures.
 3. **Decoupled Testing**: Controllers and Models can be tested independently of Flutter widget rendering lifecycles and backend web servers.
+
+---
+
+## 6. Architecture & Validation Presentation Deck (PDF)
+
+The complete Group 4 (Topics 13–16: C4 & UML Diagrams, ADRs, UAT & Consent, and Accessibility) slide deck matching Day 22 requirements in STORA's exact design theme is available as a standalone PDF:
+
+- **PDF Deck**: [docs/presentation/stora_group4_presentation.pdf](file:///c:/Users/lejon%20osial/PROGRAMMING/stora_app/docs/presentation/stora_group4_presentation.pdf)
+- **Format**: 19 widescreen pages (16:9, `1920×1080`), dark retail theme (`#141018`, `#F56A10`, `#10B981`).
+- **Artefacts**:
+  - Architecture Decision Records: [docs/adr/](file:///c:/Users/lejon%20osial/PROGRAMMING/stora_app/docs/adr)
+  - UAT Plan & Acceptance Criteria: [docs/uat/UAT_PLAN_AND_CRITERIA.md](file:///c:/Users/lejon%20osial/PROGRAMMING/stora_app/docs/uat/UAT_PLAN_AND_CRITERIA.md)
+  - Informed Consent Form (RA 10173): [docs/uat/INFORMED_CONSENT_FORM_RA10173.md](file:///c:/Users/lejon%20osial/PROGRAMMING/stora_app/docs/uat/INFORMED_CONSENT_FORM_RA10173.md)
+  - Accessibility Audit & Gap Disclosure: [docs/accessibility/A11Y_AUDIT_AND_FIXES.md](file:///c:/Users/lejon%20osial/PROGRAMMING/stora_app/docs/accessibility/A11Y_AUDIT_AND_FIXES.md)
+

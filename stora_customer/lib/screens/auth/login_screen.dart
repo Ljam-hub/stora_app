@@ -85,15 +85,16 @@ class _LoginScreenState extends State<LoginScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     // App Branding Icon & Title
-
-
                     Center(
                       child: Container(
                         width: 84,
                         height: 84,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(22),
-                          boxShadow: AppColors.glowShadow(AppColors.primary, opacity: 0.4),
+                          boxShadow: AppColors.glowShadow(
+                            AppColors.primary,
+                            opacity: 0.4,
+                          ),
                         ),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(22),
@@ -135,7 +136,10 @@ class _LoginScreenState extends State<LoginScreen> {
                       hint: 'customer@example.com',
                       prefixIcon: Icons.email_outlined,
                       keyboardType: TextInputType.emailAddress,
-                      autofillHints: const [AutofillHints.username, AutofillHints.email],
+                      autofillHints: const [
+                        AutofillHints.username,
+                        AutofillHints.email,
+                      ],
                       validator: (val) {
                         if (val == null || val.trim().isEmpty) {
                           return 'Please enter your email';
@@ -165,107 +169,108 @@ class _LoginScreenState extends State<LoginScreen> {
                         return null;
                       },
                     ),
-                  const SizedBox(height: 8),
+                    const SizedBox(height: 8),
 
-                  // Forgot Password
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: TextButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const ForgotPasswordScreen(),
-                          ),
-                        );
-                      },
-                      style: TextButton.styleFrom(
-                        foregroundColor: AppColors.accentText,
-                        padding: EdgeInsets.zero,
-                        visualDensity: VisualDensity.compact,
-                      ),
-                      child: const Text('Forgot password?'),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Login Button
-                  GradientButton(
-                    key: const Key('login_submit_button'),
-                    text: 'Sign In',
-                    isLoading: auth.isLoading,
-                    onPressed: auth.isLoading ? null : _handleLogin,
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Register prompt
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        "Don't have an account?",
-                        style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
-                      ),
-                      TextButton(
+                    // Forgot Password
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
                         onPressed: () {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => const RegisterScreen(),
+                              builder: (_) => const ForgotPasswordScreen(),
                             ),
                           );
                         },
                         style: TextButton.styleFrom(
-                          foregroundColor: AppColors.primary,
+                          foregroundColor: AppColors.accentText,
+                          padding: EdgeInsets.zero,
+                          visualDensity: VisualDensity.compact,
                         ),
-                        child: const Text(
-                          'Create Account',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  InkWell(
-                    onTap: () => _showCyberSecurityNotice(context),
-                    borderRadius: BorderRadius.circular(12),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.shield_outlined, size: 14, color: AppColors.primary.withValues(alpha: 0.85)),
-                          const SizedBox(width: 6),
-                          Text(
-                            'Data Privacy & Cyber Security Compliant',
-                            style: TextStyle(
-                              color: AppColors.textSecondary,
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            '(RA 10173 · RA 10175)',
-                            style: TextStyle(
-                              color: AppColors.primary.withValues(alpha: 0.9),
-                              fontSize: 10.5,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
+                        child: const Text('Forgot password?'),
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 24),
+
+                    // Login Button
+                    GradientButton(
+                      key: const Key('login_submit_button'),
+                      text: 'Sign In',
+                      isLoading: auth.isLoading,
+                      onPressed: auth.isLoading ? null : _handleLogin,
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Register prompt
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          "Don't have an account?",
+                          style: TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 14,
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const RegisterScreen(),
+                              ),
+                            );
+                          },
+                          style: TextButton.styleFrom(
+                            foregroundColor: AppColors.primary,
+                          ),
+                          child: const Text(
+                            'Create Account',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    InkWell(
+                      onTap: () => _showCyberSecurityNotice(context),
+                      borderRadius: BorderRadius.circular(12),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.shield_outlined,
+                              size: 14,
+                              color: AppColors.primary.withValues(alpha: 0.85),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Data Privacy & Security',
+                              style: TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
         ),
       ),
-    ),
-  );
+    );
   }
 
   void _showCyberSecurityNotice(BuildContext context) {
@@ -307,7 +312,11 @@ class _LoginScreenState extends State<LoginScreen> {
                             color: AppColors.primary.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: const Icon(Icons.shield_outlined, color: AppColors.primary, size: 24),
+                          child: const Icon(
+                            Icons.shield_outlined,
+                            color: AppColors.primary,
+                            size: 24,
+                          ),
                         ),
                         const SizedBox(width: 14),
                         Expanded(
@@ -367,10 +376,18 @@ class _LoginScreenState extends State<LoginScreen> {
                         backgroundColor: AppColors.primary,
                         foregroundColor: Colors.black,
                         padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
                       ),
                       onPressed: () => Navigator.pop(ctx),
-                      child: const Text('Understood & Acknowledged', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                      child: const Text(
+                        'Understood & Acknowledged',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
                     ),
                   ],
                 ),

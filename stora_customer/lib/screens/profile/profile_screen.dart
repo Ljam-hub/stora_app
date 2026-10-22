@@ -10,7 +10,6 @@ import '../../storage/hidden_products_store.dart';
 import '../../services/location_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/custom_text_field.dart';
-import '../../widgets/gradient_button.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../utils/navigation_guard.dart';
 import '../auth/email_verification_screen.dart';
@@ -30,7 +29,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _pickAndUploadAvatar() async {
     final auth = context.read<AuthProvider>();
-    final hasAvatar = auth.currentUser?.avatarUrl != null && auth.currentUser!.avatarUrl!.isNotEmpty;
+    final hasAvatar =
+        auth.currentUser?.avatarUrl != null &&
+        auth.currentUser!.avatarUrl!.isNotEmpty;
     final action = await showModalBottomSheet<String>(
       context: context,
       backgroundColor: AppColors.cardBackground,
@@ -41,20 +42,41 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: Wrap(
           children: [
             ListTile(
-              leading: const Icon(Icons.photo_camera_rounded, color: AppColors.primary),
-              title: Text('Take a photo', style: TextStyle(color: AppColors.textPrimary)),
+              leading: const Icon(
+                Icons.photo_camera_rounded,
+                color: AppColors.primary,
+              ),
+              title: Text(
+                'Take a photo',
+                style: TextStyle(color: AppColors.textPrimary),
+              ),
               onTap: () => Navigator.pop(ctx, 'camera'),
             ),
             ListTile(
-              leading: const Icon(Icons.photo_library_rounded, color: AppColors.primary),
-              title: Text('Choose from gallery', style: TextStyle(color: AppColors.textPrimary)),
+              leading: const Icon(
+                Icons.photo_library_rounded,
+                color: AppColors.primary,
+              ),
+              title: Text(
+                'Choose from gallery',
+                style: TextStyle(color: AppColors.textPrimary),
+              ),
               onTap: () => Navigator.pop(ctx, 'gallery'),
             ),
             if (hasAvatar) ...[
               Divider(color: AppColors.cardBorder, height: 1),
               ListTile(
-                leading: const Icon(Icons.delete_outline_rounded, color: AppColors.danger),
-                title: const Text('Remove profile photo', style: TextStyle(color: AppColors.danger, fontWeight: FontWeight.w600)),
+                leading: const Icon(
+                  Icons.delete_outline_rounded,
+                  color: AppColors.danger,
+                ),
+                title: const Text(
+                  'Remove profile photo',
+                  style: TextStyle(
+                    color: AppColors.danger,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
                 onTap: () => Navigator.pop(ctx, 'remove'),
               ),
             ],
@@ -75,24 +97,43 @@ class _ProfileScreenState extends State<ProfileScreen> {
             borderRadius: BorderRadius.circular(16),
             side: BorderSide(color: AppColors.cardBorder),
           ),
-          title: Text('Remove Profile Photo', style: TextStyle(color: AppColors.textPrimary, fontSize: 17, fontWeight: FontWeight.bold)),
+          title: Text(
+            'Remove Profile Photo',
+            style: TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 17,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
           content: Text(
             'Are you sure you want to remove your profile photo and restore the default avatar?',
-            style: TextStyle(color: AppColors.textSecondary, fontSize: 14, height: 1.45),
+            style: TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 14,
+              height: 1.45,
+            ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(false),
-              child: Text('Cancel', style: TextStyle(color: AppColors.textSecondary, fontSize: 14)),
+              child: Text(
+                'Cancel',
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+              ),
             ),
             ElevatedButton(
               onPressed: () => Navigator.of(ctx).pop(true),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.danger,
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
               ),
-              child: const Text('Remove', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+              child: const Text(
+                'Remove',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+              ),
             ),
           ],
         ),
@@ -108,7 +149,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
         if (ok) {
           messenger.showSnackBar(
             const SnackBar(
-              content: Text('Profile photo removed. Classic avatar restored.', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              content: Text(
+                'Profile photo removed. Classic avatar restored.',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               backgroundColor: Color(0xFF059669),
             ),
           );
@@ -133,11 +180,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return;
     }
 
-    final source = action == 'camera' ? ImageSource.camera : ImageSource.gallery;
+    final source = action == 'camera'
+        ? ImageSource.camera
+        : ImageSource.gallery;
     final picker = ImagePicker();
 
     try {
-      final picked = await picker.pickImage(source: source, maxWidth: 800, maxHeight: 800, imageQuality: 85);
+      final picked = await picker.pickImage(
+        source: source,
+        maxWidth: 800,
+        maxHeight: 800,
+        imageQuality: 85,
+      );
       if (picked == null || !mounted) return;
 
       setState(() => _uploadingAvatar = true);
@@ -148,7 +202,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (ok) {
         messenger.showSnackBar(
           const SnackBar(
-            content: Text('Profile photo updated!', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            content: Text(
+              'Profile photo updated!',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             backgroundColor: Color(0xFF059669),
           ),
         );
@@ -164,18 +224,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (!mounted) return;
       setState(() => _uploadingAvatar = false);
       messenger.showSnackBar(
-        SnackBar(
-          content: Text('Error: $e'),
-          backgroundColor: AppColors.danger,
-        ),
+        SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.danger),
       );
     }
   }
 
   void _openEditProfileDialog() async {
     final auth = context.read<AuthProvider>();
-    final nameController = TextEditingController(text: auth.currentUser?.name ?? '');
-    final emailController = TextEditingController(text: auth.currentUser?.email ?? '');
+    final nameController = TextEditingController(
+      text: auth.currentUser?.name ?? '',
+    );
+    final emailController = TextEditingController(
+      text: auth.currentUser?.email ?? '',
+    );
 
     try {
       await showDialog(
@@ -186,7 +247,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
             borderRadius: BorderRadius.circular(20),
             side: BorderSide(color: AppColors.cardBorder),
           ),
-          title: Text('Edit Profile', style: TextStyle(color: AppColors.textPrimary)),
+          title: Text(
+            'Edit Profile',
+            style: TextStyle(color: AppColors.textPrimary),
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -206,7 +270,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+              child: Text(
+                'Cancel',
+                style: TextStyle(color: AppColors.textSecondary),
+              ),
             ),
             ElevatedButton(
               onPressed: () async {
@@ -220,7 +287,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   if (mounted) {
                     messenger.showSnackBar(
                       const SnackBar(
-                        content: Text('Profile updated successfully!', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                        content: Text(
+                          'Profile updated successfully!',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                         backgroundColor: Color(0xFF059669),
                       ),
                     );
@@ -228,7 +301,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 } else {
                   messenger.showSnackBar(
                     const SnackBar(
-                      content: Text('Failed to update profile. Please try again.'),
+                      content: Text(
+                        'Failed to update profile. Please try again.',
+                      ),
                       backgroundColor: AppColors.danger,
                     ),
                   );
@@ -252,7 +327,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void _openEditDeliveryDialog() async {
     final auth = context.read<AuthProvider>();
     final phoneController = TextEditingController(text: auth.savedPhone ?? '');
-    final addressController = TextEditingController(text: auth.savedAddress ?? '');
+    final addressController = TextEditingController(
+      text: auth.savedAddress ?? '',
+    );
     bool isLocating = false;
 
     try {
@@ -289,7 +366,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               } else {
                 messenger.showSnackBar(
                   SnackBar(
-                    content: Text(res.errorMessage ?? 'Could not detect location.'),
+                    content: Text(
+                      res.errorMessage ?? 'Could not detect location.',
+                    ),
                     backgroundColor: AppColors.danger,
                     behavior: SnackBarBehavior.floating,
                   ),
@@ -303,7 +382,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 borderRadius: BorderRadius.circular(20),
                 side: BorderSide(color: AppColors.cardBorder),
               ),
-              title: Text('Default Contact & Pickup Info', style: TextStyle(color: AppColors.textPrimary)),
+              title: Text(
+                'Default Contact & Pickup Info',
+                style: TextStyle(color: AppColors.textPrimary),
+              ),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -325,11 +407,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             child: SizedBox(
                               width: 18,
                               height: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: AppColors.primary,
+                              ),
                             ),
                           )
                         : IconButton(
-                            icon: const Icon(Icons.my_location_rounded, color: AppColors.primary, size: 20),
+                            icon: const Icon(
+                              Icons.my_location_rounded,
+                              color: AppColors.primary,
+                              size: 20,
+                            ),
                             tooltip: 'Detect current location',
                             onPressed: autoLocate,
                           ),
@@ -340,7 +429,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(ctx),
-                  child: Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+                  child: Text(
+                    'Cancel',
+                    style: TextStyle(color: AppColors.textSecondary),
+                  ),
                 ),
                 ElevatedButton(
                   onPressed: () async {
@@ -353,7 +445,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     if (mounted) {
                       messenger.showSnackBar(
                         const SnackBar(
-                          content: Text('Delivery information saved!', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                          content: Text(
+                            'Delivery information saved!',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                           backgroundColor: Color(0xFF059669),
                         ),
                       );
@@ -388,7 +486,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
               borderRadius: BorderRadius.circular(20),
               side: BorderSide(color: AppColors.cardBorder),
             ),
-            title: Text('Change Password', style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold)),
+            title: Text(
+              'Change Password',
+              style: TextStyle(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             content: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -422,7 +526,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
             actions: [
               TextButton(
                 onPressed: isSaving ? null : () => Navigator.pop(ctx),
-                child: Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+                child: Text(
+                  'Cancel',
+                  style: TextStyle(color: AppColors.textSecondary),
+                ),
               ),
               ElevatedButton(
                 onPressed: isSaving
@@ -435,7 +542,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         if (oldPass.isEmpty || newPass.isEmpty) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text('Please fill in all password fields.'),
+                              content: Text(
+                                'Please fill in all password fields.',
+                              ),
                               backgroundColor: AppColors.danger,
                             ),
                           );
@@ -445,7 +554,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         if (newPass.length < 8) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text('New password must be at least 8 characters.'),
+                              content: Text(
+                                'New password must be at least 8 characters.',
+                              ),
                               backgroundColor: AppColors.danger,
                             ),
                           );
@@ -475,17 +586,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           if (mounted) {
                             messenger.showSnackBar(
                               const SnackBar(
-                                content: Text('Password changed successfully!', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                                content: Text(
+                                  'Password changed successfully!',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                                 backgroundColor: Color(0xFF059669),
                               ),
                             );
                           }
                         } catch (e) {
-                          if (ctx.mounted) setDialogState(() => isSaving = false);
+                          if (ctx.mounted) {
+                            setDialogState(() => isSaving = false);
+                          }
                           if (mounted) {
                             messenger.showSnackBar(
                               SnackBar(
-                                content: Text(e.toString().replaceAll('Exception: ', '')),
+                                content: Text(
+                                  e.toString().replaceAll('Exception: ', ''),
+                                ),
                                 backgroundColor: AppColors.danger,
                               ),
                             );
@@ -500,7 +621,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ? const SizedBox(
                         width: 18,
                         height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.black,
+                        ),
                       )
                     : const Text('Update Password'),
               ),
@@ -527,16 +651,35 @@ class _ProfileScreenState extends State<ProfileScreen> {
             borderRadius: BorderRadius.circular(16),
             side: BorderSide(color: AppColors.cardBorder),
           ),
-          title: Text('Log Out', style: TextStyle(color: AppColors.textPrimary, fontSize: 17, fontWeight: FontWeight.bold)),
+          title: Text(
+            'Log Out',
+            style: TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 17,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
           content: Text(
-            isLoggingOut ? 'Logging out...' : 'Are you sure you want to log out?',
-            style: TextStyle(color: AppColors.textSecondary, fontSize: 14, height: 1.45),
+            isLoggingOut
+                ? 'Logging out...'
+                : 'Are you sure you want to log out?',
+            style: TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 14,
+              height: 1.45,
+            ),
           ),
           actions: [
             if (!isLoggingOut)
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: Text('Cancel', style: TextStyle(color: AppColors.textSecondary, fontSize: 14)),
+                child: Text(
+                  'Cancel',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 14,
+                  ),
+                ),
               ),
             TextButton(
               onPressed: isLoggingOut
@@ -556,9 +699,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ? const SizedBox(
                       width: 18,
                       height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.danger),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppColors.danger,
+                      ),
                     )
-                  : const Text('Log Out', style: TextStyle(color: AppColors.danger, fontSize: 14, fontWeight: FontWeight.bold)),
+                  : const Text(
+                      'Log Out',
+                      style: TextStyle(
+                        color: AppColors.danger,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
             ),
           ],
         ),
@@ -579,19 +732,37 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           title: Row(
             children: [
-              const Icon(Icons.warning_amber_rounded, color: AppColors.danger, size: 22),
+              const Icon(
+                Icons.warning_amber_rounded,
+                color: AppColors.danger,
+                size: 22,
+              ),
               const SizedBox(width: 8),
-              Text('Delete Account', style: TextStyle(color: AppColors.textPrimary, fontSize: 17, fontWeight: FontWeight.bold)),
+              Text(
+                'Delete Account',
+                style: TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 17,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ],
           ),
           content: Text(
             'Are you sure you want to delete your account? This action is permanent and cannot be undone. All your orders, messages, and profile data will be permanently deleted.',
-            style: TextStyle(color: AppColors.textSecondary, fontSize: 14, height: 1.45),
+            style: TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 14,
+              height: 1.45,
+            ),
           ),
           actions: [
             TextButton(
               onPressed: isDeleting ? null : () => Navigator.pop(ctx),
-              child: Text('Cancel', style: TextStyle(color: AppColors.textSecondary, fontSize: 14)),
+              child: Text(
+                'Cancel',
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+              ),
             ),
             ElevatedButton(
               onPressed: isDeleting
@@ -629,11 +800,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           if (ctx.mounted) Navigator.pop(ctx);
                           messenger.showSnackBar(
                             const SnackBar(
-                              content: Text('Your account has been deactivated and session cleared.'),
+                              content: Text(
+                                'Your account has been deactivated and session cleared.',
+                              ),
                               backgroundColor: Color(0xFF059669),
                             ),
                           );
-                          nav.pushNamedAndRemoveUntil('/login', (route) => false);
+                          nav.pushNamedAndRemoveUntil(
+                            '/login',
+                            (route) => false,
+                          );
                           return;
                         }
                         if (ctx.mounted) {
@@ -641,7 +817,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         }
                         messenger.showSnackBar(
                           SnackBar(
-                            content: Text(e.toString().replaceAll('Exception: ', '')),
+                            content: Text(
+                              e.toString().replaceAll('Exception: ', ''),
+                            ),
                             backgroundColor: AppColors.danger,
                           ),
                         );
@@ -650,15 +828,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.danger,
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
               ),
               child: isDeleting
                   ? const SizedBox(
                       width: 18,
                       height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
                     )
-                  : const Text('Delete Account', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                  : const Text(
+                      'Delete Account',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
             ),
           ],
         ),
@@ -711,7 +900,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         backgroundColor: AppColors.background,
         elevation: 0,
         title: Text(
-          'My Profile',
+          'Settings',
           style: TextStyle(
             color: AppColors.textPrimary,
             fontSize: 20,
@@ -742,30 +931,45 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         decoration: BoxDecoration(
                           gradient: AppColors.heroGradient,
                           shape: BoxShape.circle,
-                          border: Border.all(color: AppColors.primary.withValues(alpha: 0.5), width: 2),
-                          boxShadow: AppColors.glowShadow(AppColors.primary, opacity: 0.3),
+                          border: Border.all(
+                            color: AppColors.primary.withValues(alpha: 0.5),
+                            width: 2,
+                          ),
+                          boxShadow: AppColors.glowShadow(
+                            AppColors.primary,
+                            opacity: 0.3,
+                          ),
                         ),
                         child: ClipOval(
-                          child: user?.avatarUrl != null && user!.avatarUrl!.isNotEmpty
+                          child:
+                              user?.avatarUrl != null &&
+                                  user!.avatarUrl!.isNotEmpty
                               ? Image.network(
                                   user.avatarUrl!,
                                   width: 68,
                                   height: 68,
                                   fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) => Center(
-                                    child: Text(
-                                      (user.displayName.isNotEmpty ? user.displayName[0] : 'C').toUpperCase(),
-                                      style: const TextStyle(
-                                        fontSize: 26,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.white,
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      Center(
+                                        child: Text(
+                                          (user.displayName.isNotEmpty
+                                                  ? user.displayName[0]
+                                                  : 'C')
+                                              .toUpperCase(),
+                                          style: const TextStyle(
+                                            fontSize: 26,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white,
+                                          ),
+                                        ),
                                       ),
-                                    ),
-                                  ),
                                 )
                               : Center(
                                   child: Text(
-                                    (user?.displayName.isNotEmpty == true ? user!.displayName[0] : 'C').toUpperCase(),
+                                    (user?.displayName.isNotEmpty == true
+                                            ? user!.displayName[0]
+                                            : 'C')
+                                        .toUpperCase(),
                                     style: const TextStyle(
                                       fontSize: 26,
                                       fontWeight: FontWeight.bold,
@@ -785,15 +989,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             decoration: BoxDecoration(
                               color: AppColors.primary,
                               shape: BoxShape.circle,
-                              border: Border.all(color: AppColors.cardBackground, width: 2),
+                              border: Border.all(
+                                color: AppColors.cardBackground,
+                                width: 2,
+                              ),
                             ),
                             child: _uploadingAvatar
                                 ? const SizedBox(
                                     width: 12,
                                     height: 12,
-                                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
                                   )
-                                : const Icon(Icons.camera_alt_rounded, size: 13, color: Colors.white),
+                                : const Icon(
+                                    Icons.camera_alt_rounded,
+                                    size: 13,
+                                    color: Colors.white,
+                                  ),
                           ),
                         ),
                       ),
@@ -827,9 +1041,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
                               decoration: BoxDecoration(
-                                color: AppColors.primary.withValues(alpha: 0.15),
+                                color: AppColors.primary.withValues(
+                                  alpha: 0.15,
+                                ),
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
@@ -845,7 +1064,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(Icons.verified_rounded, color: AppColors.successText, size: 14),
+                                  Icon(
+                                    Icons.verified_rounded,
+                                    color: AppColors.successText,
+                                    size: 14,
+                                  ),
                                   const SizedBox(width: 2),
                                   Text(
                                     'Verified',
@@ -862,21 +1085,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 onTap: () {
                                   Navigator.of(context).push(
                                     MaterialPageRoute(
-                                      builder: (_) => EmailVerificationScreen(email: user?.email ?? ''),
+                                      builder: (_) => EmailVerificationScreen(
+                                        email: user?.email ?? '',
+                                      ),
                                     ),
                                   );
                                 },
                                 borderRadius: BorderRadius.circular(6),
                                 child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
                                   decoration: BoxDecoration(
-                                    color: AppColors.warning.withValues(alpha: 0.15),
+                                    color: AppColors.warning.withValues(
+                                      alpha: 0.15,
+                                    ),
                                     borderRadius: BorderRadius.circular(6),
                                   ),
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: const [
-                                      Icon(Icons.warning_amber_rounded, color: AppColors.warning, size: 12),
+                                      Icon(
+                                        Icons.warning_amber_rounded,
+                                        color: AppColors.warning,
+                                        size: 12,
+                                      ),
                                       SizedBox(width: 2),
                                       Text(
                                         'Verify',
@@ -896,13 +1130,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ),
                   IconButton(
-                    icon: Icon(Icons.edit_outlined, color: AppColors.accentText),
+                    icon: Icon(
+                      Icons.edit_outlined,
+                      color: AppColors.accentText,
+                    ),
                     onPressed: _openEditProfileDialog,
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 10),
+
+            // ── 📍 1. CONTACT & DELIVERY ────────────
+            _buildSectionHeader(
+              'CONTACT & DELIVERY',
+              Icons.location_on_outlined,
+            ),
 
             // Saved Delivery Details Card
             Container(
@@ -920,7 +1163,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     children: [
                       Row(
                         children: [
-                          Icon(Icons.location_on_outlined, color: AppColors.accentText, size: 20),
+                          Icon(
+                            Icons.location_on_outlined,
+                            color: AppColors.accentText,
+                            size: 20,
+                          ),
                           const SizedBox(width: 8),
                           Text(
                             'Default Contact & Pickup Info',
@@ -946,10 +1193,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Divider(color: AppColors.cardBorder, height: 16),
                   Row(
                     children: [
-                      Text('Phone: ', style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
                       Text(
-                        auth.savedPhone?.isNotEmpty == true ? auth.savedPhone! : 'Not set',
-                        style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                        'Phone: ',
+                        style: TextStyle(
+                          color: AppColors.textMuted,
+                          fontSize: 13,
+                        ),
+                      ),
+                      Text(
+                        auth.savedPhone?.isNotEmpty == true
+                            ? auth.savedPhone!
+                            : 'Not set',
+                        style: TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 13,
+                        ),
                       ),
                     ],
                   ),
@@ -957,11 +1215,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Address: ', style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
+                      Text(
+                        'Address: ',
+                        style: TextStyle(
+                          color: AppColors.textMuted,
+                          fontSize: 13,
+                        ),
+                      ),
                       Expanded(
                         child: Text(
-                          auth.savedAddress?.isNotEmpty == true ? auth.savedAddress! : 'Not set',
-                          style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                          auth.savedAddress?.isNotEmpty == true
+                              ? auth.savedAddress!
+                              : 'Not set',
+                          style: TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 13,
+                          ),
                         ),
                       ),
                     ],
@@ -969,7 +1238,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 10),
+
+            // ── ⚙️ 2. PREFERENCES ────────────
+            _buildSectionHeader('PREFERENCES', Icons.tune_rounded),
 
             // App Appearance / Theme Mode Tile
             Container(
@@ -1007,12 +1279,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         children: [
                           AnimatedSwitcher(
                             duration: const Duration(milliseconds: 250),
-                            transitionBuilder: (child, anim) => ScaleTransition(scale: anim, child: child),
+                            transitionBuilder: (child, anim) =>
+                                ScaleTransition(scale: anim, child: child),
                             child: Container(
                               key: ValueKey(icon),
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: AppColors.primary.withValues(alpha: 0.15),
+                                color: AppColors.primary.withValues(
+                                  alpha: 0.15,
+                                ),
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Icon(
@@ -1062,19 +1337,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               label: 'Light',
                               icon: Icons.light_mode_rounded,
                               isSelected: currentMode == ThemeMode.light,
-                              onTap: () => themeCtrl.setThemeMode(ThemeMode.light),
+                              onTap: () =>
+                                  themeCtrl.setThemeMode(ThemeMode.light),
                             ),
                             _buildThemeSegment(
                               label: 'Dark',
                               icon: Icons.dark_mode_rounded,
                               isSelected: currentMode == ThemeMode.dark,
-                              onTap: () => themeCtrl.setThemeMode(ThemeMode.dark),
+                              onTap: () =>
+                                  themeCtrl.setThemeMode(ThemeMode.dark),
                             ),
                             _buildThemeSegment(
                               label: 'System',
                               icon: Icons.brightness_auto_rounded,
                               isSelected: currentMode == ThemeMode.system,
-                              onTap: () => themeCtrl.setThemeMode(ThemeMode.system),
+                              onTap: () =>
+                                  themeCtrl.setThemeMode(ThemeMode.system),
                             ),
                           ],
                         ),
@@ -1085,75 +1363,41 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
 
-            const SizedBox(height: 16),
-
-            // Change Password Tile
-            InkWell(
-              onTap: _openChangePasswordDialog,
-              borderRadius: BorderRadius.circular(16),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                decoration: BoxDecoration(
-                  color: AppColors.cardBackground,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.cardBorder),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(
-                        Icons.shield_outlined,
-                        color: AppColors.primary,
-                        size: 20,
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Account Security',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 15,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            'Change your account password',
-                            style: TextStyle(
-                              color: AppColors.textSecondary,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Icon(
-                      Icons.chevron_right_rounded,
-                      color: AppColors.textMuted,
-                      size: 22,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 16),
+            const SizedBox(height: 10),
 
             // Hidden Products Management Tile
             ListenableBuilder(
               listenable: HiddenProductsStore.instance,
               builder: (context, _) {
-                final count = HiddenProductsStore.instance.hiddenProductIds.length;
-                return InkWell(
+                final count =
+                    HiddenProductsStore.instance.hiddenProductIds.length;
+                return _MenuTile(
+                  icon: Icons.visibility_off_outlined,
+                  label: 'Hidden Products',
+                  subtitle: count == 0
+                      ? 'No products hidden'
+                      : '$count product${count == 1 ? '' : 's'} hidden from feed',
+                  trailing: count > 0
+                      ? Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          margin: const EdgeInsets.only(right: 6),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            '$count',
+                            style: const TextStyle(
+                              color: AppColors.primary,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        )
+                      : null,
                   onTap: () {
                     NavigationGuard.pushSafely(
                       context,
@@ -1162,176 +1406,63 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                     );
                   },
-                  borderRadius: BorderRadius.circular(16),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                    decoration: BoxDecoration(
-                      color: AppColors.cardBackground,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppColors.cardBorder),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: const Icon(
-                            Icons.visibility_off_outlined,
-                            color: AppColors.primary,
-                            size: 20,
-                          ),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Hidden Products',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 15,
-                                  color: AppColors.textPrimary,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                count == 0
-                                    ? 'No products hidden'
-                                    : '$count product${count == 1 ? '' : 's'} hidden from feed',
-                                style: TextStyle(
-                                  color: AppColors.textSecondary,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        if (count > 0)
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                            margin: const EdgeInsets.only(right: 6),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              '$count',
-                              style: const TextStyle(
-                                color: AppColors.primary,
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        Icon(
-                          Icons.chevron_right_rounded,
-                          color: AppColors.textMuted,
-                          size: 22,
-                        ),
-                      ],
-                    ),
-                  ),
                 );
               },
             ),
 
-
-
-            const SizedBox(height: 16),
-
-            // Help & Customer Support Tile
-            InkWell(
+            // ── 🛡️ 3. SECURITY & COMPLIANCE ────────────
+            _buildSectionHeader('SECURITY & COMPLIANCE', Icons.shield_outlined),
+            _MenuTile(
+              icon: Icons.lock_outline_rounded,
+              label: 'Change Password',
+              subtitle: 'Update account login credentials',
+              onTap: _openChangePasswordDialog,
+            ),
+            _MenuTile(
+              icon: Icons.support_agent_rounded,
+              label: 'Contact STORA Support',
+              subtitle: 'Chat with our platform support team',
               onTap: _openSupportChat,
-              borderRadius: BorderRadius.circular(16),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                decoration: BoxDecoration(
-                  color: AppColors.cardBackground,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.cardBorder),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(
-                        Icons.support_agent_rounded,
-                        color: AppColors.primary,
-                        size: 20,
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Help & Customer Support',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 15,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            'Chat directly with STORA Support team',
-                            style: TextStyle(
-                              color: AppColors.textSecondary,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Icon(
-                      Icons.chevron_right_rounded,
-                      color: AppColors.textMuted,
-                      size: 22,
-                    ),
-                  ],
-                ),
-              ),
             ),
 
-            const SizedBox(height: 28),
-
-            // Delete Account Button
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: _handleDeleteAccount,
-                icon: const Icon(Icons.delete_forever_rounded, size: 18, color: AppColors.danger),
-                label: const Text('Delete Account', style: TextStyle(color: AppColors.danger, fontWeight: FontWeight.w600)),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  side: BorderSide(color: AppColors.danger.withValues(alpha: 0.35)),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                ),
-              ),
+            // ── 🚪 4. ACCOUNT ────────────
+            _buildSectionHeader('ACCOUNT', Icons.person_outline_rounded),
+            _MenuTile(
+              icon: Icons.delete_forever_rounded,
+              label: 'Delete Account',
+              destructive: true,
+              onTap: _handleDeleteAccount,
             ),
-            const SizedBox(height: 14),
-
-            // Logout Button
-            GradientButton(
-              text: 'Log Out',
+            _MenuTile(
               icon: Icons.logout_rounded,
-              gradient: const LinearGradient(
-                colors: [Color(0xFFE53935), Color(0xFFC62828)],
-              ),
-              onPressed: _handleLogout,
+              label: 'Log out',
+              destructive: false,
+              onTap: _handleLogout,
             ),
             const SizedBox(height: 24),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title, IconData icon) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 18, 4, 10),
+      child: Row(
+        children: [
+          Icon(icon, size: 14, color: AppColors.textSecondary),
+          const SizedBox(width: 8),
+          Text(
+            title,
+            style: TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1.1,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1389,5 +1520,93 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
     );
   }
+}
 
+class _MenuTile extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String? subtitle;
+  final VoidCallback onTap;
+  final bool destructive;
+  final Widget? trailing;
+
+  const _MenuTile({
+    required this.icon,
+    required this.label,
+    this.subtitle,
+    required this.onTap,
+    this.destructive = false,
+    this.trailing,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = destructive ? AppColors.danger : AppColors.textPrimary;
+    final iconBg = destructive
+        ? AppColors.dangerBg
+        : AppColors.primary.withValues(alpha: 0.12);
+    final iconColor = destructive ? AppColors.danger : AppColors.primary;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+          decoration: BoxDecoration(
+            color: AppColors.cardBackground,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.cardBorder),
+            boxShadow: AppColors.cardShadow,
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: iconBg,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, size: 18, color: iconColor),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: TextStyle(
+                        color: color,
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    if (subtitle != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle!,
+                        style: TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              ?trailing,
+              if (!destructive && trailing == null)
+                Icon(
+                  Icons.chevron_right_rounded,
+                  size: 18,
+                  color: AppColors.textSecondary.withValues(alpha: 0.6),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
