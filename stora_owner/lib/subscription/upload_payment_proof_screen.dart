@@ -473,15 +473,18 @@ class _UploadPaymentProofScreenState extends State<UploadPaymentProofScreen> {
                                     ),
                                     const SizedBox(width: 6),
                                     Flexible(
-                                      child: Text(
-                                        displayName,
-                                        style: TextStyle(
-                                          color: HomeColors.textPrimary,
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w800,
-                                          letterSpacing: 0.4,
+                                      child: FittedBox(
+                                        fit: BoxFit.scaleDown,
+                                        alignment: Alignment.centerLeft,
+                                        child: Text(
+                                          displayName,
+                                          style: TextStyle(
+                                            color: HomeColors.textPrimary,
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w800,
+                                            letterSpacing: 0.4,
+                                          ),
                                         ),
-                                        overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
                                   ],

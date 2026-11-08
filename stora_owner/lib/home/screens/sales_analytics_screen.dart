@@ -661,8 +661,7 @@ class _SalesAnalyticsScreenState extends State<SalesAnalyticsScreen> {
                                     Text(
                                       name,
                                       style: TextStyle(color: HomeColors.textPrimary, fontWeight: FontWeight.w700, fontSize: 13),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 2,
                                     ),
                                     Text(
                                       '$qty units sold',

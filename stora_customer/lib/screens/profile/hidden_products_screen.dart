@@ -258,8 +258,7 @@ class HiddenProductsScreen extends StatelessWidget {
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                        maxLines: 2,
                       ),
                       const SizedBox(height: 2),
                       if (storeName.isNotEmpty) ...[
@@ -271,8 +270,7 @@ class HiddenProductsScreen extends StatelessWidget {
                               child: Text(
                                 storeName,
                                 style: TextStyle(color: AppColors.accentText, fontSize: 11, fontWeight: FontWeight.w600),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                                maxLines: 2,
                               ),
                             ),
                           ],

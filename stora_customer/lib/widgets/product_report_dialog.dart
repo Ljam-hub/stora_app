@@ -188,8 +188,7 @@ Future<void> showProductReportDialog({
                               const SizedBox(height: 2),
                               Text(
                                 product.name,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                                maxLines: 2,
                                 style: TextStyle(
                                   color: AppColors.textSecondary,
                                   fontSize: 13,

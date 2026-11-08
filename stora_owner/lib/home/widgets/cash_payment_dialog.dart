@@ -213,16 +213,18 @@ class _CashPaymentDialogState extends State<CashPaymentDialog> {
                     Row(
                       children: [
                         Flexible(
-                          child: Text(
-                            'Show Store Payment QR',
-                            style: TextStyle(
-                              color: HomeColors.textPrimary,
-                              fontSize: 13.5,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: -0.2,
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              'Show Store Payment QR',
+                              style: TextStyle(
+                                color: HomeColors.textPrimary,
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: -0.2,
+                              ),
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                         const SizedBox(width: 6),
@@ -257,8 +259,7 @@ class _CashPaymentDialogState extends State<CashPaymentDialog> {
                         fontSize: 11,
                         height: 1.25,
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                      maxLines: 2,
                     ),
                   ],
                 ),

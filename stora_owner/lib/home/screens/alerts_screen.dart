@@ -503,8 +503,7 @@ class _AlertCardState extends State<_AlertCard> {
               children: [
                 Text(
                   product.name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                  maxLines: 2,
                   style: TextStyle(
                     color: HomeColors.textPrimary,
                     fontSize: 14,
@@ -515,11 +514,13 @@ class _AlertCardState extends State<_AlertCard> {
                 Row(
                   children: [
                     Flexible(
-                      child: Text(
-                        product.category,
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 1,
-                        style: TextStyle(color: HomeColors.textSecondary, fontSize: 12),
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          product.category,
+                          style: TextStyle(color: HomeColors.textSecondary, fontSize: 12),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 6),
@@ -609,8 +610,7 @@ class _InStockCard extends StatelessWidget {
               children: [
                 Text(
                   product.name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                  maxLines: 2,
                   style: TextStyle(
                     color: HomeColors.textPrimary,
                     fontSize: 14,
@@ -621,11 +621,13 @@ class _InStockCard extends StatelessWidget {
                 Row(
                   children: [
                     Flexible(
-                      child: Text(
-                        product.category,
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 1,
-                        style: TextStyle(color: HomeColors.textSecondary, fontSize: 12),
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          product.category,
+                          style: TextStyle(color: HomeColors.textSecondary, fontSize: 12),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 6),

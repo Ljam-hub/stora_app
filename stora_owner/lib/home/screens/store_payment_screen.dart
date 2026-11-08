@@ -972,15 +972,18 @@ class _StorePaymentScreenState extends State<StorePaymentScreen> {
                     ),
                     const SizedBox(width: 10),
                     Flexible(
-                      child: Text(
-                        acc.label.toUpperCase(),
-                        style: TextStyle(
-                          color: HomeColors.textPrimary,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.5,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          acc.label.toUpperCase(),
+                          style: TextStyle(
+                            color: HomeColors.textPrimary,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.5,
+                          ),
                         ),
-                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     if (acc.isPrimary) ...[

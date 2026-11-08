@@ -766,15 +766,18 @@ class _OrderCardState extends State<_OrderCard> {
                       Row(
                         children: [
                           Flexible(
-                            child: Text(
-                              'Order #$orderId',
-                              style: TextStyle(
-                                color: HomeColors.textPrimary,
-                                fontSize: 15,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: -0.2,
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                'Order #$orderId',
+                                style: TextStyle(
+                                  color: HomeColors.textPrimary,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: -0.2,
+                                ),
                               ),
-                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           const SizedBox(width: 6),
@@ -808,8 +811,7 @@ class _OrderCardState extends State<_OrderCard> {
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                        maxLines: 2,
                       ),
                     ],
                   ),
@@ -896,10 +898,13 @@ class _OrderCardState extends State<_OrderCard> {
                           const Icon(Icons.email_outlined, color: AppColors.purpleLight, size: 14),
                           const SizedBox(width: 8),
                           Expanded(
-                            child: Text(
-                              customerEmail,
-                              style: const TextStyle(color: AppColors.label, fontSize: 12, fontWeight: FontWeight.w500),
-                              overflow: TextOverflow.ellipsis,
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                customerEmail,
+                                style: const TextStyle(color: AppColors.label, fontSize: 12, fontWeight: FontWeight.w500),
+                              ),
                             ),
                           ),
                         ],

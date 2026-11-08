@@ -706,11 +706,12 @@ class _OrderCardState extends State<OrderCard> with NavigationGuard<OrderCard> {
                     child: ElevatedButton.icon(
                       onPressed: () => _handleCounterOfferResponse(context, order, true),
                       icon: const Icon(Icons.check_circle_rounded, size: 16),
-                      label: Text(
-                        'Accept Offer${order.counterPrice != null ? " (₱${order.counterPrice!.toStringAsFixed(2)})" : ""}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                      label: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          'Accept Offer${order.counterPrice != null ? " (₱${order.counterPrice!.toStringAsFixed(2)})" : ""}',
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                        ),
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.success,
@@ -771,13 +772,14 @@ class _OrderCardState extends State<OrderCard> with NavigationGuard<OrderCard> {
                       minSize: 14,
                       child: Icon(Icons.chat_bubble_outline_rounded, size: 16, color: AppColors.accentText),
                     ),
-                    label: Text(
-                      order.unreadMessageCount > 0
-                          ? 'Chat (${order.unreadMessageCount})'
-                          : 'Chat',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(color: AppColors.accentText, fontSize: 12.5, fontWeight: FontWeight.w600),
+                    label: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        order.unreadMessageCount > 0
+                            ? 'Chat (${order.unreadMessageCount})'
+                            : 'Chat',
+                        style: TextStyle(color: AppColors.accentText, fontSize: 12.5, fontWeight: FontWeight.w600),
+                      ),
                     ),
                     style: OutlinedButton.styleFrom(
                       side: BorderSide(color: AppColors.primary.withValues(alpha: 0.6), width: 1.2),

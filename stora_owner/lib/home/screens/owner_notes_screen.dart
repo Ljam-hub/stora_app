@@ -545,8 +545,7 @@ class _NoteCard extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       note.content,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                      maxLines: 4,
                       style: TextStyle(
                         color: note.isCompleted ? HomeColors.textMuted : HomeColors.textSecondary,
                         fontSize: 12.5,

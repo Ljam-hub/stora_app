@@ -564,15 +564,16 @@ class ProductCard extends StatelessWidget {
                   Text(
                     product.name,
                     maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(color: HomeColors.textPrimary, fontSize: 13, fontWeight: FontWeight.w700, height: 1.2),
                   ),
                   const SizedBox(height: 2),
-                  Text(
-                    product.category,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(color: HomeColors.textSecondary, fontSize: 11),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      product.category,
+                      style: TextStyle(color: HomeColors.textSecondary, fontSize: 11),
+                    ),
                   ),
                   const SizedBox(height: 6),
                   Row(

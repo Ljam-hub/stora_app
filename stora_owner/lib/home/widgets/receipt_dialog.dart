@@ -127,11 +127,13 @@ class _ReceiptDialogState extends State<ReceiptDialog> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Expanded(
-                          child: Text(
-                            'Customer: ${sale.displayCustomerName}',
-                            style: const TextStyle(color: Colors.black87, fontSize: 11, fontWeight: FontWeight.w600),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              'Customer: ${sale.displayCustomerName}',
+                              style: const TextStyle(color: Colors.black87, fontSize: 11, fontWeight: FontWeight.w600),
+                            ),
                           ),
                         ),
                         if (!sale.isOnlineOrder) ...[

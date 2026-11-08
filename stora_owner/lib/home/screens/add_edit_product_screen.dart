@@ -440,7 +440,7 @@ class _CategoryPickerState extends State<_CategoryPicker> {
                 ),
               ),
               items: [
-                ...categories.map((c) => DropdownMenuItem(value: c, child: Text(c, overflow: TextOverflow.ellipsis))),
+                ...categories.map((c) => DropdownMenuItem(value: c, child: FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft, child: Text(c)))),
                 DropdownMenuItem(
                   value: _addNewValue,
                   child: Row(

@@ -720,8 +720,6 @@ class _PosProductCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(product.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(color: HomeColors.textPrimary, fontSize: 12, fontWeight: FontWeight.w700)),
                     const SizedBox(height: 2),
                     Text('₱${product.price.toStringAsFixed(2)}',
@@ -769,8 +767,7 @@ class _CartRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(item.product.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                    maxLines: 2,
                     style: TextStyle(color: HomeColors.textPrimary, fontSize: 13, fontWeight: FontWeight.w700)),
                 const SizedBox(height: 2),
                 Text('₱${item.product.price.toStringAsFixed(2)} · subtotal: ₱${item.subtotal.toStringAsFixed(2)}',

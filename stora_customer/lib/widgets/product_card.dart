@@ -69,8 +69,7 @@ class ProductCard extends StatelessWidget {
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                          maxLines: 2,
                         ),
                       ],
                     ),
@@ -269,21 +268,22 @@ class ProductCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         if (product.storeName != null && product.storeName!.isNotEmpty)
-                          Text(
-                            product.storeName!,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: AppColors.textMuted,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              product.storeName!,
+                              style: TextStyle(
+                                color: AppColors.textMuted,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                           ),
                         const SizedBox(height: 3),
                         Text(
                           product.name,
                           maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             color: AppColors.textPrimary,
                             fontSize: 13,
@@ -388,8 +388,7 @@ class ProductCard extends StatelessWidget {
                                                 fontWeight: FontWeight.w600,
                                                 fontSize: 12.5,
                                               ),
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
+                                              maxLines: 2,
                                             ),
                                           ),
                                         ],

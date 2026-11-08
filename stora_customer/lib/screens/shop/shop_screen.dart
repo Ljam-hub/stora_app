@@ -374,15 +374,17 @@ class _ShopScreenState extends State<ShopScreen> {
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         mainAxisAlignment: MainAxisAlignment.center,
                                         children: [
-                                          Text(
-                                            store.displayName,
-                                            style: TextStyle(
-                                              color: AppColors.textPrimary,
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.w700,
+                                          FittedBox(
+                                            fit: BoxFit.scaleDown,
+                                            alignment: Alignment.centerLeft,
+                                            child: Text(
+                                              store.displayName,
+                                              style: TextStyle(
+                                                color: AppColors.textPrimary,
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.w700,
+                                              ),
                                             ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
                                           ),
                                           const SizedBox(height: 3),
                                           Row(
@@ -473,11 +475,13 @@ class _ShopScreenState extends State<ShopScreen> {
                             Row(
                               children: [
                                 Flexible(
-                                  child: Text(
-                                    catalog.selectedStore!.displayName,
-                                    style: TextStyle(color: AppColors.textPrimary, fontSize: 13, fontWeight: FontWeight.bold),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    alignment: Alignment.centerLeft,
+                                    child: Text(
+                                      catalog.selectedStore!.displayName,
+                                      style: TextStyle(color: AppColors.textPrimary, fontSize: 13, fontWeight: FontWeight.bold),
+                                    ),
                                   ),
                                 ),
                                 const SizedBox(width: 6),
@@ -669,19 +673,21 @@ class _ShopScreenState extends State<ShopScreen> {
                                   Row(
                                     children: [
                                       Flexible(
-                                        child: Text(
-                                          catalog.selectedStore != null
-                                              ? catalog.selectedStore!.displayName
-                                              : (catalog.selectedCategory != null
-                                                  ? catalog.selectedCategory!.name
-                                                  : 'All Items'),
-                                          style: TextStyle(
-                                            color: AppColors.textPrimary,
-                                            fontSize: 15,
-                                            fontWeight: FontWeight.w700,
+                                        child: FittedBox(
+                                          fit: BoxFit.scaleDown,
+                                          alignment: Alignment.centerLeft,
+                                          child: Text(
+                                            catalog.selectedStore != null
+                                                ? catalog.selectedStore!.displayName
+                                                : (catalog.selectedCategory != null
+                                                    ? catalog.selectedCategory!.name
+                                                    : 'All Items'),
+                                            style: TextStyle(
+                                              color: AppColors.textPrimary,
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.w700,
+                                            ),
                                           ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
                                         ),
                                       ),
                                       const SizedBox(width: 8),

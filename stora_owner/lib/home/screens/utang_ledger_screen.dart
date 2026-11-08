@@ -1994,8 +1994,7 @@ class _UtangLedgerScreenState extends State<UtangLedgerScreen> {
                   record.items.isNotEmpty
                       ? record.items.map((i) => '${i.quantity}x ${i.productName}').join(', ')
                       : record.notes,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                  maxLines: 3,
                   style: TextStyle(color: HomeColors.textSecondary, fontSize: 12),
                 ),
               ],

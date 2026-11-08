@@ -172,14 +172,16 @@ class _ProductDetailSheetState extends State<ProductDetailSheet> {
                                     Icon(Icons.storefront_rounded, size: 13, color: AppColors.textSecondary),
                                     const SizedBox(width: 5),
                                     Flexible(
-                                      child: Text(
-                                        product.storeName!,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(
-                                          color: AppColors.textSecondary,
-                                          fontSize: 11.5,
-                                          fontWeight: FontWeight.w600,
+                                      child: FittedBox(
+                                        fit: BoxFit.scaleDown,
+                                        alignment: Alignment.centerLeft,
+                                        child: Text(
+                                          product.storeName!,
+                                          style: TextStyle(
+                                            color: AppColors.textSecondary,
+                                            fontSize: 11.5,
+                                            fontWeight: FontWeight.w600,
+                                          ),
                                         ),
                                       ),
                                     ),

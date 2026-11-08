@@ -146,15 +146,17 @@ class _CustomerReceiptDialogState extends State<CustomerReceiptDialog> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Expanded(
-                          child: Text(
-                            'Customer: ${order.customerDisplayName}',
-                            style: const TextStyle(
-                              color: Colors.black87,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              'Customer: ${order.customerDisplayName}',
+                              style: const TextStyle(
+                                color: Colors.black87,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                         Container(

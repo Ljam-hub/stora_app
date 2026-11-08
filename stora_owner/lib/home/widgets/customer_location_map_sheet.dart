@@ -587,11 +587,13 @@ class _CustomerLocationMapSheetState extends State<CustomerLocationMapSheet> {
                                       ),
                                     ],
                                   ),
-                                  child: Text(
-                                    '📍 ${widget.customerName}',
-                                    style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    alignment: Alignment.centerLeft,
+                                    child: Text(
+                                      '📍 ${widget.customerName}',
+                                      style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                                    ),
                                   ),
                                 ),
                                 const SizedBox(height: 2),
@@ -843,10 +845,12 @@ class _CustomerLocationMapSheetState extends State<CustomerLocationMapSheet> {
                                 }
                               : null,
                           icon: const Icon(Icons.chat_rounded, size: 18),
-                          label: const Text(
-                            'Message customer about this order',
-                            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
-                            overflow: TextOverflow.ellipsis,
+                          label: const FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              'Message customer about this order',
+                              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+                            ),
                           ),
                         ),
                       ),

@@ -341,8 +341,7 @@ class _CartScreenState extends State<CartScreen> {
                                 (savedAddress != null && savedAddress.isNotEmpty)
                                     ? savedAddress
                                     : 'Tap location icon to detect current address',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                                maxLines: 2,
                                 style: TextStyle(
                                   color: (savedAddress != null && savedAddress.isNotEmpty)
                                       ? AppColors.textPrimary

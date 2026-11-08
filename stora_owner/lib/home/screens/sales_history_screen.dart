@@ -610,14 +610,16 @@ class _HistorySummaryCard extends StatelessWidget {
                     Icon(Icons.account_balance_wallet_outlined, size: 14, color: HomeColors.textSecondary),
                     const SizedBox(width: 6),
                     Flexible(
-                      child: Text(
-                        revenueTitle,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: HomeColors.textSecondary,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          revenueTitle,
+                          style: TextStyle(
+                            color: HomeColors.textSecondary,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                     ),
@@ -644,14 +646,16 @@ class _HistorySummaryCard extends StatelessWidget {
                       const SizedBox(width: 5),
                       ConstrainedBox(
                         constraints: const BoxConstraints(maxWidth: 110),
-                        child: Text(
-                          currentFilterLabel,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: HomeColors.textPrimary,
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w700,
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            currentFilterLabel,
+                            style: TextStyle(
+                              color: HomeColors.textPrimary,
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ),
                       ),
@@ -1268,29 +1272,33 @@ class _SaleCard extends StatelessWidget {
                         Icon(Icons.person_outline_rounded, size: 14, color: HomeColors.textSecondary),
                         const SizedBox(width: 4),
                         Expanded(
-                          child: Text(
-                            sale.displayCustomerName,
-                            style: TextStyle(
-                              color: HomeColors.textPrimary,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              sale.displayCustomerName,
+                              style: TextStyle(
+                                color: HomeColors.textPrimary,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 2),
-                    Text(
-                      'Receipt #: ${sale.displayReceiptNumber}',
-                      style: TextStyle(
-                        color: HomeColors.textSecondary,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500,
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'Receipt #: ${sale.displayReceiptNumber}',
+                        style: TextStyle(
+                          color: HomeColors.textSecondary,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
@@ -1367,8 +1375,7 @@ class _SaleCard extends StatelessWidget {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(item.product.name,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                                maxLines: 2,
                                 style: TextStyle(color: HomeColors.textPrimary, fontSize: 13, fontWeight: FontWeight.w600)),
                           ),
                         ],
@@ -1400,8 +1407,7 @@ class _SaleCard extends StatelessWidget {
                         fontSize: 11,
                         fontStyle: FontStyle.italic,
                       ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                      maxLines: 4,
                     ),
                   ),
                 ],
@@ -1521,15 +1527,17 @@ class _UtangPaymentHistoryCard extends StatelessWidget {
                         Icon(Icons.person_outline_rounded, size: 14, color: HomeColors.textSecondary),
                         const SizedBox(width: 4),
                         Expanded(
-                          child: Text(
-                            record.customerName,
-                            style: TextStyle(
-                              color: HomeColors.textPrimary,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              record.customerName,
+                              style: TextStyle(
+                                color: HomeColors.textPrimary,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],
@@ -1544,8 +1552,7 @@ class _UtangPaymentHistoryCard extends StatelessWidget {
                         fontSize: 11,
                         fontWeight: isSettled ? FontWeight.w700 : FontWeight.w500,
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                      maxLines: 2,
                     ),
                   ],
                 ),
@@ -1610,8 +1617,7 @@ class _UtangPaymentHistoryCard extends StatelessWidget {
                         fontSize: 11,
                         fontStyle: FontStyle.italic,
                       ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                      maxLines: 4,
                     ),
                   ),
                 ],

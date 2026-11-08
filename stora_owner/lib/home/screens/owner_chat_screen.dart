@@ -698,15 +698,17 @@ class _OwnerChatScreenState extends State<OwnerChatScreen> with WidgetsBindingOb
                                     title: Row(
                                       children: [
                                         Flexible(
-                                          child: Text(
-                                            customerName,
-                                            style: TextStyle(
-                                              color: HomeColors.textPrimary,
-                                              fontWeight: unreadCount > 0 ? FontWeight.bold : FontWeight.w600,
-                                              fontSize: 16,
+                                          child: FittedBox(
+                                            fit: BoxFit.scaleDown,
+                                            alignment: Alignment.centerLeft,
+                                            child: Text(
+                                              customerName,
+                                              style: TextStyle(
+                                                color: HomeColors.textPrimary,
+                                                fontWeight: unreadCount > 0 ? FontWeight.bold : FontWeight.w600,
+                                                fontSize: 16,
+                                              ),
                                             ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
                                           ),
                                         ),
                                         if (isSupport) ...[
@@ -752,8 +754,7 @@ class _OwnerChatScreenState extends State<OwnerChatScreen> with WidgetsBindingOb
                                                 fontSize: 13.5,
                                                 fontWeight: unreadCount > 0 ? FontWeight.w600 : FontWeight.normal,
                                               ),
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
+                                              maxLines: 2,
                                             ),
                                           ),
                                           if (unreadCount > 0)
@@ -1402,10 +1403,13 @@ class _OwnerChatThreadScreenState extends State<OwnerChatThreadScreen> with Widg
                   Row(
                     children: [
                       Flexible(
-                        child: Text(
-                          _isSupportChat ? 'STORA Support' : widget.customerName,
-                          style: TextStyle(color: HomeColors.textPrimary, fontSize: 16, fontWeight: FontWeight.bold),
-                          overflow: TextOverflow.ellipsis,
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            _isSupportChat ? 'STORA Support' : widget.customerName,
+                            style: TextStyle(color: HomeColors.textPrimary, fontSize: 16, fontWeight: FontWeight.bold),
+                          ),
                         ),
                       ),
                       if (_isSupportChat) ...[
@@ -1429,20 +1433,23 @@ class _OwnerChatThreadScreenState extends State<OwnerChatThreadScreen> with Widg
                       ],
                     ],
                   ),
-                  Text(
-                    _isSupportChat
-                        ? 'Official Support'
-                        : (_isBlocked
-                            ? 'Blocked'
-                            : ((widget.customerEmail != null && widget.customerEmail!.isNotEmpty)
-                                ? widget.customerEmail!
-                                : 'Customer')),
-                    style: TextStyle(
-                      color: _isSupportChat ? const Color(0xFFF97316) : (_isBlocked ? HomeColors.dangerText : HomeColors.textSecondary),
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      _isSupportChat
+                          ? 'Official Support'
+                          : (_isBlocked
+                              ? 'Blocked'
+                              : ((widget.customerEmail != null && widget.customerEmail!.isNotEmpty)
+                                  ? widget.customerEmail!
+                                  : 'Customer')),
+                      style: TextStyle(
+                        color: _isSupportChat ? const Color(0xFFF97316) : (_isBlocked ? HomeColors.dangerText : HomeColors.textSecondary),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
-                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
@@ -2514,8 +2521,7 @@ Future<void> showOwnerReportCustomerDialog({
                                   Text(
                                     evidenceFilename ?? 'evidence.jpg',
                                     style: TextStyle(color: HomeColors.textPrimary, fontSize: 13, fontWeight: FontWeight.w600),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 2,
                                   ),
                                   const SizedBox(height: 2),
                                   Row(

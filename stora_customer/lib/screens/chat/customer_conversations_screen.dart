@@ -481,15 +481,17 @@ class _CustomerConversationsScreenState extends State<CustomerConversationsScree
                                                   Row(
                                                     children: [
                                                       Flexible(
-                                                        child: Text(
-                                                          isSupport ? 'STORA Support' : storeName,
-                                                          style: TextStyle(
-                                                            color: AppColors.textPrimary,
-                                                            fontWeight: FontWeight.w600,
-                                                            fontSize: 15,
+                                                        child: FittedBox(
+                                                          fit: BoxFit.scaleDown,
+                                                          alignment: Alignment.centerLeft,
+                                                          child: Text(
+                                                            isSupport ? 'STORA Support' : storeName,
+                                                            style: TextStyle(
+                                                              color: AppColors.textPrimary,
+                                                              fontWeight: FontWeight.w600,
+                                                              fontSize: 15,
+                                                            ),
                                                           ),
-                                                          maxLines: 1,
-                                                          overflow: TextOverflow.ellipsis,
                                                         ),
                                                       ),
                                                       if (isSupport) ...[
@@ -532,8 +534,7 @@ class _CustomerConversationsScreenState extends State<CustomerConversationsScree
                                                             fontSize: 13,
                                                             fontWeight: unreadCount > 0 ? FontWeight.w600 : FontWeight.normal,
                                                           ),
-                                                          maxLines: 1,
-                                                          overflow: TextOverflow.ellipsis,
+                                                          maxLines: 2,
                                                         ),
                                                       ),
                                                       if (unreadCount > 0)

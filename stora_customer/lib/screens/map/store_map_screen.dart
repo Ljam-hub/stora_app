@@ -540,14 +540,16 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
                             title: Row(
                               children: [
                                 Expanded(
-                                  child: Text(
-                                    s.displayName,
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: isDark ? Colors.white : Colors.black87,
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    alignment: Alignment.centerLeft,
+                                    child: Text(
+                                      s.displayName,
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: isDark ? Colors.white : Colors.black87,
+                                      ),
                                     ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
                                 const SizedBox(width: 6),
@@ -570,8 +572,7 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
                             ),
                             subtitle: Text(
                               s.address.isNotEmpty ? s.address : dist,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                              maxLines: 2,
                               style: TextStyle(fontSize: 12, color: AppColors.textMuted),
                             ),
                             trailing: ElevatedButton(
@@ -1155,7 +1156,7 @@ class _StoreMapScreenState extends State<StoreMapScreen> with TickerProviderStat
                         fontWeight: FontWeight.w800,
                       ),
                       maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                      
                     ),
                   ),
                   const SizedBox(width: 4),
@@ -1460,28 +1461,26 @@ class _StoreCarouselCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(
-                  store.displayName,
-                  style: TextStyle(
-                    color: isDark ? Colors.white : Colors.black87,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w800,
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    store.displayName,
+                    style: TextStyle(
+                      color: isDark ? Colors.white : Colors.black87,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 3),
                 Row(
                   children: [
                     Icon(Icons.near_me_rounded, color: AppColors.accentText, size: 12),
                     const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        distText,
-                        style: TextStyle(color: AppColors.accentText, fontSize: 11, fontWeight: FontWeight.w700),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                    Text(
+                      distText,
+                      style: TextStyle(color: AppColors.accentText, fontSize: 11, fontWeight: FontWeight.w700),
                     ),
                     const SizedBox(width: 6),
                     Container(width: 3, height: 3, decoration: BoxDecoration(color: AppColors.textMuted, shape: BoxShape.circle)),
@@ -1501,8 +1500,7 @@ class _StoreCarouselCard extends StatelessWidget {
                   Text(
                     store.address,
                     style: TextStyle(color: AppColors.textMuted, fontSize: 11),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                    maxLines: 2,
                   ),
                 ],
               ],

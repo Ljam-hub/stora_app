@@ -1077,8 +1077,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                 child: Text(
                                   '${i.quantity}x ${i.product.name}',
                                   style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 2,
                                 ),
                               ),
                               const SizedBox(width: 8),

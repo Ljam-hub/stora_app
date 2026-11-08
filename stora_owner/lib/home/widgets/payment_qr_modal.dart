@@ -140,16 +140,18 @@ class _PaymentQrModalSheetState extends State<PaymentQrModalSheet> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            'Scan to Pay (Walk-in)',
-                            style: TextStyle(
-                              color: HomeColors.textPrimary,
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: -0.2,
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              'Scan to Pay (Walk-in)',
+                              style: TextStyle(
+                                color: HomeColors.textPrimary,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: -0.2,
+                              ),
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
                           ),
                           const SizedBox(height: 3),
                           Text(
@@ -334,16 +336,17 @@ class _PaymentQrModalSheetState extends State<PaymentQrModalSheet> {
                           ),
                         ),
                         const SizedBox(height: 8),
-                        Text(
-                          businessName,
-                          style: const TextStyle(
-                            color: Color(0xFF1E293B),
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800,
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            businessName,
+                            style: const TextStyle(
+                              color: Color(0xFF1E293B),
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                            ),
+                            textAlign: TextAlign.center,
                           ),
-                          textAlign: TextAlign.center,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                         ),
                         if (name.isNotEmpty) ...[
                           const SizedBox(height: 2),

@@ -843,25 +843,29 @@ class _MiniUtilityTile extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 2),
-              Text(
-                title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: HomeColors.textSecondary,
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.w600,
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    color: HomeColors.textSecondary,
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
               const SizedBox(height: 2),
-              Text(
-                subtitle,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: subtitleColor ?? HomeColors.textMuted,
-                  fontSize: 10.5,
-                  fontWeight: FontWeight.w500,
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  subtitle,
+                  style: TextStyle(
+                    color: subtitleColor ?? HomeColors.textMuted,
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
             ],
@@ -914,11 +918,13 @@ class _FreePlanCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: HomeColors.cardBorder),
                     ),
-                    child: Text(
-                      limit > 0 ? '$current/$limit items · $daysLeft days left' : '$current items',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(color: HomeColors.accentText, fontSize: 12, fontWeight: FontWeight.w700),
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        limit > 0 ? '$current/$limit items · $daysLeft days left' : '$current items',
+                        style: TextStyle(color: HomeColors.accentText, fontSize: 12, fontWeight: FontWeight.w700),
+                      ),
                     ),
                   ),
                 ),
@@ -1025,15 +1031,17 @@ class _IncomingOrdersCard extends StatelessWidget {
                   Row(
                     children: [
                       Flexible(
-                        child: Text(
-                          hasPending ? '$pendingCount Incoming ${pendingCount == 1 ? 'Order' : 'Orders'}' : 'Customer Orders',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: HomeColors.textPrimary,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: -0.2,
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            hasPending ? '$pendingCount Incoming ${pendingCount == 1 ? 'Order' : 'Orders'}' : 'Customer Orders',
+                            style: TextStyle(
+                              color: HomeColors.textPrimary,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: -0.2,
+                            ),
                           ),
                         ),
                       ),

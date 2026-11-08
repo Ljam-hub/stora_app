@@ -289,8 +289,7 @@ Future<void> showCustomerReportDialog({
                                 children: [
                                   Text(
                                     evidenceFilename ?? 'evidence.jpg',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 2,
                                     style: TextStyle(
                                       color: AppColors.textPrimary,
                                       fontSize: 13,

@@ -618,10 +618,13 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> with WidgetsBin
                   Row(
                     children: [
                       Flexible(
-                        child: Text(
-                          _isSupportChat ? 'STORA Support' : widget.storeName,
-                          style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.bold),
-                          overflow: TextOverflow.ellipsis,
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            _isSupportChat ? 'STORA Support' : widget.storeName,
+                            style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.bold),
+                          ),
                         ),
                       ),
                       if (_isSupportChat) ...[
